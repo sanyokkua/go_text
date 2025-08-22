@@ -1,0 +1,30 @@
+/* Container for the top navigation bar with horizontal layout and theme-based styling */
+.app-bar {
+  background-color: var(--primary-color); /* Applies main theme color from CSS variables (e.g., dark blue) */
+  color: var(--primary-color-on); /* Sets text/icon color that contrasts with the background */
+  display: flex; /* Enables horizontal layout with flexible child elements */
+  align-items: center; /* Vertically centers all items within the app bar */
+  justify-content: space-between; /* Distributes space between direct children, pushing first and last to edges */
+  padding: 0.5rem 1rem; /* Adds 8px vertical padding (0.5×16px base font size) and 16px horizontal padding */
+  box-shadow: 0 5px 5px rgba(0,0,0,0.1);
+
+
+  //padding: 0.1rem;
+  //position: absolute;
+  //width: 100%;
+  //height: 1rem;
+  z-index: 1000;
+}
+
+/* Styles for the logo/title link in the app bar */
+.app-bar-title-link {
+  margin: 0; /* Removes browser default spacing around the link */
+  color: var(--primary-color-on); /* Ensures consistent text color with other app bar elements */
+  font-weight: 400; /* Uses normal font weight for balanced visual weight */
+  letter-spacing: 0.025em; /* Increases letter spacing by 2.5% of font size for better readability */
+}
+
+/* Fixed-size invisible element to create spacing in the app bar layout */
+.app-bar-spacing-stub {
+  width: 100px; /* Creates a 100px-wide empty space to separate UI elements (absolute measurement) */
+}

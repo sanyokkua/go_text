@@ -1,0 +1,47 @@
+.tab-content-widget {
+  width: 100%;
+  /* Optional: Add border or shadow for visual separation */
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.tab-content-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* 3 columns by default */
+  gap: 10px;
+  padding: 10px;
+  overflow-y: auto; /* Vertical scrolling when content overflows */
+
+  /* Optional: Smooth scrolling */
+  scroll-behavior: smooth;
+
+  /* Optional: Custom scrollbar */
+  scrollbar-width: thin;
+}
+
+.tab-content-grid::-webkit-scrollbar {
+  width: 8px;
+}
+
+.tab-content-grid::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.tab-content-grid::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 4px;
+}
+
+/* Responsive: Reduce columns on smaller screens */
+@media (max-width: 768px) {
+  .tab-content-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .tab-content-grid {
+    grid-template-columns: 1fr;
+  }
+}
