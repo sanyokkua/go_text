@@ -60,10 +60,9 @@
 }
 
 /* List of all color names used for generating utility classes */
-$md-colors:
-        black-color, white-color, primary-color, primary-container-color, secondary-color, secondary-container-color,
-        tertiary-color, tertiary-container-color, error-color, error-container-color, surface-color, surface-dim-color,
-        info-color, info-container-color, success-color, success-container-color, warning-color, warning-container-color;
+$md-colors: black-color, white-color, primary-color, primary-container-color, secondary-color, secondary-container-color,
+tertiary-color, tertiary-container-color, error-color, error-container-color, surface-color, surface-dim-color,
+info-color, info-container-color, success-color, success-container-color, warning-color, warning-container-color;
 
 /* Generates utility classes for all defined colors using SCSS map iteration
    Creates classes like .color-primary-color that set --bg-color and --text-color variables

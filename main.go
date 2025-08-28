@@ -11,15 +11,20 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
+const MinimalWidth = 830
+const MinimalHeight = 550
+
 func main() {
 	// Create an instance of the app structure
 	app := NewApp()
 
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:  "go_text",
-		Width:  1024,
-		Height: 768,
+		Title:     "go_text",
+		Width:     MinimalWidth,
+		Height:    MinimalHeight,
+		MinWidth:  MinimalWidth,
+		MinHeight: MinimalHeight,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},

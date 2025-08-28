@@ -6,7 +6,7 @@ interface BottomBarWidgetProps {
     task?: string;
 }
 
-const BottomBarWidget: React.FC<BottomBarWidgetProps> = ({provider = 'N/A', model = 'N/A', task = 'N/A'}) => {
+const BottomBarWidget: React.FC<BottomBarWidgetProps> = ({ provider = 'N/A', model = 'N/A', task = 'N/A' }) => {
     return (
         <nav>
             <footer className="bottom-bar">

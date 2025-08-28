@@ -3,24 +3,26 @@
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  padding: 10px 0 0 0; /* Changed from 10px 0 to 10px 0 0 0 - removed bottom padding */
+  padding: 10px 0 0 0;
 }
 
 .io-horizontal-bar h4 {
   font-weight: bold;
-  margin: 0; /* Remove default h4 margin that adds vertical space */
+  margin: 0;
 }
 
 .io-two-columns {
   display: flex;
-  gap: 20px;                    /* Space between columns */
+  flex: 0.7;
+  gap: 20px; /* Space between columns */
   width: 100%;
+  height: var(--editors-height);
+  max-height: var(--editors-height);
 }
 
-/* Make both columns equal width */
 .io-two-columns > * {
-  flex: 1;                      /* Each child takes equal space */
-  min-width: 0;                 /* Prevents flex items from overflowing */
+  flex: 1; /* Each child takes equal space */
+  min-width: 0; /* Prevents flex items from overflowing */
   padding-left: 1vw;
   padding-right: 1vw;
 }

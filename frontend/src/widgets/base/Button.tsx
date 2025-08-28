@@ -1,7 +1,5 @@
-import React from "react";
-import {Color, Size} from "../../common/types";
-import TopBarWidget from "../bars/TopBarWodget";
-
+import React from 'react';
+import { Color, Size } from '../../common/types';
 
 type Variant = 'solid' | 'outlined' | 'dashed' | 'filled' | 'text' | 'link';
 
@@ -12,7 +10,6 @@ interface ButtonProps {
     size?: Size;
     colorStyle?: Color;
     danger?: boolean;
-    ghost?: boolean;
     disabled?: boolean;
     loading?: boolean;
     block?: boolean;
@@ -20,17 +17,17 @@ interface ButtonProps {
 }
 
 const Button: React.FC<ButtonProps> = ({
-                                           text,
-                                           onClick,
-                                           variant = 'solid',
-                                           size = 'default',
-                                           colorStyle = '',
-                                           danger = false,
-                                           disabled = false,
-                                           loading = false,
-                                           block = false,
-                                           type = 'button',
-                                       }) => {
+    text,
+    onClick,
+    variant = 'solid',
+    size = 'default',
+    colorStyle = '',
+    danger = false,
+    disabled = false,
+    loading = false,
+    block = false,
+    type = 'button',
+}) => {
     const handle = (e: React.MouseEvent<HTMLButtonElement>) => {
         if (!disabled && !loading && onClick) {
             e.preventDefault();

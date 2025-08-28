@@ -20,12 +20,12 @@
 
 /* Sizes */
 .button-tiny {
-  font-size: 0.7rem; /* 14.4px text size (0.9 × 16px) */
+  font-size: 0.8rem; /* 14.4px text size (0.9 × 16px) */
   padding: 0.2rem 0.5rem; /* 6.4px vertical padding and 16px horizontal padding */
 }
 
 .button-small {
-  font-size: 0.8rem; /* 14.4px text size (0.9 × 16px) */
+  font-size: 0.9rem; /* 14.4px text size (0.9 × 16px) */
   padding: 0.4rem 1rem; /* 6.4px vertical padding and 16px horizontal padding */
 }
 
@@ -153,13 +153,6 @@
 .button-danger {
   --bg-color: var(--error-color); /* Changes background color to error red */
   --text-color: var(--error-color-on); /* Uses appropriate text color for error background */
-}
-
-/* GHOST STATE = white styling for dark backgrounds */
-.button-ghost {
-  background: none !important; /* Forces transparent background even if other rules apply */
-  color: #fff !important; /* White text */
-  border: 1px solid #fff !important; /* White border */
 }
 
 /* DISABLED STATE = visually indicates inactive button */

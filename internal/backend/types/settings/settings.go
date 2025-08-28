@@ -7,4 +7,6 @@ type Settings struct {
 	Temperature           float32
 	DefaultInputLanguage  string
 	DefaultOutputLanguage string
+	Languages             []string
+	UseMarkdownForOutput  bool
 }

@@ -1,66 +1,86 @@
-/* Tab container - centered with underline */
-.tab {
-  position: relative;
-  overflow: hidden;
-  width: 100%;
+.tab-widget-container {
   display: flex;
+  flex: 0.3;
+  width: 100%;
+  height: 100%;
   flex-direction: column;
-  align-items: center;
+  min-height: 0;
+  overflow: visible;
 }
 
 .tab-buttons-container {
   display: flex;
+  flex-direction: column;
+  flex: 0.2;
+  align-items: center;
   width: 100%;
-  max-width: 800px;
-  justify-content: center;
-  gap: 20px;
 }
 
-.tab button {
+.tab-buttons-container button {
   background-color: transparent;
+  color: var(--surface-color-on);
   border: transparent;
   outline: none;
   cursor: pointer;
   padding: 12px 16px;
   font-size: 16px;
-  color: #555;
   transition: all 0.3s ease;
   position: relative;
 }
 
-.tab button:hover {
-  color: var(--surface-color-on);
+.tab-buttons-container button:hover {
   font-weight: 900;
 }
 
-.tab button.active {
+.tab-buttons-container button.active {
   color: var(--primary-color);
   font-weight: bold;
   text-decoration: underline;
 }
 
-/* Underline indicator */
-.tab-underline {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  height: 2px;
-  background-color: var(--primary-color);
-  transition: transform 0.3s ease;
+.tab-buttons-container-buttons {
+  display: flex;
+  flex-direction: row;
   width: 100%;
+  height: 100%;
+  justify-content: center;
+  gap: 2vw;
 }
 
-/* Tab content */
-.tab-content {
+.tab-buttons-container-underline {
+  background-color: var(--primary-color);
+  color: var(--primary-color);
   width: 100%;
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
+  height: 2px;
+  overflow: visible;
+  text-align: center;
+  border: none;
+  margin: 0;
+}
+
+.tab-content-container {
+  flex: 0.8;
+  width: 100vw;
+  //height: var(--tab-content-height);
+  //max-height: var(--tab-content-height);
   display: none;
-  animation: fadeEffect 0.3s;
+  animation: fadeEffect 0.5s;
+  overflow: auto;
+}
+
+.tab-content-container-active {
+  display: block
+}
+
+.tab-content-container-hidden {
+  display: none;
 }
 
 @keyframes fadeEffect {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }

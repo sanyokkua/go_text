@@ -1,22 +1,63 @@
+:root {
+  --top-bar-height: 6vh;
+  --bottom-bar-height: 4vh;
+  --content-area-height: calc(100vh - var(--top-bar-height) - var(--bottom-bar-height));
+  --editors-height: calc(var(--content-area-height) - 30vh);
+  //--tab-content-height: calc(var(--content-area-height) - var(--editors-height));
+}
+
 html,
 body {
   background: var(--surface-color);
   color: var(--surface-color-on);
   margin: 0;
+  padding: 0;
   height: 100vh;
   width: 100vw;
-  min-width: 800px;
-  min-height: 600px;
   overflow: hidden;
-  font-family: "Nunito", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
-  "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-  sans-serif;
 }
 
-@font-face {
-  font-family: "Nunito";
-  font-style: normal;
-  font-weight: 400;
-  src: local(""),
-  url("../assets/fonts/nunito-v16-latin-regular.woff2") format("woff2");
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+
+.app-main-container {
+  display: flex;
+  flex-direction: column;
+  max-width: 100vw;
+  min-width: 100vw;
+  min-height: 100vh;
+  max-height: 100vh;
+  width: 100vw;
+  height: 100vh;
+}
+
+.app-content-container {
+  display: flex;
+  flex-direction: column;
+  max-width: 100vw;
+  //max-height: var(--content-area-height);
+  //min-height: var(--content-area-height);
+  height: var(--content-area-height);
+}
+
+.content-container-grid-child {
+  display: flex; /* Creates flexible container for content */
+  flex-direction: column; /* Stacks content vertically */
+  align-items: stretch; /* Makes children fill column width */
+  justify-content: flex-start; /* Aligns content to top of column */
+}
+
+.lang-select-grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  justify-content: center;
+  gap: 10px;
+  padding: 10px;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
 }

@@ -1,16 +1,9 @@
-import {Color, Size} from "../../common/types";
-import React from "react";
-import Button from "./Button";
+import React from 'react';
+import { Color, Size } from '../../common/types';
 
 export interface SelectItem {
     itemId: string;
     displayText: string;
-}
-
-export function createSelectItemsFromStringArray(items: string[]): SelectItem[] {
-    return items.map((itemId) => {
-        return { itemId: itemId, displayText: itemId };
-    });
 }
 
 interface SelectProps {
@@ -25,14 +18,14 @@ interface SelectProps {
 }
 
 const Select: React.FC<SelectProps> = ({
-                                           items,
-                                           selectedItem,
-                                           onSelect,
-                                           size = 'default',
-                                           colorStyle = '',
-                                           disabled = false,
-                                           block = false,
-                                       }) => {
+    items,
+    selectedItem,
+    onSelect,
+    size = 'default',
+    colorStyle = '',
+    disabled = false,
+    block = false,
+}) => {
     const handleChange = (e: React.ChangeEvent<HTMLSelectElement>): void => {
         const itemId = e.target.value;
         const foundItem = items.find((it) => it.itemId === itemId);
