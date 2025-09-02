@@ -5,6 +5,7 @@ import { TabContentBtn } from '../tabs/common/TabButtonsWidget';
 import BottomBarWidget from './content/BottomBarWidget';
 import ContentWidget from './content/ContentWidget';
 import TopBarWidget from './content/TopBarWidget';
+import SettingsWidget from './settings/SettingsWidget';
 
 export interface AppMainWidgetProps {
     proofreadingButtons: TabContentBtn[];
@@ -32,36 +33,51 @@ export interface AppMainWidgetProps {
     onOutputContentChange: (content: string) => void;
     onOperationBtnClick: (btnId: string) => void;
     disabled?: boolean;
+    showSettings?: boolean;
 }
 
 const AppMainView: React.FC<AppMainWidgetProps> = (props) => {
+    const showSettings = props.showSettings ?? false;
+
+    const settingsWidget = (
+        <SettingsWidget
+            onClose={function (): void {
+                props.onBtnSettingsClick();
+            }}
+        />
+    );
+    const contentWidget = (
+        <ContentWidget
+            proofreadingButtons={props.proofreadingButtons}
+            formattingButtons={props.formattingButtons}
+            translatingButtons={props.translatingButtons}
+            summaryButtons={props.summaryButtons}
+            inputContent={props.inputContent}
+            inputLanguages={props.inputLanguages}
+            inputLanguage={props.inputLanguage}
+            outputContent={props.outputContent}
+            outputLanguages={props.outputLanguages}
+            outputLanguage={props.outputLanguage}
+            onBtnInputPasteClick={props.onBtnInputPasteClick}
+            onBtnInputClearClick={props.onBtnInputClearClick}
+            onBtnOutputCopyClick={props.onBtnOutputCopyClick}
+            onBtnOutputClearClick={props.onBtnOutputClearClick}
+            onBtnOutputUseAsInputClick={props.onBtnOutputUseAsInputClick}
+            onSelectInputLanguageChanged={props.onInputLanguageChanged}
+            onSelectOutputLanguageChanged={props.onOutputLanguageChanged}
+            onInputContentChange={props.onInputContentChange}
+            onOutputContentChange={props.onOutputContentChange}
+            onOperationBtnClick={props.onOperationBtnClick}
+            disabled={props.disabled}
+        />
+    );
+
+    const content = showSettings ? settingsWidget : contentWidget;
     return (
         <div className="app-main-container">
             <TopBarWidget onButtonClick={props.onBtnSettingsClick} disabled={props.disabled} />
 
-            <ContentWidget
-                proofreadingButtons={props.proofreadingButtons}
-                formattingButtons={props.formattingButtons}
-                translatingButtons={props.translatingButtons}
-                summaryButtons={props.summaryButtons}
-                inputContent={props.inputContent}
-                inputLanguages={props.inputLanguages}
-                inputLanguage={props.inputLanguage}
-                outputContent={props.outputContent}
-                outputLanguages={props.outputLanguages}
-                outputLanguage={props.outputLanguage}
-                onBtnInputPasteClick={props.onBtnInputPasteClick}
-                onBtnInputClearClick={props.onBtnInputClearClick}
-                onBtnOutputCopyClick={props.onBtnOutputCopyClick}
-                onBtnOutputClearClick={props.onBtnOutputClearClick}
-                onBtnOutputUseAsInputClick={props.onBtnOutputUseAsInputClick}
-                onSelectInputLanguageChanged={props.onInputLanguageChanged}
-                onSelectOutputLanguageChanged={props.onOutputLanguageChanged}
-                onInputContentChange={props.onInputContentChange}
-                onOutputContentChange={props.onOutputContentChange}
-                onOperationBtnClick={props.onOperationBtnClick}
-                disabled={props.disabled}
-            />
+            {content}
 
             <BottomBarWidget
                 task={props.currentTaskName}

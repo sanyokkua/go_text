@@ -19,3 +19,16 @@ export type Color =
     | 'warning-color'
     | 'warning-container-color';
 export type Size = 'tiny' | 'small' | 'default' | 'large';
+
+export type KeyValuePair = { key: string; value: string };
+
+export interface AppSettings {
+    baseUrl: string;
+    headers: Record<string, string>;
+    modelName: string;
+    temperature: number;
+    defaultInputLanguage: string;
+    defaultOutputLanguage: string;
+    languages: string[];
+    useMarkdownForOutput: boolean;
+}

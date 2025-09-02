@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"go_text/internal"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -17,10 +18,11 @@ const MinimalHeight = 550
 func main() {
 	// Create an instance of the app structure
 	app := NewApp()
+	apiContext := internal.NewApplicationContext()
 
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:     "go_text",
+		Title:     "Text Processing Suite",
 		Width:     MinimalWidth,
 		Height:    MinimalHeight,
 		MinWidth:  MinimalWidth,
@@ -31,7 +33,7 @@ func main() {
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		OnStartup:        app.startup,
 		Bind: []interface{}{
-			app,
+			app, apiContext.ActionApi, apiContext.SettingsApi, apiContext.StateApi,
 		},
 	})
 

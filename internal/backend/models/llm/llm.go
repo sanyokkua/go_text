@@ -1,5 +1,7 @@
 package llm
 
+// Models list request
+
 type Model struct {
 	ID   string  `json:"id"`
 	Name *string `json:"name,omitempty"` // nil if absent
@@ -9,13 +11,13 @@ type ModelListResponse struct {
 	Data []Model `json:"data"`
 }
 
-// Message represents a single message in the conversation
+// Completion list request
+
 type Message struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
 }
 
-// Options contains model-specific parameters for providers like Ollama
 type Options struct {
 	Temperature float64 `json:"temperature,omitempty"`
 }
@@ -50,4 +52,29 @@ type ChatCompletionResponse struct {
 	Model   string   `json:"model"`
 	Choices []Choice `json:"choices"`
 	Usage   Usage    `json:"usage"`
+}
+
+func NewMessage(role, content string) Message {
+	return Message{
+		Role:    role,
+		Content: content,
+	}
+}
+
+func NewChatCompletionRequest(modelName, userPrompt, systemPrompt string, temperature float64) ChatCompletionRequest {
+	systemMsg := NewMessage("system", systemPrompt)
+	userMsg := NewMessage("user", userPrompt)
+	return ChatCompletionRequest{
+		Model: modelName,
+		Messages: []Message{
+			systemMsg,
+			userMsg,
+		},
+		Temperature: temperature,
+		Options: Options{
+			Temperature: temperature,
+		},
+		Stream: false,
+		N:      1,
+	}
 }

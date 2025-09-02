@@ -15,9 +15,11 @@ interface SelectProps {
     colorStyle?: Color;
     disabled?: boolean;
     block?: boolean;
+    id?: string;
 }
 
 const Select: React.FC<SelectProps> = ({
+    id,
     items,
     selectedItem,
     onSelect,
@@ -48,7 +50,7 @@ const Select: React.FC<SelectProps> = ({
         .join(' ');
 
     return (
-        <select value={selectedItemId} onChange={handleChange} className={classes} disabled={disabled}>
+        <select id={id} value={selectedItemId} onChange={handleChange} className={classes} disabled={disabled}>
             {items.map((item) => (
                 <option key={item.itemId} value={item.itemId}>
                     {item.displayText}
