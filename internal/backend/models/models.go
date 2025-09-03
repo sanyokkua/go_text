@@ -1,4 +1,4 @@
-package llm
+package models
 
 // Models list request
 
@@ -77,4 +77,43 @@ func NewChatCompletionRequest(modelName, userPrompt, systemPrompt string, temper
 		Stream: false,
 		N:      1,
 	}
+}
+
+type Prompt struct {
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Type     string `json:"type"`
+	Category string `json:"category"`
+	Value    string `json:"value"`
+}
+
+type Settings struct {
+	BaseUrl               string
+	Headers               map[string]string
+	ModelName             string
+	Temperature           float64
+	DefaultInputLanguage  string
+	DefaultOutputLanguage string
+	Languages             []string
+	UseMarkdownForOutput  bool
+}
+
+type AppActionItem struct {
+	ActionID   string `json:"actionId"`
+	ActionText string `json:"actionText"`
+}
+
+type LanguageItem struct {
+	LanguageId   string `json:"languageId"`
+	LanguageText string `json:"languageText"`
+}
+
+type AppActionObjWrapper struct {
+	ActionID string `json:"actionId"`
+
+	ActionInput  string `json:"actionInput"`
+	ActionOutput string `json:"actionOutput"`
+
+	ActionInputLanguage  string `json:"actionInputLanguage"`
+	ActionOutputLanguage string `json:"actionOutputLanguage"`
 }

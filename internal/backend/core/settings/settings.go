@@ -1,10 +1,24 @@
 package settings
 
 import (
-	settingsConst "go_text/internal/backend/constants/settings"
-	settingsInterface "go_text/internal/backend/interfaces/settings"
-	"go_text/internal/backend/models/settings"
+	"go_text/internal/backend/constants"
+	"go_text/internal/backend/models"
 )
+
+type SettingsService interface {
+	GetDefaultSettings() (models.Settings, error)
+	GetCurrentSettings() (models.Settings, error)
+	SetSettings(settings models.Settings) error
+
+	GetBaseUrl() (string, error)
+	GetHeaders() (map[string]string, error)
+	GetModelName() (string, error)
+	GetTemperature() (float64, error)
+	GetDefaultInputLanguage() (string, error)
+	GetDefaultOutputLanguage() (string, error)
+	GetLanguages() ([]string, error)
+	GetUseMarkdownForOutput() (bool, error)
+}
 
 type settingsServiceStruct struct {
 	baseUrl               string
@@ -17,12 +31,12 @@ type settingsServiceStruct struct {
 	useMarkdownForOutput  bool
 }
 
-func (s *settingsServiceStruct) GetDefaultSettings() (settings.Settings, error) {
-	return settingsConst.DefaultSetting, nil
+func (s *settingsServiceStruct) GetDefaultSettings() (models.Settings, error) {
+	return constants.DefaultSetting, nil
 }
 
-func (s *settingsServiceStruct) GetCurrentSettings() (settings.Settings, error) {
-	return settings.Settings{
+func (s *settingsServiceStruct) GetCurrentSettings() (models.Settings, error) {
+	return models.Settings{
 		BaseUrl:               s.baseUrl,
 		Headers:               s.headers,
 		ModelName:             s.modelName,
@@ -34,7 +48,7 @@ func (s *settingsServiceStruct) GetCurrentSettings() (settings.Settings, error) 
 	}, nil
 }
 
-func (s *settingsServiceStruct) SetSettings(settings settings.Settings) error {
+func (s *settingsServiceStruct) SetSettings(settings models.Settings) error {
 	s.baseUrl = settings.BaseUrl
 	s.headers = settings.Headers
 	s.modelName = settings.ModelName
@@ -78,8 +92,8 @@ func (s *settingsServiceStruct) GetUseMarkdownForOutput() (bool, error) {
 	return s.useMarkdownForOutput, nil
 }
 
-func NewSettingsService() settingsInterface.SettingsService {
-	defaultSettings := settingsConst.DefaultSetting
+func NewSettingsService() SettingsService {
+	defaultSettings := constants.DefaultSetting
 
 	return &settingsServiceStruct{
 		baseUrl:               defaultSettings.BaseUrl,

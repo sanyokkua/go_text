@@ -2,56 +2,80 @@ package ui
 
 import (
 	"fmt"
-	"go_text/internal/backend/interfaces/ui"
-	"strings"
-
-	promConst "go_text/internal/backend/constants/prompts"
-	llmapi "go_text/internal/backend/interfaces/llm"
-	"go_text/internal/backend/interfaces/prompts"
-	"go_text/internal/backend/interfaces/settings"
-	llmModels "go_text/internal/backend/models/llm"
-	uiModel "go_text/internal/backend/models/ui"
+	"go_text/internal/backend/constants"
+	"go_text/internal/backend/core/llm_client"
+	"go_text/internal/backend/core/prompt"
+	"go_text/internal/backend/core/settings"
+	"go_text/internal/backend/core/utils"
+	"go_text/internal/backend/models"
+	"slices"
 )
 
-type appUIActionApiStruct struct {
-	prompts  prompts.PromptService
-	settings settings.SettingsService
-	llm      llmapi.LLMService
+type AppUIActionApi interface {
+	ProcessAction(action models.AppActionObjWrapper) (string, error)
 }
 
-func (h *appUIActionApiStruct) ProcessAction(action uiModel.AppActionObjWrapper) (string, error) {
+type appUIActionApiStruct struct {
+	promptService   prompt.PromptService
+	settingsService settings.SettingsService
+	llmService      llm_client.AppLLMService
+	utilsService    utils.UtilsService
+}
+
+func (h *appUIActionApiStruct) ProcessAction(action models.AppActionObjWrapper) (string, error) {
+	if h.utilsService.IsBlankString(action.ActionID) {
+		return "", fmt.Errorf("invalid action id")
+	}
 	// 1. Fetch prompt definitions
-	promptDef, err := h.prompts.GetPrompt(action.ActionID)
+	promptDef, err := h.promptService.GetPrompt(action.ActionID)
 	if err != nil {
 		return "", fmt.Errorf("GetPrompt(%q): %w", action.ActionID, err)
 	}
 
 	// 2. Fetch system instructions
-	sysPrompt, err := h.prompts.GetSystemPrompt(promptDef.Category)
+	sysPrompt, err := h.promptService.GetSystemPrompt(promptDef.Category)
 	if err != nil {
 		return "", fmt.Errorf("GetSystemPrompt(%q): %w", promptDef.Category, err)
 	}
 
-	// 3. Load all user-configured settings at once
-	cfg, err := h.settings.GetCurrentSettings()
+	// 3. Load all user-configured settingsService at once
+	cfg, err := h.settingsService.GetCurrentSettings()
 	if err != nil {
 		return "", fmt.Errorf("GetCurrentSettings: %w", err)
 	}
 
+	// Validate config is present
+	if h.utilsService.IsBlankString(cfg.BaseUrl) || h.utilsService.IsBlankString(cfg.ModelName) {
+		return "", fmt.Errorf("model and provider are not configured properly")
+	}
+
+	modelsList, err := h.llmService.GetModelsList()
+	if err != nil || len(modelsList) == 0 {
+		return "", fmt.Errorf("failed to load models: %w", err)
+	}
+	if !slices.Contains(modelsList, cfg.ModelName) {
+		return "", fmt.Errorf("model '%s' not found in provider", cfg.ModelName)
+	}
+
 	// 4. Build the user prompt string
-	userPrompt, err := h.buildPrompt(promptDef.Value, promptDef.Category, action, cfg.UseMarkdownForOutput)
+	userPrompt, err := h.utilsService.BuildPrompt(promptDef.Value, promptDef.Category, &action, cfg.UseMarkdownForOutput)
 	if err != nil {
 		return "", err
 	}
 
+	// Check if the input/output langs for translation are the same to not do the additional LLM call
+	if promptDef.Category == constants.PromptCategoryTranslation && action.ActionInputLanguage == action.ActionOutputLanguage {
+		return action.ActionInput, nil
+	}
+
 	// 5. Send to LLM and sanitize
-	req := llmModels.NewChatCompletionRequest(cfg.ModelName, userPrompt, sysPrompt, cfg.Temperature)
-	rawResp, err := h.llm.GetCompletionResponse(req)
+	req := models.NewChatCompletionRequest(cfg.ModelName, userPrompt, sysPrompt, cfg.Temperature)
+	rawResp, err := h.llmService.GetCompletionResponse(&req)
 	if err != nil {
 		return "", fmt.Errorf("GetCompletionResponse: %w", err)
 	}
 
-	result, err := h.llm.SanitizeResponse(rawResp)
+	result, err := h.utilsService.SanitizeReasoningBlock(rawResp)
 	if err != nil {
 		return "", fmt.Errorf("SanitizeResponse: %w", err)
 	}
@@ -59,42 +83,6 @@ func (h *appUIActionApiStruct) ProcessAction(action uiModel.AppActionObjWrapper)
 	return result, nil
 }
 
-func (h *appUIActionApiStruct) buildPrompt(
-	template, category string,
-	action uiModel.AppActionObjWrapper,
-	useMarkdown bool,
-) (string, error) {
-	replacements := map[string]string{
-		promConst.TemplateParamText: action.ActionInput,
-	}
-
-	if category == promConst.PromptCategoryTranslation {
-		replacements[promConst.TemplateParamInputLanguage] = action.ActionInputLanguage
-		replacements[promConst.TemplateParamOutputLanguage] = action.ActionOutputLanguage
-	}
-
-	if strings.Contains(template, promConst.TemplateParamFormat) {
-		format := promConst.OutputFormatPlainText
-		if useMarkdown {
-			format = promConst.OutputFormatMarkdown
-		}
-		replacements[promConst.TemplateParamFormat] = format
-	}
-
-	var err error
-	for token, val := range replacements {
-		template, err = h.prompts.ReplaceTemplateParameter(token, val, template)
-		if err != nil {
-			return "", fmt.Errorf("ReplaceTemplateParameter(%s): %w", token, err)
-		}
-	}
-	return template, nil
-}
-
-func NewAppUIActionApi(
-	prompts prompts.PromptService,
-	settings settings.SettingsService,
-	llm llmapi.LLMService,
-) ui.AppUIActionApi {
-	return &appUIActionApiStruct{prompts: prompts, settings: settings, llm: llm}
+func NewAppUIActionApi(prompts prompt.PromptService, settings settings.SettingsService, llmService llm_client.AppLLMService, utilsService utils.UtilsService) AppUIActionApi {
+	return &appUIActionApiStruct{promptService: prompts, settingsService: settings, llmService: llmService, utilsService: utilsService}
 }

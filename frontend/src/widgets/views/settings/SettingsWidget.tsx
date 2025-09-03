@@ -1,11 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AppSettings } from '../../../common/types';
-import {
-    fetchCurrentSettings,
-    fetchLlmModels,
-    saveCurrentSettings,
-    validateUserUrlAndHeaders,
-} from '../../../store/app/thunks';
+import { fetchCurrentSettings, fetchLlmModels } from '../../../store/app/thunks';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import Button from '../../base/Button';
 import Select, { SelectItem } from '../../base/Select';
@@ -92,25 +87,25 @@ const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
     const handleHeaderChange = (index: number, key: string, value: string) => {
         if (!formState) return;
 
-        const newHeaders = [...formState.headers];
+        const newHeaders = [];
         newHeaders[index] = { key, value };
-        setFormState({ ...formState, headers: newHeaders });
+        // setFormState({ ...formState, headers: newHeaders });
     };
 
     const handleHeaderDelete = (index: number) => {
         if (!formState) return;
 
-        const newHeaders = formState.headers.filter((_, i) => i !== index);
-        setFormState({ ...formState, headers: newHeaders.length > 0 ? newHeaders : [{ key: '', value: '' }] });
+        // const newHeaders = formState.headers.filter((_, i) => i !== index);
+        // setFormState({ ...formState, headers: newHeaders.length > 0 ? newHeaders : [{ key: '', value: '' }] });
     };
 
     const handleAddHeader = () => {
         if (!formState) return;
 
-        const lastHeader = formState.headers[formState.headers.length - 1];
-        if (lastHeader.key.trim() !== '' || lastHeader.value.trim() !== '') {
-            setFormState({ ...formState, headers: [...formState.headers, { key: '', value: '' }] });
-        }
+        // const lastHeader = formState.headers[formState.headers.length - 1];
+        // if (lastHeader.key.trim() !== '' || lastHeader.value.trim() !== '') {
+        //     setFormState({ ...formState, headers: [...formState.headers, { key: '', value: '' }] });
+        // }
     };
 
     const handleTemperatureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -144,34 +139,34 @@ const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
         setModelStatus('loading');
         setError(null);
 
-        try {
-            // Validate connection
-            const isValid = await dispatch(
-                validateUserUrlAndHeaders({ baseUrl: formState.baseUrl, headers: headersToRecord(formState.headers) }),
-            ).unwrap();
-
-            if (!isValid) {
-                throw new Error('Connection validation failed');
-            }
-
-            // Load models
-            const models = await dispatch(
-                fetchLlmModels({ baseUrl: formState.baseUrl, headers: headersToRecord(formState.headers) }),
-            ).unwrap();
-
-            setAvailableModels(models);
-            setValidationStatus('success');
-            setModelStatus('idle');
-
-            // Auto-select first available model
-            if (models.length > 0 && !models.includes(formState.modelName)) {
-                setFormState((prev) => (prev ? { ...prev, modelName: models[0] } : null));
-            }
-        } catch (err) {
-            setValidationStatus('error');
-            setModelStatus('idle');
-            setError(err instanceof Error ? err.message : 'Failed to validate connection');
-        }
+        // try {
+        //     // Validate connection
+        //     const isValid = await dispatch(
+        //         validateUserUrlAndHeaders({ baseUrl: formState.baseUrl, headers: headersToRecord(formState.headers) }),
+        //     ).unwrap();
+        //
+        //     if (!isValid) {
+        //         throw new Error('Connection validation failed');
+        //     }
+        //
+        //     // Load models
+        //     const models = await dispatch(
+        //         fetchLlmModels({ baseUrl: formState.baseUrl, headers: headersToRecord(formState.headers) }),
+        //     ).unwrap();
+        //
+        //     setAvailableModels(models);
+        //     setValidationStatus('success');
+        //     setModelStatus('idle');
+        //
+        //     // Auto-select first available model
+        //     if (models.length > 0 && !models.includes(formState.modelName)) {
+        //         setFormState((prev) => (prev ? { ...prev, modelName: models[0] } : null));
+        //     }
+        // } catch (err) {
+        //     setValidationStatus('error');
+        //     setModelStatus('idle');
+        //     setError(err instanceof Error ? err.message : 'Failed to validate connection');
+        // }
     };
 
     const handleSave = async () => {
@@ -180,24 +175,24 @@ const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
         setSaveStatus('saving');
         setError(null);
 
-        try {
-            // Validate connection before saving
-            const isValid = await dispatch(
-                validateUserUrlAndHeaders({ baseUrl: formState.baseUrl, headers: headersToRecord(formState.headers) }),
-            ).unwrap();
-
-            if (!isValid) {
-                throw new Error('Connection validation failed');
-            }
-
-            // Save settings
-            await dispatch(saveCurrentSettings({ ...formState, headers: headersToRecord(formState.headers) })).unwrap();
-
-            onClose();
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to save settings');
-            setSaveStatus('idle');
-        }
+        // try {
+        //     // Validate connection before saving
+        //     const isValid = await dispatch(
+        //         validateUserUrlAndHeaders({ baseUrl: formState.baseUrl, headers: headersToRecord(formState.headers) }),
+        //     ).unwrap();
+        //
+        //     if (!isValid) {
+        //         throw new Error('Connection validation failed');
+        //     }
+        //
+        //     // Save settings
+        //     await dispatch(saveCurrentSettings({ ...formState, headers: headersToRecord(formState.headers) })).unwrap();
+        //
+        //     onClose();
+        // } catch (err) {
+        //     setError(err instanceof Error ? err.message : 'Failed to save settings');
+        //     setSaveStatus('idle');
+        // }
     };
 
     const handleReset = () => {

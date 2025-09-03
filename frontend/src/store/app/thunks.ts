@@ -1,5 +1,5 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import { settings, ui } from '../../../wailsjs/go/models';
+import { models } from '../../../wailsjs/go/models';
 import { ProcessAction } from '../../../wailsjs/go/ui/appUIActionApiStruct';
 import {
     LoadSettings,
@@ -24,8 +24,8 @@ import { AppSettings } from '../../common/types';
 import { SelectItem } from '../../widgets/base/Select';
 import { TabContentBtn } from '../../widgets/tabs/common/TabButtonsWidget';
 import { setCurrentTask } from './AppStateReducer';
-import AppActionObjWrapper = ui.AppActionObjWrapper;
-import Settings = settings.Settings;
+import AppActionObjWrapper = models.AppActionObjWrapper;
+import Settings = models.Settings;
 
 export const fetchInputLanguages = createAsyncThunk(
     'appState/inputLanguages',

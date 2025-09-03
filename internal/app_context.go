@@ -2,11 +2,12 @@ package internal
 
 import (
 	"go_text/internal/backend/core/http_client"
-	"go_text/internal/backend/core/llm"
+	"go_text/internal/backend/core/llm_client"
 	"go_text/internal/backend/core/prompt"
 	"go_text/internal/backend/core/settings"
-	coreUI "go_text/internal/backend/core/ui"
-	"go_text/internal/backend/interfaces/ui"
+	"go_text/internal/backend/core/ui"
+	"go_text/internal/backend/core/utils"
+	"go_text/internal/backend/core/utils/http_utils"
 )
 
 type ApplicationContext struct {
@@ -18,13 +19,15 @@ type ApplicationContext struct {
 func NewApplicationContext() *ApplicationContext {
 	settingsService := settings.NewSettingsService()
 	promptService := prompt.NewPromptService()
+	utilsService := utils.NewUtilsService()
+	restyClient := http_utils.NewRestyClient()
 
-	httpService := http_client.NewHttpClient(settingsService)
-	llmService := llm.NewLLMService(httpService)
+	appHttpClient := http_client.NewAppHttpClient(utilsService, settingsService, restyClient)
+	appLlmService := llm_client.NewAppLLMService(appHttpClient, utilsService)
 
-	actionApi := coreUI.NewAppUIActionApi(promptService, settingsService, llmService)
-	settingsApi := coreUI.NewAppUISettingsApi(settingsService)
-	stateApi := coreUI.NewAppUIStateApi(settingsService, promptService, llmService)
+	actionApi := ui.NewAppUIActionApi(promptService, settingsService, appLlmService, utilsService)
+	settingsApi := ui.NewAppUISettingsApi(settingsService, restyClient, utilsService)
+	stateApi := ui.NewAppUIStateApi(settingsService, promptService, appLlmService, utilsService)
 
 	return &ApplicationContext{
 		ActionApi:   actionApi,

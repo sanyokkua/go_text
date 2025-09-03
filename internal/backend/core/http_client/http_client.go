@@ -1,118 +1,60 @@
 package http_client
 
 import (
-	"fmt"
-	llmConstants "go_text/internal/backend/constants/llm"
-	"go_text/internal/backend/interfaces/http_client"
-	settingsInterfaces "go_text/internal/backend/interfaces/settings"
-	"go_text/internal/backend/models/llm"
-	"time"
+	"go_text/internal/backend/core/settings"
+	"go_text/internal/backend/core/utils"
+	"go_text/internal/backend/models"
 
 	"resty.dev/v3"
 )
 
-type httpClientStruct struct {
-	settingsService settingsInterfaces.SettingsService
+type AppHttpClient interface {
+	MakeLLMModelListRequest() (*models.ModelListResponse, error)
+	MakeLLMCompletionRequest(request *models.ChatCompletionRequest) (*models.ChatCompletionResponse, error)
 }
 
-func (h *httpClientStruct) MakeGetRequest() (*llm.ModelListResponse, error) {
+type appHttpClientStruct struct {
+	utilsService    utils.UtilsService
+	settingsService settings.SettingsService
+	client          *resty.Client
+}
+
+func (h *appHttpClientStruct) getRequestParams() (string, map[string]string, error) {
 	baseUrl, err := h.settingsService.GetBaseUrl()
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
 
 	headers, err := h.settingsService.GetHeaders()
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
 
-	fullUrl := baseUrl + llmConstants.OpenAICompatibleGetModels
-
-	client := resty.New()
-	defer func(client *resty.Client) {
-		err := client.Close()
-		if err != nil {
-
-		}
-	}(client)
-
-	var response llm.ModelListResponse
-
-	// Make the POST request
-	resp, err := client.R().
-		// Set content type and accept headers
-		SetHeader("Content-Type", "application/json").
-		SetHeader("Accept", "application/json").
-		SetHeaders(headers).
-		SetTimeout(time.Minute).
-		// Set the response object to unmarshal into
-		SetResult(&response).
-		// Make the Get request
-		Get(fullUrl)
-
-	if err != nil {
-		return nil, err
-	}
-
-	// Check for non-2xx status codes
-	if resp.IsError() {
-		return nil, fmt.Errorf("API request failed with status %d", resp.StatusCode())
-	}
-
-	return &response, nil
+	return baseUrl, headers, nil
 }
 
-func (h *httpClientStruct) MakePostRequest(request llm.ChatCompletionRequest) (*llm.ChatCompletionResponse, error) {
-	baseUrl, err := h.settingsService.GetBaseUrl()
+func (h *appHttpClientStruct) MakeLLMModelListRequest() (*models.ModelListResponse, error) {
+	baseUrl, headers, err := h.getRequestParams()
 	if err != nil {
 		return nil, err
 	}
 
-	headers, err := h.settingsService.GetHeaders()
-	if err != nil {
-		return nil, err
-	}
-
-	fullUrl := baseUrl + llmConstants.OpenAICompatiblePostCompletions
-
-	client := resty.New()
-	defer func(client *resty.Client) {
-		err := client.Close()
-		if err != nil {
-
-		}
-	}(client)
-
-	var response llm.ChatCompletionResponse
-
-	// Make the POST request
-	resp, err := client.R().
-		// Set content type and accept headers
-		SetHeader("Content-Type", "application/json").
-		SetHeader("Accept", "application/json").
-		SetHeaders(headers).
-		SetTimeout(time.Minute).
-		// Set the request body
-		SetBody(request).
-		// Set the response object to unmarshal into
-		SetResult(&response).
-		// Make the POST request
-		Post(fullUrl)
-
-	if err != nil {
-		return nil, err
-	}
-
-	// Check for non-2xx status codes
-	if resp.IsError() {
-		return nil, fmt.Errorf("API request failed with status %d", resp.StatusCode())
-	}
-
-	return &response, nil
+	return h.utilsService.MakeLLMModelListRequest(h.client, baseUrl, headers)
 }
 
-func NewHttpClient(settingsService settingsInterfaces.SettingsService) http_client.HttpClient {
-	return &httpClientStruct{
+func (h *appHttpClientStruct) MakeLLMCompletionRequest(request *models.ChatCompletionRequest) (*models.ChatCompletionResponse, error) {
+	baseUrl, headers, err := h.getRequestParams()
+	if err != nil {
+		return nil, err
+	}
+
+	return h.utilsService.MakeLLMCompletionRequest(h.client, baseUrl, headers, request)
+}
+
+func NewAppHttpClient(utilsService utils.UtilsService, settingsService settings.SettingsService, restyClient *resty.Client) AppHttpClient {
+	return &appHttpClientStruct{
+		utilsService:    utilsService,
+		client:          restyClient,
 		settingsService: settingsService,
 	}
 }
