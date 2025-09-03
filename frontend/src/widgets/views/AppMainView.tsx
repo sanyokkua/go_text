@@ -79,11 +79,7 @@ const AppMainView: React.FC<AppMainWidgetProps> = (props) => {
 
             {content}
 
-            <BottomBarWidget
-                task={props.currentTaskName}
-                model={props.currentModelName}
-                provider={props.currentProviderName}
-            />
+            <BottomBarWidget />
         </div>
     );
 };

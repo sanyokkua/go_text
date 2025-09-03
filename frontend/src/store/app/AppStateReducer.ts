@@ -3,56 +3,60 @@ import { AppSettings } from '../../common/types';
 import { SelectItem } from '../../widgets/base/Select';
 import { TabContentBtn } from '../../widgets/tabs/common/TabButtonsWidget';
 import {
+    actionProcessAction,
+    appStateDefaultInputLanguageGet,
+    appStateDefaultOutputLanguageGet,
+    appStateFormattingButtonsGet,
+    appStateInputLanguagesGet,
+    appStateOutputLanguagesGet,
+    appStateProofreadingButtonsGet,
+    appStateSummaryButtonsGet,
+    appStateTranslateButtonsGet,
     fetchCurrentModel,
     fetchCurrentSettings,
-    fetchFormattingButtons,
-    fetchInputLanguages,
-    fetchOutputLanguages,
-    fetchProofreadingButtons,
-    fetchSummaryButtons,
-    fetchTranslateButtons,
     processCopyToClipboard,
-    processOperation,
     processPasteFromClipboard,
 } from './thunks';
 
 export interface AppState {
-    proofreadingButtons: TabContentBtn[];
-    formattingButtons: TabContentBtn[];
-    translateButtons: TabContentBtn[];
-    summaryButtons: TabContentBtn[];
+    buttonsForProofreading: TabContentBtn[];
+    buttonsForFormatting: TabContentBtn[];
+    buttonsForTranslating: TabContentBtn[];
+    buttonsForSummarization: TabContentBtn[];
 
-    inputContent: string;
-    outputContent: string;
+    textEditorInputContent: string;
+    textEditorOutputContent: string;
 
-    inputLanguage: SelectItem;
-    outputLanguage: SelectItem;
+    selectedInputLanguage: SelectItem;
+    selectedOutputLanguage: SelectItem;
 
-    inputLanguages: SelectItem[];
-    outputLanguages: SelectItem[];
+    availableInputLanguages: SelectItem[];
+    availableOutputLanguages: SelectItem[];
 
     currentProvider: string;
     currentTask: string;
     currentModelName: string;
 
     isProcessing: boolean;
+    errorMessage: string;
 }
 
 const initialState: AppState = {
-    proofreadingButtons: [],
-    formattingButtons: [],
-    translateButtons: [],
-    summaryButtons: [],
-    inputContent: '',
-    outputContent: '',
-    inputLanguage: { itemId: '', displayText: '' },
-    outputLanguage: { itemId: '', displayText: '' },
-    inputLanguages: [],
-    outputLanguages: [],
+    buttonsForProofreading: [],
+    buttonsForFormatting: [],
+    buttonsForTranslating: [],
+    buttonsForSummarization: [],
+    textEditorInputContent: '',
+    textEditorOutputContent: '',
+    selectedInputLanguage: { itemId: '', displayText: '' },
+    selectedOutputLanguage: { itemId: '', displayText: '' },
+    availableInputLanguages: [],
+    availableOutputLanguages: [],
     currentTask: '',
     currentProvider: '',
     currentModelName: '',
     isProcessing: false,
+    errorMessage: '',
 };
 
 export const appStateSlice = createSlice({
@@ -60,16 +64,16 @@ export const appStateSlice = createSlice({
     initialState,
     reducers: {
         setInputContent: (state: AppState, action: PayloadAction<string>) => {
-            state.inputContent = action.payload;
+            state.textEditorInputContent = action.payload;
         },
         setOutputContent: (state: AppState, action: PayloadAction<string>) => {
-            state.outputContent = action.payload;
+            state.textEditorOutputContent = action.payload;
         },
         setInputLanguage: (state: AppState, action: PayloadAction<SelectItem>) => {
-            state.inputLanguage = action.payload;
+            state.selectedInputLanguage = action.payload;
         },
         setOutputLanguage: (state: AppState, action: PayloadAction<SelectItem>) => {
-            state.outputLanguage = action.payload;
+            state.selectedOutputLanguage = action.payload;
         },
         setCurrentTask: (state: AppState, action: PayloadAction<string>) => {
             state.currentTask = action.payload;
@@ -80,75 +84,84 @@ export const appStateSlice = createSlice({
     },
     extraReducers: (builder) => {
         builder
-            .addCase(fetchInputLanguages.pending, (state: AppState) => {
+            .addCase(appStateInputLanguagesGet.pending, (state: AppState) => {
                 state.isProcessing = true;
             })
-            .addCase(fetchInputLanguages.fulfilled, (state: AppState, action: PayloadAction<SelectItem[]>) => {
+            .addCase(appStateInputLanguagesGet.fulfilled, (state: AppState, action: PayloadAction<SelectItem[]>) => {
                 state.isProcessing = false;
-                state.inputLanguages = action.payload;
+                state.availableInputLanguages = action.payload;
             })
-            .addCase(fetchInputLanguages.rejected, (state: AppState, action) => {
+            .addCase(appStateInputLanguagesGet.rejected, (state: AppState, action) => {
                 state.isProcessing = false;
-                state.inputLanguages = [];
+                state.availableInputLanguages = [];
             })
-            .addCase(fetchOutputLanguages.pending, (state: AppState) => {
+            .addCase(appStateOutputLanguagesGet.pending, (state: AppState) => {
                 state.isProcessing = true;
             })
-            .addCase(fetchOutputLanguages.fulfilled, (state: AppState, action: PayloadAction<SelectItem[]>) => {
+            .addCase(appStateOutputLanguagesGet.fulfilled, (state: AppState, action: PayloadAction<SelectItem[]>) => {
                 state.isProcessing = false;
-                state.outputLanguages = action.payload;
+                state.availableOutputLanguages = action.payload;
             })
-            .addCase(fetchOutputLanguages.rejected, (state: AppState, action) => {
+            .addCase(appStateOutputLanguagesGet.rejected, (state: AppState, action) => {
                 state.isProcessing = false;
-                state.outputLanguages = [];
+                state.availableOutputLanguages = [];
             })
 
-            .addCase(fetchProofreadingButtons.pending, (state: AppState) => {
+            .addCase(appStateProofreadingButtonsGet.pending, (state: AppState) => {
                 state.isProcessing = true;
             })
-            .addCase(fetchProofreadingButtons.fulfilled, (state: AppState, action: PayloadAction<TabContentBtn[]>) => {
+            .addCase(
+                appStateProofreadingButtonsGet.fulfilled,
+                (state: AppState, action: PayloadAction<TabContentBtn[]>) => {
+                    state.isProcessing = false;
+                    state.buttonsForProofreading = action.payload;
+                },
+            )
+            .addCase(appStateProofreadingButtonsGet.rejected, (state: AppState, action) => {
                 state.isProcessing = false;
-                state.proofreadingButtons = action.payload;
-            })
-            .addCase(fetchProofreadingButtons.rejected, (state: AppState, action) => {
-                state.isProcessing = false;
-                state.proofreadingButtons = [];
+                state.buttonsForProofreading = [];
             })
 
-            .addCase(fetchFormattingButtons.pending, (state: AppState) => {
+            .addCase(appStateFormattingButtonsGet.pending, (state: AppState) => {
                 state.isProcessing = true;
             })
-            .addCase(fetchFormattingButtons.fulfilled, (state: AppState, action: PayloadAction<TabContentBtn[]>) => {
+            .addCase(
+                appStateFormattingButtonsGet.fulfilled,
+                (state: AppState, action: PayloadAction<TabContentBtn[]>) => {
+                    state.isProcessing = false;
+                    state.buttonsForFormatting = action.payload;
+                },
+            )
+            .addCase(appStateFormattingButtonsGet.rejected, (state: AppState, action) => {
                 state.isProcessing = false;
-                state.formattingButtons = action.payload;
-            })
-            .addCase(fetchFormattingButtons.rejected, (state: AppState, action) => {
-                state.isProcessing = false;
-                state.formattingButtons = [];
+                state.buttonsForFormatting = [];
             })
 
-            .addCase(fetchTranslateButtons.pending, (state: AppState) => {
+            .addCase(appStateTranslateButtonsGet.pending, (state: AppState) => {
                 state.isProcessing = true;
             })
-            .addCase(fetchTranslateButtons.fulfilled, (state: AppState, action: PayloadAction<TabContentBtn[]>) => {
+            .addCase(
+                appStateTranslateButtonsGet.fulfilled,
+                (state: AppState, action: PayloadAction<TabContentBtn[]>) => {
+                    state.isProcessing = false;
+                    state.buttonsForTranslating = action.payload;
+                },
+            )
+            .addCase(appStateTranslateButtonsGet.rejected, (state: AppState, action) => {
                 state.isProcessing = false;
-                state.translateButtons = action.payload;
-            })
-            .addCase(fetchTranslateButtons.rejected, (state: AppState, action) => {
-                state.isProcessing = false;
-                state.translateButtons = [];
+                state.buttonsForTranslating = [];
             })
 
-            .addCase(fetchSummaryButtons.pending, (state: AppState) => {
+            .addCase(appStateSummaryButtonsGet.pending, (state: AppState) => {
                 state.isProcessing = true;
             })
-            .addCase(fetchSummaryButtons.fulfilled, (state: AppState, action: PayloadAction<TabContentBtn[]>) => {
+            .addCase(appStateSummaryButtonsGet.fulfilled, (state: AppState, action: PayloadAction<TabContentBtn[]>) => {
                 state.isProcessing = false;
-                state.summaryButtons = action.payload;
+                state.buttonsForSummarization = action.payload;
             })
-            .addCase(fetchSummaryButtons.rejected, (state: AppState, action) => {
+            .addCase(appStateSummaryButtonsGet.rejected, (state: AppState, action) => {
                 state.isProcessing = false;
-                state.summaryButtons = [];
+                state.buttonsForSummarization = [];
             })
 
             .addCase(processCopyToClipboard.pending, (state: AppState) => {
@@ -166,23 +179,23 @@ export const appStateSlice = createSlice({
             })
             .addCase(processPasteFromClipboard.fulfilled, (state: AppState, action: PayloadAction<string>) => {
                 state.isProcessing = false;
-                state.inputContent = action.payload;
+                state.textEditorInputContent = action.payload;
             })
             .addCase(processPasteFromClipboard.rejected, (state: AppState, action) => {
                 state.isProcessing = false;
-                state.inputContent = '';
+                state.textEditorInputContent = '';
             })
 
-            .addCase(processOperation.pending, (state: AppState) => {
+            .addCase(actionProcessAction.pending, (state: AppState) => {
                 state.isProcessing = true;
             })
-            .addCase(processOperation.fulfilled, (state: AppState, action: PayloadAction<string>) => {
+            .addCase(actionProcessAction.fulfilled, (state: AppState, action: PayloadAction<string>) => {
                 state.isProcessing = false;
-                state.outputContent = action.payload;
+                state.textEditorOutputContent = action.payload;
             })
-            .addCase(processOperation.rejected, (state: AppState, action) => {
+            .addCase(actionProcessAction.rejected, (state: AppState, action) => {
                 state.isProcessing = false;
-                state.outputContent = '';
+                state.textEditorOutputContent = '';
             })
 
             .addCase(fetchCurrentModel.pending, (state: AppState) => {
@@ -206,7 +219,35 @@ export const appStateSlice = createSlice({
             })
             .addCase(fetchCurrentSettings.rejected, (state: AppState, action) => {
                 // NOTHING
-            }); //fetchCurrentModel
+            })
+
+            .addCase(appStateDefaultInputLanguageGet.pending, (state: AppState) => {
+                state.isProcessing = true;
+            })
+            .addCase(
+                appStateDefaultInputLanguageGet.fulfilled,
+                (state: AppState, action: PayloadAction<SelectItem>) => {
+                    state.isProcessing = false;
+                    state.selectedInputLanguage = action.payload;
+                },
+            )
+            .addCase(appStateDefaultInputLanguageGet.rejected, (state: AppState, action) => {
+                state.isProcessing = false;
+            })
+
+            .addCase(appStateDefaultOutputLanguageGet.pending, (state: AppState) => {
+                state.isProcessing = true;
+            })
+            .addCase(
+                appStateDefaultOutputLanguageGet.fulfilled,
+                (state: AppState, action: PayloadAction<SelectItem>) => {
+                    state.isProcessing = false;
+                    state.selectedOutputLanguage = action.payload;
+                },
+            )
+            .addCase(appStateDefaultOutputLanguageGet.rejected, (state: AppState, action) => {
+                state.isProcessing = false;
+            });
     },
 });
 

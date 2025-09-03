@@ -32,3 +32,21 @@ export interface AppSettings {
     languages: string[];
     useMarkdownForOutput: boolean;
 }
+
+export interface AppActionObj {
+    actionId: string;
+    actionInput: string;
+    actionOutput: string;
+    actionInputLanguage: string;
+    actionOutputLanguage: string;
+}
+
+export interface AppLanguageItem {
+    languageId: string;
+    languageText: string;
+}
+
+export interface AppActionItem {
+    actionId: string;
+    actionText: string;
+}

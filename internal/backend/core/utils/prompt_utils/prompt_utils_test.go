@@ -77,7 +77,7 @@ func TestBuildPrompt_InvalidInputs(t *testing.T) {
 				ActionInputLanguage:  "",
 				ActionOutputLanguage: "Ukrainian",
 			},
-			wantError: "invalid action inputLanguage",
+			wantError: "invalid action selectedInputLanguage",
 		},
 		{
 			name:     "Invalid translation action - blank output language",
@@ -89,7 +89,7 @@ func TestBuildPrompt_InvalidInputs(t *testing.T) {
 				ActionInputLanguage:  "English",
 				ActionOutputLanguage: "",
 			},
-			wantError: "invalid action outputLanguage",
+			wantError: "invalid action selectedOutputLanguage",
 		},
 	}
 

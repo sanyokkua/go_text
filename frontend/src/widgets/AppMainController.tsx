@@ -2,17 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { LogDebug } from '../../wailsjs/runtime';
 import { setInputContent, setInputLanguage, setOutputContent, setOutputLanguage } from '../store/app/AppStateReducer';
 import {
+    actionProcessAction,
+    appStateDefaultInputLanguageGet,
+    appStateDefaultOutputLanguageGet,
+    appStateFormattingButtonsGet,
+    appStateInputLanguagesGet,
+    appStateOutputLanguagesGet,
+    appStateProofreadingButtonsGet,
+    appStateSummaryButtonsGet,
+    appStateTranslateButtonsGet,
     fetchCurrentSettings,
-    fetchDefaultInputLanguage,
-    fetchDefaultOutputLanguage,
-    fetchFormattingButtons,
-    fetchInputLanguages,
-    fetchOutputLanguages,
-    fetchProofreadingButtons,
-    fetchSummaryButtons,
-    fetchTranslateButtons,
     processCopyToClipboard,
-    processOperation,
     processPasteFromClipboard,
 } from '../store/app/thunks';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
@@ -22,34 +22,37 @@ import AppMainView from './views/AppMainView';
 const AppMainController: React.FC = () => {
     const dispatch = useAppDispatch();
     const {
-        proofreadingButtons,
-        formattingButtons,
-        summaryButtons,
-        translateButtons,
-        isProcessing,
+        buttonsForProofreading,
+        buttonsForFormatting,
+        buttonsForTranslating,
+        buttonsForSummarization,
+
+        textEditorInputContent,
+        textEditorOutputContent,
+        selectedInputLanguage,
+        selectedOutputLanguage,
+        availableInputLanguages,
+        availableOutputLanguages,
         currentTask,
-        inputLanguages,
-        inputLanguage,
-        outputLanguages,
-        outputLanguage,
-        outputContent,
-        inputContent,
-        currentModelName,
         currentProvider,
+        currentModelName,
+        isProcessing,
     } = useAppSelector((state) => state.appState);
 
     // Local state management
     const [showSettings, setShowSettings] = useState(false);
 
     useEffect(() => {
-        dispatch(fetchInputLanguages());
-        dispatch(fetchOutputLanguages());
-        dispatch(fetchProofreadingButtons());
-        dispatch(fetchSummaryButtons());
-        dispatch(fetchTranslateButtons());
-        dispatch(fetchFormattingButtons());
-        dispatch(fetchDefaultInputLanguage());
-        dispatch(fetchDefaultOutputLanguage());
+        dispatch(appStateProofreadingButtonsGet());
+        dispatch(appStateFormattingButtonsGet());
+        dispatch(appStateTranslateButtonsGet());
+        dispatch(appStateSummaryButtonsGet());
+
+        dispatch(appStateDefaultInputLanguageGet());
+        dispatch(appStateDefaultOutputLanguageGet());
+
+        dispatch(appStateInputLanguagesGet());
+        dispatch(appStateOutputLanguagesGet());
         dispatch(fetchCurrentSettings());
     }, [dispatch]);
 
@@ -78,7 +81,7 @@ const AppMainController: React.FC = () => {
     // Output operations
     const onBtnOutputCopyClick = () => {
         LogDebug('Copying output to clipboard');
-        dispatch(processCopyToClipboard(outputContent));
+        dispatch(processCopyToClipboard(textEditorOutputContent));
     };
     const onBtnOutputClearClick = () => {
         LogDebug('Clearing output');
@@ -93,7 +96,7 @@ const AppMainController: React.FC = () => {
     };
     const onBtnUseOutputAsInputClick = () => {
         LogDebug('Using output as input');
-        dispatch(setInputContent(outputContent));
+        dispatch(setInputContent(textEditorOutputContent));
         dispatch(setOutputContent(''));
     };
 
@@ -101,31 +104,31 @@ const AppMainController: React.FC = () => {
     const onOperationBtnClick = (op: string) => {
         LogDebug(`Processing operation: ${op}`);
         dispatch(
-            processOperation({
+            actionProcessAction({
                 actionId: op,
-                actionInput: inputContent,
-                actionOutput: outputContent,
-                actionInputLanguage: inputLanguage.itemId,
-                actionOutputLanguage: outputLanguage.itemId,
+                actionInput: textEditorInputContent,
+                actionOutput: textEditorOutputContent,
+                actionInputLanguage: selectedInputLanguage.itemId,
+                actionOutputLanguage: selectedOutputLanguage.itemId,
             }),
         );
     };
 
     return (
         <AppMainView
-            proofreadingButtons={proofreadingButtons}
-            formattingButtons={formattingButtons}
-            translatingButtons={translateButtons}
-            summaryButtons={summaryButtons}
+            proofreadingButtons={buttonsForProofreading}
+            formattingButtons={buttonsForFormatting}
+            translatingButtons={buttonsForTranslating}
+            summaryButtons={buttonsForSummarization}
             currentProviderName={currentProvider}
             currentModelName={currentModelName}
             currentTaskName={currentTask}
-            inputContent={inputContent}
-            inputLanguages={inputLanguages}
-            inputLanguage={inputLanguage}
-            outputContent={outputContent}
-            outputLanguages={outputLanguages}
-            outputLanguage={outputLanguage}
+            inputContent={textEditorInputContent}
+            inputLanguages={availableInputLanguages}
+            inputLanguage={selectedInputLanguage}
+            outputContent={textEditorOutputContent}
+            outputLanguages={availableOutputLanguages}
+            outputLanguage={selectedOutputLanguage}
             onBtnSettingsClick={onSettingsClick}
             onBtnInputPasteClick={onInputPasteBtnClick}
             onBtnInputClearClick={onBtnInputClearClick}

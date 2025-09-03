@@ -1,18 +1,22 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { fetchCurrentSettings } from '../../../store/app/thunks';
+import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 
-interface BottomBarWidgetProps {
-    provider?: string;
-    model?: string;
-    task?: string;
-}
+const BottomBarWidget: React.FC = () => {
+    const dispatch = useAppDispatch();
+    const { currentTask, currentProvider, currentModelName, errorMessage } = useAppSelector((state) => state.appState);
 
-const BottomBarWidget: React.FC<BottomBarWidgetProps> = ({ provider = 'N/A', model = 'N/A', task = 'N/A' }) => {
+    useEffect(() => {
+        dispatch(fetchCurrentSettings());
+    }, [dispatch]);
+
     return (
         <nav>
             <footer className="bottom-bar">
-                <p>Provider: {provider}</p>
-                <p>Model: {model}</p>
-                <p>Task: {task}</p>
+                <p>Provider: {currentProvider || 'N/A'}</p>
+                <p>Model: {currentModelName || 'N/A'}</p>
+                <p>Task: {currentTask || 'N/A'}</p>
+                <p>Last Error: {errorMessage || 'N/A'}</p>
             </footer>
         </nav>
     );

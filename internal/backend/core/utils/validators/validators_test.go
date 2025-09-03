@@ -262,40 +262,40 @@ func TestIsAppActionObjWrapperValid(t *testing.T) {
 			wantError:     "invalid action input",
 		},
 		{
-			name: "Empty inputLanguage (translation)",
+			name: "Empty selectedInputLanguage (translation)",
 			modify: func(o *models.AppActionObjWrapper) {
 				o.ActionInputLanguage = ""
 			},
 			isTranslation: true,
 			wantValid:     false,
-			wantError:     "invalid action inputLanguage",
+			wantError:     "invalid action selectedInputLanguage",
 		},
 		{
-			name: "Whitespace inputLanguage (translation)",
+			name: "Whitespace selectedInputLanguage (translation)",
 			modify: func(o *models.AppActionObjWrapper) {
 				o.ActionInputLanguage = " \t"
 			},
 			isTranslation: true,
 			wantValid:     false,
-			wantError:     "invalid action inputLanguage",
+			wantError:     "invalid action selectedInputLanguage",
 		},
 		{
-			name: "Empty outputLanguage (translation)",
+			name: "Empty selectedOutputLanguage (translation)",
 			modify: func(o *models.AppActionObjWrapper) {
 				o.ActionOutputLanguage = ""
 			},
 			isTranslation: true,
 			wantValid:     false,
-			wantError:     "invalid action outputLanguage",
+			wantError:     "invalid action selectedOutputLanguage",
 		},
 		{
-			name: "Whitespace outputLanguage (translation)",
+			name: "Whitespace selectedOutputLanguage (translation)",
 			modify: func(o *models.AppActionObjWrapper) {
 				o.ActionOutputLanguage = "  "
 			},
 			isTranslation: true,
 			wantValid:     false,
-			wantError:     "invalid action outputLanguage",
+			wantError:     "invalid action selectedOutputLanguage",
 		},
 		{
 			name: "Non-translation with empty languages (should pass)",

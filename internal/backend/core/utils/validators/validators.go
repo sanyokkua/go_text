@@ -58,10 +58,10 @@ func IsAppActionObjWrapperValid(obj *models.AppActionObjWrapper, isTranslationAc
 	}
 	if isTranslationAction {
 		if string_utils.IsBlankString(obj.ActionInputLanguage) {
-			return false, fmt.Errorf("invalid action inputLanguage")
+			return false, fmt.Errorf("invalid action selectedInputLanguage")
 		}
 		if string_utils.IsBlankString(obj.ActionOutputLanguage) {
-			return false, fmt.Errorf("invalid action outputLanguage")
+			return false, fmt.Errorf("invalid action selectedOutputLanguage")
 		}
 	}
 	return true, nil
