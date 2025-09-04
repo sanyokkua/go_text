@@ -2,6 +2,7 @@ package settings
 
 import (
 	"go_text/internal/backend/constants"
+	"go_text/internal/backend/core/utils/file_utils"
 	"go_text/internal/backend/models"
 )
 
@@ -21,14 +22,6 @@ type SettingsService interface {
 }
 
 type settingsServiceStruct struct {
-	baseUrl               string
-	headers               map[string]string
-	modelName             string
-	temperature           float64
-	defaultInputLanguage  string
-	defaultOutputLanguage string
-	languages             []string
-	useMarkdownForOutput  bool
 }
 
 func (s *settingsServiceStruct) GetDefaultSettings() (models.Settings, error) {
@@ -36,73 +29,81 @@ func (s *settingsServiceStruct) GetDefaultSettings() (models.Settings, error) {
 }
 
 func (s *settingsServiceStruct) GetCurrentSettings() (models.Settings, error) {
-	return models.Settings{
-		BaseUrl:               s.baseUrl,
-		Headers:               s.headers,
-		ModelName:             s.modelName,
-		Temperature:           s.temperature,
-		DefaultInputLanguage:  s.defaultInputLanguage,
-		DefaultOutputLanguage: s.defaultOutputLanguage,
-		Languages:             s.languages,
-		UseMarkdownForOutput:  s.useMarkdownForOutput,
-	}, nil
+	settings, err := file_utils.LoadSettings()
+	if err != nil {
+		return models.Settings{}, err
+	}
+	return *settings, nil
 }
 
 func (s *settingsServiceStruct) SetSettings(settings models.Settings) error {
-	s.baseUrl = settings.BaseUrl
-	s.headers = settings.Headers
-	s.modelName = settings.ModelName
-	s.temperature = settings.Temperature
-	s.defaultInputLanguage = settings.DefaultInputLanguage
-	s.defaultOutputLanguage = settings.DefaultOutputLanguage
-	s.languages = settings.Languages
-	s.useMarkdownForOutput = settings.UseMarkdownForOutput
-	return nil
+	return file_utils.SaveSettings(&settings)
 }
 
 func (s *settingsServiceStruct) GetBaseUrl() (string, error) {
-	return s.baseUrl, nil
+	settings, err := s.GetCurrentSettings()
+	if err != nil {
+		return "", err
+	}
+	return settings.BaseUrl, nil
 }
 
 func (s *settingsServiceStruct) GetHeaders() (map[string]string, error) {
-	return s.headers, nil
+	settings, err := s.GetCurrentSettings()
+	if err != nil {
+		return map[string]string{}, err
+	}
+	return settings.Headers, nil
 }
 
 func (s *settingsServiceStruct) GetModelName() (string, error) {
-	return s.modelName, nil
+	settings, err := s.GetCurrentSettings()
+	if err != nil {
+		return "", err
+	}
+	return settings.ModelName, nil
 }
 
 func (s *settingsServiceStruct) GetTemperature() (float64, error) {
-	return s.temperature, nil
+	settings, err := s.GetCurrentSettings()
+	if err != nil {
+		return 0, err
+	}
+	return settings.Temperature, nil
 }
 
 func (s *settingsServiceStruct) GetDefaultInputLanguage() (string, error) {
-	return s.defaultInputLanguage, nil
+	settings, err := s.GetCurrentSettings()
+	if err != nil {
+		return "", err
+	}
+	return settings.DefaultInputLanguage, nil
 }
 
 func (s *settingsServiceStruct) GetDefaultOutputLanguage() (string, error) {
-	return s.defaultOutputLanguage, nil
+	settings, err := s.GetCurrentSettings()
+	if err != nil {
+		return "", err
+	}
+	return settings.DefaultOutputLanguage, nil
 }
 
 func (s *settingsServiceStruct) GetLanguages() ([]string, error) {
-	return s.languages, nil
+	settings, err := s.GetCurrentSettings()
+	if err != nil {
+		return []string{}, err
+	}
+	return settings.Languages, nil
 }
 
 func (s *settingsServiceStruct) GetUseMarkdownForOutput() (bool, error) {
-	return s.useMarkdownForOutput, nil
+	settings, err := s.GetCurrentSettings()
+	if err != nil {
+		return false, err
+	}
+	return settings.UseMarkdownForOutput, nil
 }
 
 func NewSettingsService() SettingsService {
-	defaultSettings := constants.DefaultSetting
-
-	return &settingsServiceStruct{
-		baseUrl:               defaultSettings.BaseUrl,
-		headers:               defaultSettings.Headers,
-		modelName:             defaultSettings.ModelName,
-		temperature:           defaultSettings.Temperature,
-		defaultInputLanguage:  defaultSettings.DefaultInputLanguage,
-		defaultOutputLanguage: defaultSettings.DefaultOutputLanguage,
-		languages:             defaultSettings.Languages,
-		useMarkdownForOutput:  false,
-	}
+	return &settingsServiceStruct{}
 }

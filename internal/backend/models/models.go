@@ -88,14 +88,14 @@ type Prompt struct {
 }
 
 type Settings struct {
-	BaseUrl               string
-	Headers               map[string]string
-	ModelName             string
-	Temperature           float64
-	DefaultInputLanguage  string
-	DefaultOutputLanguage string
-	Languages             []string
-	UseMarkdownForOutput  bool
+	BaseUrl               string            `json:"baseUrl"`
+	Headers               map[string]string `json:"headers"`
+	ModelName             string            `json:"modelName"`
+	Temperature           float64           `json:"temperature"`
+	DefaultInputLanguage  string            `json:"defaultInputLanguage"`
+	DefaultOutputLanguage string            `json:"defaultOutputLanguage"`
+	Languages             []string          `json:"languages"`
+	UseMarkdownForOutput  bool              `json:"useMarkdownForOutput"`
 }
 
 type AppActionItem struct {

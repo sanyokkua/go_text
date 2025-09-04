@@ -241,18 +241,22 @@ export const appStateSlice = createSlice({
             })
             .addCase(appStateActionProcess.pending, (state: AppState) => {
                 state.isProcessing = true;
+                state.errorMessage = '';
             })
             .addCase(appStateActionProcess.fulfilled, (state: AppState, action: PayloadAction<string>) => {
                 state.isProcessing = false;
                 state.textEditorOutputContent = action.payload;
+                state.currentTask = '';
             })
             .addCase(appStateActionProcess.rejected, (state: AppState, action) => {
                 state.isProcessing = false;
                 state.errorMessage = action.payload || UnknownError;
+                state.currentTask = '';
             })
 
             .addCase(initializeAppState.pending, (state: AppState) => {
                 state.isProcessing = true;
+                state.errorMessage = '';
             })
             .addCase(initializeAppState.fulfilled, (state: AppState, action: PayloadAction<void>) => {
                 state.isProcessing = false;

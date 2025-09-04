@@ -46,7 +46,7 @@ var languages = [15]string{
 var DefaultSetting = models.Settings{
 	BaseUrl:               DefaultOllamaBaseUrl,
 	Headers:               map[string]string{},
-	ModelName:             "gpt-oss:20b",
+	ModelName:             "",
 	Temperature:           0.5,
 	DefaultInputLanguage:  "English",
 	DefaultOutputLanguage: "Ukrainian",

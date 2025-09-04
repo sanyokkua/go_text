@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"go_text/internal/backend/core/utils/file_utils"
 )
 
 // App struct
@@ -18,4 +19,8 @@ func NewApp() *App {
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	err := file_utils.InitDefaultSettingsIfAbsent()
+	if err != nil {
+		return
+	}
 }

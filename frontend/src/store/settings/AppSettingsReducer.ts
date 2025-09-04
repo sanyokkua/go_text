@@ -250,10 +250,16 @@ export const appSettingsSlice = createSlice({
                 appSettingsGetListOfModels.fulfilled,
                 (state: AppSettingsState, action: PayloadAction<string[]>) => {
                     state.isLoadingSettings = false;
-                    state.models = action.payload;
-                    state.displayListOfModels = mapStringListToSelectItems(action.payload);
-                    if (!(state.modelName in action.payload) && action.payload.length > 0) {
-                        const modelNameFromPayload = action.payload[0];
+                    const loadedModelsList = action.payload;
+                    loadedModelsList.push(''); //Add the ability to see not selected model
+
+                    state.models = loadedModelsList;
+                    state.displayListOfModels = mapStringListToSelectItems(loadedModelsList);
+                    const currentModelInAvailableModelsList = loadedModelsList.some(
+                        (item) => item.trim() === state.modelName.trim(),
+                    );
+                    if (!currentModelInAvailableModelsList && loadedModelsList.length > 0) {
+                        const modelNameFromPayload = loadedModelsList[0];
                         const newModel = mapStringToSelectItem(modelNameFromPayload);
                         state.modelName = modelNameFromPayload;
                         state.displaySelectedModel = newModel;

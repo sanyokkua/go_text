@@ -61,3 +61,15 @@ body {
   scroll-behavior: smooth;
   scrollbar-width: thin;
 }
+
+.error-msg {
+  display: block;
+  width: 100%;
+  text-align: center;
+  justify-content: center;
+  align-items: center;
+  justify-items: center;
+  align-content: center;
+  color: var(--error-color);
+  box-shadow: 0 0 4vh var(--surface-dim-color-on);
+}

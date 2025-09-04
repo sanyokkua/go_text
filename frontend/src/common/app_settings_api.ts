@@ -15,14 +15,14 @@ export class AppSettingsApi implements ISettingsApi {
         try {
             const settings = await LoadSettings();
             return {
-                baseUrl: settings.BaseUrl,
-                headers: settings.Headers,
-                modelName: settings.ModelName,
-                temperature: settings.Temperature,
-                defaultInputLanguage: settings.DefaultInputLanguage,
-                defaultOutputLanguage: settings.DefaultOutputLanguage,
-                languages: settings.Languages,
-                useMarkdownForOutput: settings.UseMarkdownForOutput,
+                baseUrl: settings.baseUrl,
+                headers: settings.headers,
+                modelName: settings.modelName,
+                temperature: settings.temperature,
+                defaultInputLanguage: settings.defaultInputLanguage,
+                defaultOutputLanguage: settings.defaultOutputLanguage,
+                languages: settings.languages,
+                useMarkdownForOutput: settings.useMarkdownForOutput,
             };
         } catch (error) {
             LogDebug('Error loading settings');
@@ -34,14 +34,14 @@ export class AppSettingsApi implements ISettingsApi {
         try {
             const settings = await ResetToDefaultSettings();
             return {
-                baseUrl: settings.BaseUrl,
-                headers: settings.Headers,
-                modelName: settings.ModelName,
-                temperature: settings.Temperature,
-                defaultInputLanguage: settings.DefaultInputLanguage,
-                defaultOutputLanguage: settings.DefaultOutputLanguage,
-                languages: settings.Languages,
-                useMarkdownForOutput: settings.UseMarkdownForOutput,
+                baseUrl: settings.baseUrl,
+                headers: settings.headers,
+                modelName: settings.modelName,
+                temperature: settings.temperature,
+                defaultInputLanguage: settings.defaultInputLanguage,
+                defaultOutputLanguage: settings.defaultOutputLanguage,
+                languages: settings.languages,
+                useMarkdownForOutput: settings.useMarkdownForOutput,
             };
         } catch (error) {
             LogDebug('Error resetting settings to default settings');
@@ -64,14 +64,14 @@ export class AppSettingsApi implements ISettingsApi {
             }
 
             const settingsObj = Settings.createFrom({
-                BaseUrl: baseUrl,
-                Headers: headers,
-                ModelName: settings.modelName,
-                Temperature: settings.temperature,
-                DefaultInputLanguage: settings.defaultInputLanguage,
-                DefaultOutputLanguage: settings.defaultOutputLanguage,
-                Languages: settings.languages,
-                UseMarkdownForOutput: settings.useMarkdownForOutput,
+                baseUrl: baseUrl,
+                headers: headers,
+                modelName: settings.modelName,
+                temperature: settings.temperature,
+                defaultInputLanguage: settings.defaultInputLanguage,
+                defaultOutputLanguage: settings.defaultOutputLanguage,
+                languages: settings.languages,
+                useMarkdownForOutput: settings.useMarkdownForOutput,
             });
             await SaveSettings(settingsObj);
         } catch (error) {
