@@ -1,5 +1,5 @@
 import { ClipboardGetText, ClipboardSetText, LogDebug } from '../../wailsjs/runtime';
-import { IClipboardUtils } from './backend_api';
+import { IClipboardUtils } from './app_backend_api';
 
 export class AppClipboardUtils implements IClipboardUtils {
     async clipboardGetText(): Promise<string> {

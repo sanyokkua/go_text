@@ -1,6 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
-import AppSettingsReducer from './app/AppSettingsReducer';
 import AppStateReducer from './app/AppStateReducer';
+import AppSettingsReducer from './settings/AppSettingsReducer';
 
 export const store = configureStore({ reducer: { appState: AppStateReducer, settingsState: AppSettingsReducer } });
 

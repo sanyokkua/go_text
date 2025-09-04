@@ -6,7 +6,7 @@ import {
     ValidateConnection,
 } from '../../wailsjs/go/ui/appUISettingsApiStruct';
 import { LogDebug } from '../../wailsjs/runtime';
-import { ISettingsApi } from './backend_api';
+import { ISettingsApi } from './app_backend_api';
 import { AppSettings } from './types';
 import Settings = models.Settings;
 
@@ -51,9 +51,21 @@ export class AppSettingsApi implements ISettingsApi {
 
     async saveSettings(settings: AppSettings): Promise<void> {
         try {
+            let baseUrl = settings.baseUrl;
+            let headers = settings.headers;
+
+            if (!(baseUrl.startsWith('http://') || baseUrl.startsWith('https://'))) {
+                baseUrl = 'http://' + baseUrl;
+            }
+
+            if (headers['']) {
+                const { ['']: _, ...rest } = headers;
+                headers = rest;
+            }
+
             const settingsObj = Settings.createFrom({
-                BaseUrl: settings.baseUrl,
-                Headers: settings.headers,
+                BaseUrl: baseUrl,
+                Headers: headers,
                 ModelName: settings.modelName,
                 Temperature: settings.temperature,
                 DefaultInputLanguage: settings.defaultInputLanguage,

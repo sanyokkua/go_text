@@ -1,12 +1,19 @@
 import React from 'react';
+import { LogDebug } from '../../../../wailsjs/runtime';
+import { setShowSettingsView } from '../../../store/app/AppStateReducer';
+import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import Button from '../../base/Button';
 
-interface TopBarWidgetProps {
-    onButtonClick?: () => void;
-    disabled?: boolean;
-}
+const TopBarWidget: React.FC = () => {
+    const dispatch = useAppDispatch();
+    const showSettingsView = useAppSelector((state) => state.appState.showSettingsView);
+    const isProcessing = useAppSelector((state) => state.appState.isProcessing);
 
-const TopBarWidget: React.FC<TopBarWidgetProps> = ({ onButtonClick, disabled }) => {
+    const onSettingsClick = () => {
+        LogDebug('Settings clicked');
+        dispatch(setShowSettingsView(!showSettingsView));
+    };
+
     return (
         <nav className="app-bar">
             <h3 className="app-bar-title-link">Text Processor</h3>
@@ -14,11 +21,11 @@ const TopBarWidget: React.FC<TopBarWidgetProps> = ({ onButtonClick, disabled }) 
 
             <Button
                 text={'Settings'}
-                onClick={onButtonClick}
+                onClick={onSettingsClick}
                 variant={'outlined'}
                 colorStyle={'white-color'}
                 size={'tiny'}
-                disabled={disabled}
+                disabled={isProcessing}
             />
         </nav>
     );

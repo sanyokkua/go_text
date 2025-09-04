@@ -1,77 +1,128 @@
 import React from 'react';
+import { LogDebug } from '../../../../wailsjs/runtime';
+import {
+    appStateActionProcess,
+    appStateProcessCopyToClipboard,
+    appStateProcessPasteFromClipboard,
+} from '../../../store/app/app_state_thunks';
+import {
+    setSelectedInputLanguage,
+    setSelectedOutputLanguage,
+    setTextEditorInputContent,
+    setTextEditorOutputContent,
+} from '../../../store/app/AppStateReducer';
+import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import { SelectItem } from '../../base/Select';
 import ButtonsOnlyWidget from '../../tabs/ButtonsOnlyWidget';
-import { TabContentBtn } from '../../tabs/common/TabButtonsWidget';
 import { TabWidget } from '../../tabs/common/TabWidget';
 import TranslatingWidget from '../../tabs/TranslatingWidget';
 import IOViewWidget from '../../text/IOViewWidget';
 
-export interface ContentWidgetProps {
-    proofreadingButtons: TabContentBtn[];
-    formattingButtons: TabContentBtn[];
-    translatingButtons: TabContentBtn[];
-    summaryButtons: TabContentBtn[];
-    inputContent: string;
-    inputLanguages: SelectItem[];
-    inputLanguage: SelectItem;
-    outputContent: string;
-    outputLanguages: SelectItem[];
-    outputLanguage: SelectItem;
-    onBtnInputPasteClick: () => void;
-    onBtnInputClearClick: () => void;
-    onBtnOutputCopyClick: () => void;
-    onBtnOutputClearClick: () => void;
-    onBtnOutputUseAsInputClick: () => void;
-    onSelectInputLanguageChanged: (selectItem: SelectItem) => void;
-    onSelectOutputLanguageChanged: (selectItem: SelectItem) => void;
-    onInputContentChange: (content: string) => void;
-    onOutputContentChange: (content: string) => void;
-    onOperationBtnClick: (btnId: string) => void;
-    disabled?: boolean;
-}
+const ContentWidget: React.FC = () => {
+    const dispatch = useAppDispatch();
+    const buttonsForProofreading = useAppSelector((state) => state.appState.buttonsForProofreading);
+    const buttonsForFormatting = useAppSelector((state) => state.appState.buttonsForFormatting);
+    const buttonsForTranslating = useAppSelector((state) => state.appState.buttonsForTranslating);
+    const buttonsForSummarization = useAppSelector((state) => state.appState.buttonsForSummarization);
+    const textEditorInputContent = useAppSelector((state) => state.appState.textEditorInputContent);
+    const textEditorOutputContent = useAppSelector((state) => state.appState.textEditorOutputContent);
+    const selectedInputLanguage = useAppSelector((state) => state.appState.selectedInputLanguage);
+    const selectedOutputLanguage = useAppSelector((state) => state.appState.selectedOutputLanguage);
+    const availableInputLanguages = useAppSelector((state) => state.appState.availableInputLanguages);
+    const availableOutputLanguages = useAppSelector((state) => state.appState.availableOutputLanguages);
+    const isProcessing = useAppSelector((state) => state.appState.isProcessing);
 
-const ContentWidget: React.FC<ContentWidgetProps> = (props) => {
+    const onBtnInputPasteClick = () => {
+        LogDebug('Pasting sample text');
+        dispatch(appStateProcessPasteFromClipboard());
+    };
+    const onBtnInputClearClick = () => {
+        LogDebug('Clearing input');
+        dispatch(setTextEditorInputContent(''));
+    };
+    const onInputContentChange = (content: string) => {
+        LogDebug('Input content changed to: ' + content);
+        dispatch(setTextEditorInputContent(content));
+    };
+    const onBtnOutputCopyClick = () => {
+        LogDebug('Copying output to clipboard');
+        dispatch(appStateProcessCopyToClipboard(textEditorOutputContent));
+    };
+    const onBtnOutputClearClick = () => {
+        LogDebug('Clearing output');
+        dispatch(setTextEditorOutputContent(''));
+    };
+    const onOutputContentChange = (content: string) => {
+        LogDebug('Output content changed to: ' + content);
+        dispatch(setTextEditorOutputContent(content));
+    };
+    const onBtnOutputUseAsInputClick = () => {
+        LogDebug('Using output as input');
+        dispatch(setTextEditorInputContent(textEditorOutputContent));
+        dispatch(setTextEditorOutputContent(''));
+    };
+    const onSelectInputLanguageChanged = (item: SelectItem) => {
+        LogDebug(`Input language changed to: ${item.displayText}`);
+        dispatch(setSelectedInputLanguage(item));
+    };
+    const onSelectOutputLanguageChanged = (item: SelectItem) => {
+        LogDebug(`Output language changed to: ${item.displayText}`);
+        dispatch(setSelectedOutputLanguage(item));
+    };
+    const onOperationBtnClick = (actionId: string) => {
+        LogDebug(`Processing operation: ${actionId}`);
+        dispatch(
+            appStateActionProcess({
+                actionId: actionId,
+                actionInput: textEditorInputContent,
+                actionOutput: textEditorOutputContent,
+                actionInputLanguage: selectedInputLanguage.itemId,
+                actionOutputLanguage: selectedOutputLanguage.itemId,
+            }),
+        );
+    };
+
     return (
         <div className="app-content-container">
             <IOViewWidget
-                inputContent={props.inputContent}
-                onInputContentChange={props.onInputContentChange}
-                onInputPaste={props.onBtnInputPasteClick}
-                onInputClear={props.onBtnInputClearClick}
-                outputContent={props.outputContent}
-                onOutputContentChange={props.onOutputContentChange}
-                onOutputClear={props.onBtnOutputClearClick}
-                onOutputCopy={props.onBtnOutputCopyClick}
-                onOutputUseAsInput={props.onBtnOutputUseAsInputClick}
-                disabled={props.disabled}
+                inputContent={textEditorInputContent}
+                outputContent={textEditorOutputContent}
+                disabled={isProcessing}
+                onInputContentChange={onInputContentChange}
+                onInputPaste={onBtnInputPasteClick}
+                onInputClear={onBtnInputClearClick}
+                onOutputContentChange={onOutputContentChange}
+                onOutputClear={onBtnOutputClearClick}
+                onOutputCopy={onBtnOutputCopyClick}
+                onOutputUseAsInput={onBtnOutputUseAsInputClick}
             />
 
-            <TabWidget tabs={['Proofreading', 'Formatting', 'Translating', 'Summarization']} disabled={props.disabled}>
+            <TabWidget tabs={['Proofreading', 'Formatting', 'Translating', 'Summarization']} disabled={isProcessing}>
                 <ButtonsOnlyWidget
-                    buttons={props.proofreadingButtons}
-                    onBtnClick={props.onOperationBtnClick}
-                    disabled={props.disabled}
+                    buttons={buttonsForProofreading}
+                    disabled={isProcessing}
+                    onBtnClick={onOperationBtnClick}
                 />
                 <ButtonsOnlyWidget
-                    buttons={props.formattingButtons}
-                    onBtnClick={props.onOperationBtnClick}
-                    disabled={props.disabled}
+                    buttons={buttonsForFormatting}
+                    disabled={isProcessing}
+                    onBtnClick={onOperationBtnClick}
                 />
                 <TranslatingWidget
-                    buttons={props.translatingButtons}
-                    onBtnClick={props.onOperationBtnClick}
-                    inputLanguages={props.inputLanguages}
-                    outputLanguages={props.outputLanguages}
-                    selectedInputLanguage={props.inputLanguage}
-                    selectedOutputLanguage={props.outputLanguage}
-                    onInputLanguageChanged={props.onSelectInputLanguageChanged}
-                    onOutputLanguageChanged={props.onSelectOutputLanguageChanged}
-                    disabled={props.disabled}
+                    buttons={buttonsForTranslating}
+                    inputLanguages={availableInputLanguages}
+                    outputLanguages={availableOutputLanguages}
+                    selectedInputLanguage={selectedInputLanguage}
+                    selectedOutputLanguage={selectedOutputLanguage}
+                    disabled={isProcessing}
+                    onBtnClick={onOperationBtnClick}
+                    onInputLanguageChanged={onSelectInputLanguageChanged}
+                    onOutputLanguageChanged={onSelectOutputLanguageChanged}
                 />
                 <ButtonsOnlyWidget
-                    buttons={props.summaryButtons}
-                    onBtnClick={props.onOperationBtnClick}
-                    disabled={props.disabled}
+                    buttons={buttonsForSummarization}
+                    disabled={isProcessing}
+                    onBtnClick={onOperationBtnClick}
                 />
             </TabWidget>
         </div>

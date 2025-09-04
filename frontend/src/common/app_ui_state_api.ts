@@ -11,7 +11,7 @@ import {
     GetTranslatingItems,
 } from '../../wailsjs/go/ui/appUIStateApiStruct';
 import { LogDebug } from '../../wailsjs/runtime';
-import { IUiStateApi } from './backend_api';
+import { IUiStateApi } from './app_backend_api';
 import { AppActionItem, AppLanguageItem } from './types';
 
 export class AppUiStateApi implements IUiStateApi {

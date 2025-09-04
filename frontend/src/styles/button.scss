@@ -87,7 +87,6 @@
 /* Combined scale-up and brightening hover effect for dashed button */
 .button-dashed:hover {
   filter: brightness(1.5); /* Same brightening as outlined buttons */
-  transform: scale(1.05); /* Slightly enlarges button to 105% size on hover */
 }
 
 /* Visual feedback when clicking dashed button */

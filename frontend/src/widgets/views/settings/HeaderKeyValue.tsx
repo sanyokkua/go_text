@@ -1,37 +1,63 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { KeyValuePair } from '../../../common/types';
 import Button from '../../base/Button';
 
 type HeaderKeyValueProps = {
-    header: KeyValuePair;
-    index: number;
-    onChange: (index: number, key: string, value: string) => void;
-    onDelete: (index: number) => void;
+    value: KeyValuePair;
+    onChange: (obj: KeyValuePair) => void;
+    onDelete: (obj: KeyValuePair) => void;
 };
-const HeaderKeyValue: React.FC<HeaderKeyValueProps> = ({ header, index, onChange, onDelete }) => {
+
+const HeaderKeyValue: React.FC<HeaderKeyValueProps> = ({ value, onChange, onDelete }) => {
+    const [headerKey, setHeaderKey] = useState<string>(value.key);
+    const [headerValue, setHeaderValue] = useState<string>(value.value);
+
+    useEffect(() => {
+        setHeaderKey(value.key);
+        setHeaderValue(value.value);
+    }, [value.key, value.value]);
+
+    const handleChange = () => {
+        onChange({ ...value, key: headerKey, value: headerValue });
+    };
+
+    const handleKeyBlur = (_: React.FocusEvent<HTMLInputElement>) => {
+        handleChange();
+    };
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleChange();
+        }
+    };
+
     return (
         <div className="header-row">
             <div className="header-input-group">
-                <label htmlFor={`headerKey-${index}`}>Header Key:</label>
+                <label>Header Key:</label>
                 <input
                     type="text"
-                    id={`headerKey-${index}`}
-                    value={header.key}
-                    onChange={(e) => onChange(index, e.target.value, header.value)}
+                    value={headerKey}
+                    onChange={(e) => setHeaderKey(e.target.value)}
+                    onBlur={handleKeyBlur}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Header name"
                 />
             </div>
             <div className="header-input-group">
-                <label htmlFor={`headerValue-${index}`}>Header Value:</label>
+                <label>Header Value:</label>
                 <input
                     type="text"
-                    id={`headerValue-${index}`}
-                    value={header.value}
-                    onChange={(e) => onChange(index, header.key, e.target.value)}
+                    value={headerValue}
+                    onBlur={handleKeyBlur}
+                    onChange={(e) => setHeaderValue(e.target.value)}
+                    placeholder="Header value"
                 />
             </div>
-            <Button text="Delete" variant="outlined" size="small" onClick={() => onDelete(index)} />
+            <Button text="Delete" variant="outlined" size="small" onClick={() => onDelete(value)} />
         </div>
     );
 };
+
 HeaderKeyValue.displayName = 'HeaderKeyValue';
 export default HeaderKeyValue;

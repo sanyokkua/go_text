@@ -6,8 +6,6 @@ import (
 	"go_text/internal/backend/core/utils"
 	"go_text/internal/backend/models"
 
-	"strings"
-
 	"resty.dev/v3"
 )
 
@@ -29,23 +27,9 @@ func (a *appUISettingsApiStruct) LoadSettings() (models.Settings, error) {
 }
 
 func (a *appUISettingsApiStruct) SaveSettings(settings models.Settings) error {
-	if strings.TrimSpace(settings.BaseUrl) == "" {
-		return fmt.Errorf("cannot save settings: base url is empty")
-	}
-	if strings.HasSuffix(settings.BaseUrl, "/") {
-		return fmt.Errorf("baseUrl must not end with /")
-	}
-	if !(strings.HasPrefix(settings.BaseUrl, "http://") || strings.HasPrefix(settings.BaseUrl, "https://")) {
-		return fmt.Errorf("baseUrl must start with http:// or https://")
-	}
-	if strings.TrimSpace(settings.ModelName) == "" {
-		return fmt.Errorf("modelName must not be empty")
-	}
-	if strings.TrimSpace(settings.DefaultInputLanguage) == "" {
-		return fmt.Errorf("defaultInputLanguage must not be empty")
-	}
-	if strings.TrimSpace(settings.DefaultOutputLanguage) == "" {
-		return fmt.Errorf("defaultOutputLanguage must not be empty")
+	isValidSettings, err := a.utilsService.IsSettingsValid(&settings)
+	if !isValidSettings {
+		return err
 	}
 
 	isValid, err := a.ValidateConnection(settings.BaseUrl, settings.Headers)

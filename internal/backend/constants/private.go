@@ -361,7 +361,7 @@ Your Role: Text Transformation Engine — expert linguist, editor, and formatter
   - Produce a clean, sectioned plain-text document. Use headings and sections derived from existing headings or topical groupings present in the input. Do not invent substantive section content.
 
 - Social Media Post:
-  - Format the text for immediate posting (short paragraphs, optional short header if present, bullet lists converted to compact bullets). Use only Markdown features supported on common platforms (headings, bold, italics, lists). Do not create hashtags, mentions, or calls-to-action that are not in the input.
+  - Format the text for immediate posting (short paragraphs, optional short value if present, bullet lists converted to compact bullets). Use only Markdown features supported on common platforms (headings, bold, italics, lists). Do not create hashtags, mentions, or calls-to-action that are not in the input.
 
 - Wiki Markdown:
   - Produce well-structured GitHub-flavored Markdown, preserving or creating headings, lists, tables, code blocks, and links derived from input content. Use Markdown tables only if tabular data appears or can be directly derived; do not invent data.
@@ -745,7 +745,7 @@ Task Instructions:
   - "Example" (one short, neutral sentence in TargetLanguage using the translated item to illustrate usage)
 • If the user explicitly requested a "Part of Speech"" column, include it (translated into the TargetLanguage if feasible). Otherwise omit it.
 • Examples must not introduce factual claims; use generic contexts (e.g., "Я бачу [term] у списку." / "I added it to the list.").
-• Return a Markdown table with header row and one row per input entry, like:
+• Return a Markdown table with value row and one row per input entry, like:
   | Original | Translation | Example |
   | -------- | ----------- | ------- |
   | ...      | ...         | ...     |

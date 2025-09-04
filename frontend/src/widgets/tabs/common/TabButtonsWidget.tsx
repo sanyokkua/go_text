@@ -22,7 +22,7 @@ export const TabButtonsWidget = ({ buttons, onBtnClick, disabled }: TabContentWi
                             onClick={() => onBtnClick(item.btnId)}
                             variant="outlined"
                             colorStyle={'primary-color'}
-                            size="default"
+                            size="small"
                             block={true}
                             disabled={disabled}
                         />

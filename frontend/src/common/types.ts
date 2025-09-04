@@ -20,7 +20,7 @@ export type Color =
     | 'warning-container-color';
 export type Size = 'tiny' | 'small' | 'default' | 'large';
 
-export type KeyValuePair = { key: string; value: string };
+export type KeyValuePair = { id: string; key: string; value: string };
 
 export interface AppSettings {
     baseUrl: string;
@@ -50,3 +50,5 @@ export interface AppActionItem {
     actionId: string;
     actionText: string;
 }
+
+export const UnknownError = 'Unknown error';

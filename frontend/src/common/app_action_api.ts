@@ -1,7 +1,7 @@
 import { models } from '../../wailsjs/go/models';
 import { ProcessAction } from '../../wailsjs/go/ui/appUIActionApiStruct';
 import { LogDebug } from '../../wailsjs/runtime';
-import { IActionApi } from './backend_api';
+import { IActionApi } from './app_backend_api';
 import { AppActionObj } from './types';
 import AppActionObjWrapper = models.AppActionObjWrapper;
 

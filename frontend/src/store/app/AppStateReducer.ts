@@ -1,44 +1,42 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { AppSettings } from '../../common/types';
+import { AppSettings, UnknownError } from '../../common/types';
 import { SelectItem } from '../../widgets/base/Select';
 import { TabContentBtn } from '../../widgets/tabs/common/TabButtonsWidget';
 import {
-    actionProcessAction,
+    appStateActionProcess,
+    appStateCurrentProviderAndModelGet,
     appStateDefaultInputLanguageGet,
     appStateDefaultOutputLanguageGet,
     appStateFormattingButtonsGet,
     appStateInputLanguagesGet,
     appStateOutputLanguagesGet,
+    appStateProcessCopyToClipboard,
+    appStateProcessPasteFromClipboard,
     appStateProofreadingButtonsGet,
     appStateSummaryButtonsGet,
     appStateTranslateButtonsGet,
-    fetchCurrentModel,
-    fetchCurrentSettings,
-    processCopyToClipboard,
-    processPasteFromClipboard,
-} from './thunks';
+    initializeAppState,
+} from './app_state_thunks';
 
 export interface AppState {
     buttonsForProofreading: TabContentBtn[];
     buttonsForFormatting: TabContentBtn[];
     buttonsForTranslating: TabContentBtn[];
     buttonsForSummarization: TabContentBtn[];
-
-    textEditorInputContent: string;
-    textEditorOutputContent: string;
-
-    selectedInputLanguage: SelectItem;
-    selectedOutputLanguage: SelectItem;
-
     availableInputLanguages: SelectItem[];
     availableOutputLanguages: SelectItem[];
-
     currentProvider: string;
+    errorMessage: string;
+
+    // UI Managed
+    textEditorInputContent: string;
+    textEditorOutputContent: string;
+    selectedInputLanguage: SelectItem;
+    selectedOutputLanguage: SelectItem;
     currentTask: string;
     currentModelName: string;
-
     isProcessing: boolean;
-    errorMessage: string;
+    showSettingsView: boolean;
 }
 
 const initialState: AppState = {
@@ -46,33 +44,35 @@ const initialState: AppState = {
     buttonsForFormatting: [],
     buttonsForTranslating: [],
     buttonsForSummarization: [],
+    availableInputLanguages: [],
+    availableOutputLanguages: [],
+    currentProvider: '',
+    errorMessage: '',
+
     textEditorInputContent: '',
     textEditorOutputContent: '',
     selectedInputLanguage: { itemId: '', displayText: '' },
     selectedOutputLanguage: { itemId: '', displayText: '' },
-    availableInputLanguages: [],
-    availableOutputLanguages: [],
     currentTask: '',
-    currentProvider: '',
     currentModelName: '',
     isProcessing: false,
-    errorMessage: '',
+    showSettingsView: false,
 };
 
 export const appStateSlice = createSlice({
     name: 'appState',
     initialState,
     reducers: {
-        setInputContent: (state: AppState, action: PayloadAction<string>) => {
+        setTextEditorInputContent: (state: AppState, action: PayloadAction<string>) => {
             state.textEditorInputContent = action.payload;
         },
-        setOutputContent: (state: AppState, action: PayloadAction<string>) => {
+        setTextEditorOutputContent: (state: AppState, action: PayloadAction<string>) => {
             state.textEditorOutputContent = action.payload;
         },
-        setInputLanguage: (state: AppState, action: PayloadAction<SelectItem>) => {
+        setSelectedInputLanguage: (state: AppState, action: PayloadAction<SelectItem>) => {
             state.selectedInputLanguage = action.payload;
         },
-        setOutputLanguage: (state: AppState, action: PayloadAction<SelectItem>) => {
+        setSelectedOutputLanguage: (state: AppState, action: PayloadAction<SelectItem>) => {
             state.selectedOutputLanguage = action.payload;
         },
         setCurrentTask: (state: AppState, action: PayloadAction<string>) => {
@@ -81,32 +81,15 @@ export const appStateSlice = createSlice({
         setIsProcessing: (state: AppState, action: PayloadAction<boolean>) => {
             state.isProcessing = action.payload;
         },
+        setErrorMessage: (state: AppState, action: PayloadAction<string>) => {
+            state.errorMessage = action.payload;
+        },
+        setShowSettingsView: (state: AppState, action: PayloadAction<boolean>) => {
+            state.showSettingsView = action.payload;
+        },
     },
     extraReducers: (builder) => {
         builder
-            .addCase(appStateInputLanguagesGet.pending, (state: AppState) => {
-                state.isProcessing = true;
-            })
-            .addCase(appStateInputLanguagesGet.fulfilled, (state: AppState, action: PayloadAction<SelectItem[]>) => {
-                state.isProcessing = false;
-                state.availableInputLanguages = action.payload;
-            })
-            .addCase(appStateInputLanguagesGet.rejected, (state: AppState, action) => {
-                state.isProcessing = false;
-                state.availableInputLanguages = [];
-            })
-            .addCase(appStateOutputLanguagesGet.pending, (state: AppState) => {
-                state.isProcessing = true;
-            })
-            .addCase(appStateOutputLanguagesGet.fulfilled, (state: AppState, action: PayloadAction<SelectItem[]>) => {
-                state.isProcessing = false;
-                state.availableOutputLanguages = action.payload;
-            })
-            .addCase(appStateOutputLanguagesGet.rejected, (state: AppState, action) => {
-                state.isProcessing = false;
-                state.availableOutputLanguages = [];
-            })
-
             .addCase(appStateProofreadingButtonsGet.pending, (state: AppState) => {
                 state.isProcessing = true;
             })
@@ -119,9 +102,9 @@ export const appStateSlice = createSlice({
             )
             .addCase(appStateProofreadingButtonsGet.rejected, (state: AppState, action) => {
                 state.isProcessing = false;
+                state.errorMessage = action.payload || UnknownError;
                 state.buttonsForProofreading = [];
             })
-
             .addCase(appStateFormattingButtonsGet.pending, (state: AppState) => {
                 state.isProcessing = true;
             })
@@ -134,9 +117,9 @@ export const appStateSlice = createSlice({
             )
             .addCase(appStateFormattingButtonsGet.rejected, (state: AppState, action) => {
                 state.isProcessing = false;
+                state.errorMessage = action.payload || UnknownError;
                 state.buttonsForFormatting = [];
             })
-
             .addCase(appStateTranslateButtonsGet.pending, (state: AppState) => {
                 state.isProcessing = true;
             })
@@ -149,9 +132,9 @@ export const appStateSlice = createSlice({
             )
             .addCase(appStateTranslateButtonsGet.rejected, (state: AppState, action) => {
                 state.isProcessing = false;
+                state.errorMessage = action.payload || UnknownError;
                 state.buttonsForTranslating = [];
             })
-
             .addCase(appStateSummaryButtonsGet.pending, (state: AppState) => {
                 state.isProcessing = true;
             })
@@ -161,66 +144,33 @@ export const appStateSlice = createSlice({
             })
             .addCase(appStateSummaryButtonsGet.rejected, (state: AppState, action) => {
                 state.isProcessing = false;
+                state.errorMessage = action.payload || UnknownError;
                 state.buttonsForSummarization = [];
             })
-
-            .addCase(processCopyToClipboard.pending, (state: AppState) => {
+            .addCase(appStateInputLanguagesGet.pending, (state: AppState) => {
                 state.isProcessing = true;
             })
-            .addCase(processCopyToClipboard.fulfilled, (state: AppState, action: PayloadAction<void>) => {
+            .addCase(appStateInputLanguagesGet.fulfilled, (state: AppState, action: PayloadAction<SelectItem[]>) => {
                 state.isProcessing = false;
+                state.availableInputLanguages = action.payload;
             })
-            .addCase(processCopyToClipboard.rejected, (state: AppState, action) => {
+            .addCase(appStateInputLanguagesGet.rejected, (state: AppState, action) => {
                 state.isProcessing = false;
+                state.errorMessage = action.payload || UnknownError;
+                state.availableInputLanguages = [];
             })
-
-            .addCase(processPasteFromClipboard.pending, (state: AppState) => {
+            .addCase(appStateOutputLanguagesGet.pending, (state: AppState) => {
                 state.isProcessing = true;
             })
-            .addCase(processPasteFromClipboard.fulfilled, (state: AppState, action: PayloadAction<string>) => {
+            .addCase(appStateOutputLanguagesGet.fulfilled, (state: AppState, action: PayloadAction<SelectItem[]>) => {
                 state.isProcessing = false;
-                state.textEditorInputContent = action.payload;
+                state.availableOutputLanguages = action.payload;
             })
-            .addCase(processPasteFromClipboard.rejected, (state: AppState, action) => {
+            .addCase(appStateOutputLanguagesGet.rejected, (state: AppState, action) => {
                 state.isProcessing = false;
-                state.textEditorInputContent = '';
+                state.errorMessage = action.payload || UnknownError;
+                state.availableOutputLanguages = [];
             })
-
-            .addCase(actionProcessAction.pending, (state: AppState) => {
-                state.isProcessing = true;
-            })
-            .addCase(actionProcessAction.fulfilled, (state: AppState, action: PayloadAction<string>) => {
-                state.isProcessing = false;
-                state.textEditorOutputContent = action.payload;
-            })
-            .addCase(actionProcessAction.rejected, (state: AppState, action) => {
-                state.isProcessing = false;
-                state.textEditorOutputContent = '';
-            })
-
-            .addCase(fetchCurrentModel.pending, (state: AppState) => {
-                state.isProcessing = true;
-            })
-            .addCase(fetchCurrentModel.fulfilled, (state: AppState, action: PayloadAction<string>) => {
-                state.isProcessing = false;
-                state.currentModelName = action.payload;
-            })
-            .addCase(fetchCurrentModel.rejected, (state: AppState, action) => {
-                state.isProcessing = false;
-                state.currentModelName = '';
-            })
-
-            .addCase(fetchCurrentSettings.pending, (state: AppState) => {
-                // NOTHING
-            })
-            .addCase(fetchCurrentSettings.fulfilled, (state: AppState, action: PayloadAction<AppSettings>) => {
-                state.currentProvider = action.payload.baseUrl;
-                state.currentModelName = action.payload.modelName;
-            })
-            .addCase(fetchCurrentSettings.rejected, (state: AppState, action) => {
-                // NOTHING
-            })
-
             .addCase(appStateDefaultInputLanguageGet.pending, (state: AppState) => {
                 state.isProcessing = true;
             })
@@ -233,8 +183,9 @@ export const appStateSlice = createSlice({
             )
             .addCase(appStateDefaultInputLanguageGet.rejected, (state: AppState, action) => {
                 state.isProcessing = false;
+                state.errorMessage = action.payload || UnknownError;
+                state.selectedInputLanguage = { itemId: '', displayText: '' };
             })
-
             .addCase(appStateDefaultOutputLanguageGet.pending, (state: AppState) => {
                 state.isProcessing = true;
             })
@@ -247,17 +198,80 @@ export const appStateSlice = createSlice({
             )
             .addCase(appStateDefaultOutputLanguageGet.rejected, (state: AppState, action) => {
                 state.isProcessing = false;
+                state.errorMessage = action.payload || UnknownError;
+                state.selectedOutputLanguage = { itemId: '', displayText: '' };
+            })
+            .addCase(appStateCurrentProviderAndModelGet.pending, (state: AppState) => {
+                state.isProcessing = true;
+            })
+            .addCase(
+                appStateCurrentProviderAndModelGet.fulfilled,
+                (state: AppState, action: PayloadAction<AppSettings>) => {
+                    state.isProcessing = false;
+                    state.currentProvider = action.payload.baseUrl;
+                    state.currentModelName = action.payload.modelName;
+                },
+            )
+            .addCase(appStateCurrentProviderAndModelGet.rejected, (state: AppState, action) => {
+                state.isProcessing = false;
+                state.errorMessage = action.payload || UnknownError;
+                state.currentProvider = '';
+                state.currentModelName = '';
+            })
+            .addCase(appStateProcessCopyToClipboard.pending, (state: AppState) => {
+                state.isProcessing = true;
+            })
+            .addCase(appStateProcessCopyToClipboard.fulfilled, (state: AppState, action: PayloadAction<void>) => {
+                state.isProcessing = false;
+            })
+            .addCase(appStateProcessCopyToClipboard.rejected, (state: AppState, action) => {
+                state.isProcessing = false;
+                state.errorMessage = action.payload || UnknownError;
+            })
+            .addCase(appStateProcessPasteFromClipboard.pending, (state: AppState) => {
+                state.isProcessing = true;
+            })
+            .addCase(appStateProcessPasteFromClipboard.fulfilled, (state: AppState, action: PayloadAction<string>) => {
+                state.isProcessing = false;
+                state.textEditorInputContent = action.payload;
+            })
+            .addCase(appStateProcessPasteFromClipboard.rejected, (state: AppState, action) => {
+                state.isProcessing = false;
+                state.errorMessage = action.payload || UnknownError;
+            })
+            .addCase(appStateActionProcess.pending, (state: AppState) => {
+                state.isProcessing = true;
+            })
+            .addCase(appStateActionProcess.fulfilled, (state: AppState, action: PayloadAction<string>) => {
+                state.isProcessing = false;
+                state.textEditorOutputContent = action.payload;
+            })
+            .addCase(appStateActionProcess.rejected, (state: AppState, action) => {
+                state.isProcessing = false;
+                state.errorMessage = action.payload || UnknownError;
+            })
+
+            .addCase(initializeAppState.pending, (state: AppState) => {
+                state.isProcessing = true;
+            })
+            .addCase(initializeAppState.fulfilled, (state: AppState, action: PayloadAction<void>) => {
+                state.isProcessing = false;
+            })
+            .addCase(initializeAppState.rejected, (state: AppState, action) => {
+                state.isProcessing = false;
             });
     },
 });
 
 export const {
-    setInputLanguage,
-    setInputContent,
-    setOutputContent,
-    setOutputLanguage,
+    setSelectedInputLanguage,
+    setTextEditorInputContent,
+    setTextEditorOutputContent,
+    setSelectedOutputLanguage,
     setIsProcessing,
     setCurrentTask,
+    setErrorMessage,
+    setShowSettingsView,
 } = appStateSlice.actions;
 
 // Export the app state slice reducer
