@@ -25,7 +25,7 @@ const TopBarWidget: React.FC = () => {
                 variant={'outlined'}
                 colorStyle={'white-color'}
                 size={'tiny'}
-                disabled={isProcessing}
+                disabled={isProcessing || showSettingsView}
             />
         </nav>
     );

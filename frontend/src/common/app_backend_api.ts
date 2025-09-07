@@ -8,7 +8,8 @@ export interface ISettingsApi {
     loadSettings(): Promise<AppSettings>;
     resetToDefaultSettings(): Promise<AppSettings>;
     saveSettings(settings: AppSettings): Promise<void>;
-    validateConnection(baseUrl: string, headers: Record<string, string>): Promise<boolean>;
+    validateModelsRequest(baseUrl: string, endpoint: string, headers: Record<string, string>): Promise<boolean>;
+    validateCompletionRequest(baseUrl: string, endpoint: string, modelName: string, headers: Record<string, string>): Promise<boolean>;
 }
 
 export interface IUiStateApi {

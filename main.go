@@ -20,7 +20,7 @@ func main() {
 	app := NewApp()
 	apiContext := internal.NewApplicationContext()
 
-	// Create application with options
+	// Create an application with options
 	err := wails.Run(&options.App{
 		Title:     "Text Processing Suite",
 		Width:     MinimalWidth,

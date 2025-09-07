@@ -182,19 +182,18 @@ export const appStateProcessPasteFromClipboard = createAsyncThunk<string, void, 
         }
     },
 );
-export const appStateActionProcess = createAsyncThunk<
-    string,
-    AppActionObj,
-    { dispatch: AppDispatch; rejectValue: string }
->('appState/appStateActionProcess', async (actionWrapper, { dispatch, rejectWithValue }) => {
-    try {
-        LogDebug('appStateActionProcess is triggered');
-        dispatch(setCurrentTask(actionWrapper.actionId));
-        LogDebug(`appStateActionProcess is set actionId: ${actionWrapper.actionId} to currentTask`);
-        return await ActionApi.processAction(actionWrapper);
-    } catch (error: unknown) {
-        const msg = extractErrorDetails(error);
-        LogWarning('Failed appStateActionProcess with error: ' + msg);
-        return rejectWithValue(msg);
-    }
-});
+export const appStateActionProcess = createAsyncThunk<string, AppActionObj, { dispatch: AppDispatch; rejectValue: string }>(
+    'appState/appStateActionProcess',
+    async (actionWrapper, { dispatch, rejectWithValue }) => {
+        try {
+            LogDebug('appStateActionProcess is triggered');
+            dispatch(setCurrentTask(actionWrapper.actionId));
+            LogDebug(`appStateActionProcess is set actionId: ${actionWrapper.actionId} to currentTask`);
+            return await ActionApi.processAction(actionWrapper);
+        } catch (error: unknown) {
+            const msg = extractErrorDetails(error);
+            LogWarning('Failed appStateActionProcess with error: ' + msg);
+            return rejectWithValue(msg);
+        }
+    },
+);

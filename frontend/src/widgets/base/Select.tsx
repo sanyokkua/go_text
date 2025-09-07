@@ -18,16 +18,7 @@ interface SelectProps {
     id?: string;
 }
 
-const Select: React.FC<SelectProps> = ({
-    id,
-    items,
-    selectedItem,
-    onSelect,
-    size = 'default',
-    colorStyle = '',
-    disabled = false,
-    block = false,
-}) => {
+const Select: React.FC<SelectProps> = ({ id, items, selectedItem, onSelect, size = 'default', colorStyle = '', disabled = false, block = false }) => {
     const handleChange = (e: React.ChangeEvent<HTMLSelectElement>): void => {
         const itemId = e.target.value;
         const foundItem = items.find((it) => it.itemId === itemId);

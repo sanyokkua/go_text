@@ -12,6 +12,8 @@ import (
 func TestIsSettingsValid(t *testing.T) {
 	validSettings := &models.Settings{
 		BaseUrl:               "http://localhost:11434",
+		ModelsEndpoint:        "/get/models",
+		CompletionEndpoint:    "/get/completion",
 		ModelName:             "gpt-3.5-turbo",
 		Temperature:           0.5,
 		DefaultInputLanguage:  "English",
@@ -177,6 +179,134 @@ func TestIsSettingsValid(t *testing.T) {
 				s.Temperature = 0.9999
 			},
 			wantValid: true,
+		},
+		{
+			name: "Empty modelsEndpoint",
+			modify: func(s *models.Settings) {
+				s.ModelsEndpoint = ""
+			},
+			wantValid: false,
+			wantError: "modelsEndpoint must not be empty",
+		},
+		{
+			name: "Whitespace modelsEndpoint",
+			modify: func(s *models.Settings) {
+				s.ModelsEndpoint = "   \t"
+			},
+			wantValid: false,
+			wantError: "modelsEndpoint must not be empty",
+		},
+		{
+			name: "ModelsEndpoint not starting with /",
+			modify: func(s *models.Settings) {
+				s.ModelsEndpoint = "api/models"
+			},
+			wantValid: false,
+			wantError: "modelsEndpoint must start with /",
+		},
+		{
+			name: "ModelsEndpoint not ending with /",
+			modify: func(s *models.Settings) {
+				s.ModelsEndpoint = "/api/models"
+			},
+			wantValid: true,
+			wantError: "",
+		},
+		{
+			name: "Not Valid modelsEndpoint",
+			modify: func(s *models.Settings) {
+				s.ModelsEndpoint = "/api/models/"
+			},
+			wantValid: false,
+			wantError: "modelsEndpoint must not end with /",
+		},
+		{
+			name: "ModelsEndpoint with just /",
+			modify: func(s *models.Settings) {
+				s.ModelsEndpoint = "/"
+			},
+			wantValid: false,
+			wantError: "modelsEndpoint must not end with /",
+		},
+		{
+			name: "ModelsEndpoint with double slash",
+			modify: func(s *models.Settings) {
+				s.ModelsEndpoint = "//"
+			},
+			wantValid: false,
+			wantError: "modelsEndpoint must not end with /",
+		},
+		{
+			name: "ModelsEndpoint with leading space",
+			modify: func(s *models.Settings) {
+				s.ModelsEndpoint = " /api/models/"
+			},
+			wantValid: false,
+			wantError: "modelsEndpoint must start with /",
+		},
+		{
+			name: "Empty completionEndpoint",
+			modify: func(s *models.Settings) {
+				s.CompletionEndpoint = ""
+			},
+			wantValid: false,
+			wantError: "completionEndpoint must not be empty",
+		},
+		{
+			name: "Whitespace completionEndpoint",
+			modify: func(s *models.Settings) {
+				s.CompletionEndpoint = "   \t"
+			},
+			wantValid: false,
+			wantError: "completionEndpoint must not be empty",
+		},
+		{
+			name: "CompletionEndpoint not starting with /",
+			modify: func(s *models.Settings) {
+				s.CompletionEndpoint = "api/completion"
+			},
+			wantValid: false,
+			wantError: "completionEndpoint must start with /",
+		},
+		{
+			name: "CompletionEndpoint not ending with /",
+			modify: func(s *models.Settings) {
+				s.CompletionEndpoint = "/api/completion"
+			},
+			wantValid: true,
+			wantError: "",
+		},
+		{
+			name: "Valid completionEndpoint",
+			modify: func(s *models.Settings) {
+				s.CompletionEndpoint = "/api/completion/"
+			},
+			wantValid: false,
+			wantError: "completionEndpoint must not end with /",
+		},
+		{
+			name: "CompletionEndpoint with just /",
+			modify: func(s *models.Settings) {
+				s.CompletionEndpoint = "/"
+			},
+			wantValid: false,
+			wantError: "completionEndpoint must not end with /",
+		},
+		{
+			name: "CompletionEndpoint with double slash",
+			modify: func(s *models.Settings) {
+				s.CompletionEndpoint = "//"
+			},
+			wantValid: false,
+			wantError: "completionEndpoint must not end with /",
+		},
+		{
+			name: "CompletionEndpoint with leading space",
+			modify: func(s *models.Settings) {
+				s.CompletionEndpoint = " /api/completion/"
+			},
+			wantValid: false,
+			wantError: "completionEndpoint must start with /",
 		},
 	}
 

@@ -12,8 +12,8 @@ import (
 )
 
 type UtilsService interface {
-	MakeLLMModelListRequest(client *resty.Client, baseUrl string, headers map[string]string) (*models.ModelListResponse, error)
-	MakeLLMCompletionRequest(client *resty.Client, baseUrl string, headers map[string]string, request *models.ChatCompletionRequest) (*models.ChatCompletionResponse, error)
+	MakeLLMModelListRequest(client *resty.Client, baseUrl, endpoint string, headers map[string]string) (*models.ModelListResponse, error)
+	MakeLLMCompletionRequest(client *resty.Client, baseUrl, endpoint string, headers map[string]string, request *models.ChatCompletionRequest) (*models.ChatCompletionResponse, error)
 
 	MapPromptsToActionItems(prompts []models.Prompt) []models.AppActionItem
 	MapLanguageToLanguageItem(language string) models.LanguageItem
@@ -33,12 +33,12 @@ type UtilsService interface {
 type utilsService struct {
 }
 
-func (u *utilsService) MakeLLMModelListRequest(client *resty.Client, baseUrl string, headers map[string]string) (*models.ModelListResponse, error) {
-	return http_utils.MakeLLMModelListRequest(client, baseUrl, headers)
+func (u *utilsService) MakeLLMModelListRequest(client *resty.Client, baseUrl, endpoint string, headers map[string]string) (*models.ModelListResponse, error) {
+	return http_utils.MakeLLMModelListRequest(client, baseUrl, endpoint, headers)
 }
 
-func (u *utilsService) MakeLLMCompletionRequest(client *resty.Client, baseUrl string, headers map[string]string, request *models.ChatCompletionRequest) (*models.ChatCompletionResponse, error) {
-	return http_utils.MakeLLMCompletionRequest(client, baseUrl, headers, request)
+func (u *utilsService) MakeLLMCompletionRequest(client *resty.Client, baseUrl, endpoint string, headers map[string]string, request *models.ChatCompletionRequest) (*models.ChatCompletionResponse, error) {
+	return http_utils.MakeLLMCompletionRequest(client, baseUrl, endpoint, headers, request)
 }
 
 func (u *utilsService) MapPromptsToActionItems(prompts []models.Prompt) []models.AppActionItem {

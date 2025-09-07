@@ -12,10 +12,7 @@ export const TabWidget = ({ tabs, children, disabled }: TabWidgetProps) => {
     const childrenArray = Children.toArray(children);
 
     if (childrenArray.length !== tabs.length) {
-        throw new Error(
-            `TabWidget: Number of children (${childrenArray.length}) ` +
-                `does not match number of tabs (${tabs.length})`,
-        );
+        throw new Error(`TabWidget: Number of children (${childrenArray.length}) ` + `does not match number of tabs (${tabs.length})`);
     }
 
     const [activeIndex, setActiveIndex] = useState(defaultActiveIndex);

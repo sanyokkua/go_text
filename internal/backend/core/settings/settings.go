@@ -7,11 +7,13 @@ import (
 )
 
 type SettingsService interface {
-	GetDefaultSettings() (models.Settings, error)
-	GetCurrentSettings() (models.Settings, error)
-	SetSettings(settings models.Settings) error
+	GetDefaultSettings() (*models.Settings, error)
+	GetCurrentSettings() (*models.Settings, error)
+	SetSettings(settings *models.Settings) error
 
 	GetBaseUrl() (string, error)
+	GetModelsEndpoint() (string, error)
+	GetCompletionEndpoint() (string, error)
 	GetHeaders() (map[string]string, error)
 	GetModelName() (string, error)
 	GetTemperature() (float64, error)
@@ -24,20 +26,20 @@ type SettingsService interface {
 type settingsServiceStruct struct {
 }
 
-func (s *settingsServiceStruct) GetDefaultSettings() (models.Settings, error) {
-	return constants.DefaultSetting, nil
+func (s *settingsServiceStruct) GetDefaultSettings() (*models.Settings, error) {
+	return &constants.DefaultSetting, nil
 }
 
-func (s *settingsServiceStruct) GetCurrentSettings() (models.Settings, error) {
+func (s *settingsServiceStruct) GetCurrentSettings() (*models.Settings, error) {
 	settings, err := file_utils.LoadSettings()
 	if err != nil {
-		return models.Settings{}, err
+		return &models.Settings{}, err
 	}
-	return *settings, nil
+	return settings, nil
 }
 
-func (s *settingsServiceStruct) SetSettings(settings models.Settings) error {
-	return file_utils.SaveSettings(&settings)
+func (s *settingsServiceStruct) SetSettings(settings *models.Settings) error {
+	return file_utils.SaveSettings(settings)
 }
 
 func (s *settingsServiceStruct) GetBaseUrl() (string, error) {
@@ -46,6 +48,20 @@ func (s *settingsServiceStruct) GetBaseUrl() (string, error) {
 		return "", err
 	}
 	return settings.BaseUrl, nil
+}
+func (s *settingsServiceStruct) GetModelsEndpoint() (string, error) {
+	settings, err := s.GetCurrentSettings()
+	if err != nil {
+		return "", err
+	}
+	return settings.ModelsEndpoint, nil
+}
+func (s *settingsServiceStruct) GetCompletionEndpoint() (string, error) {
+	settings, err := s.GetCurrentSettings()
+	if err != nil {
+		return "", err
+	}
+	return settings.CompletionEndpoint, nil
 }
 
 func (s *settingsServiceStruct) GetHeaders() (map[string]string, error) {

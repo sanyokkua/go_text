@@ -65,6 +65,7 @@ export const appStateSlice = createSlice({
     reducers: {
         setTextEditorInputContent: (state: AppState, action: PayloadAction<string>) => {
             state.textEditorInputContent = action.payload;
+            state.errorMessage = '';
         },
         setTextEditorOutputContent: (state: AppState, action: PayloadAction<string>) => {
             state.textEditorOutputContent = action.payload;
@@ -78,12 +79,6 @@ export const appStateSlice = createSlice({
         setCurrentTask: (state: AppState, action: PayloadAction<string>) => {
             state.currentTask = action.payload;
         },
-        setIsProcessing: (state: AppState, action: PayloadAction<boolean>) => {
-            state.isProcessing = action.payload;
-        },
-        setErrorMessage: (state: AppState, action: PayloadAction<string>) => {
-            state.errorMessage = action.payload;
-        },
         setShowSettingsView: (state: AppState, action: PayloadAction<boolean>) => {
             state.showSettingsView = action.payload;
         },
@@ -93,48 +88,42 @@ export const appStateSlice = createSlice({
             .addCase(appStateProofreadingButtonsGet.pending, (state: AppState) => {
                 state.isProcessing = true;
             })
-            .addCase(
-                appStateProofreadingButtonsGet.fulfilled,
-                (state: AppState, action: PayloadAction<TabContentBtn[]>) => {
-                    state.isProcessing = false;
-                    state.buttonsForProofreading = action.payload;
-                },
-            )
+            .addCase(appStateProofreadingButtonsGet.fulfilled, (state: AppState, action: PayloadAction<TabContentBtn[]>) => {
+                state.isProcessing = false;
+                state.buttonsForProofreading = action.payload;
+            })
             .addCase(appStateProofreadingButtonsGet.rejected, (state: AppState, action) => {
                 state.isProcessing = false;
                 state.errorMessage = action.payload || UnknownError;
                 state.buttonsForProofreading = [];
             })
+
             .addCase(appStateFormattingButtonsGet.pending, (state: AppState) => {
                 state.isProcessing = true;
             })
-            .addCase(
-                appStateFormattingButtonsGet.fulfilled,
-                (state: AppState, action: PayloadAction<TabContentBtn[]>) => {
-                    state.isProcessing = false;
-                    state.buttonsForFormatting = action.payload;
-                },
-            )
+            .addCase(appStateFormattingButtonsGet.fulfilled, (state: AppState, action: PayloadAction<TabContentBtn[]>) => {
+                state.isProcessing = false;
+                state.buttonsForFormatting = action.payload;
+            })
             .addCase(appStateFormattingButtonsGet.rejected, (state: AppState, action) => {
                 state.isProcessing = false;
                 state.errorMessage = action.payload || UnknownError;
                 state.buttonsForFormatting = [];
             })
+
             .addCase(appStateTranslateButtonsGet.pending, (state: AppState) => {
                 state.isProcessing = true;
             })
-            .addCase(
-                appStateTranslateButtonsGet.fulfilled,
-                (state: AppState, action: PayloadAction<TabContentBtn[]>) => {
-                    state.isProcessing = false;
-                    state.buttonsForTranslating = action.payload;
-                },
-            )
+            .addCase(appStateTranslateButtonsGet.fulfilled, (state: AppState, action: PayloadAction<TabContentBtn[]>) => {
+                state.isProcessing = false;
+                state.buttonsForTranslating = action.payload;
+            })
             .addCase(appStateTranslateButtonsGet.rejected, (state: AppState, action) => {
                 state.isProcessing = false;
                 state.errorMessage = action.payload || UnknownError;
                 state.buttonsForTranslating = [];
             })
+
             .addCase(appStateSummaryButtonsGet.pending, (state: AppState) => {
                 state.isProcessing = true;
             })
@@ -147,6 +136,7 @@ export const appStateSlice = createSlice({
                 state.errorMessage = action.payload || UnknownError;
                 state.buttonsForSummarization = [];
             })
+
             .addCase(appStateInputLanguagesGet.pending, (state: AppState) => {
                 state.isProcessing = true;
             })
@@ -159,6 +149,7 @@ export const appStateSlice = createSlice({
                 state.errorMessage = action.payload || UnknownError;
                 state.availableInputLanguages = [];
             })
+
             .addCase(appStateOutputLanguagesGet.pending, (state: AppState) => {
                 state.isProcessing = true;
             })
@@ -171,53 +162,48 @@ export const appStateSlice = createSlice({
                 state.errorMessage = action.payload || UnknownError;
                 state.availableOutputLanguages = [];
             })
+
             .addCase(appStateDefaultInputLanguageGet.pending, (state: AppState) => {
                 state.isProcessing = true;
             })
-            .addCase(
-                appStateDefaultInputLanguageGet.fulfilled,
-                (state: AppState, action: PayloadAction<SelectItem>) => {
-                    state.isProcessing = false;
-                    state.selectedInputLanguage = action.payload;
-                },
-            )
+            .addCase(appStateDefaultInputLanguageGet.fulfilled, (state: AppState, action: PayloadAction<SelectItem>) => {
+                state.isProcessing = false;
+                state.selectedInputLanguage = action.payload;
+            })
             .addCase(appStateDefaultInputLanguageGet.rejected, (state: AppState, action) => {
                 state.isProcessing = false;
                 state.errorMessage = action.payload || UnknownError;
                 state.selectedInputLanguage = { itemId: '', displayText: '' };
             })
+
             .addCase(appStateDefaultOutputLanguageGet.pending, (state: AppState) => {
                 state.isProcessing = true;
             })
-            .addCase(
-                appStateDefaultOutputLanguageGet.fulfilled,
-                (state: AppState, action: PayloadAction<SelectItem>) => {
-                    state.isProcessing = false;
-                    state.selectedOutputLanguage = action.payload;
-                },
-            )
+            .addCase(appStateDefaultOutputLanguageGet.fulfilled, (state: AppState, action: PayloadAction<SelectItem>) => {
+                state.isProcessing = false;
+                state.selectedOutputLanguage = action.payload;
+            })
             .addCase(appStateDefaultOutputLanguageGet.rejected, (state: AppState, action) => {
                 state.isProcessing = false;
                 state.errorMessage = action.payload || UnknownError;
                 state.selectedOutputLanguage = { itemId: '', displayText: '' };
             })
+
             .addCase(appStateCurrentProviderAndModelGet.pending, (state: AppState) => {
                 state.isProcessing = true;
             })
-            .addCase(
-                appStateCurrentProviderAndModelGet.fulfilled,
-                (state: AppState, action: PayloadAction<AppSettings>) => {
-                    state.isProcessing = false;
-                    state.currentProvider = action.payload.baseUrl;
-                    state.currentModelName = action.payload.modelName;
-                },
-            )
+            .addCase(appStateCurrentProviderAndModelGet.fulfilled, (state: AppState, action: PayloadAction<AppSettings>) => {
+                state.isProcessing = false;
+                state.currentProvider = action.payload.baseUrl;
+                state.currentModelName = action.payload.modelName;
+            })
             .addCase(appStateCurrentProviderAndModelGet.rejected, (state: AppState, action) => {
                 state.isProcessing = false;
                 state.errorMessage = action.payload || UnknownError;
                 state.currentProvider = '';
                 state.currentModelName = '';
             })
+
             .addCase(appStateProcessCopyToClipboard.pending, (state: AppState) => {
                 state.isProcessing = true;
             })
@@ -228,6 +214,7 @@ export const appStateSlice = createSlice({
                 state.isProcessing = false;
                 state.errorMessage = action.payload || UnknownError;
             })
+
             .addCase(appStateProcessPasteFromClipboard.pending, (state: AppState) => {
                 state.isProcessing = true;
             })
@@ -239,6 +226,7 @@ export const appStateSlice = createSlice({
                 state.isProcessing = false;
                 state.errorMessage = action.payload || UnknownError;
             })
+
             .addCase(appStateActionProcess.pending, (state: AppState) => {
                 state.isProcessing = true;
                 state.errorMessage = '';
@@ -272,9 +260,7 @@ export const {
     setTextEditorInputContent,
     setTextEditorOutputContent,
     setSelectedOutputLanguage,
-    setIsProcessing,
     setCurrentTask,
-    setErrorMessage,
     setShowSettingsView,
 } = appStateSlice.actions;
 

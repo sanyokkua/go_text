@@ -49,6 +49,10 @@ func (h *appUIActionApiStruct) ProcessAction(action models.AppActionObjWrapper) 
 		return "", fmt.Errorf("model and provider are not configured properly")
 	}
 
+	if h.utilsService.IsBlankString(cfg.CompletionEndpoint) {
+		return "", fmt.Errorf("empty completion endpoint")
+	}
+
 	modelsList, err := h.llmService.GetModelsList()
 	if err != nil || len(modelsList) == 0 {
 		return "", fmt.Errorf("failed to load models: %w", err)

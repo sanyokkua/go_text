@@ -1,10 +1,6 @@
 import React from 'react';
 import { LogDebug } from '../../../../wailsjs/runtime';
-import {
-    appStateActionProcess,
-    appStateProcessCopyToClipboard,
-    appStateProcessPasteFromClipboard,
-} from '../../../store/app/app_state_thunks';
+import { appStateActionProcess, appStateProcessCopyToClipboard, appStateProcessPasteFromClipboard } from '../../../store/app/app_state_thunks';
 import {
     setSelectedInputLanguage,
     setSelectedOutputLanguage,
@@ -12,6 +8,7 @@ import {
     setTextEditorOutputContent,
 } from '../../../store/app/AppStateReducer';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
+import LoadingOverlay from '../../base/LoadingOverlay';
 import { SelectItem } from '../../base/Select';
 import ButtonsOnlyWidget from '../../tabs/ButtonsOnlyWidget';
 import { TabWidget } from '../../tabs/common/TabWidget';
@@ -98,16 +95,8 @@ const ContentWidget: React.FC = () => {
             />
 
             <TabWidget tabs={['Proofreading', 'Formatting', 'Translating', 'Summarization']} disabled={isProcessing}>
-                <ButtonsOnlyWidget
-                    buttons={buttonsForProofreading}
-                    disabled={isProcessing}
-                    onBtnClick={onOperationBtnClick}
-                />
-                <ButtonsOnlyWidget
-                    buttons={buttonsForFormatting}
-                    disabled={isProcessing}
-                    onBtnClick={onOperationBtnClick}
-                />
+                <ButtonsOnlyWidget buttons={buttonsForProofreading} disabled={isProcessing} onBtnClick={onOperationBtnClick} />
+                <ButtonsOnlyWidget buttons={buttonsForFormatting} disabled={isProcessing} onBtnClick={onOperationBtnClick} />
                 <TranslatingWidget
                     buttons={buttonsForTranslating}
                     inputLanguages={availableInputLanguages}
@@ -119,12 +108,9 @@ const ContentWidget: React.FC = () => {
                     onInputLanguageChanged={onSelectInputLanguageChanged}
                     onOutputLanguageChanged={onSelectOutputLanguageChanged}
                 />
-                <ButtonsOnlyWidget
-                    buttons={buttonsForSummarization}
-                    disabled={isProcessing}
-                    onBtnClick={onOperationBtnClick}
-                />
+                <ButtonsOnlyWidget buttons={buttonsForSummarization} disabled={isProcessing} onBtnClick={onOperationBtnClick} />
             </TabWidget>
+            <LoadingOverlay isLoading={isProcessing} />
         </div>
     );
 };

@@ -1,5 +1,7 @@
 package models
 
+import "strings"
+
 // Models list request
 
 type Model struct {
@@ -57,7 +59,7 @@ type ChatCompletionResponse struct {
 func NewMessage(role, content string) Message {
 	return Message{
 		Role:    role,
-		Content: content,
+		Content: strings.TrimSpace(content),
 	}
 }
 
@@ -89,6 +91,8 @@ type Prompt struct {
 
 type Settings struct {
 	BaseUrl               string            `json:"baseUrl"`
+	ModelsEndpoint        string            `json:"modelsEndpoint"`
+	CompletionEndpoint    string            `json:"completionEndpoint"`
 	Headers               map[string]string `json:"headers"`
 	ModelName             string            `json:"modelName"`
 	Temperature           float64           `json:"temperature"`

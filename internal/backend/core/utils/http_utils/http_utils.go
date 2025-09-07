@@ -2,7 +2,6 @@ package http_utils
 
 import (
 	"fmt"
-	"go_text/internal/backend/constants"
 	"go_text/internal/backend/core/utils/string_utils"
 	"go_text/internal/backend/models"
 	"strings"
@@ -21,8 +20,8 @@ func BuildRequestURL(baseUrl, endpoint string) (string, error) {
 	return baseUrl + endpoint, nil
 }
 
-func MakeLLMModelListRequest(client *resty.Client, baseUrl string, headers map[string]string) (*models.ModelListResponse, error) {
-	url, err := BuildRequestURL(baseUrl, constants.OpenAICompatibleGetModels)
+func MakeLLMModelListRequest(client *resty.Client, baseUrl, endpointUrl string, headers map[string]string) (*models.ModelListResponse, error) {
+	url, err := BuildRequestURL(baseUrl, endpointUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -36,8 +35,8 @@ func MakeLLMModelListRequest(client *resty.Client, baseUrl string, headers map[s
 	return &response, nil
 }
 
-func MakeLLMCompletionRequest(client *resty.Client, baseUrl string, headers map[string]string, request *models.ChatCompletionRequest) (*models.ChatCompletionResponse, error) {
-	url, err := BuildRequestURL(baseUrl, constants.OpenAICompatiblePostCompletions)
+func MakeLLMCompletionRequest(client *resty.Client, baseUrl, endpointUrl string, headers map[string]string, request *models.ChatCompletionRequest) (*models.ChatCompletionResponse, error) {
+	url, err := BuildRequestURL(baseUrl, endpointUrl)
 	if err != nil {
 		return nil, err
 	}

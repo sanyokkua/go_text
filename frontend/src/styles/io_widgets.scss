@@ -4,6 +4,9 @@
   align-items: center;
   width: 100%;
   padding: 10px 0 0 0;
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: default;
 }
 
 .io-horizontal-bar h4 {

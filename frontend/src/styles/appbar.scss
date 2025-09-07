@@ -8,6 +8,8 @@
   padding: 0.5rem 1rem; /* Adds 8px vertical padding (0.5×16px base font size) and 16px horizontal padding */
   box-shadow: 0 5px 5px rgba(0, 0, 0, 0.1);
   height: var(--top-bar-height);
+  -webkit-user-select: none;
+  user-select: none;
   z-index: 1000;
 }
 
@@ -17,9 +19,14 @@
   color: var(--primary-color-on); /* Ensures consistent text color with other app bar elements */
   font-weight: 200; /* Uses normal font weight for balanced visual weight */
   letter-spacing: 0.025em; /* Increases letter spacing by 2.5% of font size for better readability */
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: default;
 }
 
 /* Fixed-size invisible element to create spacing in the app bar layout */
 .app-bar-spacing-stub {
+  -webkit-user-select: none;
+  user-select: none;
   width: 100px; /* Creates a 100px-wide empty space to separate UI elements (absolute measurement) */
 }

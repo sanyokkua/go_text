@@ -25,6 +25,8 @@ export type KeyValuePair = { id: string; key: string; value: string };
 export interface AppSettings {
     baseUrl: string;
     headers: Record<string, string>;
+    modelsEndpoint: string;
+    completionEndpoint: string;
     modelName: string;
     temperature: number;
     defaultInputLanguage: string;

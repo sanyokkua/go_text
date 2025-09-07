@@ -45,6 +45,8 @@ var languages = [15]string{
 
 var DefaultSetting = models.Settings{
 	BaseUrl:               DefaultOllamaBaseUrl,
+	ModelsEndpoint:        OpenAICompatibleGetModels,
+	CompletionEndpoint:    OpenAICompatiblePostCompletions,
 	Headers:               map[string]string{},
 	ModelName:             "",
 	Temperature:           0.5,

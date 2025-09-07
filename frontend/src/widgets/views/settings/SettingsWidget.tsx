@@ -1,13 +1,17 @@
 import React, { ReactNode } from 'react';
 import { AppSettings, KeyValuePair } from '../../../common/types';
+import { setShowSettingsView } from '../../../store/app/AppStateReducer';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import {
     addDisplayHeader,
     removeDisplayHeader,
     setBaseUrl,
+    setCompletionEndpoint,
+    setCompletionEndpointModel,
     setDisplaySelectedInputLanguage,
     setDisplaySelectedModel,
     setDisplaySelectedOutputLanguage,
+    setModelsEndpoint,
     setTemperature,
     setUseMarkdownForOutput,
     updateHeader,
@@ -16,72 +20,89 @@ import {
     appSettingsGetListOfModels,
     appSettingsResetToDefaultSettings,
     appSettingsSaveSettings,
-    appSettingsValidateUrlAndHeaders,
+    appSettingsValidateCompletionRequest,
+    appSettingsValidateModelsRequest,
 } from '../../../store/settings/settings_thunks';
 import Button from '../../base/Button';
+import LoadingOverlay from '../../base/LoadingOverlay';
 import Select, { SelectItem } from '../../base/Select';
 import HeaderKeyValue from './HeaderKeyValue';
 
-const Divider: React.FC = () => {
+const ValidationMessages: React.FC<{ success: string; error: string }> = ({ success, error }) => {
     return (
-        <div className="form-group">
-            <hr className="tab-buttons-container-underline" />
-        </div>
+        <>
+            {success && <span className="validation-success">{success}</span>}
+            {error && <span className="validation-error">{error}</span>}
+        </>
     );
 };
-
-const SettingsGroup: React.FC<{ children: ReactNode }> = ({ children }) => {
+const SettingsGroup: React.FC<{ children: ReactNode; top?: boolean }> = ({ children, top = false }) => {
+    if (top) {
+        return <div className="form-group-top">{children}</div>;
+    }
     return <div className="form-group">{children}</div>;
 };
 
 type SettingsWidgetProps = { onClose: () => void };
 const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
     const dispatch = useAppDispatch();
-    const {
-        displayListOfLanguages,
-        displaySelectedInputLanguage,
-        displaySelectedOutputLanguage,
-        displayListOfModels,
-        displaySelectedModel,
-        displayHeaders,
-        headers,
-        modelName,
-        baseUrl,
-        defaultInputLanguage,
-        defaultOutputLanguage,
-        languages,
-        temperature,
-        useMarkdownForOutput,
-        isLoadingSettings,
-        errorMsg,
-        isSettingsValid,
-    } = useAppSelector((state) => state.settingsState);
-
-    const handleHeaderChange = (obj: KeyValuePair) => {
-        dispatch(updateHeader(obj));
-    };
-
-    const handleHeaderDelete = (obj: KeyValuePair) => {
-        dispatch(removeDisplayHeader(obj.id));
-    };
-
-    const handleAddHeader = () => {
-        dispatch(addDisplayHeader());
-    };
+    const displayListOfLanguages = useAppSelector((state) => state.settingsState.displayListOfLanguages);
+    const displaySelectedInputLanguage = useAppSelector((state) => state.settingsState.displaySelectedInputLanguage);
+    const displaySelectedOutputLanguage = useAppSelector((state) => state.settingsState.displaySelectedOutputLanguage);
+    const displayListOfModels = useAppSelector((state) => state.settingsState.displayListOfModels);
+    const displaySelectedModel = useAppSelector((state) => state.settingsState.displaySelectedModel);
+    const displayHeaders = useAppSelector((state) => state.settingsState.displayHeaders);
+    const headers = useAppSelector((state) => state.settingsState.headers);
+    const modelName = useAppSelector((state) => state.settingsState.modelName);
+    const baseUrl = useAppSelector((state) => state.settingsState.baseUrl);
+    const baseUrlSuccessMsg = useAppSelector((state) => state.settingsState.baseUrlSuccessMsg);
+    const baseUrlValidationErr = useAppSelector((state) => state.settingsState.baseUrlValidationErr);
+    const modelsEndpoint = useAppSelector((state) => state.settingsState.modelsEndpoint);
+    const modelsEndpointSuccessMsg = useAppSelector((state) => state.settingsState.modelsEndpointSuccessMsg);
+    const modelsEndpointValidationErr = useAppSelector((state) => state.settingsState.modelsEndpointValidationErr);
+    const completionEndpoint = useAppSelector((state) => state.settingsState.completionEndpoint);
+    const completionEndpointModel = useAppSelector((state) => state.settingsState.completionEndpointModel);
+    const completionEndpointSuccessMsg = useAppSelector((state) => state.settingsState.completionEndpointSuccessMsg);
+    const completionEndpointValidationErr = useAppSelector((state) => state.settingsState.completionEndpointValidationErr);
+    const defaultInputLanguage = useAppSelector((state) => state.settingsState.defaultInputLanguage);
+    const defaultOutputLanguage = useAppSelector((state) => state.settingsState.defaultOutputLanguage);
+    const languages = useAppSelector((state) => state.settingsState.languages);
+    const temperature = useAppSelector((state) => state.settingsState.temperature);
+    const useMarkdownForOutput = useAppSelector((state) => state.settingsState.useMarkdownForOutput);
+    const isLoadingSettings = useAppSelector((state) => state.settingsState.isLoadingSettings);
+    const errorMsg = useAppSelector((state) => state.settingsState.errorMsg);
 
     const handleBaseUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         dispatch(setBaseUrl(e.target.value));
     };
 
-    const handleTemperatureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = parseInt(e.target.value);
-        dispatch(setTemperature(value / 100));
+    const handleHeaderChange = (obj: KeyValuePair) => {
+        dispatch(updateHeader(obj));
+    };
+    const handleHeaderDelete = (obj: KeyValuePair) => {
+        dispatch(removeDisplayHeader(obj.id));
+    };
+    const handleAddHeader = () => {
+        dispatch(addDisplayHeader());
+    };
+
+    const handleModelsEndpointChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        dispatch(setModelsEndpoint(e.target.value));
+    };
+    const handleCompletionEndpointChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        dispatch(setCompletionEndpoint(e.target.value));
+    };
+    const handleCompletionEndpointModelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        dispatch(setCompletionEndpointModel(e.target.value));
     };
 
     const handleModelSelect = (item: SelectItem) => {
         dispatch(setDisplaySelectedModel(item));
     };
-
+    const handleTemperatureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = parseInt(e.target.value);
+        dispatch(setTemperature(value / 100));
+    };
     const handleLanguageSelect = (type: 'input' | 'output', item: SelectItem) => {
         if (type === 'input') {
             dispatch(setDisplaySelectedInputLanguage(item));
@@ -89,41 +110,36 @@ const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
             dispatch(setDisplaySelectedOutputLanguage(item));
         }
     };
-
     const handleMarkdownToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
         dispatch(setUseMarkdownForOutput(e.currentTarget.checked));
     };
 
-    const testConnection = async () => {
-        dispatch(appSettingsValidateUrlAndHeaders({ baseUrl, headers }));
+    const refreshModelsList = async () => {
+        dispatch(appSettingsGetListOfModels());
     };
 
-    const saveSettings = () => {
-        const settingsToSave: AppSettings = {
-            baseUrl,
-            headers,
-            modelName,
-            temperature,
-            defaultInputLanguage,
-            defaultOutputLanguage,
-            languages,
-            useMarkdownForOutput,
-        };
-        return dispatch(appSettingsSaveSettings(settingsToSave));
+    const testModelsEndpointConnection = async () => {
+        dispatch(appSettingsValidateModelsRequest({ baseUrl, endpoint: modelsEndpoint, headers }));
     };
-
-    const saveSettingsAndLoadModels = async () => {
-        try {
-            await saveSettings().unwrap();
-            await dispatch(appSettingsGetListOfModels()).unwrap();
-        } catch (error) {
-            // Error is handled by the thunk
-        }
+    const testCompletionEndpointConnection = async () => {
+        dispatch(appSettingsValidateCompletionRequest({ baseUrl, endpoint: completionEndpoint, headers, modelName: completionEndpointModel }));
     };
 
     const handleSave = async () => {
         try {
-            await saveSettings().unwrap();
+            const settingsToSave: AppSettings = {
+                baseUrl,
+                headers,
+                modelsEndpoint,
+                completionEndpoint,
+                modelName,
+                temperature,
+                defaultInputLanguage,
+                defaultOutputLanguage,
+                languages,
+                useMarkdownForOutput,
+            };
+            await dispatch(appSettingsSaveSettings(settingsToSave)).unwrap();
             await dispatch(appSettingsGetListOfModels()).unwrap();
             onClose();
         } catch (error) {
@@ -131,24 +147,25 @@ const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
         }
     };
 
+    const handleClose = async () => {
+        dispatch(setShowSettingsView(false));
+    };
+
     const handleReset = async () => {
         try {
             await dispatch(appSettingsResetToDefaultSettings()).unwrap();
+            await dispatch(appSettingsGetListOfModels()).unwrap();
         } catch (error) {
             // Error is handled by the thunk
         }
     };
-
-    if (isLoadingSettings) {
-        return <div className="settings-widget-loading">Loading settings...</div>;
-    }
 
     return (
         <div className="settings-widget-container">
             <div className="settings-widget-form-container">
                 {errorMsg && <div className="settings-error">{errorMsg}</div>}
 
-                <SettingsGroup>
+                <SettingsGroup top={true}>
                     <h2>LLM Provider Configuration</h2>
                     <SettingsGroup>
                         <label htmlFor="baseUrl">LLM BaseUrl:</label>
@@ -158,7 +175,9 @@ const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
                             value={baseUrl}
                             onChange={handleBaseUrlChange}
                             placeholder="http://localhost:11434"
+                            disabled={isLoadingSettings}
                         />
+                        <ValidationMessages success={baseUrlSuccessMsg} error={baseUrlValidationErr} />
                     </SettingsGroup>
                     <SettingsGroup>
                         <h3 className="section-title">Request Headers</h3>
@@ -168,6 +187,7 @@ const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
                                 value={item}
                                 onChange={handleHeaderChange}
                                 onDelete={handleHeaderDelete}
+                                isDisabled={isLoadingSettings}
                             />
                         ))}
                         <Button
@@ -176,33 +196,69 @@ const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
                             colorStyle="primary-color"
                             size="tiny"
                             onClick={handleAddHeader}
+                            disabled={isLoadingSettings}
                         />
                     </SettingsGroup>
+
                     <SettingsGroup>
+                        <label htmlFor="modelsEndpoint">Get Models List endpoint (OpenAI Compatible):</label>
+                        <input
+                            type="text"
+                            id="modelsEndpoint"
+                            value={modelsEndpoint}
+                            onChange={handleModelsEndpointChange}
+                            placeholder="/v1/models"
+                            disabled={isLoadingSettings}
+                        />
+                        <ValidationMessages success={modelsEndpointSuccessMsg} error={modelsEndpointValidationErr} />
                         <Button
-                            text={isLoadingSettings ? 'Testing connection...' : 'Test Connection'}
+                            text="Test Models Endpoint Request"
                             variant="outlined"
-                            colorStyle={'success-color'}
-                            onClick={testConnection}
-                            size="small"
-                            disabled={isLoadingSettings || baseUrl.trim() === ''}
+                            colorStyle="success-color"
+                            size="tiny"
+                            disabled={!modelsEndpoint || modelsEndpoint.trim() === '' || isLoadingSettings}
+                            onClick={testModelsEndpointConnection}
                         />
+                    </SettingsGroup>
+
+                    <SettingsGroup>
+                        <label htmlFor="completionEndpoint">Create chat completion endpoint (OpenAI Compatible):</label>
+                        <input
+                            type="text"
+                            id="completionEndpoint"
+                            value={completionEndpoint}
+                            onChange={handleCompletionEndpointChange}
+                            placeholder="/v1/chat/completions"
+                            disabled={isLoadingSettings}
+                        />
+                        <label htmlFor="completionEndpointModel">Provide Model ID for completion test:</label>
+                        <input
+                            type="text"
+                            id="completionEndpointModel"
+                            value={completionEndpointModel}
+                            onChange={handleCompletionEndpointModelChange}
+                            placeholder="ChatGpt-5-mini"
+                            disabled={isLoadingSettings}
+                        />
+                        <ValidationMessages success={completionEndpointSuccessMsg} error={completionEndpointValidationErr} />
                         <Button
-                            text={'Save Settings and Load Models'}
-                            variant="solid"
-                            colorStyle={'success-color'}
-                            onClick={saveSettingsAndLoadModels}
-                            size="small"
-                            disabled={isLoadingSettings || baseUrl.trim() === '' || !isSettingsValid}
+                            text="Test Completion Endpoint Request"
+                            variant="outlined"
+                            colorStyle="success-color"
+                            size="tiny"
+                            disabled={
+                                !completionEndpoint ||
+                                completionEndpoint.trim() === '' ||
+                                !completionEndpointModel ||
+                                completionEndpointModel.trim() === '' ||
+                                isLoadingSettings
+                            }
+                            onClick={testCompletionEndpointConnection}
                         />
-                        {isSettingsValid && <span className="validation-success">Connection successful!</span>}
-                        {!isSettingsValid && errorMsg && <span className="validation-error">{errorMsg}</span>}
                     </SettingsGroup>
                 </SettingsGroup>
 
-                <Divider />
-
-                <SettingsGroup>
+                <SettingsGroup top={true}>
                     <h2>LLM Model Configuration</h2>
                     <SettingsGroup>
                         <label htmlFor="modelSelect">Model:</label>
@@ -211,6 +267,15 @@ const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
                             items={displayListOfModels}
                             selectedItem={displaySelectedModel}
                             onSelect={handleModelSelect}
+                            disabled={isLoadingSettings}
+                        />
+                        <Button
+                            text="Refresh Models List"
+                            variant="outlined"
+                            colorStyle="success-color"
+                            size="tiny"
+                            disabled={!baseUrl || baseUrl.trim() === '' || !modelsEndpoint || modelsEndpoint.trim() === '' || isLoadingSettings}
+                            onClick={refreshModelsList}
                         />
                     </SettingsGroup>
                     <SettingsGroup>
@@ -222,14 +287,13 @@ const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
                             max="100"
                             value={temperature * 100}
                             onChange={handleTemperatureChange}
+                            disabled={isLoadingSettings}
                         />
                         <div className="temperature-value">{temperature.toFixed(2)}</div>
                     </SettingsGroup>
                 </SettingsGroup>
 
-                <Divider />
-
-                <SettingsGroup>
+                <SettingsGroup top={true}>
                     <h2>Default Translation Languages</h2>
                     <SettingsGroup>
                         <label htmlFor="defaultInputLang">Default Input Language:</label>
@@ -238,6 +302,7 @@ const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
                             items={displayListOfLanguages}
                             selectedItem={displaySelectedInputLanguage}
                             onSelect={(item) => handleLanguageSelect('input', item)}
+                            disabled={isLoadingSettings}
                         />
                     </SettingsGroup>
                     <SettingsGroup>
@@ -247,13 +312,12 @@ const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
                             items={displayListOfLanguages}
                             selectedItem={displaySelectedOutputLanguage}
                             onSelect={(item) => handleLanguageSelect('output', item)}
+                            disabled={isLoadingSettings}
                         />
                     </SettingsGroup>
                 </SettingsGroup>
 
-                <Divider />
-
-                <SettingsGroup>
+                <SettingsGroup top={true}>
                     <h2>Output Defaults</h2>
                     <div className="form-group checkbox-group">
                         <input
@@ -261,6 +325,7 @@ const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
                             id="useMarkdown"
                             checked={useMarkdownForOutput}
                             onChange={handleMarkdownToggle}
+                            disabled={isLoadingSettings}
                         />
                         <label htmlFor="useMarkdown">Use Markdown for plaintext Output</label>
                     </div>
@@ -269,8 +334,16 @@ const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
 
             <div className="settings-widget-confirmation-buttons-container">
                 <Button
-                    text="Reset to Default"
+                    text="Close Settings"
                     variant="outlined"
+                    colorStyle="secondary-color"
+                    size="small"
+                    onClick={handleClose}
+                    disabled={isLoadingSettings}
+                />
+                <Button
+                    text="Reset to Default"
+                    variant="solid"
                     colorStyle="error-color"
                     size="small"
                     onClick={handleReset}
@@ -285,6 +358,8 @@ const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
                     disabled={isLoadingSettings}
                 />
             </div>
+
+            <LoadingOverlay isLoading={isLoadingSettings} />
         </div>
     );
 };

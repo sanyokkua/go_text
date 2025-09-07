@@ -25,6 +25,27 @@ func IsSettingsValid(settingsToValidate *models.Settings) (bool, error) {
 	if !urlHasHttpSPrefix {
 		return false, fmt.Errorf("baseUrl must start with http:// or https://")
 	}
+
+	if strings.TrimSpace(settingsToValidate.ModelsEndpoint) == "" {
+		return false, fmt.Errorf("modelsEndpoint must not be empty")
+	}
+	if !strings.HasPrefix(settingsToValidate.ModelsEndpoint, "/") {
+		return false, fmt.Errorf("modelsEndpoint must start with /")
+	}
+	if strings.HasSuffix(settingsToValidate.ModelsEndpoint, "/") {
+		return false, fmt.Errorf("modelsEndpoint must not end with /")
+	}
+
+	if strings.TrimSpace(settingsToValidate.CompletionEndpoint) == "" {
+		return false, fmt.Errorf("completionEndpoint must not be empty")
+	}
+	if !strings.HasPrefix(settingsToValidate.CompletionEndpoint, "/") {
+		return false, fmt.Errorf("completionEndpoint must start with /")
+	}
+	if strings.HasSuffix(settingsToValidate.CompletionEndpoint, "/") {
+		return false, fmt.Errorf("completionEndpoint must not end with /")
+	}
+
 	if strings.TrimSpace(settingsToValidate.ModelName) == "" {
 		return false, fmt.Errorf("modelName must not be empty")
 	}

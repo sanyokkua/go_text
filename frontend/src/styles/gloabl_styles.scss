@@ -73,3 +73,31 @@ body {
   color: var(--error-color);
   box-shadow: 0 0 4vh var(--surface-dim-color-on);
 }
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.5); /* Semi-transparent white overlay */
+  backdrop-filter: blur(1px); /* Blur the background */
+  z-index: 999; /* Ensure it's on top of everything else */
+}
+
+.loader {
+  border: 2vh solid var(--surface-color);
+  border-top: 2vh solid var(--primary-color);
+  border-radius: 50%;
+  width: 10vh;
+  height: 10vh;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

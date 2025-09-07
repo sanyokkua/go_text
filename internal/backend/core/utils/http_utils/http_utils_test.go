@@ -2,6 +2,7 @@ package http_utils_test
 
 import (
 	"encoding/json"
+	"go_text/internal/backend/constants"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -69,7 +70,7 @@ func TestBuildRequestURL(t *testing.T) {
 func TestMakeLLMModelListRequest(t *testing.T) {
 	t.Run("Empty baseUrl", func(t *testing.T) {
 		client := http_utils.NewRestyClient()
-		_, err := http_utils.MakeLLMModelListRequest(client, "", nil)
+		_, err := http_utils.MakeLLMModelListRequest(client, "", constants.OpenAICompatibleGetModels, nil)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "baseUrl cannot be blank")
 	})
@@ -93,7 +94,7 @@ func TestMakeLLMModelListRequest(t *testing.T) {
 		defer server.Close()
 
 		client := http_utils.NewRestyClient()
-		resp, err := http_utils.MakeLLMModelListRequest(client, server.URL, map[string]string{})
+		resp, err := http_utils.MakeLLMModelListRequest(client, server.URL, constants.OpenAICompatibleGetModels, map[string]string{})
 		assert.NoError(t, err)
 		assert.Equal(t, 2, len(resp.Data))
 		assert.Equal(t, "model1", resp.Data[0].ID)
@@ -110,7 +111,7 @@ func TestMakeLLMModelListRequest(t *testing.T) {
 		defer server.Close()
 
 		client := http_utils.NewRestyClient()
-		_, err := http_utils.MakeLLMModelListRequest(client, server.URL, nil)
+		_, err := http_utils.MakeLLMModelListRequest(client, server.URL, constants.OpenAICompatibleGetModels, nil)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "API request failed")
 	})
@@ -160,7 +161,7 @@ func TestMakeLLMCompletionRequest(t *testing.T) {
 			0.7,
 		)
 
-		resp, err := http_utils.MakeLLMCompletionRequest(client, server.URL, nil, &request)
+		resp, err := http_utils.MakeLLMCompletionRequest(client, server.URL, constants.OpenAICompatiblePostCompletions, nil, &request)
 		assert.NoError(t, err)
 		assert.Equal(t, "resp-123", resp.ID)
 		assert.Equal(t, "Test response", resp.Choices[0].Message.Content)
@@ -168,7 +169,7 @@ func TestMakeLLMCompletionRequest(t *testing.T) {
 
 	t.Run("Invalid baseUrl", func(t *testing.T) {
 		client := http_utils.NewRestyClient()
-		_, err := http_utils.MakeLLMCompletionRequest(client, "", nil, &models.ChatCompletionRequest{})
+		_, err := http_utils.MakeLLMCompletionRequest(client, "", constants.OpenAICompatiblePostCompletions, nil, &models.ChatCompletionRequest{})
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "baseUrl cannot be blank")
 	})

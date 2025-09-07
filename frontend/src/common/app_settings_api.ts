@@ -3,7 +3,8 @@ import {
     LoadSettings,
     ResetToDefaultSettings,
     SaveSettings,
-    ValidateConnection,
+    ValidateCompletionRequest,
+    ValidateModelsRequest,
 } from '../../wailsjs/go/ui/appUISettingsApiStruct';
 import { LogDebug } from '../../wailsjs/runtime';
 import { ISettingsApi } from './app_backend_api';
@@ -17,6 +18,8 @@ export class AppSettingsApi implements ISettingsApi {
             return {
                 baseUrl: settings.baseUrl,
                 headers: settings.headers,
+                modelsEndpoint: settings.modelsEndpoint,
+                completionEndpoint: settings.completionEndpoint,
                 modelName: settings.modelName,
                 temperature: settings.temperature,
                 defaultInputLanguage: settings.defaultInputLanguage,
@@ -36,6 +39,8 @@ export class AppSettingsApi implements ISettingsApi {
             return {
                 baseUrl: settings.baseUrl,
                 headers: settings.headers,
+                modelsEndpoint: settings.modelsEndpoint,
+                completionEndpoint: settings.completionEndpoint,
                 modelName: settings.modelName,
                 temperature: settings.temperature,
                 defaultInputLanguage: settings.defaultInputLanguage,
@@ -66,6 +71,8 @@ export class AppSettingsApi implements ISettingsApi {
             const settingsObj = Settings.createFrom({
                 baseUrl: baseUrl,
                 headers: headers,
+                modelsEndpoint: settings.modelsEndpoint,
+                completionEndpoint: settings.completionEndpoint,
                 modelName: settings.modelName,
                 temperature: settings.temperature,
                 defaultInputLanguage: settings.defaultInputLanguage,
@@ -80,11 +87,20 @@ export class AppSettingsApi implements ISettingsApi {
         }
     }
 
-    async validateConnection(baseUrl: string, headers: Record<string, string>): Promise<boolean> {
+    async validateModelsRequest(baseUrl: string, endpoint: string, headers: Record<string, string>): Promise<boolean> {
         try {
-            return await ValidateConnection(baseUrl, headers);
+            return await ValidateModelsRequest(baseUrl, endpoint, headers);
         } catch (error) {
-            LogDebug('Error validate connection');
+            LogDebug('Error validateModelsRequest');
+            return false;
+        }
+    }
+
+    async validateCompletionRequest(baseUrl: string, endpoint: string, modelName: string, headers: Record<string, string>): Promise<boolean> {
+        try {
+            return await ValidateCompletionRequest(baseUrl, endpoint, modelName, headers);
+        } catch (error) {
+            LogDebug('Error validateCompletionRequest');
             return false;
         }
     }

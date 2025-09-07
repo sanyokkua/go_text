@@ -6,9 +6,10 @@ type HeaderKeyValueProps = {
     value: KeyValuePair;
     onChange: (obj: KeyValuePair) => void;
     onDelete: (obj: KeyValuePair) => void;
+    isDisabled?: boolean;
 };
 
-const HeaderKeyValue: React.FC<HeaderKeyValueProps> = ({ value, onChange, onDelete }) => {
+const HeaderKeyValue: React.FC<HeaderKeyValueProps> = ({ value, onChange, onDelete, isDisabled = false }) => {
     const [headerKey, setHeaderKey] = useState<string>(value.key);
     const [headerValue, setHeaderValue] = useState<string>(value.value);
 
@@ -42,6 +43,7 @@ const HeaderKeyValue: React.FC<HeaderKeyValueProps> = ({ value, onChange, onDele
                     onBlur={handleKeyBlur}
                     onKeyDown={handleKeyDown}
                     placeholder="Header name"
+                    disabled={isDisabled}
                 />
             </div>
             <div className="header-input-group">
@@ -52,9 +54,10 @@ const HeaderKeyValue: React.FC<HeaderKeyValueProps> = ({ value, onChange, onDele
                     onBlur={handleKeyBlur}
                     onChange={(e) => setHeaderValue(e.target.value)}
                     placeholder="Header value"
+                    disabled={isDisabled}
                 />
             </div>
-            <Button text="Delete" variant="outlined" size="small" onClick={() => onDelete(value)} />
+            <Button text="Delete" variant="text" size="tiny" colorStyle="error-color" onClick={() => onDelete(value)} disabled={isDisabled} />
         </div>
     );
 };

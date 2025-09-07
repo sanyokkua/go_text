@@ -16,6 +16,7 @@
   text-align: center; /* Centers text horizontally */
   user-select: none; /* Prevents text selection when clicking */
   margin: 1px; /* Tiny margin to prevent browser default spacing issues */
+  -webkit-user-select: none;
 }
 
 /* Sizes */

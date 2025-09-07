@@ -2,6 +2,7 @@ package file_utils
 
 import (
 	"encoding/json"
+	"fmt"
 	"go_text/internal/backend/constants"
 	"go_text/internal/backend/models"
 	"os"
@@ -76,18 +77,18 @@ func SaveSettings(settingsObj *models.Settings) error {
 func LoadSettings() (*models.Settings, error) {
 	appConfigDir, err := InitAndGetAppSettingsFolder()
 	if err != nil {
-		return &models.Settings{}, err
+		return nil, fmt.Errorf("failed to get app config directory: %w", err)
 	}
 
 	settingsPath := filepath.Join(appConfigDir, SettingsFileName)
 	data, err := os.ReadFile(settingsPath)
 	if err != nil {
-		return &models.Settings{}, err
+		return nil, fmt.Errorf("failed to read settings file: %w", err)
 	}
 
 	var settings models.Settings
 	if err := json.Unmarshal(data, &settings); err != nil {
-		return &models.Settings{}, err
+		return nil, fmt.Errorf("failed to parse settings: %w", err)
 	}
 
 	return &settings, nil
