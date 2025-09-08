@@ -5,6 +5,7 @@ import (
 )
 
 const DefaultOllamaBaseUrl = "http://localhost:11434"
+const DefaultOllamaBaseUrlAlternative = "http://127.0.0.1:11434"
 
 const (
 	OpenAICompatibleGetModels       = "/v1/models"

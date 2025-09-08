@@ -1,0 +1,162 @@
+name: Build and Release Wails App
+
+on:
+  push:
+    branches:
+      - release/*  # Builds happen on release branches
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number for the release (e.g., 1.0.0 - WITHOUT "v" prefix)'
+        required: true
+        type: string
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            os: ubuntu-latest
+            output_name: "TextProcessingSuite-linux-amd64"
+          - platform: windows/amd64
+            os: windows-latest
+            output_name: "TextProcessingSuite-windows-amd64.exe"
+          - platform: darwin/arm64
+            os: macos-latest
+            output_name: "TextProcessingSuite-macos-arm64"
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Linux Dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libgtk-3-dev
+          sudo apt-get install -y libwebkit2gtk-4.1-dev
+          if [ ! -f /usr/lib/x86_64-linux-gnu/pkgconfig/webkit2gtk-4.0.pc ]; then
+            sudo ln -s /usr/lib/x86_64-linux-gnu/pkgconfig/webkit2gtk-4.1.pc /usr/lib/x86_64-linux-gnu/pkgconfig/webkit2gtk-4.0.pc
+          fi
+
+      - name: Fix WebView2 dependency (Windows)
+        if: matrix.platform == 'windows/amd64'
+        run: go get github.com/wailsapp/go-webview2@v1.0.21
+
+      - name: Install macOS Tools
+        if: runner.os == 'macOS'
+        run: brew install mitchellh/gon/gon
+
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.10.2
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build Wails Application
+        run: wails build --platform ${{ matrix.platform }} -o "${{ matrix.output_name }}"
+
+      - name: Set macOS executable permissions
+        if: runner.os == 'macOS'
+        run: chmod +x build/bin/*/Contents/MacOS/*
+
+      - name: Set Linux executable permissions
+        if: runner.os == 'Linux'
+        run: chmod +x build/bin/*
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.output_name }}
+          path: |
+            ${{ runner.os == 'macOS' && 'build/bin' || format('build/bin/{0}', matrix.output_name) }}
+
+  create-release:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version != '' }}
+    needs: build
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: write
+    steps:
+      - name: Validate version format
+        run: |
+          if ! [[ "${{ github.event.inputs.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
+            echo "::error::Version must be semantic (e.g., 1.0.0 or 1.0.0-beta)"
+            exit 1
+          fi
+
+      - name: Verify release parameters
+        id: verify
+        run: |
+          echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          echo "tag=v${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          echo "Preparing release for version ${{ github.event.inputs.version }}"
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: TextProcessingSuite-*
+          path: artifacts
+
+      - name: Prepare all artifacts
+        run: |
+          # Flatten Linux binary
+          if [ -d "artifacts/TextProcessingSuite-linux-amd64" ]; then
+            mv "artifacts/TextProcessingSuite-linux-amd64/TextProcessingSuite-linux-amd64" artifacts/tmp-linux
+            rmdir "artifacts/TextProcessingSuite-linux-amd64"
+            mv artifacts/tmp-linux "artifacts/TextProcessingSuite-linux-amd64"
+          fi
+
+          # Flatten Windows binary
+          if [ -d "artifacts/TextProcessingSuite-windows-amd64.exe" ]; then
+            mv "artifacts/TextProcessingSuite-windows-amd64.exe/TextProcessingSuite-windows-amd64.exe" artifacts/tmp-windows
+            rmdir "artifacts/TextProcessingSuite-windows-amd64.exe"
+            mv artifacts/tmp-windows "artifacts/TextProcessingSuite-windows-amd64.exe"
+          fi
+
+          # Zip macOS app bundle
+          for dir in artifacts/TextProcessingSuite-macos-*; do
+            if [ -d "$dir/TextProcessingSuite.app" ]; then
+              echo "Zipping macOS app: $dir"
+              find "$dir/TextProcessingSuite.app" -type f -not -perm -ugo+x -exec chmod a+x {} \; 2>/dev/null || true
+              cd "$dir"
+              zip -r -X "../$(basename $dir).zip" TextProcessingSuite.app
+              cd - >/dev/null
+            fi
+          done
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.verify.outputs.tag }}
+          name: Release ${{ steps.verify.outputs.version }}
+          draft: false
+          prerelease: false
+          files: |
+            artifacts/TextProcessingSuite-linux-amd64
+            artifacts/TextProcessingSuite-windows-amd64.exe
+            artifacts/TextProcessingSuite-macos-arm64.zip

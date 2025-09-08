@@ -29,7 +29,7 @@ type ChatCompletionRequest struct {
 	Model       string    `json:"model"`
 	Messages    []Message `json:"messages"`
 	Temperature float64   `json:"temperature,omitempty"`
-	Options     Options   `json:"options,omitempty"`
+	Options     *Options  `json:"options,omitempty"`
 	Stream      bool      `json:"stream"`
 	N           int       `json:"n,omitempty"`
 }
@@ -73,7 +73,7 @@ func NewChatCompletionRequest(modelName, userPrompt, systemPrompt string, temper
 			userMsg,
 		},
 		Temperature: temperature,
-		Options: Options{
+		Options: &Options{
 			Temperature: temperature,
 		},
 		Stream: false,

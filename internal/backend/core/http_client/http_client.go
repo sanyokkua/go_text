@@ -1,6 +1,7 @@
 package http_client
 
 import (
+	"go_text/internal/backend/constants"
 	"go_text/internal/backend/core/settings"
 	"go_text/internal/backend/core/utils"
 	"go_text/internal/backend/models"
@@ -60,6 +61,11 @@ func (h *appHttpClientStruct) MakeLLMCompletionRequest(request *models.ChatCompl
 	baseUrl, endpoint, headers, err := h.getRequestParams(completionEndpoint)
 	if err != nil {
 		return nil, err
+	}
+
+	if baseUrl != constants.DefaultOllamaBaseUrl && baseUrl != constants.DefaultOllamaBaseUrlAlternative {
+		// Exclude Options used only by Ollama
+		request.Options = nil
 	}
 
 	return h.utilsService.MakeLLMCompletionRequest(h.client, baseUrl, endpoint, headers, request)
