@@ -72,6 +72,22 @@ export const appStateSummaryButtonsGet = createAsyncThunk<TabContentBtn[], void,
         }
     },
 );
+export const appStateTransformingButtonsGet = createAsyncThunk<TabContentBtn[], void, { rejectValue: string }>(
+    'appState/appStateTransformingButtonsGet',
+    async (_, { rejectWithValue }) => {
+        try {
+            LogDebug('appStateTransformingButtonsGet is triggered');
+            const response = await UiStateApi.getTransformingItems();
+            return response.map((item) => {
+                return { btnId: item.actionId, btnName: item.actionText };
+            });
+        } catch (error: unknown) {
+            const msg = extractErrorDetails(error);
+            LogWarning('Failed appStateTransformingButtonsGet with error: ' + msg);
+            return rejectWithValue(msg);
+        }
+    },
+);
 export const appStateInputLanguagesGet = createAsyncThunk<SelectItem[], void, { rejectValue: string }>(
     'appState/appStateInputLanguagesGet',
     async (_, { rejectWithValue }) => {
@@ -148,6 +164,7 @@ export const initializeAppState = createAsyncThunk('appState/initialize', async 
         dispatch(appStateFormattingButtonsGet()).unwrap(),
         dispatch(appStateTranslateButtonsGet()).unwrap(),
         dispatch(appStateSummaryButtonsGet()).unwrap(),
+        dispatch(appStateTransformingButtonsGet()).unwrap(),
         dispatch(appStateInputLanguagesGet()).unwrap(),
         dispatch(appStateOutputLanguagesGet()).unwrap(),
         dispatch(appStateDefaultInputLanguageGet()).unwrap(),

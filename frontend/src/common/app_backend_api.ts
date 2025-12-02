@@ -17,6 +17,7 @@ export interface IUiStateApi {
     getDefaultInputLanguage(): Promise<AppLanguageItem>;
     getDefaultOutputLanguage(): Promise<AppLanguageItem>;
     getFormattingItems(): Promise<Array<AppActionItem>>;
+    getTransformingItems(): Promise<Array<AppActionItem>>;
     getInputLanguages(): Promise<Array<AppLanguageItem>>;
     getModelsList(): Promise<Array<string>>;
     getOutputLanguages(): Promise<Array<AppLanguageItem>>;

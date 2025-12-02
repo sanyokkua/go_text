@@ -18,6 +18,7 @@ const (
 	PromptCategoryProofread     = "Proofreading"
 	PromptCategoryFormat        = "Formatting"
 	PromptCategorySummary       = "Summarization"
+	PromptCategoryTransforming  = "Transforming"
 	TemplateParamText           = "{{user_text}}"
 	TemplateParamFormat         = "{{user_format}}"
 	TemplateParamInputLanguage  = "{{input_language}}"

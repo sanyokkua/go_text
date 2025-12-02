@@ -14,6 +14,7 @@ type AppUIStateApi interface {
 	GetFormattingItems() ([]models.AppActionItem, error)
 	GetTranslatingItems() ([]models.AppActionItem, error)
 	GetSummarizationItems() ([]models.AppActionItem, error)
+	GetTransformingItems() ([]models.AppActionItem, error)
 	GetInputLanguages() ([]models.LanguageItem, error)
 	GetOutputLanguages() ([]models.LanguageItem, error)
 	GetDefaultInputLanguage() (models.LanguageItem, error)
@@ -59,6 +60,10 @@ func (a *appUIStateApiStruct) GetTranslatingItems() ([]models.AppActionItem, err
 
 func (a *appUIStateApiStruct) GetSummarizationItems() ([]models.AppActionItem, error) {
 	return a.getItems(constants.PromptCategorySummary)
+}
+
+func (a *appUIStateApiStruct) GetTransformingItems() ([]models.AppActionItem, error) {
+	return a.getItems(constants.PromptCategoryTransforming)
 }
 
 func (a *appUIStateApiStruct) GetInputLanguages() ([]models.LanguageItem, error) {
