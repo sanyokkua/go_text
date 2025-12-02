@@ -8,6 +8,7 @@ import {
     GetOutputLanguages,
     GetProofreadingItems,
     GetSummarizationItems,
+    GetTransformingItems,
     GetTranslatingItems,
 } from '../../wailsjs/go/ui/appUIStateApiStruct';
 import { LogDebug } from '../../wailsjs/runtime';
@@ -109,6 +110,18 @@ export class AppUiStateApi implements IUiStateApi {
             });
         } catch (error) {
             LogDebug('Error getting summary items');
+            throw error;
+        }
+    }
+
+    async getTransformingItems(): Promise<Array<AppActionItem>> {
+        try {
+            const actionItems = await GetTransformingItems();
+            return actionItems.map((item) => {
+                return { ...item };
+            });
+        } catch (error) {
+            LogDebug('Error getting transforming items');
             throw error;
         }
     }

@@ -14,6 +14,7 @@ import {
     appStateProcessPasteFromClipboard,
     appStateProofreadingButtonsGet,
     appStateSummaryButtonsGet,
+    appStateTransformingButtonsGet,
     appStateTranslateButtonsGet,
     initializeAppState,
 } from './app_state_thunks';
@@ -23,6 +24,7 @@ export interface AppState {
     buttonsForFormatting: TabContentBtn[];
     buttonsForTranslating: TabContentBtn[];
     buttonsForSummarization: TabContentBtn[];
+    buttonsForTransforming: TabContentBtn[];
     availableInputLanguages: SelectItem[];
     availableOutputLanguages: SelectItem[];
     currentProvider: string;
@@ -44,6 +46,7 @@ const initialState: AppState = {
     buttonsForFormatting: [],
     buttonsForTranslating: [],
     buttonsForSummarization: [],
+    buttonsForTransforming: [],
     availableInputLanguages: [],
     availableOutputLanguages: [],
     currentProvider: '',
@@ -135,6 +138,19 @@ export const appStateSlice = createSlice({
                 state.isProcessing = false;
                 state.errorMessage = action.payload || UnknownError;
                 state.buttonsForSummarization = [];
+            })
+
+            .addCase(appStateTransformingButtonsGet.pending, (state: AppState) => {
+                state.isProcessing = true;
+            })
+            .addCase(appStateTransformingButtonsGet.fulfilled, (state: AppState, action: PayloadAction<TabContentBtn[]>) => {
+                state.isProcessing = false;
+                state.buttonsForTransforming = action.payload;
+            })
+            .addCase(appStateTransformingButtonsGet.rejected, (state: AppState, action) => {
+                state.isProcessing = false;
+                state.errorMessage = action.payload || UnknownError;
+                state.buttonsForTransforming = [];
             })
 
             .addCase(appStateInputLanguagesGet.pending, (state: AppState) => {

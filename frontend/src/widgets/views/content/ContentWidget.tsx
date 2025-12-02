@@ -21,6 +21,7 @@ const ContentWidget: React.FC = () => {
     const buttonsForFormatting = useAppSelector((state) => state.appState.buttonsForFormatting);
     const buttonsForTranslating = useAppSelector((state) => state.appState.buttonsForTranslating);
     const buttonsForSummarization = useAppSelector((state) => state.appState.buttonsForSummarization);
+    const buttonsForTransforming = useAppSelector((state) => state.appState.buttonsForTransforming);
     const textEditorInputContent = useAppSelector((state) => state.appState.textEditorInputContent);
     const textEditorOutputContent = useAppSelector((state) => state.appState.textEditorOutputContent);
     const selectedInputLanguage = useAppSelector((state) => state.appState.selectedInputLanguage);
@@ -94,7 +95,7 @@ const ContentWidget: React.FC = () => {
                 onOutputUseAsInput={onBtnOutputUseAsInputClick}
             />
 
-            <TabWidget tabs={['Proofreading', 'Formatting', 'Translating', 'Summarization']} disabled={isProcessing}>
+            <TabWidget tabs={['Proofreading', 'Formatting', 'Translating', 'Summarization', 'Transforming']} disabled={isProcessing}>
                 <ButtonsOnlyWidget buttons={buttonsForProofreading} disabled={isProcessing} onBtnClick={onOperationBtnClick} />
                 <ButtonsOnlyWidget buttons={buttonsForFormatting} disabled={isProcessing} onBtnClick={onOperationBtnClick} />
                 <TranslatingWidget
@@ -109,6 +110,7 @@ const ContentWidget: React.FC = () => {
                     onOutputLanguageChanged={onSelectOutputLanguageChanged}
                 />
                 <ButtonsOnlyWidget buttons={buttonsForSummarization} disabled={isProcessing} onBtnClick={onOperationBtnClick} />
+                <ButtonsOnlyWidget buttons={buttonsForTransforming} disabled={isProcessing} onBtnClick={onOperationBtnClick} />
             </TabWidget>
             <LoadingOverlay isLoading={isProcessing} />
         </div>
