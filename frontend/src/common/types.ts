@@ -29,6 +29,7 @@ export interface AppSettings {
     completionEndpoint: string;
     modelName: string;
     temperature: number;
+    isTemperatureEnabled: boolean;
     defaultInputLanguage: string;
     defaultOutputLanguage: string;
     languages: string[];

@@ -28,7 +28,7 @@ type Options struct {
 type ChatCompletionRequest struct {
 	Model       string    `json:"model"`
 	Messages    []Message `json:"messages"`
-	Temperature float64   `json:"temperature,omitempty"`
+	Temperature *float64  `json:"temperature,omitempty"`
 	Options     *Options  `json:"options,omitempty"`
 	Stream      bool      `json:"stream"`
 	N           int       `json:"n,omitempty"`
@@ -72,7 +72,7 @@ func NewChatCompletionRequest(modelName, userPrompt, systemPrompt string, temper
 			systemMsg,
 			userMsg,
 		},
-		Temperature: temperature,
+		Temperature: &temperature,
 		Options: &Options{
 			Temperature: temperature,
 		},
@@ -96,6 +96,7 @@ type Settings struct {
 	Headers               map[string]string `json:"headers"`
 	ModelName             string            `json:"modelName"`
 	Temperature           float64           `json:"temperature"`
+	IsTemperatureEnabled  bool              `json:"isTemperatureEnabled"`
 	DefaultInputLanguage  string            `json:"defaultInputLanguage"`
 	DefaultOutputLanguage string            `json:"defaultOutputLanguage"`
 	Languages             []string          `json:"languages"`

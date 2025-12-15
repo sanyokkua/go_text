@@ -52,6 +52,7 @@ var DefaultSetting = models.Settings{
 	Headers:               map[string]string{},
 	ModelName:             "",
 	Temperature:           0.5,
+	IsTemperatureEnabled:  true,
 	DefaultInputLanguage:  "English",
 	DefaultOutputLanguage: "Ukrainian",
 	Languages:             languages[:],

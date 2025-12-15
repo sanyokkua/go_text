@@ -73,7 +73,26 @@ func (h *appUIActionApiStruct) ProcessAction(action models.AppActionObjWrapper) 
 	}
 
 	// 5. Send to LLM and sanitize
-	req := models.NewChatCompletionRequest(cfg.ModelName, userPrompt, sysPrompt, cfg.Temperature)
+	messages := []models.Message{
+		models.NewMessage("system", sysPrompt),
+		models.NewMessage("user", userPrompt),
+	}
+
+	req := models.ChatCompletionRequest{
+		Model:    cfg.ModelName,
+		Messages: messages,
+		Stream:   false,
+		N:        1,
+	}
+
+	if cfg.IsTemperatureEnabled {
+		t := cfg.Temperature
+		req.Temperature = &t
+		req.Options = &models.Options{Temperature: t}
+	}
+
+	// req := models.NewChatCompletionRequest(cfg.ModelName, userPrompt, sysPrompt, cfg.Temperature) // OLD
+
 	rawResp, err := h.llmService.GetCompletionResponse(&req)
 	if err != nil {
 		return "", fmt.Errorf("GetCompletionResponse: %w", err)

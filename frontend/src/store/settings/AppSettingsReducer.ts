@@ -67,6 +67,7 @@ const setStateFields = (state: AppSettingsState, action: PayloadAction<AppSettin
     state.completionEndpoint = action.payload.completionEndpoint;
     state.modelName = action.payload.modelName;
     state.temperature = action.payload.temperature;
+    state.isTemperatureEnabled = action.payload.isTemperatureEnabled;
     state.defaultInputLanguage = action.payload.defaultInputLanguage;
     state.defaultOutputLanguage = action.payload.defaultOutputLanguage;
     state.languages = action.payload.languages;
@@ -96,6 +97,7 @@ export interface AppSettingsState {
     completionEndpointModel: string;
     modelName: string;
     temperature: number;
+    isTemperatureEnabled: boolean;
     defaultInputLanguage: string;
     defaultOutputLanguage: string;
     languages: string[];
@@ -127,6 +129,7 @@ const initialState: AppSettingsState = {
     headers: {},
     modelName: '',
     temperature: 0.5,
+    isTemperatureEnabled: true,
     defaultInputLanguage: '',
     defaultOutputLanguage: '',
     languages: [],
@@ -222,6 +225,9 @@ export const appSettingsSlice = createSlice({
         },
         setTemperature: (state: AppSettingsState, action: PayloadAction<number>) => {
             state.temperature = action.payload;
+        },
+        setIsTemperatureEnabled: (state: AppSettingsState, action: PayloadAction<boolean>) => {
+            state.isTemperatureEnabled = action.payload;
         },
         setUseMarkdownForOutput: (state: AppSettingsState, action: PayloadAction<boolean>) => {
             state.useMarkdownForOutput = action.payload;
@@ -346,6 +352,7 @@ export const {
     setDisplaySelectedModel,
     setBaseUrl,
     setTemperature,
+    setIsTemperatureEnabled,
     setUseMarkdownForOutput,
     addDisplayHeader,
     updateHeader,

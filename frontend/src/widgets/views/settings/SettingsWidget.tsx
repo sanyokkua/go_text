@@ -13,6 +13,7 @@ import {
     setDisplaySelectedOutputLanguage,
     setModelsEndpoint,
     setTemperature,
+    setIsTemperatureEnabled,
     setUseMarkdownForOutput,
     updateHeader,
 } from '../../../store/settings/AppSettingsReducer';
@@ -68,6 +69,7 @@ const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
     const defaultOutputLanguage = useAppSelector((state) => state.settingsState.defaultOutputLanguage);
     const languages = useAppSelector((state) => state.settingsState.languages);
     const temperature = useAppSelector((state) => state.settingsState.temperature);
+    const isTemperatureEnabled = useAppSelector((state) => state.settingsState.isTemperatureEnabled);
     const useMarkdownForOutput = useAppSelector((state) => state.settingsState.useMarkdownForOutput);
     const isLoadingSettings = useAppSelector((state) => state.settingsState.isLoadingSettings);
     const errorMsg = useAppSelector((state) => state.settingsState.errorMsg);
@@ -103,6 +105,9 @@ const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
         const value = parseInt(e.target.value);
         dispatch(setTemperature(value / 100));
     };
+    const handleTemperatureEnabledChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        dispatch(setIsTemperatureEnabled(e.currentTarget.checked));
+    };
     const handleLanguageSelect = (type: 'input' | 'output', item: SelectItem) => {
         if (type === 'input') {
             dispatch(setDisplaySelectedInputLanguage(item));
@@ -134,6 +139,7 @@ const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
                 completionEndpoint,
                 modelName,
                 temperature,
+                isTemperatureEnabled,
                 defaultInputLanguage,
                 defaultOutputLanguage,
                 languages,
@@ -279,6 +285,16 @@ const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
                         />
                     </SettingsGroup>
                     <SettingsGroup>
+                        <div className="form-group checkbox-group" style={{ marginBottom: '10px' }}>
+                            <input
+                                type="checkbox"
+                                id="enableTemperature"
+                                checked={isTemperatureEnabled}
+                                onChange={handleTemperatureEnabledChange}
+                                disabled={isLoadingSettings}
+                            />
+                            <label htmlFor="enableTemperature">Enable Temperature</label>
+                        </div>
                         <label htmlFor="temperature">Model Temperature:</label>
                         <input
                             type="range"
@@ -287,7 +303,7 @@ const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
                             max="100"
                             value={temperature * 100}
                             onChange={handleTemperatureChange}
-                            disabled={isLoadingSettings}
+                            disabled={isLoadingSettings || !isTemperatureEnabled}
                         />
                         <div className="temperature-value">{temperature.toFixed(2)}</div>
                     </SettingsGroup>
