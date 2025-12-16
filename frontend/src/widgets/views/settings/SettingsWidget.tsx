@@ -295,17 +295,19 @@ const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
                             />
                             <label htmlFor="enableTemperature">Enable Temperature</label>
                         </div>
-                        <label htmlFor="temperature">Model Temperature:</label>
-                        <input
-                            type="range"
-                            id="temperature"
-                            min="0"
-                            max="100"
-                            value={temperature * 100}
-                            onChange={handleTemperatureChange}
-                            disabled={isLoadingSettings || !isTemperatureEnabled}
-                        />
-                        <div className="temperature-value">{temperature.toFixed(2)}</div>
+                        <div className={`temperature-controls ${!isTemperatureEnabled ? 'disabled' : ''}`}>
+                            <label htmlFor="temperature">Model Temperature:</label>
+                            <input
+                                type="range"
+                                id="temperature"
+                                min="0"
+                                max="100"
+                                value={temperature * 100}
+                                onChange={handleTemperatureChange}
+                                disabled={isLoadingSettings || !isTemperatureEnabled}
+                            />
+                            <div className="temperature-value">{isTemperatureEnabled ? temperature.toFixed(2) : 'N/A'}</div>
+                        </div>
                     </SettingsGroup>
                 </SettingsGroup>
 

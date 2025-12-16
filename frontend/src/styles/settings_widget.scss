@@ -103,6 +103,21 @@ input[type="range"]::-webkit-slider-thumb {
   color: var(--primary-color);
 }
 
+.temperature-controls.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+  user-select: none;
+}
+
+.temperature-controls.disabled label,
+.temperature-controls.disabled .temperature-value {
+  color: var(--disabled-color);
+}
+
+.temperature-controls.disabled input[type="range"] {
+  cursor: not-allowed;
+}
+
 .checkbox-group {
   flex-direction: row;
   align-items: center;

@@ -159,6 +159,7 @@ func TestMakeLLMCompletionRequest(t *testing.T) {
 			"Test prompt",
 			"System prompt",
 			0.7,
+			true,
 		)
 
 		resp, err := http_utils.MakeLLMCompletionRequest(client, server.URL, constants.OpenAICompatiblePostCompletions, nil, &request)

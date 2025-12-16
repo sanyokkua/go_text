@@ -63,22 +63,26 @@ func NewMessage(role, content string) Message {
 	}
 }
 
-func NewChatCompletionRequest(modelName, userPrompt, systemPrompt string, temperature float64) ChatCompletionRequest {
+func NewChatCompletionRequest(modelName, userPrompt, systemPrompt string, temperature float64, isTemperatureEnabled bool) ChatCompletionRequest {
 	systemMsg := NewMessage("system", systemPrompt)
 	userMsg := NewMessage("user", userPrompt)
-	return ChatCompletionRequest{
+
+	req := ChatCompletionRequest{
 		Model: modelName,
 		Messages: []Message{
 			systemMsg,
 			userMsg,
 		},
-		Temperature: &temperature,
-		Options: &Options{
-			Temperature: temperature,
-		},
 		Stream: false,
 		N:      1,
 	}
+
+	// Only include temperature when enabled
+	if isTemperatureEnabled {
+		req.Temperature = &temperature
+	}
+
+	return req
 }
 
 type Prompt struct {

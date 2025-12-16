@@ -137,7 +137,7 @@ func (a *appUISettingsApiStruct) ValidateCompletionRequest(baseUrl, endpoint, mo
 		return false, fmt.Errorf("completion endpoint cannot be blank")
 	}
 
-	request := models.NewChatCompletionRequest(modelName, "Say: Hello World", "You are an echo server", 0)
+	request := models.NewChatCompletionRequest(modelName, "Say: Hello World", "You are an echo server", 0, true)
 	_, err := a.utilsService.MakeLLMCompletionRequest(a.client, baseUrl, endpoint, headers, &request)
 
 	return err == nil, err

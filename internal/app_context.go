@@ -21,6 +21,7 @@ func NewApplicationContext() *ApplicationContext {
 	promptService := prompt.NewPromptService()
 	utilsService := utils.NewUtilsService()
 	restyClient := http_utils.NewRestyClient()
+	restyClient.EnableDebug()
 
 	appHttpClient := http_client.NewAppHttpClient(utilsService, settingsService, restyClient)
 	appLlmService := llm_client.NewAppLLMService(appHttpClient, utilsService)

@@ -53,10 +53,11 @@
   --warning-container-color: #f1e48a; /* Light yellow container background */
   --warning-container-color-on: #4f4800; /* Olive text for warning containers */
 
-  /* Specialized colors for shadows, outlines, and hover states */
+  /* Specialized colors for shadows, outlines, hover states, and disabled states */
   --md-shadow-color: #000000; /* Black shadow color */
   --md-outline-color: #6f7976; /* Gray outline color */
   --hover-color: white; /* White hover overlay */
+  --disabled-color: #9e9e9e; /* Gray color for disabled elements */
 }
 
 /* List of all color names used for generating utility classes */
