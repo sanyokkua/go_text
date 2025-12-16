@@ -45,16 +45,45 @@ var languages = [15]string{
 	"Ukrainian",
 }
 
+var OllamaConfig = models.ProviderConfig{
+	ProviderType:       models.ProviderTypeOllama,
+	ProviderName:       "Ollama",
+	BaseUrl:            "http://127.0.0.1:11434",
+	ModelsEndpoint:     "/v1/models",
+	CompletionEndpoint: "/v1/chat/completions",
+	Headers:            make(map[string]string),
+}
+
+var LMStudioConfig = models.ProviderConfig{
+	ProviderType:       models.ProviderTypeLMStudio,
+	ProviderName:       "LM Studio",
+	BaseUrl:            "http://127.0.0.1:1234",
+	ModelsEndpoint:     "/v1/models",
+	CompletionEndpoint: "/v1/chat/completions",
+	Headers:            make(map[string]string),
+}
+
+var LlamaCppConfig = models.ProviderConfig{
+	ProviderType:       models.ProviderTypeLlamaCpp,
+	ProviderName:       "Llama.cpp",
+	BaseUrl:            "http://127.0.0.1:8080",
+	ModelsEndpoint:     "/v1/models",
+	CompletionEndpoint: "/v1/chat/completions",
+	Headers:            make(map[string]string),
+}
+
 var DefaultSetting = models.Settings{
-	BaseUrl:               DefaultOllamaBaseUrl,
-	ModelsEndpoint:        OpenAICompatibleGetModels,
-	CompletionEndpoint:    OpenAICompatiblePostCompletions,
-	Headers:               map[string]string{},
-	ModelName:             "",
-	Temperature:           0.5,
-	IsTemperatureEnabled:  true,
-	DefaultInputLanguage:  "English",
-	DefaultOutputLanguage: "Ukrainian",
-	Languages:             languages[:],
-	UseMarkdownForOutput:  false,
+	AvailableProviderConfigs: []models.ProviderConfig{OllamaConfig, LMStudioConfig, LlamaCppConfig},
+	CurrentProviderConfig:    OllamaConfig,
+	ModelConfig: models.ModelConfig{
+		ModelName:            "",
+		IsTemperatureEnabled: true,
+		Temperature:          0.5,
+	},
+	LanguageConfig: models.LanguageConfig{
+		DefaultInputLanguage:  "English",
+		DefaultOutputLanguage: "Ukrainian",
+		Languages:             languages[:],
+	},
+	UseMarkdownForOutput: false,
 }

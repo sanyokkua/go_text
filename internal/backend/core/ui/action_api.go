@@ -45,11 +45,11 @@ func (h *appUIActionApiStruct) ProcessAction(action models.AppActionObjWrapper) 
 	}
 
 	// Validate config is present
-	if h.utilsService.IsBlankString(cfg.BaseUrl) || h.utilsService.IsBlankString(cfg.ModelName) {
+	if h.utilsService.IsBlankString(cfg.CurrentProviderConfig.BaseUrl) || h.utilsService.IsBlankString(cfg.ModelConfig.ModelName) {
 		return "", fmt.Errorf("model and provider are not configured properly")
 	}
 
-	if h.utilsService.IsBlankString(cfg.CompletionEndpoint) {
+	if h.utilsService.IsBlankString(cfg.CurrentProviderConfig.CompletionEndpoint) {
 		return "", fmt.Errorf("empty completion endpoint")
 	}
 
@@ -57,8 +57,8 @@ func (h *appUIActionApiStruct) ProcessAction(action models.AppActionObjWrapper) 
 	if err != nil || len(modelsList) == 0 {
 		return "", fmt.Errorf("failed to load models: %w", err)
 	}
-	if !slices.Contains(modelsList, cfg.ModelName) {
-		return "", fmt.Errorf("model '%s' not found in provider", cfg.ModelName)
+	if !slices.Contains(modelsList, cfg.ModelConfig.ModelName) {
+		return "", fmt.Errorf("model '%s' not found in provider", cfg.ModelConfig.ModelName)
 	}
 
 	// 4. Build the user prompt string
@@ -74,11 +74,11 @@ func (h *appUIActionApiStruct) ProcessAction(action models.AppActionObjWrapper) 
 
 	// 5. Send to LLM and sanitize
 	req := models.NewChatCompletionRequest(
-		cfg.ModelName,
+		cfg.ModelConfig.ModelName,
 		userPrompt,
 		sysPrompt,
-		cfg.Temperature,
-		cfg.IsTemperatureEnabled,
+		cfg.ModelConfig.Temperature,
+		cfg.ModelConfig.IsTemperatureEnabled,
 	)
 
 	rawResp, err := h.llmService.GetCompletionResponse(&req)

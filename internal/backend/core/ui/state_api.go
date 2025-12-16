@@ -31,7 +31,11 @@ type appUIStateApiStruct struct {
 }
 
 func (a *appUIStateApiStruct) GetCurrentModel() (string, error) {
-	return a.settingsService.GetModelName()
+	modelCfg, err := a.settingsService.GetModelConfig()
+	if err != nil {
+		return "", err
+	}
+	return modelCfg.ModelName, nil
 }
 
 func (a *appUIStateApiStruct) GetModelsList() ([]string, error) {
@@ -67,12 +71,12 @@ func (a *appUIStateApiStruct) GetTransformingItems() ([]models.AppActionItem, er
 }
 
 func (a *appUIStateApiStruct) GetInputLanguages() ([]models.LanguageItem, error) {
-	langs, err := a.settingsService.GetLanguages()
+	langs, err := a.settingsService.GetLanguageConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	return a.utilsService.MapLanguagesToLanguageItems(langs), nil
+	return a.utilsService.MapLanguagesToLanguageItems(langs.Languages), nil
 }
 
 func (a *appUIStateApiStruct) GetOutputLanguages() ([]models.LanguageItem, error) {
@@ -80,19 +84,19 @@ func (a *appUIStateApiStruct) GetOutputLanguages() ([]models.LanguageItem, error
 }
 
 func (a *appUIStateApiStruct) GetDefaultInputLanguage() (models.LanguageItem, error) {
-	language, err := a.settingsService.GetDefaultInputLanguage()
+	language, err := a.settingsService.GetLanguageConfig()
 	if err != nil {
 		return models.LanguageItem{}, err
 	}
-	return a.utilsService.MapLanguageToLanguageItem(language), nil
+	return a.utilsService.MapLanguageToLanguageItem(language.DefaultInputLanguage), nil
 }
 
 func (a *appUIStateApiStruct) GetDefaultOutputLanguage() (models.LanguageItem, error) {
-	language, err := a.settingsService.GetDefaultOutputLanguage()
+	language, err := a.settingsService.GetLanguageConfig()
 	if err != nil {
 		return models.LanguageItem{}, err
 	}
-	return a.utilsService.MapLanguageToLanguageItem(language), nil
+	return a.utilsService.MapLanguageToLanguageItem(language.DefaultOutputLanguage), nil
 }
 
 func NewAppUIStateApi(settingsService settings.SettingsService, promptService prompt.PromptService, llmService llm_client.AppLLMService, utilsService utils.UtilsService) AppUIStateApi {

@@ -22,19 +22,39 @@ export type Size = 'tiny' | 'small' | 'default' | 'large';
 
 export type KeyValuePair = { id: string; key: string; value: string };
 
-export interface AppSettings {
+export type ProviderType = 'custom' | 'ollama' | 'lm-studio' | 'llama-cpp';
+
+export interface ProviderConfig {
+    providerType: ProviderType;
+    providerName: string;
     baseUrl: string;
-    headers: Record<string, string>;
     modelsEndpoint: string;
     completionEndpoint: string;
+    headers: Record<string, string>;
+}
+
+export interface ModelConfig {
     modelName: string;
-    temperature: number;
     isTemperatureEnabled: boolean;
+    temperature: number;
+}
+
+export interface LanguageConfig {
+    languages: string[];
     defaultInputLanguage: string;
     defaultOutputLanguage: string;
-    languages: string[];
+}
+
+export interface AppSettings {
+    availableProviderConfigs: ProviderConfig[];
+    currentProviderConfig: ProviderConfig;
+    modelConfig: ModelConfig;
+    languageConfig: LanguageConfig;
     useMarkdownForOutput: boolean;
 }
+
+// Deprecated: flattened AppSettings for backward compatibility during migration if needed
+// But for this refactor we aim to switch fully to the nested structure
 
 export interface AppActionObj {
     actionId: string;

@@ -26,23 +26,18 @@ type appHttpClientStruct struct {
 }
 
 func (h *appHttpClientStruct) getRequestParams(requestEndpoint string) (baseUrl, endpoint string, headers map[string]string, err error) {
-	baseUrl, err = h.settingsService.GetBaseUrl()
+	provider, err := h.settingsService.GetCurrentProvider()
 	if err != nil {
 		return "", "", nil, err
 	}
 
-	headers, err = h.settingsService.GetHeaders()
-	if err != nil {
-		return "", "", nil, err
-	}
+	baseUrl = provider.BaseUrl
+	headers = provider.Headers
 
 	if requestEndpoint == modelsEndpoint {
-		endpoint, err = h.settingsService.GetModelsEndpoint()
+		endpoint = provider.ModelsEndpoint
 	} else {
-		endpoint, err = h.settingsService.GetCompletionEndpoint()
-	}
-	if err != nil {
-		return "", "", nil, err
+		endpoint = provider.CompletionEndpoint
 	}
 
 	return baseUrl, endpoint, headers, nil

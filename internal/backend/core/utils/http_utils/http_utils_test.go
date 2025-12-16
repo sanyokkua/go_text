@@ -127,7 +127,7 @@ func TestMakeLLMCompletionRequest(t *testing.T) {
 			var req models.ChatCompletionRequest
 			json.NewDecoder(r.Body).Decode(&req)
 			assert.Equal(t, "test-model", req.Model)
-			assert.Equal(t, 0.7, req.Temperature)
+			assert.Equal(t, 0.7, *req.Temperature)
 			assert.Equal(t, 2, len(req.Messages))
 
 			w.WriteHeader(200)

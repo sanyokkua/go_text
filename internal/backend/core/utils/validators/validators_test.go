@@ -11,14 +11,35 @@ import (
 
 func TestIsSettingsValid(t *testing.T) {
 	validSettings := &models.Settings{
-		BaseUrl:               "http://localhost:11434",
-		ModelsEndpoint:        "/get/models",
-		CompletionEndpoint:    "/get/completion",
-		ModelName:             "gpt-3.5-turbo",
-		Temperature:           0.5,
-		DefaultInputLanguage:  "English",
-		DefaultOutputLanguage: "Ukrainian",
-		Languages:             []string{"English", "Ukrainian"},
+		AvailableProviderConfigs: []models.ProviderConfig{
+			{
+				ProviderType:       models.ProviderTypeCustom,
+				ProviderName:       "Custom OpenAI",
+				BaseUrl:            "http://localhost:11434",
+				ModelsEndpoint:     "/get/models",
+				CompletionEndpoint: "/get/completion",
+				Headers:            map[string]string{},
+			},
+		},
+		CurrentProviderConfig: models.ProviderConfig{
+			ProviderType:       models.ProviderTypeCustom,
+			ProviderName:       "Custom OpenAI",
+			BaseUrl:            "http://localhost:11434",
+			ModelsEndpoint:     "/get/models",
+			CompletionEndpoint: "/get/completion",
+			Headers:            map[string]string{},
+		},
+		ModelConfig: models.ModelConfig{
+			ModelName:            "gpt-3.5-turbo",
+			IsTemperatureEnabled: true,
+			Temperature:          0.5,
+		},
+		LanguageConfig: models.LanguageConfig{
+			Languages:             []string{"English", "Ukrainian"},
+			DefaultInputLanguage:  "English",
+			DefaultOutputLanguage: "Ukrainian",
+		},
+		UseMarkdownForOutput: false,
 	}
 
 	tests := []struct {
@@ -35,7 +56,7 @@ func TestIsSettingsValid(t *testing.T) {
 		{
 			name: "Empty baseUrl",
 			modify: func(s *models.Settings) {
-				s.BaseUrl = ""
+				s.CurrentProviderConfig.BaseUrl = ""
 			},
 			wantValid: false,
 			wantError: "cannot save settings: base url is empty",
@@ -43,7 +64,7 @@ func TestIsSettingsValid(t *testing.T) {
 		{
 			name: "Whitespace baseUrl",
 			modify: func(s *models.Settings) {
-				s.BaseUrl = "   \t\n"
+				s.CurrentProviderConfig.BaseUrl = "   \t\n"
 			},
 			wantValid: false,
 			wantError: "cannot save settings: base url is empty",
@@ -51,7 +72,7 @@ func TestIsSettingsValid(t *testing.T) {
 		{
 			name: "BaseUrl ending with /",
 			modify: func(s *models.Settings) {
-				s.BaseUrl = "http://localhost:11434/"
+				s.CurrentProviderConfig.BaseUrl = "http://localhost:11434/"
 			},
 			wantValid: false,
 			wantError: "baseUrl must not end with /",
@@ -59,7 +80,7 @@ func TestIsSettingsValid(t *testing.T) {
 		{
 			name: "BaseUrl without http(s) prefix",
 			modify: func(s *models.Settings) {
-				s.BaseUrl = "localhost:11434"
+				s.CurrentProviderConfig.BaseUrl = "localhost:11434"
 			},
 			wantValid: false,
 			wantError: "baseUrl must start with http:// or https://",
@@ -67,7 +88,7 @@ func TestIsSettingsValid(t *testing.T) {
 		{
 			name: "BaseUrl with invalid protocol",
 			modify: func(s *models.Settings) {
-				s.BaseUrl = "ftp://localhost:11434"
+				s.CurrentProviderConfig.BaseUrl = "ftp://localhost:11434"
 			},
 			wantValid: false,
 			wantError: "baseUrl must start with http:// or https://",
@@ -75,7 +96,7 @@ func TestIsSettingsValid(t *testing.T) {
 		{
 			name: "Empty modelName",
 			modify: func(s *models.Settings) {
-				s.ModelName = ""
+				s.ModelConfig.ModelName = ""
 			},
 			wantValid: false,
 			wantError: "modelName must not be empty",
@@ -83,7 +104,7 @@ func TestIsSettingsValid(t *testing.T) {
 		{
 			name: "Whitespace modelName",
 			modify: func(s *models.Settings) {
-				s.ModelName = "   "
+				s.ModelConfig.ModelName = "   "
 			},
 			wantValid: false,
 			wantError: "modelName must not be empty",
@@ -91,7 +112,7 @@ func TestIsSettingsValid(t *testing.T) {
 		{
 			name: "Empty defaultInputLanguage",
 			modify: func(s *models.Settings) {
-				s.DefaultInputLanguage = ""
+				s.LanguageConfig.DefaultInputLanguage = ""
 			},
 			wantValid: false,
 			wantError: "defaultInputLanguage must not be empty",
@@ -99,7 +120,7 @@ func TestIsSettingsValid(t *testing.T) {
 		{
 			name: "Whitespace defaultInputLanguage",
 			modify: func(s *models.Settings) {
-				s.DefaultInputLanguage = "\t"
+				s.LanguageConfig.DefaultInputLanguage = "\t"
 			},
 			wantValid: false,
 			wantError: "defaultInputLanguage must not be empty",
@@ -107,7 +128,7 @@ func TestIsSettingsValid(t *testing.T) {
 		{
 			name: "Empty defaultOutputLanguage",
 			modify: func(s *models.Settings) {
-				s.DefaultOutputLanguage = ""
+				s.LanguageConfig.DefaultOutputLanguage = ""
 			},
 			wantValid: false,
 			wantError: "defaultOutputLanguage must not be empty",
@@ -115,7 +136,7 @@ func TestIsSettingsValid(t *testing.T) {
 		{
 			name: "Temperature below 0",
 			modify: func(s *models.Settings) {
-				s.Temperature = -0.1
+				s.ModelConfig.Temperature = -0.1
 			},
 			wantValid: false,
 			wantError: "temperature must be greater than 0 and less than 1",
@@ -123,7 +144,7 @@ func TestIsSettingsValid(t *testing.T) {
 		{
 			name: "Temperature 0",
 			modify: func(s *models.Settings) {
-				s.Temperature = 0
+				s.ModelConfig.Temperature = 0
 			},
 			wantValid: true,
 			wantError: "",
@@ -131,7 +152,7 @@ func TestIsSettingsValid(t *testing.T) {
 		{
 			name: "Temperature 1",
 			modify: func(s *models.Settings) {
-				s.Temperature = 1
+				s.ModelConfig.Temperature = 1
 			},
 			wantValid: true,
 			wantError: "",
@@ -139,7 +160,7 @@ func TestIsSettingsValid(t *testing.T) {
 		{
 			name: "Temperature above 1",
 			modify: func(s *models.Settings) {
-				s.Temperature = 1.1
+				s.ModelConfig.Temperature = 1.1
 			},
 			wantValid: false,
 			wantError: "temperature must be greater than 0 and less than 1",
@@ -147,7 +168,7 @@ func TestIsSettingsValid(t *testing.T) {
 		{
 			name: "Empty languages slice",
 			modify: func(s *models.Settings) {
-				s.Languages = []string{}
+				s.LanguageConfig.Languages = []string{}
 			},
 			wantValid: false,
 			wantError: "languages must not be empty",
@@ -155,35 +176,35 @@ func TestIsSettingsValid(t *testing.T) {
 		{
 			name: "Valid http baseUrl",
 			modify: func(s *models.Settings) {
-				s.BaseUrl = "http://example.com"
+				s.CurrentProviderConfig.BaseUrl = "http://example.com"
 			},
 			wantValid: true,
 		},
 		{
 			name: "Valid https baseUrl",
 			modify: func(s *models.Settings) {
-				s.BaseUrl = "https://api.example.com"
+				s.CurrentProviderConfig.BaseUrl = "https://api.example.com"
 			},
 			wantValid: true,
 		},
 		{
 			name: "Valid temperature range (0.0001)",
 			modify: func(s *models.Settings) {
-				s.Temperature = 0.0001
+				s.ModelConfig.Temperature = 0.0001
 			},
 			wantValid: true,
 		},
 		{
 			name: "Valid temperature range (0.9999)",
 			modify: func(s *models.Settings) {
-				s.Temperature = 0.9999
+				s.ModelConfig.Temperature = 0.9999
 			},
 			wantValid: true,
 		},
 		{
 			name: "Empty modelsEndpoint",
 			modify: func(s *models.Settings) {
-				s.ModelsEndpoint = ""
+				s.CurrentProviderConfig.ModelsEndpoint = ""
 			},
 			wantValid: false,
 			wantError: "modelsEndpoint must not be empty",
@@ -191,7 +212,7 @@ func TestIsSettingsValid(t *testing.T) {
 		{
 			name: "Whitespace modelsEndpoint",
 			modify: func(s *models.Settings) {
-				s.ModelsEndpoint = "   \t"
+				s.CurrentProviderConfig.ModelsEndpoint = "   \t"
 			},
 			wantValid: false,
 			wantError: "modelsEndpoint must not be empty",
@@ -199,7 +220,7 @@ func TestIsSettingsValid(t *testing.T) {
 		{
 			name: "ModelsEndpoint not starting with /",
 			modify: func(s *models.Settings) {
-				s.ModelsEndpoint = "api/models"
+				s.CurrentProviderConfig.ModelsEndpoint = "api/models"
 			},
 			wantValid: false,
 			wantError: "modelsEndpoint must start with /",
@@ -207,7 +228,7 @@ func TestIsSettingsValid(t *testing.T) {
 		{
 			name: "ModelsEndpoint not ending with /",
 			modify: func(s *models.Settings) {
-				s.ModelsEndpoint = "/api/models"
+				s.CurrentProviderConfig.ModelsEndpoint = "/api/models"
 			},
 			wantValid: true,
 			wantError: "",
@@ -215,7 +236,7 @@ func TestIsSettingsValid(t *testing.T) {
 		{
 			name: "Not Valid modelsEndpoint",
 			modify: func(s *models.Settings) {
-				s.ModelsEndpoint = "/api/models/"
+				s.CurrentProviderConfig.ModelsEndpoint = "/api/models/"
 			},
 			wantValid: false,
 			wantError: "modelsEndpoint must not end with /",
@@ -223,7 +244,7 @@ func TestIsSettingsValid(t *testing.T) {
 		{
 			name: "ModelsEndpoint with just /",
 			modify: func(s *models.Settings) {
-				s.ModelsEndpoint = "/"
+				s.CurrentProviderConfig.ModelsEndpoint = "/"
 			},
 			wantValid: false,
 			wantError: "modelsEndpoint must not end with /",
@@ -231,7 +252,7 @@ func TestIsSettingsValid(t *testing.T) {
 		{
 			name: "ModelsEndpoint with double slash",
 			modify: func(s *models.Settings) {
-				s.ModelsEndpoint = "//"
+				s.CurrentProviderConfig.ModelsEndpoint = "//"
 			},
 			wantValid: false,
 			wantError: "modelsEndpoint must not end with /",
@@ -239,7 +260,7 @@ func TestIsSettingsValid(t *testing.T) {
 		{
 			name: "ModelsEndpoint with leading space",
 			modify: func(s *models.Settings) {
-				s.ModelsEndpoint = " /api/models/"
+				s.CurrentProviderConfig.ModelsEndpoint = " /api/models/"
 			},
 			wantValid: false,
 			wantError: "modelsEndpoint must start with /",
@@ -247,7 +268,7 @@ func TestIsSettingsValid(t *testing.T) {
 		{
 			name: "Empty completionEndpoint",
 			modify: func(s *models.Settings) {
-				s.CompletionEndpoint = ""
+				s.CurrentProviderConfig.CompletionEndpoint = ""
 			},
 			wantValid: false,
 			wantError: "completionEndpoint must not be empty",
@@ -255,7 +276,7 @@ func TestIsSettingsValid(t *testing.T) {
 		{
 			name: "Whitespace completionEndpoint",
 			modify: func(s *models.Settings) {
-				s.CompletionEndpoint = "   \t"
+				s.CurrentProviderConfig.CompletionEndpoint = "   \t"
 			},
 			wantValid: false,
 			wantError: "completionEndpoint must not be empty",
@@ -263,7 +284,7 @@ func TestIsSettingsValid(t *testing.T) {
 		{
 			name: "CompletionEndpoint not starting with /",
 			modify: func(s *models.Settings) {
-				s.CompletionEndpoint = "api/completion"
+				s.CurrentProviderConfig.CompletionEndpoint = "api/completion"
 			},
 			wantValid: false,
 			wantError: "completionEndpoint must start with /",
@@ -271,7 +292,7 @@ func TestIsSettingsValid(t *testing.T) {
 		{
 			name: "CompletionEndpoint not ending with /",
 			modify: func(s *models.Settings) {
-				s.CompletionEndpoint = "/api/completion"
+				s.CurrentProviderConfig.CompletionEndpoint = "/api/completion"
 			},
 			wantValid: true,
 			wantError: "",
@@ -279,7 +300,7 @@ func TestIsSettingsValid(t *testing.T) {
 		{
 			name: "Valid completionEndpoint",
 			modify: func(s *models.Settings) {
-				s.CompletionEndpoint = "/api/completion/"
+				s.CurrentProviderConfig.CompletionEndpoint = "/api/completion/"
 			},
 			wantValid: false,
 			wantError: "completionEndpoint must not end with /",
@@ -287,7 +308,7 @@ func TestIsSettingsValid(t *testing.T) {
 		{
 			name: "CompletionEndpoint with just /",
 			modify: func(s *models.Settings) {
-				s.CompletionEndpoint = "/"
+				s.CurrentProviderConfig.CompletionEndpoint = "/"
 			},
 			wantValid: false,
 			wantError: "completionEndpoint must not end with /",
@@ -295,7 +316,7 @@ func TestIsSettingsValid(t *testing.T) {
 		{
 			name: "CompletionEndpoint with double slash",
 			modify: func(s *models.Settings) {
-				s.CompletionEndpoint = "//"
+				s.CurrentProviderConfig.CompletionEndpoint = "//"
 			},
 			wantValid: false,
 			wantError: "completionEndpoint must not end with /",
@@ -303,7 +324,7 @@ func TestIsSettingsValid(t *testing.T) {
 		{
 			name: "CompletionEndpoint with leading space",
 			modify: func(s *models.Settings) {
-				s.CompletionEndpoint = " /api/completion/"
+				s.CurrentProviderConfig.CompletionEndpoint = " /api/completion/"
 			},
 			wantValid: false,
 			wantError: "completionEndpoint must start with /",

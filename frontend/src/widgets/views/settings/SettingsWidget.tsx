@@ -11,9 +11,9 @@ import {
     setDisplaySelectedInputLanguage,
     setDisplaySelectedModel,
     setDisplaySelectedOutputLanguage,
+    setIsTemperatureEnabled,
     setModelsEndpoint,
     setTemperature,
-    setIsTemperatureEnabled,
     setUseMarkdownForOutput,
     updateHeader,
 } from '../../../store/settings/AppSettingsReducer';
@@ -53,23 +53,23 @@ const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
     const displayListOfModels = useAppSelector((state) => state.settingsState.displayListOfModels);
     const displaySelectedModel = useAppSelector((state) => state.settingsState.displaySelectedModel);
     const displayHeaders = useAppSelector((state) => state.settingsState.displayHeaders);
-    const headers = useAppSelector((state) => state.settingsState.headers);
-    const modelName = useAppSelector((state) => state.settingsState.modelName);
-    const baseUrl = useAppSelector((state) => state.settingsState.baseUrl);
+    const headers = useAppSelector((state) => state.settingsState.currentProviderConfig.headers);
+    const modelName = useAppSelector((state) => state.settingsState.modelConfig.modelName);
+    const baseUrl = useAppSelector((state) => state.settingsState.currentProviderConfig.baseUrl);
     const baseUrlSuccessMsg = useAppSelector((state) => state.settingsState.baseUrlSuccessMsg);
     const baseUrlValidationErr = useAppSelector((state) => state.settingsState.baseUrlValidationErr);
-    const modelsEndpoint = useAppSelector((state) => state.settingsState.modelsEndpoint);
+    const modelsEndpoint = useAppSelector((state) => state.settingsState.currentProviderConfig.modelsEndpoint);
     const modelsEndpointSuccessMsg = useAppSelector((state) => state.settingsState.modelsEndpointSuccessMsg);
     const modelsEndpointValidationErr = useAppSelector((state) => state.settingsState.modelsEndpointValidationErr);
-    const completionEndpoint = useAppSelector((state) => state.settingsState.completionEndpoint);
+    const completionEndpoint = useAppSelector((state) => state.settingsState.currentProviderConfig.completionEndpoint);
     const completionEndpointModel = useAppSelector((state) => state.settingsState.completionEndpointModel);
     const completionEndpointSuccessMsg = useAppSelector((state) => state.settingsState.completionEndpointSuccessMsg);
     const completionEndpointValidationErr = useAppSelector((state) => state.settingsState.completionEndpointValidationErr);
-    const defaultInputLanguage = useAppSelector((state) => state.settingsState.defaultInputLanguage);
-    const defaultOutputLanguage = useAppSelector((state) => state.settingsState.defaultOutputLanguage);
-    const languages = useAppSelector((state) => state.settingsState.languages);
-    const temperature = useAppSelector((state) => state.settingsState.temperature);
-    const isTemperatureEnabled = useAppSelector((state) => state.settingsState.isTemperatureEnabled);
+    const defaultInputLanguage = useAppSelector((state) => state.settingsState.languageConfig.defaultInputLanguage);
+    const defaultOutputLanguage = useAppSelector((state) => state.settingsState.languageConfig.defaultOutputLanguage);
+    const languages = useAppSelector((state) => state.settingsState.languageConfig.languages);
+    const temperature = useAppSelector((state) => state.settingsState.modelConfig.temperature);
+    const isTemperatureEnabled = useAppSelector((state) => state.settingsState.modelConfig.isTemperatureEnabled);
     const useMarkdownForOutput = useAppSelector((state) => state.settingsState.useMarkdownForOutput);
     const isLoadingSettings = useAppSelector((state) => state.settingsState.isLoadingSettings);
     const errorMsg = useAppSelector((state) => state.settingsState.errorMsg);
@@ -133,21 +133,16 @@ const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
     const handleSave = async () => {
         try {
             const settingsToSave: AppSettings = {
-                baseUrl,
-                headers,
-                modelsEndpoint,
-                completionEndpoint,
-                modelName,
-                temperature,
-                isTemperatureEnabled,
-                defaultInputLanguage,
-                defaultOutputLanguage,
-                languages,
+                availableProviderConfigs: [],
+                currentProviderConfig: { baseUrl, headers, modelsEndpoint, completionEndpoint, providerName: '', providerType: 'custom' },
+                modelConfig: { modelName, temperature, isTemperatureEnabled },
+                languageConfig: { defaultInputLanguage, defaultOutputLanguage, languages },
                 useMarkdownForOutput,
             };
             await dispatch(appSettingsSaveSettings(settingsToSave)).unwrap();
             await dispatch(appSettingsGetListOfModels()).unwrap();
             onClose();
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
             // Error is handled by the thunk
         }
@@ -161,6 +156,7 @@ const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
         try {
             await dispatch(appSettingsResetToDefaultSettings()).unwrap();
             await dispatch(appSettingsGetListOfModels()).unwrap();
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
             // Error is handled by the thunk
         }

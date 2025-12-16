@@ -35,7 +35,7 @@ const HeaderKeyValue: React.FC<HeaderKeyValueProps> = ({ value, onChange, onDele
     return (
         <div className="header-row">
             <div className="header-input-group">
-                <label>Header Key:</label>
+                <label>Key:</label>
                 <input
                     type="text"
                     value={headerKey}
@@ -47,7 +47,7 @@ const HeaderKeyValue: React.FC<HeaderKeyValueProps> = ({ value, onChange, onDele
                 />
             </div>
             <div className="header-input-group">
-                <label>Header Value:</label>
+                <label>Value:</label>
                 <input
                     type="text"
                     value={headerValue}

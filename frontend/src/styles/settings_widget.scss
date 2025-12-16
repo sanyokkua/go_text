@@ -144,7 +144,8 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .header-input-group label {
-  display: block;
+  display: inline-table;
+  margin-right: 0.5rem;
 }
 
 .settings-error {
@@ -165,6 +166,30 @@ input[type="range"]::-webkit-slider-thumb {
   color: var(--error-color);
   margin-left: 12px;
   font-size: 14px;
+}
+
+.provider-management-buttons {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 12px;
+}
+
+.settings-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.settings-form-grid > label {
+  justify-self: start;
+  padding-right: 0.5rem;
+  text-align: left;
+}
+
+.settings-form-grid > input {
+  width: 100%;
 }
 
 .settings-widget-confirmation-buttons-container {

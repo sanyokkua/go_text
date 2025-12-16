@@ -1,14 +1,17 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { v4 as uuidv4 } from 'uuid';
-import { AppSettings, KeyValuePair, UnknownError } from '../../common/types';
+import { AppSettings, KeyValuePair, LanguageConfig, ModelConfig, ProviderConfig, ProviderType, UnknownError } from '../../common/types';
 import { SelectItem } from '../../widgets/base/Select';
 import {
     appSettingsGetListOfModels,
     appSettingsLoadCurrentSettings,
     appSettingsResetToDefaultSettings,
     appSettingsSaveSettings,
+    appSettingsSwitchProviderType,
+    appSettingsSwitchProviderTypeAndSave,
     appSettingsValidateCompletionRequest,
     appSettingsValidateModelsRequest,
+    appSettingsVerifyProviderAvailability,
     initializeSettingsState,
 } from './settings_thunks';
 
@@ -61,23 +64,18 @@ const resetValidationMessages = (state: AppSettingsState) => {
     state.errorMsg = '';
 };
 const setStateFields = (state: AppSettingsState, action: PayloadAction<AppSettings>) => {
-    state.baseUrl = action.payload.baseUrl;
-    state.headers = action.payload.headers;
-    state.modelsEndpoint = action.payload.modelsEndpoint;
-    state.completionEndpoint = action.payload.completionEndpoint;
-    state.modelName = action.payload.modelName;
-    state.temperature = action.payload.temperature;
-    state.isTemperatureEnabled = action.payload.isTemperatureEnabled;
-    state.defaultInputLanguage = action.payload.defaultInputLanguage;
-    state.defaultOutputLanguage = action.payload.defaultOutputLanguage;
-    state.languages = action.payload.languages;
+    state.availableProviderConfigs = action.payload.availableProviderConfigs;
+    state.currentProviderConfig = action.payload.currentProviderConfig;
+    state.modelConfig = action.payload.modelConfig;
+    state.languageConfig = action.payload.languageConfig;
     state.useMarkdownForOutput = action.payload.useMarkdownForOutput;
-    state.displayListOfLanguages = mapStringListToSelectItems(action.payload.languages);
 
-    state.displaySelectedInputLanguage = mapStringToSelectItem(state.defaultInputLanguage);
-    state.displaySelectedOutputLanguage = mapStringToSelectItem(state.defaultOutputLanguage);
-    state.displaySelectedModel = mapStringToSelectItem(state.modelName);
-    state.displayHeaders = mapRecordToKeyValuePair(action.payload.headers);
+    // Helper mappings for UI
+    state.displayListOfLanguages = mapStringListToSelectItems(action.payload.languageConfig.languages);
+    state.displaySelectedInputLanguage = mapStringToSelectItem(action.payload.languageConfig.defaultInputLanguage);
+    state.displaySelectedOutputLanguage = mapStringToSelectItem(action.payload.languageConfig.defaultOutputLanguage);
+    state.displaySelectedModel = mapStringToSelectItem(action.payload.modelConfig.modelName);
+    state.displayHeaders = mapRecordToKeyValuePair(action.payload.currentProviderConfig.headers);
 
     resetValidationMessages(state);
 };
@@ -90,18 +88,15 @@ export interface AppSettingsState {
     displaySelectedModel: SelectItem;
     displayHeaders: KeyValuePair[];
 
-    baseUrl: string;
-    headers: Record<string, string>;
-    modelsEndpoint: string;
-    completionEndpoint: string;
-    completionEndpointModel: string;
-    modelName: string;
-    temperature: number;
-    isTemperatureEnabled: boolean;
-    defaultInputLanguage: string;
-    defaultOutputLanguage: string;
-    languages: string[];
+    // New nested state structures
+    availableProviderConfigs: ProviderConfig[];
+    currentProviderConfig: ProviderConfig;
+    modelConfig: ModelConfig;
+    languageConfig: LanguageConfig;
     useMarkdownForOutput: boolean;
+
+    // UI state for current provider editing
+    completionEndpointModel: string; // This seems to be UI-only state not saved in backend config directly?
 
     baseUrlSuccessMsg: string;
     baseUrlValidationErr: string;
@@ -112,6 +107,9 @@ export interface AppSettingsState {
     models: string[];
     errorMsg: string;
     isLoadingSettings: boolean;
+    // Provider management state
+    isEditingProvider: boolean;
+    currentEditingProvider: ProviderConfig | null;
 }
 
 const emptySelectItems: SelectItem = mapStringToSelectItem('');
@@ -123,16 +121,18 @@ const initialState: AppSettingsState = {
     displayListOfModels: [],
     displaySelectedModel: emptySelectItems,
     displayHeaders: [],
-    baseUrl: '',
-    modelsEndpoint: '',
-    completionEndpoint: '',
-    headers: {},
-    modelName: '',
-    temperature: 0.5,
-    isTemperatureEnabled: true,
-    defaultInputLanguage: '',
-    defaultOutputLanguage: '',
-    languages: [],
+
+    availableProviderConfigs: [],
+    currentProviderConfig: {
+        providerType: 'custom',
+        providerName: 'Custom OpenAI',
+        baseUrl: '',
+        modelsEndpoint: '',
+        completionEndpoint: '',
+        headers: {},
+    },
+    modelConfig: { modelName: '', isTemperatureEnabled: true, temperature: 0.5 },
+    languageConfig: { languages: [], defaultInputLanguage: '', defaultOutputLanguage: '' },
     useMarkdownForOutput: false,
 
     models: [],
@@ -145,6 +145,9 @@ const initialState: AppSettingsState = {
     modelsEndpointSuccessMsg: '',
     completionEndpointSuccessMsg: '',
     isLoadingSettings: false,
+    // Provider management state
+    isEditingProvider: false,
+    currentEditingProvider: null,
 };
 
 export const appSettingsSlice = createSlice({
@@ -153,15 +156,15 @@ export const appSettingsSlice = createSlice({
     reducers: {
         setDisplaySelectedInputLanguage(state, action: PayloadAction<SelectItem>) {
             state.displaySelectedInputLanguage = action.payload;
-            state.defaultInputLanguage = action.payload.itemId;
+            state.languageConfig.defaultInputLanguage = action.payload.itemId;
         },
         setDisplaySelectedOutputLanguage(state, action: PayloadAction<SelectItem>) {
             state.displaySelectedOutputLanguage = action.payload;
-            state.defaultOutputLanguage = action.payload.itemId;
+            state.languageConfig.defaultOutputLanguage = action.payload.itemId;
         },
         setDisplaySelectedModel(state, action: PayloadAction<SelectItem>) {
             state.displaySelectedModel = action.payload;
-            state.modelName = action.payload.itemId;
+            state.modelConfig.modelName = action.payload.itemId;
         },
         addDisplayHeader(state, action: PayloadAction<void>) {
             if (state.displayHeaders.some((item) => item.key.trim().length === 0 && item.value.trim().length === 0)) {
@@ -174,7 +177,7 @@ export const appSettingsSlice = createSlice({
             const newHeaders = [...state.displayHeaders];
             newHeaders.push({ id: generateBtnId(), key: '', value: '' });
             state.displayHeaders = newHeaders.sort((a, b) => a.id.localeCompare(b.id));
-            state.headers = mapKeyValuePairToRecord(newHeaders);
+            state.currentProviderConfig.headers = mapKeyValuePairToRecord(newHeaders);
             resetValidationMessages(state);
         },
         updateHeader(state, action: PayloadAction<KeyValuePair>) {
@@ -183,20 +186,25 @@ export const appSettingsSlice = createSlice({
             filtered.push(action.payload);
 
             state.displayHeaders = filtered.sort((a, b) => a.id.localeCompare(b.id));
-            state.headers = mapKeyValuePairToRecord(filtered);
+            state.currentProviderConfig.headers = mapKeyValuePairToRecord(filtered);
             resetValidationMessages(state);
         },
         removeDisplayHeader(state, action: PayloadAction<string>) {
             const newHeaders = [...state.displayHeaders];
             const filtered = newHeaders.filter((item) => item.id !== action.payload);
             state.displayHeaders = filtered.sort((a, b) => a.id.localeCompare(b.id));
-            state.headers = mapKeyValuePairToRecord(filtered);
+            state.currentProviderConfig.headers = mapKeyValuePairToRecord(filtered);
             resetValidationMessages(state);
+        },
+        setModelName: (state: AppSettingsState, action: PayloadAction<string>) => {
+            state.modelConfig.modelName = action.payload;
         },
         setBaseUrl: (state: AppSettingsState, action: PayloadAction<string>) => {
             resetValidationMessages(state);
             const baseUrl = action.payload;
-            state.baseUrl = baseUrl;
+            state.currentProviderConfig.baseUrl = baseUrl;
+            // Only validate if custom provider, others might be hardcoded/different?
+            // Actually, validation logic is good to keep generally, but maybe loosen for non-http?
             if (!baseUrl || baseUrl.trim().length === 0) {
                 state.baseUrlValidationErr = 'Base Url cannot be empty.';
             } else if (!(baseUrl.startsWith('http://') || baseUrl.startsWith('https://'))) {
@@ -210,13 +218,13 @@ export const appSettingsSlice = createSlice({
         setModelsEndpoint: (state: AppSettingsState, action: PayloadAction<string>) => {
             resetValidationMessages(state);
             const modelsEndpoint = action.payload;
-            state.modelsEndpoint = modelsEndpoint;
+            state.currentProviderConfig.modelsEndpoint = modelsEndpoint;
             state.modelsEndpointValidationErr = validateEndpoint(modelsEndpoint, 'Model Endpoint');
         },
         setCompletionEndpoint: (state: AppSettingsState, action: PayloadAction<string>) => {
             resetValidationMessages(state);
             const completionEndpoint = action.payload;
-            state.completionEndpoint = completionEndpoint;
+            state.currentProviderConfig.completionEndpoint = completionEndpoint;
             state.completionEndpointValidationErr = validateEndpoint(completionEndpoint, 'Completion Endpoint');
         },
         setCompletionEndpointModel: (state: AppSettingsState, action: PayloadAction<string>) => {
@@ -224,13 +232,32 @@ export const appSettingsSlice = createSlice({
             state.completionEndpointModel = action.payload;
         },
         setTemperature: (state: AppSettingsState, action: PayloadAction<number>) => {
-            state.temperature = action.payload;
+            state.modelConfig.temperature = action.payload;
         },
         setIsTemperatureEnabled: (state: AppSettingsState, action: PayloadAction<boolean>) => {
-            state.isTemperatureEnabled = action.payload;
+            state.modelConfig.isTemperatureEnabled = action.payload;
         },
         setUseMarkdownForOutput: (state: AppSettingsState, action: PayloadAction<boolean>) => {
             state.useMarkdownForOutput = action.payload;
+        },
+        setProviderType: (state: AppSettingsState, action: PayloadAction<ProviderType>) => {
+            state.currentProviderConfig.providerType = action.payload;
+        },
+        // setCustomSettings removed as it is now part of state via ProviderConfig switching logic
+        setBaseUrlSuccessMsg: (state: AppSettingsState, action: PayloadAction<string>) => {
+            state.baseUrlSuccessMsg = action.payload;
+        },
+        setBaseUrlValidationErr: (state: AppSettingsState, action: PayloadAction<string>) => {
+            state.baseUrlValidationErr = action.payload;
+        },
+        setProviderName: (state: AppSettingsState, action: PayloadAction<string>) => {
+            state.currentProviderConfig.providerName = action.payload;
+        },
+        setIsEditingProvider: (state: AppSettingsState, action: PayloadAction<boolean>) => {
+            state.isEditingProvider = action.payload;
+        },
+        setCurrentEditingProvider: (state: AppSettingsState, action: PayloadAction<ProviderConfig | null>) => {
+            state.currentEditingProvider = action.payload;
         },
     },
     extraReducers: (builder) => {
@@ -268,7 +295,7 @@ export const appSettingsSlice = createSlice({
             .addCase(appSettingsSaveSettings.fulfilled, (state: AppSettingsState, action: PayloadAction<void>) => {
                 state.isLoadingSettings = false;
             })
-            .addCase(appSettingsSaveSettings.rejected, (state: AppSettingsState, action) => {
+            .addCase(appSettingsSaveSettings.rejected, (state: AppSettingsState, action: any) => {
                 state.isLoadingSettings = false;
                 state.errorMsg = action.payload || UnknownError;
             })
@@ -284,11 +311,11 @@ export const appSettingsSlice = createSlice({
 
                 state.models = loadedModelsList;
                 state.displayListOfModels = mapStringListToSelectItems(loadedModelsList);
-                const currentModelInAvailableModelsList = loadedModelsList.some((item) => item.trim() === state.modelName.trim());
+                const currentModelInAvailableModelsList = loadedModelsList.some((item) => item.trim() === state.modelConfig.modelName.trim());
                 if (!currentModelInAvailableModelsList && loadedModelsList.length > 0) {
                     const modelNameFromPayload = loadedModelsList[0];
                     const newModel = mapStringToSelectItem(modelNameFromPayload);
-                    state.modelName = modelNameFromPayload;
+                    state.modelConfig.modelName = modelNameFromPayload;
                     state.displaySelectedModel = newModel;
                 }
             })
@@ -342,6 +369,49 @@ export const appSettingsSlice = createSlice({
             })
             .addCase(initializeSettingsState.rejected, (state: AppSettingsState, action) => {
                 state.isLoadingSettings = false;
+            })
+
+            .addCase(appSettingsSwitchProviderType.pending, (state: AppSettingsState) => {
+                state.isLoadingSettings = true;
+                resetValidationMessages(state);
+            })
+            .addCase(appSettingsSwitchProviderType.fulfilled, (state: AppSettingsState, action: PayloadAction<AppSettings>) => {
+                state.isLoadingSettings = false;
+                setStateFields(state, action);
+            })
+            .addCase(appSettingsSwitchProviderType.rejected, (state: AppSettingsState, action) => {
+                state.isLoadingSettings = false;
+                state.errorMsg = action.payload || UnknownError;
+            })
+
+            .addCase(appSettingsSwitchProviderTypeAndSave.pending, (state: AppSettingsState) => {
+                state.isLoadingSettings = true;
+                resetValidationMessages(state);
+            })
+            .addCase(appSettingsSwitchProviderTypeAndSave.fulfilled, (state: AppSettingsState, action: PayloadAction<AppSettings>) => {
+                state.isLoadingSettings = false;
+                setStateFields(state, action);
+            })
+            .addCase(appSettingsSwitchProviderTypeAndSave.rejected, (state: AppSettingsState, action: any) => {
+                state.isLoadingSettings = false;
+                state.errorMsg = action.payload ? action.payload.toString() : 'Unknown error';
+            })
+
+            .addCase(appSettingsVerifyProviderAvailability.pending, (state: AppSettingsState) => {
+                state.isLoadingSettings = true;
+                resetValidationMessages(state);
+            })
+            .addCase(appSettingsVerifyProviderAvailability.fulfilled, (state: AppSettingsState, action: PayloadAction<boolean>) => {
+                state.isLoadingSettings = false;
+                if (action.payload) {
+                    state.baseUrlSuccessMsg = 'Provider is available';
+                } else {
+                    state.baseUrlValidationErr = 'Provider is not available';
+                }
+            })
+            .addCase(appSettingsVerifyProviderAvailability.rejected, (state: AppSettingsState, action) => {
+                state.isLoadingSettings = false;
+                state.baseUrlValidationErr = action.payload || UnknownError;
             });
     },
 });
@@ -360,6 +430,15 @@ export const {
     setModelsEndpoint,
     setCompletionEndpoint,
     setCompletionEndpointModel,
+    setProviderType,
+    setModelName,
+    setBaseUrlSuccessMsg,
+    setBaseUrlValidationErr,
+    setProviderName,
+    setIsEditingProvider,
+    setCurrentEditingProvider,
 } = appSettingsSlice.actions;
+
+export { emptySelectItems };
 
 export default appSettingsSlice.reducer;

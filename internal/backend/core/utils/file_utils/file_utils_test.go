@@ -252,14 +252,35 @@ func TestSaveSettings_Success(t *testing.T) {
 
 	// Create test settings
 	testSettings := &models.Settings{
-		BaseUrl:               "http://localhost:11434",
-		ModelsEndpoint:        "/api/models/",
-		CompletionEndpoint:    "/api/completion/",
-		ModelName:             "test-model",
-		Temperature:           0.5,
-		DefaultInputLanguage:  "English",
-		DefaultOutputLanguage: "Ukrainian",
-		Languages:             []string{"English", "Ukrainian"},
+		AvailableProviderConfigs: []models.ProviderConfig{
+			{
+				ProviderType:       models.ProviderTypeCustom,
+				ProviderName:       "Custom OpenAI",
+				BaseUrl:            "http://localhost:11434",
+				ModelsEndpoint:     "/api/models/",
+				CompletionEndpoint: "/api/completion/",
+				Headers:            map[string]string{},
+			},
+		},
+		CurrentProviderConfig: models.ProviderConfig{
+			ProviderType:       models.ProviderTypeCustom,
+			ProviderName:       "Custom OpenAI",
+			BaseUrl:            "http://localhost:11434",
+			ModelsEndpoint:     "/api/models/",
+			CompletionEndpoint: "/api/completion/",
+			Headers:            map[string]string{},
+		},
+		ModelConfig: models.ModelConfig{
+			ModelName:            "test-model",
+			IsTemperatureEnabled: true,
+			Temperature:          0.5,
+		},
+		LanguageConfig: models.LanguageConfig{
+			Languages:             []string{"English", "Ukrainian"},
+			DefaultInputLanguage:  "English",
+			DefaultOutputLanguage: "Ukrainian",
+		},
+		UseMarkdownForOutput: false,
 	}
 
 	// Test the function

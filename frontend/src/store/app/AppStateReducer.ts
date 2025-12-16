@@ -2,6 +2,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { AppSettings, UnknownError } from '../../common/types';
 import { SelectItem } from '../../widgets/base/Select';
 import { TabContentBtn } from '../../widgets/tabs/common/TabButtonsWidget';
+import { appSettingsLoadCurrentSettings } from '../settings/settings_thunks';
 import {
     appStateActionProcess,
     appStateCurrentProviderAndModelGet,
@@ -208,10 +209,9 @@ export const appStateSlice = createSlice({
             .addCase(appStateCurrentProviderAndModelGet.pending, (state: AppState) => {
                 state.isProcessing = true;
             })
-            .addCase(appStateCurrentProviderAndModelGet.fulfilled, (state: AppState, action: PayloadAction<AppSettings>) => {
-                state.isProcessing = false;
-                state.currentProvider = action.payload.baseUrl;
-                state.currentModelName = action.payload.modelName;
+            .addCase(appSettingsLoadCurrentSettings.fulfilled, (state: AppState, action: PayloadAction<AppSettings>) => {
+                state.currentProvider = action.payload.currentProviderConfig.baseUrl;
+                state.currentModelName = action.payload.modelConfig.modelName;
             })
             .addCase(appStateCurrentProviderAndModelGet.rejected, (state: AppState, action) => {
                 state.isProcessing = false;

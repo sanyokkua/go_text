@@ -11,55 +11,55 @@ func IsSettingsValid(settingsToValidate *models.Settings) (bool, error) {
 	if settingsToValidate == nil {
 		return false, fmt.Errorf("settings cannot be nil")
 	}
-	if strings.TrimSpace(settingsToValidate.BaseUrl) == "" {
+	if strings.TrimSpace(settingsToValidate.CurrentProviderConfig.BaseUrl) == "" {
 		return false, fmt.Errorf("cannot save settings: base url is empty")
 	}
-	if strings.HasSuffix(settingsToValidate.BaseUrl, "/") {
+	if strings.HasSuffix(settingsToValidate.CurrentProviderConfig.BaseUrl, "/") {
 		return false, fmt.Errorf("baseUrl must not end with /")
 	}
 
-	hasHttpPrefix := strings.HasPrefix(settingsToValidate.BaseUrl, "http://")
-	hasHttpsPrefix := strings.HasPrefix(settingsToValidate.BaseUrl, "https://")
+	hasHttpPrefix := strings.HasPrefix(settingsToValidate.CurrentProviderConfig.BaseUrl, "http://")
+	hasHttpsPrefix := strings.HasPrefix(settingsToValidate.CurrentProviderConfig.BaseUrl, "https://")
 	urlHasHttpSPrefix := hasHttpPrefix || hasHttpsPrefix
 
 	if !urlHasHttpSPrefix {
 		return false, fmt.Errorf("baseUrl must start with http:// or https://")
 	}
 
-	if strings.TrimSpace(settingsToValidate.ModelsEndpoint) == "" {
+	if strings.TrimSpace(settingsToValidate.CurrentProviderConfig.ModelsEndpoint) == "" {
 		return false, fmt.Errorf("modelsEndpoint must not be empty")
 	}
-	if !strings.HasPrefix(settingsToValidate.ModelsEndpoint, "/") {
+	if !strings.HasPrefix(settingsToValidate.CurrentProviderConfig.ModelsEndpoint, "/") {
 		return false, fmt.Errorf("modelsEndpoint must start with /")
 	}
-	if strings.HasSuffix(settingsToValidate.ModelsEndpoint, "/") {
+	if strings.HasSuffix(settingsToValidate.CurrentProviderConfig.ModelsEndpoint, "/") {
 		return false, fmt.Errorf("modelsEndpoint must not end with /")
 	}
 
-	if strings.TrimSpace(settingsToValidate.CompletionEndpoint) == "" {
+	if strings.TrimSpace(settingsToValidate.CurrentProviderConfig.CompletionEndpoint) == "" {
 		return false, fmt.Errorf("completionEndpoint must not be empty")
 	}
-	if !strings.HasPrefix(settingsToValidate.CompletionEndpoint, "/") {
+	if !strings.HasPrefix(settingsToValidate.CurrentProviderConfig.CompletionEndpoint, "/") {
 		return false, fmt.Errorf("completionEndpoint must start with /")
 	}
-	if strings.HasSuffix(settingsToValidate.CompletionEndpoint, "/") {
+	if strings.HasSuffix(settingsToValidate.CurrentProviderConfig.CompletionEndpoint, "/") {
 		return false, fmt.Errorf("completionEndpoint must not end with /")
 	}
 
-	if strings.TrimSpace(settingsToValidate.ModelName) == "" {
+	if strings.TrimSpace(settingsToValidate.ModelConfig.ModelName) == "" {
 		return false, fmt.Errorf("modelName must not be empty")
 	}
-	if strings.TrimSpace(settingsToValidate.DefaultInputLanguage) == "" {
+	if strings.TrimSpace(settingsToValidate.LanguageConfig.DefaultInputLanguage) == "" {
 		return false, fmt.Errorf("defaultInputLanguage must not be empty")
 	}
-	if strings.TrimSpace(settingsToValidate.DefaultOutputLanguage) == "" {
-		return false, fmt.Errorf("defaultOutputLanguage must not be empty")
-	}
-	if settingsToValidate.Temperature < 0 || settingsToValidate.Temperature > 1 {
+	if settingsToValidate.ModelConfig.Temperature < 0 || settingsToValidate.ModelConfig.Temperature > 1 {
 		return false, fmt.Errorf("temperature must be greater than 0 and less than 1")
 	}
+	if strings.TrimSpace(settingsToValidate.LanguageConfig.DefaultOutputLanguage) == "" {
+		return false, fmt.Errorf("defaultOutputLanguage must not be empty")
+	}
 
-	if len(settingsToValidate.Languages) == 0 {
+	if len(settingsToValidate.LanguageConfig.Languages) == 0 {
 		return false, fmt.Errorf("languages must not be empty")
 	}
 

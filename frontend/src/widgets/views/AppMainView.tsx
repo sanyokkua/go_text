@@ -7,7 +7,7 @@ import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import BottomBarWidget from './content/BottomBarWidget';
 import ContentWidget from './content/ContentWidget';
 import TopBarWidget from './content/TopBarWidget';
-import SettingsWidget from './settings/SettingsWidget';
+import SettingsWidgetExtended from './settings/SettingsWidgetExtended';
 
 const AppMainView: React.FC = () => {
     const dispatch = useAppDispatch();
@@ -20,7 +20,7 @@ const AppMainView: React.FC = () => {
         dispatch(initializeAppState());
     };
 
-    const settingsWidget = <SettingsWidget onClose={onSettingsClose} />;
+    const settingsWidget = <SettingsWidgetExtended onClose={onSettingsClose} />;
     const contentWidget = <ContentWidget />;
     const content = showSettingsView ? settingsWidget : contentWidget;
 

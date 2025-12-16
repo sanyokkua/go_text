@@ -1,4 +1,4 @@
-import { AppActionItem, AppActionObj, AppLanguageItem, AppSettings } from './types';
+import { AppActionItem, AppActionObj, AppLanguageItem, AppSettings, ProviderType } from './types';
 
 export interface IActionApi {
     processAction(actionObj: AppActionObj): Promise<string>;
@@ -8,8 +8,18 @@ export interface ISettingsApi {
     loadSettings(): Promise<AppSettings>;
     resetToDefaultSettings(): Promise<AppSettings>;
     saveSettings(settings: AppSettings): Promise<void>;
+
     validateModelsRequest(baseUrl: string, endpoint: string, headers: Record<string, string>): Promise<boolean>;
     validateCompletionRequest(baseUrl: string, endpoint: string, modelName: string, headers: Record<string, string>): Promise<boolean>;
+
+    switchProviderType(param: { currentSettings: AppSettings; newProviderType: ProviderType }): Promise<AppSettings>;
+    verifyProviderAvailability(baseUrl: string, modelsEndpoint: string, headers: Record<string, string>): Promise<boolean>;
+
+    // Custom provider management
+    addCustomProvider(provider: any): Promise<void>;
+    updateCustomProvider(provider: any): Promise<void>;
+    deleteCustomProvider(providerName: string): Promise<void>;
+    getCustomProviders(): Promise<any[]>;
 }
 
 export interface IUiStateApi {
