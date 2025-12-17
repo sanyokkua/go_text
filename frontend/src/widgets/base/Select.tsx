@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Color, Size } from '../../common/types';
 
 export interface SelectItem {
@@ -16,9 +16,22 @@ interface SelectProps {
     disabled?: boolean;
     block?: boolean;
     id?: string;
+    useFilter?: boolean;
 }
 
-const Select: React.FC<SelectProps> = ({ id, items, selectedItem, onSelect, size = 'default', colorStyle = '', disabled = false, block = false }) => {
+const Select: React.FC<SelectProps> = ({
+    id,
+    items,
+    selectedItem,
+    onSelect,
+    size = 'default',
+    colorStyle = '',
+    disabled = false,
+    block = false,
+    useFilter = false,
+}) => {
+    const [filterText, setFilterText] = useState('');
+
     const handleChange = (e: React.ChangeEvent<HTMLSelectElement>): void => {
         const itemId = e.target.value;
         const foundItem = items.find((it) => it.itemId === itemId);
@@ -28,7 +41,14 @@ const Select: React.FC<SelectProps> = ({ id, items, selectedItem, onSelect, size
         onSelect(foundItem);
     };
 
+    const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+        setFilterText(e.target.value);
+    };
+
     const selectedItemId: string = typeof selectedItem === 'string' ? selectedItem : selectedItem.itemId;
+
+    // Filter items case-insensitively when useFilter is true
+    const filteredItems = useFilter ? items.filter((item) => item.displayText.toLowerCase().includes(filterText.toLowerCase())) : items;
 
     const classes = [
         'select-base',
@@ -39,15 +59,22 @@ const Select: React.FC<SelectProps> = ({ id, items, selectedItem, onSelect, size
     ]
         .filter(Boolean)
         .join(' ');
-
     return (
-        <select id={id} value={selectedItemId} onChange={handleChange} className={classes} disabled={disabled}>
-            {items.map((item) => (
-                <option key={item.itemId} value={item.itemId}>
-                    {item.displayText}
-                </option>
-            ))}
-        </select>
+        <>
+            {useFilter && <input type="text" value={filterText} onChange={handleFilterChange} placeholder="Filter items..." disabled={disabled} />}
+            <select id={id} value={selectedItemId} onChange={handleChange} className={classes} disabled={disabled}>
+                {filteredItems.map((item) => (
+                    <option key={item.itemId} value={item.itemId}>
+                        {item.displayText}
+                    </option>
+                ))}
+                {useFilter && filteredItems.length === 0 && (
+                    <option value="" disabled>
+                        No items found
+                    </option>
+                )}
+            </select>
+        </>
     );
 };
 

@@ -14,7 +14,7 @@ const ModelConfiguration: React.FC<ModelConfigurationProps> = () => {
         <SettingsGroup top={true} headerText="LLM Model Configuration">
             <SettingsGroup>
                 <label htmlFor="modelSelect">Model:</label>
-                <Select id="modelSelect" items={providers} selectedItem={providers[0]} onSelect={() => {}} disabled={false} />
+                <Select id="modelSelect" useFilter={true} items={providers} selectedItem={providers[0]} onSelect={() => {}} disabled={false} />
                 <Button text="Refresh Models List" variant="outlined" colorStyle="success-color" size="tiny" disabled={false} onClick={() => {}} />
             </SettingsGroup>
             <SettingsGroup>
