@@ -15,7 +15,7 @@ import {
     updateHeader,
     updateProviderConfig,
 } from '../../../../store/settings/AppSettingsReducer';
-import { appSettingsValidateCompletionRequest, appSettingsValidateModelsRequest } from '../../../../store/settings/settings_thunks';
+import { appSettingsValidateCompletionRequest } from '../../../../store/settings/settings_thunks';
 import Button from '../../../base/Button';
 import Select, { SelectItem } from '../../../base/Select';
 import HeaderKeyValue from '../HeaderKeyValue';
@@ -44,9 +44,7 @@ const ProvidersConfiguration: React.FC = () => {
     // Prepare dropdown items for provider selection
     const providerItems: SelectItem[] = useMemo(() => {
         const items = availableProviderConfigs.map((p) => ({ itemId: p.providerName, displayText: p.providerName }));
-        // We will add a placeholder for "default" or "select one"
-        const result = [{ itemId: '', displayText: 'Select Provider...' }, ...items];
-        return result;
+        return [...items];
     }, [availableProviderConfigs]);
 
     // Current selection for the dropdown
