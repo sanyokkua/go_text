@@ -65,7 +65,8 @@ const resetValidationMessages = (state: AppSettingsState) => {
 };
 const setStateFields = (state: AppSettingsState, action: PayloadAction<AppSettings>) => {
     state.availableProviderConfigs = action.payload.availableProviderConfigs;
-    state.currentProviderConfig = action.payload.currentProviderConfig;
+    // Deep copy to facilitate independent editing
+    state.currentProviderConfig = JSON.parse(JSON.stringify(action.payload.currentProviderConfig));
     state.modelConfig = action.payload.modelConfig;
     state.languageConfig = action.payload.languageConfig;
     state.useMarkdownForOutput = action.payload.useMarkdownForOutput;
@@ -78,6 +79,20 @@ const setStateFields = (state: AppSettingsState, action: PayloadAction<AppSettin
     state.displayHeaders = mapRecordToKeyValuePair(action.payload.currentProviderConfig.headers);
 
     resetValidationMessages(state);
+
+    // Default to editing the loaded provider
+    state.isEditingProvider = true;
+    state.currentEditingProvider =  JSON.parse(JSON.stringify(action.payload.currentProviderConfig));
+};
+
+// Default empty provider for creation
+const defaultProviderConfig: ProviderConfig = {
+    providerType: 'custom',
+    providerName: '',
+    baseUrl: '',
+    modelsEndpoint: '',
+    completionEndpoint: '',
+    headers: {},
 };
 
 export interface AppSettingsState {
@@ -95,8 +110,8 @@ export interface AppSettingsState {
     languageConfig: LanguageConfig;
     useMarkdownForOutput: boolean;
 
-    // UI state for current provider editing
-    completionEndpointModel: string; // This seems to be UI-only state not saved in backend config directly?
+    // UI state
+    completionEndpointModel: string;
 
     baseUrlSuccessMsg: string;
     baseUrlValidationErr: string;
@@ -108,8 +123,8 @@ export interface AppSettingsState {
     errorMsg: string;
     isLoadingSettings: boolean;
     // Provider management state
-    isEditingProvider: boolean;
-    currentEditingProvider: ProviderConfig | null;
+    isEditingProvider: boolean; // true if editing existing, false if creating new
+    currentEditingProvider: ProviderConfig | null; // The original version of the provider being edited (for name matching)
 }
 
 const emptySelectItems: SelectItem = mapStringToSelectItem('');
@@ -123,14 +138,7 @@ const initialState: AppSettingsState = {
     displayHeaders: [],
 
     availableProviderConfigs: [],
-    currentProviderConfig: {
-        providerType: 'custom',
-        providerName: 'Custom OpenAI',
-        baseUrl: '',
-        modelsEndpoint: '',
-        completionEndpoint: '',
-        headers: {},
-    },
+    currentProviderConfig: { ...defaultProviderConfig },
     modelConfig: { modelName: '', isTemperatureEnabled: true, temperature: 0.5 },
     languageConfig: { languages: [], defaultInputLanguage: '', defaultOutputLanguage: '' },
     useMarkdownForOutput: false,
@@ -145,7 +153,7 @@ const initialState: AppSettingsState = {
     modelsEndpointSuccessMsg: '',
     completionEndpointSuccessMsg: '',
     isLoadingSettings: false,
-    // Provider management state
+
     isEditingProvider: false,
     currentEditingProvider: null,
 };
@@ -203,8 +211,7 @@ export const appSettingsSlice = createSlice({
             resetValidationMessages(state);
             const baseUrl = action.payload;
             state.currentProviderConfig.baseUrl = baseUrl;
-            // Only validate if custom provider, others might be hardcoded/different?
-            // Actually, validation logic is good to keep generally, but maybe loosen for non-http?
+
             if (!baseUrl || baseUrl.trim().length === 0) {
                 state.baseUrlValidationErr = 'Base Url cannot be empty.';
             } else if (!(baseUrl.startsWith('http://') || baseUrl.startsWith('https://'))) {
@@ -243,7 +250,6 @@ export const appSettingsSlice = createSlice({
         setProviderType: (state: AppSettingsState, action: PayloadAction<ProviderType>) => {
             state.currentProviderConfig.providerType = action.payload;
         },
-        // setCustomSettings removed as it is now part of state via ProviderConfig switching logic
         setBaseUrlSuccessMsg: (state: AppSettingsState, action: PayloadAction<string>) => {
             state.baseUrlSuccessMsg = action.payload;
         },
@@ -253,6 +259,115 @@ export const appSettingsSlice = createSlice({
         setProviderName: (state: AppSettingsState, action: PayloadAction<string>) => {
             state.currentProviderConfig.providerName = action.payload;
         },
+
+        // --- Provider Management Actions ---
+
+        // Adds a NEW provider to the available list
+        addProviderConfig: (state: AppSettingsState) => {
+            const newConfig = { ...state.currentProviderConfig };
+            // Simple validation
+            if (!newConfig.providerName || newConfig.providerName.trim() === '') {
+                state.errorMsg = 'Provider name cannot be empty.';
+                return;
+            }
+            if (state.availableProviderConfigs.some((p) => p.providerName === newConfig.providerName)) {
+                state.errorMsg = 'Provider with this name already exists.';
+                return;
+            }
+
+            state.availableProviderConfigs.push(newConfig);
+            // Switch to editing mode for this new provider
+            state.isEditingProvider = true;
+            state.currentEditingProvider = newConfig;
+            state.errorMsg = '';
+        },
+
+        // Updates an EXISTING provider
+        updateProviderConfig: (state: AppSettingsState) => {
+            const updatedConfig = { ...state.currentProviderConfig };
+            const originalConfig = state.currentEditingProvider;
+
+            if (!originalConfig) {
+                state.errorMsg = 'No provider is currently being edited.';
+                return;
+            }
+             if (!updatedConfig.providerName || updatedConfig.providerName.trim() === '') {
+                state.errorMsg = 'Provider name cannot be empty.';
+                return;
+            }
+
+            // If name changed, check uniqueness
+            if (updatedConfig.providerName !== originalConfig.providerName) {
+                 if (state.availableProviderConfigs.some((p) => p.providerName === updatedConfig.providerName)) {
+                    state.errorMsg = 'Provider with this name already exists.';
+                    return;
+                }
+            }
+
+            // Find index of original
+            const index = state.availableProviderConfigs.findIndex((p) => p.providerName === originalConfig.providerName);
+            if (index !== -1) {
+                state.availableProviderConfigs[index] = updatedConfig;
+                state.currentEditingProvider = updatedConfig;
+                state.errorMsg = '';
+            } else {
+                state.errorMsg = 'Original provider not found in list.';
+            }
+        },
+
+        // Deletes the currently selected/edited provider
+        deleteProviderConfig: (state: AppSettingsState) => {
+            const configToDelete = state.currentEditingProvider;
+            if (!configToDelete) return;
+
+            const index = state.availableProviderConfigs.findIndex((p) => p.providerName === configToDelete.providerName);
+            if (index !== -1) {
+                // Remove
+                state.availableProviderConfigs.splice(index, 1);
+
+                // Determine what to select next
+                if (state.availableProviderConfigs.length > 0) {
+                     // Try to select the one that slid into this index, or the last one if we deleted the tail
+                    const nextIndex = index < state.availableProviderConfigs.length ? index : state.availableProviderConfigs.length - 1;
+                    const nextProvider = state.availableProviderConfigs[nextIndex];
+
+                    state.currentProviderConfig = { ...nextProvider };
+                    state.currentEditingProvider = nextProvider;
+                    state.isEditingProvider = true;
+                    state.displayHeaders = mapRecordToKeyValuePair(nextProvider.headers);
+                } else {
+                    // No providers left, reset to "Create New" state
+                    state.currentProviderConfig = { ...defaultProviderConfig };
+                    state.currentEditingProvider = null;
+                    state.isEditingProvider = false;
+                    state.displayHeaders = [];
+                }
+            }
+        },
+
+        // Resets the draft area to a blank state for creating a NEW provider
+        resetDraftProviderConfig: (state: AppSettingsState) => {
+            state.currentProviderConfig = { ...defaultProviderConfig };
+            state.currentEditingProvider = null;
+            state.isEditingProvider = false;
+            state.displayHeaders = [];
+            resetValidationMessages(state);
+        },
+
+        // Loads a specific provider from the list into the draft area
+        loadProviderToDraft: (state: AppSettingsState, action: PayloadAction<string>) => {
+            const providerName = action.payload;
+            const providerStart = state.availableProviderConfigs.find((p) => p.providerName === providerName);
+
+            if (providerStart) {
+                state.currentProviderConfig = { ...providerStart };
+                state.currentEditingProvider = providerStart;
+                state.isEditingProvider = true;
+                state.displayHeaders = mapRecordToKeyValuePair(providerStart.headers);
+                resetValidationMessages(state);
+            }
+        },
+
         setIsEditingProvider: (state: AppSettingsState, action: PayloadAction<boolean>) => {
             state.isEditingProvider = action.payload;
         },
@@ -437,6 +552,13 @@ export const {
     setProviderName,
     setIsEditingProvider,
     setCurrentEditingProvider,
+
+    // Export new actions
+    addProviderConfig,
+    updateProviderConfig,
+    deleteProviderConfig,
+    resetDraftProviderConfig,
+    loadProviderToDraft,
 } = appSettingsSlice.actions;
 
 export { emptySelectItems };
