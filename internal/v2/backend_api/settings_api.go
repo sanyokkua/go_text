@@ -15,8 +15,9 @@ type SettingsServiceApi interface {
 	CreateNewProvider(config *settings.ProviderConfig) (*settings.ProviderConfig, error)
 	UpdateProvider(config *settings.ProviderConfig) (*settings.ProviderConfig, error)
 	DeleteProvider(config *settings.ProviderConfig) (bool, error)
+	SelectProvider(config *settings.ProviderConfig) (*settings.ProviderConfig, error)
 
-	GetModelsList() ([]string, error)
+	GetModelsList(config *settings.ProviderConfig) ([]string, error)
 
 	GetSettingsFilePath() string
 
