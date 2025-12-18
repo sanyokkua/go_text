@@ -1,7 +1,6 @@
 package prompt
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -11,86 +10,88 @@ import (
 	"go_text/internal/v2/model"
 	"go_text/internal/v2/model/action"
 	"strings"
-
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 type promptServiceStruct struct {
-	ctx *context.Context
+	logger backend_api.LoggingApi
+}
+
+func (p *promptServiceStruct) GetPromptsCategories() []string {
+	return constants.GetUserPromptCategories()
 }
 
 func (p *promptServiceStruct) GetUserPromptsForCategory(category string) ([]model.Prompt, error) {
 	startTime := time.Now()
-	runtime.LogInfo(*p.ctx, fmt.Sprintf("[GetUserPromptsForCategory] Fetching prompts for category: %s", category))
+	p.logger.LogInfo(fmt.Sprintf("[GetUserPromptsForCategory] Fetching prompts for category: %s", category))
 
 	prompts, err := constants.GetUserPromptsByCategory(category)
 	if err != nil {
-		runtime.LogError(*p.ctx, fmt.Sprintf("[GetUserPromptsForCategory] Failed to get prompts for category '%s': %v", category, err))
+		p.logger.LogError(fmt.Sprintf("[GetUserPromptsForCategory] Failed to get prompts for category '%s': %v", category, err))
 		return nil, fmt.Errorf("failed to retrieve prompts for category '%s': %w", category, err)
 	}
 
 	duration := time.Since(startTime)
-	runtime.LogInfo(*p.ctx, fmt.Sprintf("[GetUserPromptsForCategory] Successfully retrieved %d prompts for category '%s' in %v", len(prompts), category, duration))
+	p.logger.LogInfo(fmt.Sprintf("[GetUserPromptsForCategory] Successfully retrieved %d prompts for category '%s' in %v", len(prompts), category, duration))
 
 	return prompts, nil
 }
 
 func (p *promptServiceStruct) GetPrompt(promptId string) (model.Prompt, error) {
 	startTime := time.Now()
-	runtime.LogInfo(*p.ctx, fmt.Sprintf("[GetPrompt] Fetching prompt with ID: %s", promptId))
+	p.logger.LogInfo(fmt.Sprintf("[GetPrompt] Fetching prompt with ID: %s", promptId))
 
 	prompt, err := constants.GetUserPromptById(promptId)
 	if err != nil {
-		runtime.LogError(*p.ctx, fmt.Sprintf("[GetPrompt] Failed to get prompt with ID '%s': %v", promptId, err))
+		p.logger.LogError(fmt.Sprintf("[GetPrompt] Failed to get prompt with ID '%s': %v", promptId, err))
 		return model.Prompt{}, fmt.Errorf("failed to retrieve prompt with ID '%s': %w", promptId, err)
 	}
 
 	duration := time.Since(startTime)
-	runtime.LogInfo(*p.ctx, fmt.Sprintf("[GetPrompt] Successfully retrieved prompt '%s' in %v", promptId, duration))
+	p.logger.LogInfo(fmt.Sprintf("[GetPrompt] Successfully retrieved prompt '%s' in %v", promptId, duration))
 
 	return prompt, nil
 }
 
 func (p *promptServiceStruct) GetSystemPrompt(category string) (string, error) {
 	startTime := time.Now()
-	runtime.LogInfo(*p.ctx, fmt.Sprintf("[GetSystemPrompt] Fetching system prompt for category: %s", category))
+	p.logger.LogInfo(fmt.Sprintf("[GetSystemPrompt] Fetching system prompt for category: %s", category))
 
 	systemPrompt, err := constants.GetSystemPromptByCategory(category)
 	if err != nil {
-		runtime.LogError(*p.ctx, fmt.Sprintf("[GetSystemPrompt] Failed to get system prompt for category '%s': %v", category, err))
+		p.logger.LogError(fmt.Sprintf("[GetSystemPrompt] Failed to get system prompt for category '%s': %v", category, err))
 		return "", fmt.Errorf("failed to retrieve system prompt for category '%s': %w", category, err)
 	}
 
 	duration := time.Since(startTime)
-	runtime.LogInfo(*p.ctx, fmt.Sprintf("[GetSystemPrompt] Successfully retrieved system prompt for category '%s' in %v", category, duration))
+	p.logger.LogInfo(fmt.Sprintf("[GetSystemPrompt] Successfully retrieved system prompt for category '%s' in %v", category, duration))
 
 	return systemPrompt.Value, nil
 }
 
 func (p *promptServiceStruct) BuildPrompt(template, category string, action *action.ActionRequest, useMarkdown bool) (string, error) {
 	startTime := time.Now()
-	runtime.LogInfo(*p.ctx, fmt.Sprintf("[BuildPrompt] Building prompt for category: %s, ActionID: %s", category, action.ID))
+	p.logger.LogInfo(fmt.Sprintf("[BuildPrompt] Building prompt for category: %s, ActionID: %s", category, action.ID))
 
 	if action == nil {
 		errorMsg := "action is nil"
-		runtime.LogError(*p.ctx, fmt.Sprintf("[BuildPrompt] %s", errorMsg))
+		p.logger.LogError(fmt.Sprintf("[BuildPrompt] %s", errorMsg))
 		return "", fmt.Errorf("invalid input: %s", errorMsg)
 	}
 	if string_utils.IsBlankString(template) {
 		errorMsg := "invalid template"
-		runtime.LogError(*p.ctx, fmt.Sprintf("[BuildPrompt] %s", errorMsg))
+		p.logger.LogError(fmt.Sprintf("[BuildPrompt] %s", errorMsg))
 		return "", fmt.Errorf("invalid input: %s", errorMsg)
 	}
 	if string_utils.IsBlankString(category) {
 		errorMsg := "invalid category"
-		runtime.LogError(*p.ctx, fmt.Sprintf("[BuildPrompt] %s", errorMsg))
+		p.logger.LogError(fmt.Sprintf("[BuildPrompt] %s", errorMsg))
 		return "", fmt.Errorf("invalid input: %s", errorMsg)
 	}
 
 	isTranslation := category == constants.PromptCategoryTranslation
 	isValidAction, err := p.isActionRequestValid(action, isTranslation)
 	if !isValidAction {
-		runtime.LogError(*p.ctx, fmt.Sprintf("[BuildPrompt] Action validation failed: %v", err))
+		p.logger.LogError(fmt.Sprintf("[BuildPrompt] Action validation failed: %v", err))
 		return "", fmt.Errorf("action validation failed: %w", err)
 	}
 
@@ -115,14 +116,14 @@ func (p *promptServiceStruct) BuildPrompt(template, category string, action *act
 		originalTemplate := template
 		template, err = string_utils.ReplaceTemplateParameter(token, val, template)
 		if err != nil {
-			runtime.LogError(*p.ctx, fmt.Sprintf("[BuildPrompt] Failed to replace template parameter '%s': %v", token, err))
+			p.logger.LogError(fmt.Sprintf("[BuildPrompt] Failed to replace template parameter '%s': %v", token, err))
 			return "", fmt.Errorf("template parameter replacement failed for '%s': %w", token, err)
 		}
-		runtime.LogDebug(*p.ctx, fmt.Sprintf("[BuildPrompt] Replaced parameter '%s' in template. Before: %.50s..., After: %.50s...", token, originalTemplate, template))
+		p.logger.LogDebug(fmt.Sprintf("[BuildPrompt] Replaced parameter '%s' in template. Before: %.50s..., After: %.50s...", token, originalTemplate, template))
 	}
 
 	duration := time.Since(startTime)
-	runtime.LogInfo(*p.ctx, fmt.Sprintf("[BuildPrompt] Successfully built prompt in %v, Final length: %d characters", duration, len(template)))
+	p.logger.LogInfo(fmt.Sprintf("[BuildPrompt] Successfully built prompt in %v, Final length: %d characters", duration, len(template)))
 
 	return template, nil
 }
@@ -148,8 +149,8 @@ func (p *promptServiceStruct) isActionRequestValid(obj *action.ActionRequest, is
 	return true, nil
 }
 
-func NewPromptService(ctx *context.Context) backend_api.PromptApi {
+func NewPromptService(logger backend_api.LoggingApi) backend_api.PromptApi {
 	return &promptServiceStruct{
-		ctx: ctx,
+		logger: logger,
 	}
 }

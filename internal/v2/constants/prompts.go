@@ -5,6 +5,14 @@ import (
 	"go_text/internal/v2/model"
 )
 
+func GetUserPromptCategories() []string {
+	keys := make([]string, 0, len(userPromptsByCategory))
+	for k := range userPromptsByCategory {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
 func GetSystemPromptByCategory(category string) (model.Prompt, error) {
 	prompt, ok := systemPromptByCategory[category]
 	if !ok {
