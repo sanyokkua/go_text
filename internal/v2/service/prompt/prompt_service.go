@@ -16,24 +16,8 @@ type promptServiceStruct struct {
 	logger backend_api.LoggingApi
 }
 
-func (p *promptServiceStruct) GetPromptsCategories() []string {
-	return constants.GetUserPromptCategories()
-}
-
-func (p *promptServiceStruct) GetUserPromptsForCategory(category string) ([]model.Prompt, error) {
-	startTime := time.Now()
-	p.logger.LogInfo(fmt.Sprintf("[GetUserPromptsForCategory] Fetching prompts for category: %s", category))
-
-	prompts, err := constants.GetUserPromptsByCategory(category)
-	if err != nil {
-		p.logger.LogError(fmt.Sprintf("[GetUserPromptsForCategory] Failed to get prompts for category '%s': %v", category, err))
-		return nil, fmt.Errorf("failed to retrieve prompts for category '%s': %w", category, err)
-	}
-
-	duration := time.Since(startTime)
-	p.logger.LogInfo(fmt.Sprintf("[GetUserPromptsForCategory] Successfully retrieved %d prompts for category '%s' in %v", len(prompts), category, duration))
-
-	return prompts, nil
+func (p *promptServiceStruct) GetAppPrompts() *model.AppPrompts {
+	return constants.GetAppPrompts()
 }
 
 func (p *promptServiceStruct) GetPrompt(promptId string) (model.Prompt, error) {

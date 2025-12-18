@@ -1,4 +1,4 @@
-package api
+package stateapi
 
 import (
 	"errors"
@@ -152,11 +152,6 @@ func TestNewStateApiService(t *testing.T) {
 	if service == nil {
 		t.Fatal("NewStateApiService returned nil")
 	}
-
-	// Verify debug logs
-	if len(logger.DebugMessages) != 2 {
-		t.Errorf("Expected 2 debug logs, got %d: %v", len(logger.DebugMessages), logger.DebugMessages)
-	}
 }
 
 // Test GetInputLanguages
@@ -190,7 +185,7 @@ func TestGetInputLanguages(t *testing.T) {
 			},
 			expectError:            false,
 			expectedInfoLogs:       2, // Start and success logs
-			expectedDebugLogs:      2, // Constructor debug logs
+			expectedDebugLogs:      0, // Constructor debug logs
 			expectedErrorLogs:      0,
 			expectedLanguagesCount: 3,
 		},
@@ -210,7 +205,7 @@ func TestGetInputLanguages(t *testing.T) {
 			},
 			expectError:            false,
 			expectedInfoLogs:       2, // Start, GetInputLanguages, and success logs
-			expectedDebugLogs:      2, // Constructor debug logs
+			expectedDebugLogs:      0, // Constructor debug logs
 			expectedErrorLogs:      0,
 			expectedLanguagesCount: 2,
 		},
@@ -239,7 +234,7 @@ func TestGetInputLanguages(t *testing.T) {
 			languageItemsResult:    []model.LanguageItem{},
 			expectError:            false,
 			expectedInfoLogs:       2, // Start and success logs
-			expectedDebugLogs:      2,
+			expectedDebugLogs:      0,
 			expectedErrorLogs:      0,
 			expectedLanguagesCount: 0,
 		},
@@ -351,7 +346,7 @@ func TestGetOutputLanguages(t *testing.T) {
 			},
 			expectError:            false,
 			expectedInfoLogs:       4, // Start, GetInputLanguages, and success logs
-			expectedDebugLogs:      2, // Constructor debug logs
+			expectedDebugLogs:      0, // Constructor debug logs
 			expectedErrorLogs:      0,
 			expectedLanguagesCount: 3,
 		},
@@ -371,7 +366,7 @@ func TestGetOutputLanguages(t *testing.T) {
 			},
 			expectError:            false,
 			expectedInfoLogs:       4, // Start, GetInputLanguages, and success logs
-			expectedDebugLogs:      2, // Constructor debug logs
+			expectedDebugLogs:      0, // Constructor debug logs
 			expectedErrorLogs:      0,
 			expectedLanguagesCount: 2,
 		},
@@ -383,7 +378,7 @@ func TestGetOutputLanguages(t *testing.T) {
 			expectError:            true,
 			expectedErrorMsg:       "failed to retrieve output languages",
 			expectedInfoLogs:       1, // Only start log
-			expectedDebugLogs:      2, // Constructor debug logs
+			expectedDebugLogs:      0, // Constructor debug logs
 			expectedErrorLogs:      2, // GetInputLanguages and GetOutputLanguages error logs
 			expectedLanguagesCount: 0,
 		},
@@ -400,7 +395,7 @@ func TestGetOutputLanguages(t *testing.T) {
 			languageItemsResult:    []model.LanguageItem{},
 			expectError:            false,
 			expectedInfoLogs:       4, // Start and success logs
-			expectedDebugLogs:      2,
+			expectedDebugLogs:      0,
 			expectedErrorLogs:      0,
 			expectedLanguagesCount: 0,
 		},
@@ -508,7 +503,7 @@ func TestGetDefaultInputLanguage(t *testing.T) {
 			languageItemResult:   model.LanguageItem{LanguageId: "English", LanguageText: "English"},
 			expectError:          false,
 			expectedInfoLogs:     2, // Start and success logs
-			expectedDebugLogs:    2,
+			expectedDebugLogs:    0,
 			expectedErrorLogs:    0,
 			expectedLanguageId:   "English",
 		},
@@ -520,7 +515,7 @@ func TestGetDefaultInputLanguage(t *testing.T) {
 			expectError:           true,
 			expectedErrorMsg:      "failed to retrieve settings",
 			expectedInfoLogs:      2, // Only start log
-			expectedDebugLogs:     2, // Constructor debug logs
+			expectedDebugLogs:     0, // Constructor debug logs
 			expectedErrorLogs:     1, // GetInputLanguages and GetOutputLanguages error logs
 			expectedLanguageId:    "",
 		},
@@ -537,7 +532,7 @@ func TestGetDefaultInputLanguage(t *testing.T) {
 			languageItemResult:   model.LanguageItem{LanguageId: "", LanguageText: ""},
 			expectError:          false,
 			expectedInfoLogs:     2, // Start and success logs
-			expectedDebugLogs:    2,
+			expectedDebugLogs:    0,
 			expectedErrorLogs:    0,
 			expectedLanguageId:   "",
 		},
@@ -620,7 +615,7 @@ func TestGetDefaultOutputLanguage(t *testing.T) {
 			languageItemResult:   model.LanguageItem{LanguageId: "French", LanguageText: "French"},
 			expectError:          false,
 			expectedInfoLogs:     2, // Start and success logs
-			expectedDebugLogs:    2,
+			expectedDebugLogs:    0,
 			expectedErrorLogs:    0,
 			expectedLanguageId:   "French",
 		},
@@ -632,7 +627,7 @@ func TestGetDefaultOutputLanguage(t *testing.T) {
 			expectError:           true,
 			expectedErrorMsg:      "failed to retrieve settings",
 			expectedInfoLogs:      1, // Only start log
-			expectedDebugLogs:     2, // Constructor debug logs
+			expectedDebugLogs:     0, // Constructor debug logs
 			expectedErrorLogs:     1, // GetInputLanguages and GetOutputLanguages error logs
 			expectedLanguageId:    "",
 		},
@@ -649,7 +644,7 @@ func TestGetDefaultOutputLanguage(t *testing.T) {
 			languageItemResult:   model.LanguageItem{LanguageId: "", LanguageText: ""},
 			expectError:          false,
 			expectedInfoLogs:     2, // Start and success logs
-			expectedDebugLogs:    2,
+			expectedDebugLogs:    0,
 			expectedErrorLogs:    0,
 			expectedLanguageId:   "",
 		},

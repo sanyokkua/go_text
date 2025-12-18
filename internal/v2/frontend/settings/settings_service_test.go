@@ -1,4 +1,4 @@
-package api
+package settingsapi
 
 import (
 	"errors"
@@ -134,11 +134,6 @@ func TestNewSettingsApi(t *testing.T) {
 	if service == nil {
 		t.Fatal("NewSettingsApi returned nil")
 	}
-
-	// Verify debug logs
-	if len(logger.DebugMessages) != 2 {
-		t.Errorf("Expected 2 debug logs, got %d: %v", len(logger.DebugMessages), logger.DebugMessages)
-	}
 }
 
 // Test GetProviderTypes
@@ -160,7 +155,7 @@ func TestGetProviderTypes(t *testing.T) {
 			providerTypesError:    nil,
 			expectError:           false,
 			expectedInfoLogs:      2, // Start and success logs
-			expectedDebugLogs:     2, // Constructor debug logs
+			expectedDebugLogs:     0, // Constructor debug logs
 			expectedErrorLogs:     0,
 			expectedProviderTypes: 3,
 		},
@@ -181,7 +176,7 @@ func TestGetProviderTypes(t *testing.T) {
 			providerTypesError:    nil,
 			expectError:           false,
 			expectedInfoLogs:      2, // Start and success logs
-			expectedDebugLogs:     2, // Constructor debug logs
+			expectedDebugLogs:     0, // Constructor debug logs
 			expectedErrorLogs:     0,
 			expectedProviderTypes: 0,
 		},
@@ -257,7 +252,7 @@ func TestGetCurrentSettings(t *testing.T) {
 			currentSettingsError: nil,
 			expectError:          false,
 			expectedInfoLogs:     2, // Start and success logs
-			expectedDebugLogs:    2, // Constructor debug logs
+			expectedDebugLogs:    0, // Constructor debug logs
 			expectedErrorLogs:    0,
 		},
 		{
@@ -267,7 +262,7 @@ func TestGetCurrentSettings(t *testing.T) {
 			expectError:           true,
 			expectedErrorMsg:      "failed to retrieve current settings",
 			expectedInfoLogs:      1, // Only start log
-			expectedDebugLogs:     2, // Constructor debug logs
+			expectedDebugLogs:     0, // Constructor debug logs
 			expectedErrorLogs:     1, // Error log
 		},
 	}
@@ -342,7 +337,7 @@ func TestGetDefaultSettings(t *testing.T) {
 			defaultSettingsError: nil,
 			expectError:          false,
 			expectedInfoLogs:     0,
-			expectedDebugLogs:    4, // Constructor + method debug logs
+			expectedDebugLogs:    2, // Constructor + method debug logs
 			expectedErrorLogs:    0,
 		},
 		{
@@ -352,7 +347,7 @@ func TestGetDefaultSettings(t *testing.T) {
 			expectError:           true,
 			expectedErrorMsg:      "failed to retrieve default settings",
 			expectedInfoLogs:      0,
-			expectedDebugLogs:     3, // Constructor + method debug logs // Only start debug log
+			expectedDebugLogs:     1, // Constructor + method debug logs // Only start debug log
 			expectedErrorLogs:     1, // Error log
 		},
 	}
@@ -429,7 +424,7 @@ func TestSaveSettings(t *testing.T) {
 			saveSettingsError: nil,
 			expectError:       false,
 			expectedInfoLogs:  2, // Start and success logs
-			expectedDebugLogs: 2, // Constructor debug logs
+			expectedDebugLogs: 0, // Constructor debug logs
 			expectedErrorLogs: 0,
 		},
 		{
@@ -440,7 +435,7 @@ func TestSaveSettings(t *testing.T) {
 			expectError:        true,
 			expectedErrorMsg:   "settings object cannot be nil",
 			expectedInfoLogs:   1, // Only start log
-			expectedDebugLogs:  2, // Constructor debug logs
+			expectedDebugLogs:  0, // Constructor debug logs
 			expectedErrorLogs:  1, // Error log
 		},
 		{
@@ -534,7 +529,7 @@ func TestValidateProvider(t *testing.T) {
 			validateProviderError:  nil,
 			expectError:            false,
 			expectedInfoLogs:       0,
-			expectedDebugLogs:      4, // Constructor + method debug logs
+			expectedDebugLogs:      2, // Constructor + method debug logs
 			expectedErrorLogs:      0,
 		},
 		{
@@ -545,7 +540,7 @@ func TestValidateProvider(t *testing.T) {
 			expectError:            true,
 			expectedErrorMsg:       "invalid input",
 			expectedInfoLogs:       0,
-			expectedDebugLogs:      2, // Constructor debug logs
+			expectedDebugLogs:      0, // Constructor debug logs
 			expectedErrorLogs:      1, // Error log (but will panic due to bug in service)
 		},
 		{
@@ -562,7 +557,7 @@ func TestValidateProvider(t *testing.T) {
 			expectError:            true,
 			expectedErrorMsg:       "provider validation failed",
 			expectedInfoLogs:       0,
-			expectedDebugLogs:      3, // Constructor + method debug logs // Only start debug log
+			expectedDebugLogs:      1, // Constructor + method debug logs // Only start debug log
 			expectedErrorLogs:      1, // Error log
 		},
 	}
@@ -641,7 +636,7 @@ func TestCreateNewProvider(t *testing.T) {
 			createProviderError: nil,
 			expectError:         false,
 			expectedInfoLogs:    2, // Start and success logs
-			expectedDebugLogs:   2,
+			expectedDebugLogs:   0,
 			expectedErrorLogs:   0,
 		},
 		{
@@ -753,7 +748,7 @@ func TestUpdateProvider(t *testing.T) {
 			updateProviderError: nil,
 			expectError:         false,
 			expectedInfoLogs:    2, // Start and success logs
-			expectedDebugLogs:   2,
+			expectedDebugLogs:   0,
 			expectedErrorLogs:   0,
 		},
 		{
@@ -764,7 +759,7 @@ func TestUpdateProvider(t *testing.T) {
 			expectError:          true,
 			expectedErrorMsg:     "provider config cannot be nil",
 			expectedInfoLogs:     1, // Only start log
-			expectedDebugLogs:    2, // Constructor debug logs
+			expectedDebugLogs:    0, // Constructor debug logs
 			expectedErrorLogs:    1, // Error log
 		},
 		{
@@ -856,7 +851,7 @@ func TestDeleteProvider(t *testing.T) {
 			deleteProviderError:  nil,
 			expectError:          false,
 			expectedInfoLogs:     2, // Start and success logs
-			expectedDebugLogs:    2,
+			expectedDebugLogs:    0,
 			expectedErrorLogs:    0,
 		},
 		{
@@ -867,7 +862,7 @@ func TestDeleteProvider(t *testing.T) {
 			expectError:          true,
 			expectedErrorMsg:     "provider config cannot be nil",
 			expectedInfoLogs:     1, // Only start log
-			expectedDebugLogs:    2, // Constructor debug logs
+			expectedDebugLogs:    0, // Constructor debug logs
 			expectedErrorLogs:    1, // Error log
 		},
 		{
@@ -965,7 +960,7 @@ func TestSelectProvider(t *testing.T) {
 			selectProviderError: nil,
 			expectError:         false,
 			expectedInfoLogs:    2, // Start and success logs
-			expectedDebugLogs:   2,
+			expectedDebugLogs:   0,
 			expectedErrorLogs:   0,
 		},
 		{
@@ -1072,7 +1067,7 @@ func TestGetModelsList(t *testing.T) {
 			modelsListError:     nil,
 			expectError:         false,
 			expectedInfoLogs:    2, // Start and success logs
-			expectedDebugLogs:   2,
+			expectedDebugLogs:   0,
 			expectedErrorLogs:   0,
 			expectedModelsCount: 3,
 		},
@@ -1168,14 +1163,14 @@ func TestGetSettingsFilePath(t *testing.T) {
 			name:              "Successful settings file path retrieval",
 			settingsFilePath:  "/path/to/settings.json",
 			expectedInfoLogs:  0,
-			expectedDebugLogs: 4, // Constructor + method debug logs
+			expectedDebugLogs: 2, // Constructor + method debug logs
 			expectedErrorLogs: 0,
 		},
 		{
 			name:              "Empty settings file path",
 			settingsFilePath:  "",
 			expectedInfoLogs:  0,
-			expectedDebugLogs: 4, // Constructor + method debug logs
+			expectedDebugLogs: 2, // Constructor + method debug logs
 			expectedErrorLogs: 0,
 		},
 	}

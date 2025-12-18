@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"go_text/internal"
+	"go_text/internal/v2/util"
 
 	"github.com/wailsapp/wails/v2"
+	"github.com/wailsapp/wails/v2/pkg/logger"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 )
@@ -16,8 +19,11 @@ const MinimalWidth = 830
 const MinimalHeight = 550
 
 func main() {
+	// Create custom logger
+	loggerApi := util.NewLogger()
 	// Create an instance of the app structure
-	app := NewApp()
+	app := NewApp(loggerApi, true)
+
 	apiContext := internal.NewApplicationContext()
 
 	// Create an application with options
@@ -30,10 +36,21 @@ func main() {
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
-		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
-		OnStartup:        app.startup,
+		LogLevel:           logger.DEBUG,
+		LogLevelProduction: logger.WARNING,
+		BackgroundColour:   &options.RGBA{R: 27, G: 38, B: 54, A: 1},
+		OnStartup: func(ctx context.Context) {
+			loggerApi.SetContext(&ctx)
+			app.SetContext(ctx)
+			// Init settings
+			err := app.FileUtilsService.InitDefaultSettingsIfAbsent()
+			if err != nil {
+				return // Ignoring error
+			}
+		},
 		Bind: []interface{}{
-			app, apiContext.ActionApi, apiContext.SettingsApi, apiContext.StateApi,
+			app, app.AppActionApi, app.AppStateApi, app.AppSettingsApi,
+			apiContext.ActionApi, apiContext.SettingsApi, apiContext.StateApi,
 		},
 	})
 

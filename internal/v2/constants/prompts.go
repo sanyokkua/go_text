@@ -5,34 +5,26 @@ import (
 	"go_text/internal/v2/model"
 )
 
-func GetUserPromptCategories() []string {
-	keys := make([]string, 0, len(userPromptsByCategory))
-	for k := range userPromptsByCategory {
-		keys = append(keys, k)
-	}
-	return keys
+func GetAppPrompts() *model.AppPrompts {
+	return &ApplicationPrompts
 }
 
 func GetSystemPromptByCategory(category string) (model.Prompt, error) {
-	prompt, ok := systemPromptByCategory[category]
+	prompt, ok := ApplicationPrompts.PromptGroups[category]
 	if !ok {
 		return model.Prompt{}, errors.New("unknown prompt category")
 	}
-	return prompt, nil
+	return prompt.SystemPrompt, nil
 }
 
 func GetUserPromptById(id string) (model.Prompt, error) {
-	prompt, ok := userPrompts[id]
-	if !ok {
-		return model.Prompt{}, errors.New("unknown prompt id")
+	for _, v := range ApplicationPrompts.PromptGroups {
+		prompt, ok := v.Prompts[id]
+		if !ok {
+			continue
+		}
+		return prompt, nil
 	}
-	return prompt, nil
-}
 
-func GetUserPromptsByCategory(category string) ([]model.Prompt, error) {
-	items, ok := userPromptsByCategory[category]
-	if !ok {
-		return nil, errors.New("unknown prompt category")
-	}
-	return items, nil
+	return model.Prompt{}, errors.New("unknown prompt id")
 }

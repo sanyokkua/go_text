@@ -1137,106 +1137,60 @@ Format: markdown
 - Return ONLY the labeled sections in plain text and nothing else. Be concise, unambiguous, and developer/tester friendly.
 `
 
-var systemProofread = model.Prompt{ID: "systemProofread", Name: "System Proofread", Type: PromptTypeSystem, Category: PromptCategoryProofread, Value: systemPromptProofreading}
-var proofread = model.Prompt{ID: "proofread", Name: "Proofread", Type: PromptTypeUser, Category: PromptCategoryProofread, Value: userProofreadingBase}
-var rewrite = model.Prompt{ID: "rewrite", Name: "Rewrite", Type: PromptTypeUser, Category: PromptCategoryProofread, Value: userRewritingBase}
-var rewriteFormal = model.Prompt{ID: "rewriteFormal", Name: "Formal", Type: PromptTypeUser, Category: PromptCategoryProofread, Value: userRewritingFormalStyle}
-var rewriteSemiFormal = model.Prompt{ID: "rewriteSemiFormal", Name: "Semi Formal", Type: PromptTypeUser, Category: PromptCategoryProofread, Value: userRewritingSemiFormalStyle}
-var rewriteCasual = model.Prompt{ID: "rewriteCasual", Name: "Casual", Type: PromptTypeUser, Category: PromptCategoryProofread, Value: userRewritingCasualStyle}
-var rewriteFriendly = model.Prompt{ID: "rewriteFriendly", Name: "Friendly", Type: PromptTypeUser, Category: PromptCategoryProofread, Value: userRewritingFriendlyStyle}
-var rewriteDirect = model.Prompt{ID: "rewriteDirect", Name: "Direct", Type: PromptTypeUser, Category: PromptCategoryProofread, Value: userRewritingDirectStyle}
-var rewriteIndirect = model.Prompt{ID: "rewriteIndirect", Name: "Indirect", Type: PromptTypeUser, Category: PromptCategoryProofread, Value: userRewritingIndirectStyle}
-
-var systemFormat = model.Prompt{ID: "systemFormat", Name: "System Format", Type: PromptTypeSystem, Category: PromptCategoryFormat, Value: systemPromptFormatting}
-var formatFormalEmail = model.Prompt{ID: "formatFormalEmail", Name: "Formal Email", Type: PromptTypeUser, Category: PromptCategoryFormat, Value: userFormatFormalEmail}
-var formatCasualEmail = model.Prompt{ID: "formatCasualEmail", Name: "Casual Email", Type: PromptTypeUser, Category: PromptCategoryFormat, Value: userFormatCasualEmail}
-var formatForChat = model.Prompt{ID: "formatForChat", Name: "Chat", Type: PromptTypeUser, Category: PromptCategoryFormat, Value: userFormatForChat}
-var formatInstructionGuide = model.Prompt{ID: "formatInstructionGuide", Name: "Instruction Guide", Type: PromptTypeUser, Category: PromptCategoryFormat, Value: userFormatInstructionGuide}
-var formatPlainDocument = model.Prompt{ID: "formatPlainDocument", Name: "Plain Document", Type: PromptTypeUser, Category: PromptCategoryFormat, Value: userFormatPlainDocument}
-var formatSocialMediaPost = model.Prompt{ID: "formatSocialMediaPost", Name: "Social Media Post", Type: PromptTypeUser, Category: PromptCategoryFormat, Value: userFormatSocialMediaPost}
-var formatWikiMarkdown = model.Prompt{ID: "formatWikiMarkdown", Name: "Wiki Markdown", Type: PromptTypeUser, Category: PromptCategoryFormat, Value: userFormatWikiMarkdown}
-
-var systemTranslate = model.Prompt{ID: "systemTranslate", Name: "System Translate", Type: PromptTypeSystem, Category: PromptCategoryTranslation, Value: systemPromptTranslation}
-var translatePlain = model.Prompt{ID: "translatePlain", Name: "Translate", Type: PromptTypeUser, Category: PromptCategoryTranslation, Value: userTranslatePlain}
-var translateDictionary = model.Prompt{ID: "translateDictionary", Name: "Translate as Dictionary", Type: PromptTypeUser, Category: PromptCategoryTranslation, Value: userTranslateDictionary}
-
-var systemSummary = model.Prompt{ID: "systemSummary", Name: "System Translate", Type: PromptTypeSystem, Category: PromptCategorySummary, Value: systemPromptSummarization}
-var summaryBase = model.Prompt{ID: "summaryBase", Name: "Summarize", Type: PromptTypeUser, Category: PromptCategorySummary, Value: userSummarizeBase}
-var summaryKeypoints = model.Prompt{ID: "summaryKeypoints", Name: "Create Key Points", Type: PromptTypeUser, Category: PromptCategorySummary, Value: userSummarizeKeypoints}
-var summaryHashtags = model.Prompt{ID: "summaryHashtags", Name: "Generate Hashtags", Type: PromptTypeUser, Category: PromptCategorySummary, Value: userSummarizeHashtags}
-var summaryExplanation = model.Prompt{ID: "summaryExplanation", Name: "Explain text", Type: PromptTypeUser, Category: PromptCategorySummary, Value: userSummarizeExplain}
-
-var systemTransforming = model.Prompt{ID: "systemTransforming", Name: "System Transforming", Type: PromptTypeSystem, Category: PromptCategoryTransforming, Value: systemPromptTransforming}
-var transformingUserStory = model.Prompt{ID: "transformingUserStory", Name: "Create User Story", Type: PromptTypeUser, Category: PromptCategoryTransforming, Value: userTransformingUserStory}
-
-var systemPromptByCategory = map[string]model.Prompt{
-	PromptCategoryProofread:    systemProofread,
-	PromptCategoryFormat:       systemFormat,
-	PromptCategoryTranslation:  systemTranslate,
-	PromptCategorySummary:      systemSummary,
-	PromptCategoryTransforming: systemTransforming,
-}
-var userPrompts = map[string]model.Prompt{
-	"proofread":              proofread,
-	"rewrite":                rewrite,
-	"rewriteFormal":          rewriteFormal,
-	"rewriteSemiFormal":      rewriteSemiFormal,
-	"rewriteCasual":          rewriteCasual,
-	"rewriteFriendly":        rewriteFriendly,
-	"rewriteDirect":          rewriteDirect,
-	"rewriteIndirect":        rewriteIndirect,
-	"formatFormalEmail":      formatFormalEmail,
-	"formatCasualEmail":      formatCasualEmail,
-	"formatForChat":          formatForChat,
-	"formatInstructionGuide": formatInstructionGuide,
-	"formatPlainDocument":    formatPlainDocument,
-	"formatSocialMediaPost":  formatSocialMediaPost,
-	"formatWikiMarkdown":     formatWikiMarkdown,
-	"translatePlain":         translatePlain,
-	"translateDictionary":    translateDictionary,
-	"summaryBase":            summaryBase,
-	"summaryKeypoints":       summaryKeypoints,
-	"summaryHashtags":        summaryHashtags,
-	"summaryExplanation":     summaryExplanation,
-	"transformingUserStory":  transformingUserStory,
-}
-var proofreadingPrompts = []model.Prompt{
-	proofread,
-	rewrite,
-	rewriteFormal,
-	rewriteSemiFormal,
-	rewriteCasual,
-	rewriteFriendly,
-	rewriteDirect,
-	rewriteIndirect,
-}
-var formattingPrompts = []model.Prompt{
-	formatFormalEmail,
-	formatCasualEmail,
-	formatForChat,
-	formatInstructionGuide,
-	formatPlainDocument,
-	formatSocialMediaPost,
-	formatWikiMarkdown,
-}
-var translationPrompts = []model.Prompt{
-	translatePlain,
-	translateDictionary,
-}
-var summarizationPrompts = []model.Prompt{
-	summaryBase,
-	summaryKeypoints,
-	summaryHashtags,
-	summaryExplanation,
-}
-var transformingPrompts = []model.Prompt{
-	transformingUserStory,
-}
-
-var userPromptsByCategory = map[string][]model.Prompt{
-	PromptCategoryProofread:    proofreadingPrompts,
-	PromptCategoryFormat:       formattingPrompts,
-	PromptCategoryTranslation:  translationPrompts,
-	PromptCategorySummary:      summarizationPrompts,
-	PromptCategoryTransforming: transformingPrompts,
+// ApplicationPrompts - All Prompts of the App
+var ApplicationPrompts = model.AppPrompts{
+	PromptGroups: map[string]model.AppPromptGroup{
+		PromptCategoryProofread: {
+			GroupName:    PromptCategoryProofread,
+			SystemPrompt: model.Prompt{ID: "systemProofread", Name: "System Proofread", Type: PromptTypeSystem, Category: PromptCategoryProofread, Value: systemPromptProofreading},
+			Prompts: map[string]model.Prompt{
+				"proofread":         {ID: "proofread", Name: "Proofread", Type: PromptTypeUser, Category: PromptCategoryProofread, Value: userProofreadingBase},
+				"rewrite":           {ID: "rewrite", Name: "Rewrite", Type: PromptTypeUser, Category: PromptCategoryProofread, Value: userRewritingBase},
+				"rewriteFormal":     {ID: "rewriteFormal", Name: "Formal", Type: PromptTypeUser, Category: PromptCategoryProofread, Value: userRewritingFormalStyle},
+				"rewriteSemiFormal": {ID: "rewriteSemiFormal", Name: "Semi Formal", Type: PromptTypeUser, Category: PromptCategoryProofread, Value: userRewritingSemiFormalStyle},
+				"rewriteCasual":     {ID: "rewriteCasual", Name: "Casual", Type: PromptTypeUser, Category: PromptCategoryProofread, Value: userRewritingCasualStyle},
+				"rewriteFriendly":   {ID: "rewriteFriendly", Name: "Friendly", Type: PromptTypeUser, Category: PromptCategoryProofread, Value: userRewritingFriendlyStyle},
+				"rewriteDirect":     {ID: "rewriteDirect", Name: "Direct", Type: PromptTypeUser, Category: PromptCategoryProofread, Value: userRewritingDirectStyle},
+				"rewriteIndirect":   {ID: "rewriteIndirect", Name: "Indirect", Type: PromptTypeUser, Category: PromptCategoryProofread, Value: userRewritingIndirectStyle},
+			},
+		},
+		PromptCategoryFormat: {
+			GroupName:    PromptCategoryFormat,
+			SystemPrompt: model.Prompt{ID: "systemFormat", Name: "System Format", Type: PromptTypeSystem, Category: PromptCategoryFormat, Value: systemPromptFormatting},
+			Prompts: map[string]model.Prompt{
+				"formatFormalEmail":      {ID: "formatFormalEmail", Name: "Formal Email", Type: PromptTypeUser, Category: PromptCategoryFormat, Value: userFormatFormalEmail},
+				"formatCasualEmail":      {ID: "formatCasualEmail", Name: "Casual Email", Type: PromptTypeUser, Category: PromptCategoryFormat, Value: userFormatCasualEmail},
+				"formatForChat":          {ID: "formatForChat", Name: "Chat", Type: PromptTypeUser, Category: PromptCategoryFormat, Value: userFormatForChat},
+				"formatInstructionGuide": {ID: "formatInstructionGuide", Name: "Instruction Guide", Type: PromptTypeUser, Category: PromptCategoryFormat, Value: userFormatInstructionGuide},
+				"formatPlainDocument":    {ID: "formatPlainDocument", Name: "Plain Document", Type: PromptTypeUser, Category: PromptCategoryFormat, Value: userFormatPlainDocument},
+				"formatSocialMediaPost":  {ID: "formatSocialMediaPost", Name: "Social Media Post", Type: PromptTypeUser, Category: PromptCategoryFormat, Value: userFormatSocialMediaPost},
+				"formatWikiMarkdown":     {ID: "formatWikiMarkdown", Name: "Wiki Markdown", Type: PromptTypeUser, Category: PromptCategoryFormat, Value: userFormatWikiMarkdown},
+			},
+		},
+		PromptCategoryTranslation: {
+			GroupName:    PromptCategoryTranslation,
+			SystemPrompt: model.Prompt{ID: "systemTranslate", Name: "System Translate", Type: PromptTypeSystem, Category: PromptCategoryTranslation, Value: systemPromptTranslation},
+			Prompts: map[string]model.Prompt{
+				"translatePlain":      {ID: "translatePlain", Name: "Translate", Type: PromptTypeUser, Category: PromptCategoryTranslation, Value: userTranslatePlain},
+				"translateDictionary": {ID: "translateDictionary", Name: "Translate as Dictionary", Type: PromptTypeUser, Category: PromptCategoryTranslation, Value: userTranslateDictionary},
+			},
+		},
+		PromptCategorySummary: {
+			GroupName:    PromptCategorySummary,
+			SystemPrompt: model.Prompt{ID: "systemSummary", Name: "System Translate", Type: PromptTypeSystem, Category: PromptCategorySummary, Value: systemPromptSummarization},
+			Prompts: map[string]model.Prompt{
+				"summaryBase":        {ID: "summaryBase", Name: "Summarize", Type: PromptTypeUser, Category: PromptCategorySummary, Value: userSummarizeBase},
+				"summaryKeypoints":   {ID: "summaryKeypoints", Name: "Create Key Points", Type: PromptTypeUser, Category: PromptCategorySummary, Value: userSummarizeKeypoints},
+				"summaryHashtags":    {ID: "summaryHashtags", Name: "Generate Hashtags", Type: PromptTypeUser, Category: PromptCategorySummary, Value: userSummarizeHashtags},
+				"summaryExplanation": {ID: "summaryExplanation", Name: "Explain text", Type: PromptTypeUser, Category: PromptCategorySummary, Value: userSummarizeExplain},
+			},
+		},
+		PromptCategoryTransforming: {
+			GroupName:    PromptCategoryTransforming,
+			SystemPrompt: model.Prompt{ID: "systemTransforming", Name: "System Transforming", Type: PromptTypeSystem, Category: PromptCategoryTransforming, Value: systemPromptTransforming},
+			Prompts: map[string]model.Prompt{
+				"transformingUserStory": {ID: "transformingUserStory", Name: "Create User Story", Type: PromptTypeUser, Category: PromptCategoryTransforming, Value: userTransformingUserStory},
+			},
+		},
+	},
 }

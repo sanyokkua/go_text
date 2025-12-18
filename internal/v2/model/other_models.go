@@ -12,3 +12,12 @@ type LanguageItem struct {
 	LanguageId   string `json:"languageId"`
 	LanguageText string `json:"languageText"`
 }
+
+type AppPromptGroup struct {
+	GroupName    string
+	SystemPrompt Prompt
+	Prompts      map[string]Prompt
+}
+type AppPrompts struct {
+	PromptGroups map[string]AppPromptGroup
+}

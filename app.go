@@ -2,25 +2,61 @@ package main
 
 import (
 	"context"
-	"go_text/internal/backend/core/utils/file_utils"
+	"go_text/internal/backend/core/utils/http_utils"
+	"go_text/internal/v2/api"
+	"go_text/internal/v2/backend_api"
+	actionapi "go_text/internal/v2/frontend/action"
+	settingsapi "go_text/internal/v2/frontend/settings"
+	stateapi "go_text/internal/v2/frontend/state"
+	"go_text/internal/v2/service/completion"
+	"go_text/internal/v2/service/file"
+	"go_text/internal/v2/service/http"
+	"go_text/internal/v2/service/llm"
+	"go_text/internal/v2/service/mapper"
+	"go_text/internal/v2/service/prompt"
+	"go_text/internal/v2/service/settings"
+	"go_text/internal/v2/service/strings"
 )
 
 // App struct
 type App struct {
 	ctx context.Context
+
+	AppActionApi     api.ActionApi
+	AppStateApi      api.StateApi
+	AppSettingsApi   api.SettingsApi
+	FileUtilsService backend_api.FileUtilsApi
 }
 
 // NewApp creates a new App application struct
-func NewApp() *App {
-	return &App{}
+func NewApp(loggerApi backend_api.LoggingApi, enableDebugLogging bool) *App {
+	restyClient := http_utils.NewRestyClient()
+	if enableDebugLogging {
+		restyClient.EnableDebug()
+	}
+
+	mapperService := mapper.NewMapperUtilsService()
+	fileUtilsService := file.NewFileUtilsService(loggerApi)
+	promptService := prompt.NewPromptService(loggerApi)
+	stringUtils := strings.NewStringUtilsApi(loggerApi)
+	llmHttpApi := http.NewLlmHttpApiService(loggerApi, restyClient)
+	settingsService := settings.NewSettingsService(loggerApi, fileUtilsService, llmHttpApi, mapperService)
+	llmService := llm.NewLlmApiService(loggerApi, llmHttpApi, settingsService, mapperService)
+	completionService := completion.NewCompletionApiService(loggerApi, stringUtils, promptService, settingsService, llmService)
+
+	// Main API Services
+	appSettingsApi := settingsapi.NewSettingsApi(loggerApi, settingsService)
+	appActionApi := actionapi.NewActionApi(loggerApi, promptService, completionService)
+	appStateApi := stateapi.NewStateApiService(loggerApi, settingsService, mapperService)
+
+	return &App{
+		AppActionApi:     appActionApi,
+		AppStateApi:      appStateApi,
+		AppSettingsApi:   appSettingsApi,
+		FileUtilsService: fileUtilsService,
+	}
 }
 
-// startup is called when the app starts. The context is saved
-// so we can call the runtime methods
-func (a *App) startup(ctx context.Context) {
+func (a *App) SetContext(ctx context.Context) {
 	a.ctx = ctx
-	err := file_utils.InitDefaultSettingsIfAbsent()
-	if err != nil {
-		return
-	}
 }

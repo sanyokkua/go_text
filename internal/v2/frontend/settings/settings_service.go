@@ -1,4 +1,4 @@
-package api
+package settingsapi
 
 import (
 	"fmt"
@@ -235,16 +235,8 @@ func (s *settingsService) GetSettingsFilePath() string {
 }
 
 func NewSettingsApi(logger backend_api.LoggingApi, settingsServiceApi backend_api.SettingsServiceApi) api.SettingsApi {
-	startTime := time.Now()
-	logger.LogDebug("[NewSettingsApi] Initializing settings API service")
-
-	service := &settingsService{
+	return &settingsService{
 		logger:          logger,
 		settingsService: settingsServiceApi,
 	}
-
-	duration := time.Since(startTime)
-	logger.LogDebug(fmt.Sprintf("[NewSettingsApi] Successfully initialized settings API service in %v", duration))
-
-	return service
 }

@@ -56,33 +56,6 @@ func TestPromptServiceIntegration(t *testing.T) {
 	var _ = service
 }
 
-// TestGetPromptsCategoriesIntegration tests the real GetPromptsCategories method
-func TestGetPromptsCategoriesIntegration(t *testing.T) {
-	logger := &IntegrationTestLogger{}
-	service := NewPromptService(logger)
-
-	categories := service.GetPromptsCategories()
-
-	// Verify we get expected categories
-	expectedCategories := []string{
-		constants.PromptCategoryProofread,
-		constants.PromptCategoryFormat,
-		constants.PromptCategoryTranslation,
-		constants.PromptCategorySummary,
-		constants.PromptCategoryTransforming,
-	}
-
-	if len(categories) != len(expectedCategories) {
-		t.Errorf("Expected %d categories, got %d", len(expectedCategories), len(categories))
-	}
-
-	// GetPromptsCategories is a simple method that doesn't log
-	// This is expected behavior - only verify the result
-	if len(categories) != len(expectedCategories) {
-		t.Errorf("Expected %d categories, got %d", len(expectedCategories), len(categories))
-	}
-}
-
 // TestGetPromptIntegration tests the real GetPrompt method
 func TestGetPromptIntegration(t *testing.T) {
 	logger := &IntegrationTestLogger{}
@@ -207,38 +180,6 @@ func TestGetSystemPromptIntegration(t *testing.T) {
 
 	// Test invalid category
 	_, err = service.GetSystemPrompt("invalid_category")
-	if err == nil {
-		t.Error("Expected error for invalid category")
-	}
-
-	// Verify error logging occurred
-	if !logger.Contains("ERROR") {
-		t.Error("Expected ERROR logging to occur")
-	}
-}
-
-// TestGetUserPromptsForCategoryIntegration tests the real GetUserPromptsForCategory method
-func TestGetUserPromptsForCategoryIntegration(t *testing.T) {
-	logger := &IntegrationTestLogger{}
-	service := NewPromptService(logger)
-
-	// Test valid category
-	prompts, err := service.GetUserPromptsForCategory(constants.PromptCategoryProofread)
-	if err != nil {
-		t.Errorf("Expected no error for valid category, got: %v", err)
-	}
-
-	if len(prompts) == 0 {
-		t.Error("Expected at least one prompt for proofread category")
-	}
-
-	// Verify info logging occurred
-	if !logger.Contains("INFO") {
-		t.Error("Expected INFO logging to occur")
-	}
-
-	// Test invalid category
-	_, err = service.GetUserPromptsForCategory("invalid_category")
 	if err == nil {
 		t.Error("Expected error for invalid category")
 	}

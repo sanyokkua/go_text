@@ -80,6 +80,11 @@ type MockPromptService struct {
 	systemPromptError  error
 	buildPromptResult  string
 	buildPromptError   error
+	appPromptsResult   *model.AppPrompts
+}
+
+func (m *MockPromptService) GetAppPrompts() *model.AppPrompts {
+	return m.appPromptsResult
 }
 
 func (m *MockPromptService) GetPrompt(promptID string) (model.Prompt, error) {

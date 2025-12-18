@@ -1,4 +1,4 @@
-package api
+package actionapi
 
 import (
 	"errors"
@@ -52,6 +52,7 @@ type MockPromptApi struct {
 	systemPromptError  error
 	buildPromptResult  string
 	buildPromptError   error
+	appPromptsResult   *model.AppPrompts
 }
 
 func (m *MockPromptApi) GetPromptsCategories() []string {
@@ -60,6 +61,10 @@ func (m *MockPromptApi) GetPromptsCategories() []string {
 
 func (m *MockPromptApi) GetUserPromptsForCategory(category string) ([]model.Prompt, error) {
 	return m.promptsResult, m.promptsError
+}
+
+func (m *MockPromptApi) GetAppPrompts() *model.AppPrompts {
+	return m.appPromptsResult
 }
 
 func (m *MockPromptApi) GetPrompt(promptId string) (model.Prompt, error) {
@@ -96,9 +101,43 @@ func TestNewActionApi(t *testing.T) {
 		t.Fatal("NewActionApi returned nil")
 	}
 
-	// Verify debug logs
-	if len(logger.DebugMessages) != 2 {
-		t.Errorf("Expected 2 debug logs, got %d: %v", len(logger.DebugMessages), logger.DebugMessages)
+	// Verify no debug logs since constructor no longer logs
+	if len(logger.DebugMessages) != 0 {
+		t.Errorf("Expected 0 debug logs, got %d: %v", len(logger.DebugMessages), logger.DebugMessages)
+	}
+}
+
+// Helper function to create AppPrompts for testing
+func createTestAppPrompts() *model.AppPrompts {
+	return &model.AppPrompts{
+		PromptGroups: map[string]model.AppPromptGroup{
+			"translation": {
+				GroupName: "translation",
+				SystemPrompt: model.Prompt{
+					ID:       "system-translation",
+					Name:     "Translation System",
+					Type:     "system",
+					Category: "translation",
+					Value:    "You are a translation assistant.",
+				},
+				Prompts: map[string]model.Prompt{
+					"translate-en-fr": {
+						ID:       "translate-en-fr",
+						Name:     "English to French",
+						Type:     "user",
+						Category: "translation",
+						Value:    "Translate from English to French: {{.Input}}",
+					},
+					"translate-fr-en": {
+						ID:       "translate-fr-en",
+						Name:     "French to English",
+						Type:     "user",
+						Category: "translation",
+						Value:    "Translate from French to English: {{.Input}}",
+					},
+				},
+			},
+		},
 	}
 }
 
@@ -106,9 +145,7 @@ func TestNewActionApi(t *testing.T) {
 func TestGetActionGroups(t *testing.T) {
 	tests := []struct {
 		name                 string
-		categoriesResult     []string
-		promptsResult        []model.Prompt
-		promptsError         error
+		appPromptsResult     *model.AppPrompts
 		expectError          bool
 		expectedErrorMsg     string
 		expectedInfoLogs     int
@@ -118,56 +155,54 @@ func TestGetActionGroups(t *testing.T) {
 		expectedTotalActions int
 	}{
 		{
-			name:             "Successful action groups retrieval with cache",
-			categoriesResult: []string{"translation"},
-			promptsResult: []model.Prompt{
-				{ID: "translate-en-fr", Name: "English to French", Category: "translation"},
-				{ID: "translate-fr-en", Name: "French to English", Category: "translation"},
-			},
-			promptsError:         nil,
+			name:                 "Successful action groups retrieval with cache",
+			appPromptsResult:     createTestAppPrompts(),
 			expectError:          false,
 			expectedInfoLogs:     2, // Start and success logs
-			expectedDebugLogs:    5, // Constructor + Categories, processing category, and prompts retrieval
+			expectedDebugLogs:    3, // Categories, processing category, and prompts count
 			expectedErrorLogs:    0,
 			expectedActionGroups: 1,
 			expectedTotalActions: 2,
 		},
 		{
-			name:             "Successful action groups retrieval with cache hit",
-			categoriesResult: []string{"translation"},
-			promptsResult: []model.Prompt{
-				{ID: "translate-en-fr", Name: "English to French", Category: "translation"},
+			name: "Successful action groups retrieval with cache hit",
+			appPromptsResult: &model.AppPrompts{
+				PromptGroups: map[string]model.AppPromptGroup{
+					"translation": {
+						GroupName: "translation",
+						SystemPrompt: model.Prompt{
+							ID:       "system-translation",
+							Name:     "Translation System",
+							Type:     "system",
+							Category: "translation",
+							Value:    "You are a translation assistant.",
+						},
+						Prompts: map[string]model.Prompt{
+							"translate-en-fr": {
+								ID:       "translate-en-fr",
+								Name:     "English to French",
+								Type:     "user",
+								Category: "translation",
+								Value:    "Translate from English to French: {{.Input}}",
+							},
+						},
+					},
+				},
 			},
-			promptsError:         nil,
 			expectError:          false,
 			expectedInfoLogs:     2, // Start and success logs
-			expectedDebugLogs:    5, // Constructor + Categories, processing category, and prompts retrieval
+			expectedDebugLogs:    3, // Categories, processing category, and prompts count
 			expectedErrorLogs:    0,
 			expectedActionGroups: 1,
 			expectedTotalActions: 1,
 		},
 		{
-			name:                 "Empty categories",
-			categoriesResult:     []string{},
-			promptsResult:        []model.Prompt{},
-			promptsError:         nil,
+			name:                 "Empty app prompts",
+			appPromptsResult:     &model.AppPrompts{PromptGroups: map[string]model.AppPromptGroup{}},
 			expectError:          false,
 			expectedInfoLogs:     2, // Start and success logs
-			expectedDebugLogs:    3, // Constructor + Categories and no processing
+			expectedDebugLogs:    1, // Categories only
 			expectedErrorLogs:    0,
-			expectedActionGroups: 0,
-			expectedTotalActions: 0,
-		},
-		{
-			name:                 "Prompts retrieval error",
-			categoriesResult:     []string{"translation"},
-			promptsResult:        []model.Prompt{},
-			promptsError:         errors.New("database connection failed"),
-			expectError:          true,
-			expectedErrorMsg:     "failed to retrieve prompts for category \"translation\"",
-			expectedInfoLogs:     1, // Only start log
-			expectedDebugLogs:    2, // Categories and processing category
-			expectedErrorLogs:    1, // Error log
 			expectedActionGroups: 0,
 			expectedTotalActions: 0,
 		},
@@ -177,9 +212,7 @@ func TestGetActionGroups(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			logger := &MockLogger{}
 			promptApi := &MockPromptApi{
-				categoriesResult: tt.categoriesResult,
-				promptsResult:    tt.promptsResult,
-				promptsError:     tt.promptsError,
+				appPromptsResult: tt.appPromptsResult,
 			}
 			completionApi := &MockCompletionApi{}
 
@@ -280,7 +313,7 @@ func TestProcessAction(t *testing.T) {
 			processActionError:  nil,
 			expectError:         false,
 			expectedInfoLogs:    2, // Start and success logs
-			expectedDebugLogs:   2, // Constructor debug logs
+			expectedDebugLogs:   0, // No constructor debug logs
 			expectedErrorLogs:   0,
 		},
 		{

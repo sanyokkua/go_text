@@ -1,4 +1,4 @@
-package api
+package stateapi
 
 import (
 	"fmt"
@@ -96,17 +96,9 @@ func (s *stateService) GetDefaultOutputLanguage() (model.LanguageItem, error) {
 }
 
 func NewStateApiService(logger backend_api.LoggingApi, settingsService backend_api.SettingsServiceApi, mapper backend_api.MapperUtilsApi) api.StateApi {
-	startTime := time.Now()
-	logger.LogDebug("[NewStateService] Initializing state service")
-
-	service := &stateService{
+	return &stateService{
 		logger:          logger,
 		settingsService: settingsService,
 		mapper:          mapper,
 	}
-
-	duration := time.Since(startTime)
-	logger.LogDebug(fmt.Sprintf("[NewStateService] Successfully initialized state service in %v", duration))
-
-	return service
 }

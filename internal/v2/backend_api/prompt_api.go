@@ -6,8 +6,7 @@ import (
 )
 
 type PromptApi interface {
-	GetPromptsCategories() []string
-	GetUserPromptsForCategory(category string) ([]model.Prompt, error)
+	GetAppPrompts() *model.AppPrompts
 	GetPrompt(promptId string) (model.Prompt, error)
 	GetSystemPrompt(category string) (string, error)
 	BuildPrompt(template, category string, action *action.ActionRequest, useMarkdown bool) (string, error)

@@ -1,4 +1,4 @@
-package api
+package actionapi
 
 import (
 	"fmt"
@@ -24,24 +24,17 @@ func (a *actionService) GetActionGroups() (*action.Actions, error) {
 		return a.cachedActions, nil
 	}
 
-	categories := a.promptApi.GetPromptsCategories()
-	a.logger.LogDebug(fmt.Sprintf("[GetActionGroups] Found %d prompt categories", len(categories)))
+	appPrompts := a.promptApi.GetAppPrompts()
+	a.logger.LogDebug(fmt.Sprintf("[GetActionGroups] Found %d prompt categories", len(appPrompts.PromptGroups)))
 
-	groups := make([]action.Group, 0, len(categories))
+	groups := make([]action.Group, 0, len(appPrompts.PromptGroups))
 
-	for _, category := range categories {
-		a.logger.LogDebug(fmt.Sprintf("[GetActionGroups] Processing category: %s", category))
+	for _, category := range appPrompts.PromptGroups {
+		a.logger.LogDebug(fmt.Sprintf("[GetActionGroups] Processing category: %s", category.GroupName))
+		a.logger.LogDebug(fmt.Sprintf("[GetActionGroups] Retrieved %d prompts for category '%s'", len(category.Prompts), category))
 
-		prompts, err := a.promptApi.GetUserPromptsForCategory(category)
-		if err != nil {
-			a.logger.LogError(fmt.Sprintf("[GetActionGroups] Failed to get prompts for category '%s': %v", category, err))
-			return nil, fmt.Errorf("failed to retrieve prompts for category %q: %w", category, err)
-		}
-
-		a.logger.LogDebug(fmt.Sprintf("[GetActionGroups] Retrieved %d prompts for category '%s'", len(prompts), category))
-
-		actions := make([]action.Action, 0, len(prompts))
-		for _, prompt := range prompts {
+		actions := make([]action.Action, 0, len(category.Prompts))
+		for _, prompt := range category.Prompts {
 			actions = append(actions, action.Action{
 				ID:   prompt.ID,
 				Text: prompt.Name,
@@ -49,7 +42,7 @@ func (a *actionService) GetActionGroups() (*action.Actions, error) {
 		}
 
 		groups = append(groups, action.Group{
-			GroupName:    category,
+			GroupName:    category.GroupName,
 			GroupActions: actions,
 		})
 	}
@@ -82,15 +75,9 @@ func (a *actionService) ProcessAction(actionReq action.ActionRequest) (string, e
 }
 
 func NewActionApi(logger backend_api.LoggingApi, promptApi backend_api.PromptApi, completionApi backend_api.CompletionApi) api.ActionApi {
-	logger.LogDebug("[NewActionApi] Initializing action service")
-
-	service := &actionService{
+	return &actionService{
 		logger:        logger,
 		promptApi:     promptApi,
 		completionApi: completionApi,
 	}
-
-	logger.LogDebug(fmt.Sprintf("[NewActionApi] Successfully initialized action service"))
-
-	return service
 }
