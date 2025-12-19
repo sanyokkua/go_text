@@ -21,9 +21,9 @@ const MinimalHeight = 550
 func main() {
 	// Create custom logger
 	loggerApi := util.NewLogger()
-	// Create an instance of the app structure
-	app := NewApp(loggerApi, true)
 
+	// Create an instance of the app structure
+	app := NewApp(loggerApi)
 	apiContext := internal.NewApplicationContext()
 
 	// Create an application with options

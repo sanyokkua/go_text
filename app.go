@@ -16,6 +16,9 @@ import (
 	"go_text/internal/v2/service/prompt"
 	"go_text/internal/v2/service/settings"
 	"go_text/internal/v2/service/strings"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"resty.dev/v3"
 )
 
 // App struct
@@ -26,15 +29,12 @@ type App struct {
 	AppStateApi      api.StateApi
 	AppSettingsApi   api.SettingsApi
 	FileUtilsService backend_api.FileUtilsApi
+	RestyClient      *resty.Client
 }
 
 // NewApp creates a new App application struct
-func NewApp(loggerApi backend_api.LoggingApi, enableDebugLogging bool) *App {
+func NewApp(loggerApi backend_api.LoggingApi) *App {
 	restyClient := http_utils.NewRestyClient()
-	if enableDebugLogging {
-		restyClient.EnableDebug()
-	}
-
 	mapperService := mapper.NewMapperUtilsService()
 	fileUtilsService := file.NewFileUtilsService(loggerApi)
 	promptService := prompt.NewPromptService(loggerApi)
@@ -54,9 +54,17 @@ func NewApp(loggerApi backend_api.LoggingApi, enableDebugLogging bool) *App {
 		AppStateApi:      appStateApi,
 		AppSettingsApi:   appSettingsApi,
 		FileUtilsService: fileUtilsService,
+		RestyClient:      restyClient,
 	}
 }
 
 func (a *App) SetContext(ctx context.Context) {
 	a.ctx = ctx
+}
+
+func (a *App) EnableLoggingForDev(ctx context.Context) {
+	buildInfo := runtime.Environment(ctx)
+	if buildInfo.BuildType == "dev" {
+		a.RestyClient.EnableDebug()
+	}
 }

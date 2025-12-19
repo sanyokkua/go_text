@@ -1,4 +1,4 @@
-package actionapi
+package frontend
 
 import (
 	"errors"

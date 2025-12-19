@@ -1,4 +1,4 @@
-package stateapi
+package frontend
 
 import (
 	"fmt"
