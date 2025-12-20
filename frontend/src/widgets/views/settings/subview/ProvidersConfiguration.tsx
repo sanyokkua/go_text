@@ -1,245 +1,493 @@
-import React, { useMemo } from 'react';
-import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
+import React, { useMemo, useState } from 'react';
+import { KeyValuePair } from '../../../../common/types';
+import { FrontProviderConfig, LoggerServiceInstance as log, validateEndpoint, validateProviderName, validateUrl } from '../../../../service';
 import {
-    addDisplayHeader,
-    addProviderConfig,
-    deleteProviderConfig,
-    loadProviderToDraft,
-    removeDisplayHeader,
-    resetDraftProviderConfig,
-    setBaseUrl,
-    setCompletionEndpoint,
-    setCompletionEndpointModel,
-    setModelsEndpoint,
-    setProviderName,
-    updateHeader,
-    updateProviderConfig,
-} from '../../../../store/settings/AppSettingsReducer';
-import { appSettingsValidateCompletionRequest } from '../../../../store/settings/settings_thunks';
+    settingsCreateNewProvider,
+    settingsDeleteProvider,
+    settingsGetCurrentSettings,
+    settingsUpdateProvider,
+    settingsValidateProvider,
+} from '../../../../store/cfg/settings_thunks';
+import {
+    addNewEmptyProviderHeader,
+    removeProviderHeader,
+    setCurrentProviderConfig,
+    setProviderSelected,
+    updateProviderHeader,
+} from '../../../../store/cfg/SettingsStateReducer';
+import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import Button from '../../../base/Button';
 import Select, { SelectItem } from '../../../base/Select';
 import HeaderKeyValue from '../HeaderKeyValue';
 import SettingsGroup from '../helpers/SettingsGroup';
-import ValidationMessages from '../helpers/ValidationMessages';
+import ValidationMessages from '../helpers/ValidationMessages'; // Default provider config for fallback
+
+// Default provider config for fallback
+const defaultProviderConfig: FrontProviderConfig = {
+    providerName: '',
+    providerType: 'custom',
+    baseUrl: 'http://localhost:8080',
+    modelsEndpoint: 'v1/models',
+    completionEndpoint: 'v1/completions',
+    headers: {},
+};
 
 const ProvidersConfiguration: React.FC = () => {
     const dispatch = useAppDispatch();
 
-    // Redux Selectors
-    const availableProviderConfigs = useAppSelector((state) => state.settingsState.availableProviderConfigs);
-    const currentProviderConfig = useAppSelector((state) => state.settingsState.currentProviderConfig);
-    const isEditingProvider = useAppSelector((state) => state.settingsState.isEditingProvider);
-    const displayHeaders = useAppSelector((state) => state.settingsState.displayHeaders);
+    // Redux Selectors from new state
+    const loadedSettingsEditable = useAppSelector((state) => state.settingsState.loadedSettingsEditable);
+    const providerList = useAppSelector((state) => state.settingsState.providerList);
+    const providerSelected = useAppSelector((state) => state.settingsState.providerSelected);
+    const providersTypes = useAppSelector((state) => state.settingsState.providersTypes);
+    const providerHeaders = useAppSelector((state) => state.settingsState.providerHeaders);
     const isLoadingSettings = useAppSelector((state) => state.settingsState.isLoadingSettings);
 
-    // Validation messages
-    const baseUrlSuccessMsg = useAppSelector((state) => state.settingsState.baseUrlSuccessMsg);
-    const baseUrlValidationErr = useAppSelector((state) => state.settingsState.baseUrlValidationErr);
-    const modelsEndpointSuccessMsg = useAppSelector((state) => state.settingsState.modelsEndpointSuccessMsg);
-    const modelsEndpointValidationErr = useAppSelector((state) => state.settingsState.modelsEndpointValidationErr);
-    const completionEndpointSuccessMsg = useAppSelector((state) => state.settingsState.completionEndpointSuccessMsg);
-    const completionEndpointValidationErr = useAppSelector((state) => state.settingsState.completionEndpointValidationErr);
-    const completionEndpointModel = useAppSelector((state) => state.settingsState.completionEndpointModel);
+    // Validation messages from new state
+    const providerValidationSuccessMsg = useAppSelector((state) => state.settingsState.providerValidationSuccessMsg);
+    const providerValidationErrorMsg = useAppSelector((state) => state.settingsState.providerValidationErrorMsg);
+
+    // Local state for new provider form
+    const [newProviderName, setNewProviderName] = useState('');
+    const [newProviderType, setNewProviderType] = useState('');
+    const [newBaseUrl, setNewBaseUrl] = useState('http://localhost:8080');
+    const [newModelsEndpoint, setNewModelsEndpoint] = useState('/v1/models');
+    const [validationModel, setValidationModel] = useState('');
+
+    // Validation errors
+    const [providerNameError, setProviderNameError] = useState('');
+    const [baseUrlError, setBaseUrlError] = useState('');
+    const [modelsEndpointError, setModelsEndpointError] = useState('');
+    const [completionEndpointError, setCompletionEndpointError] = useState('');
+    const [newCompletionEndpoint, setNewCompletionEndpoint] = useState('/v1/completions');
+    const [isEditing, setIsEditing] = useState(false);
+
+    // Current provider config from editable settings (with null check)
+    const currentProviderConfig = loadedSettingsEditable.currentProviderConfig || defaultProviderConfig;
 
     // Prepare dropdown items for provider selection
     const providerItems: SelectItem[] = useMemo(() => {
-        const items = availableProviderConfigs.map((p) => ({ itemId: p.providerName, displayText: p.providerName }));
-        return [...items];
-    }, [availableProviderConfigs]);
-
-    // Current selection for the dropdown
-    const selectedProviderItem: SelectItem = useMemo(() => {
-        if (isEditingProvider && currentProviderConfig.providerName) {
-            // Ensure the name exists in the list to avoid "ghost" selections
-            const exists = availableProviderConfigs.some((p) => p.providerName === currentProviderConfig.providerName);
-            if (exists) {
-                return { itemId: currentProviderConfig.providerName, displayText: currentProviderConfig.providerName };
-            }
-        }
-        return { itemId: '', displayText: 'Select Provider...' };
-    }, [isEditingProvider, currentProviderConfig.providerName, availableProviderConfigs]);
+        return [...providerList];
+    }, [providerList]);
 
     // Handlers
     const handleProviderSelect = (item: SelectItem) => {
         if (!item.itemId) return;
-        dispatch(loadProviderToDraft(item.itemId));
-    };
 
-    const handleCreateNewClick = () => {
-        dispatch(resetDraftProviderConfig());
-    };
+        // Find the selected provider from available providers
+        const selectedProvider = loadedSettingsEditable.availableProviderConfigs.find((p) => p.providerName === item.itemId);
 
-    const handleSaveProviderClick = () => {
-        if (isEditingProvider) {
-            dispatch(updateProviderConfig());
-        } else {
-            dispatch(addProviderConfig());
+        if (selectedProvider) {
+            // Update provider configuration in editable settings only (no backend call)
+            dispatch(setCurrentProviderConfig(selectedProvider));
+            // Update provider selection UI state
+            dispatch(setProviderSelected(item));
         }
     };
 
-    const handleDeleteProviderClick = () => {
-        dispatch(deleteProviderConfig());
+    const handleCreateNewClick = () => {
+        setIsEditing(true);
+        setNewProviderName('');
+        setNewProviderType('custom');
+        setNewBaseUrl('http://localhost:8080');
+        setNewModelsEndpoint('v1/models');
+        setNewCompletionEndpoint('v1/completions');
+        setValidationModel('');
+        // Clear validation errors
+        setProviderNameError('');
+        setBaseUrlError('');
+        setModelsEndpointError('');
+        setCompletionEndpointError('');
+    };
+
+    const validateFields = (providerName: string, baseUrl: string, modelsEndpoint: string, completionEndpoint: string): boolean => {
+        let isValid = true;
+
+        // Validate provider name
+        const nameError = validateProviderName(providerName);
+        setProviderNameError(nameError);
+        if (nameError) isValid = false;
+
+        // Validate base URL
+        const urlError = validateUrl(baseUrl, 'Base URL');
+        setBaseUrlError(urlError);
+        if (urlError) isValid = false;
+
+        // Validate models endpoint (allow empty, no leading slash requirement for relative paths)
+        const modelsError = validateEndpoint(modelsEndpoint, 'Models Endpoint', { requireLeadingSlash: false });
+        setModelsEndpointError(modelsError);
+        if (modelsError) isValid = false;
+
+        // Validate completion endpoint (allow empty, no leading slash requirement for relative paths)
+        const completionError = validateEndpoint(completionEndpoint, 'Completion Endpoint', { requireLeadingSlash: false });
+        setCompletionEndpointError(completionError);
+        if (completionError) isValid = false;
+
+        return isValid;
+    };
+
+    const handleSaveProviderClick = async () => {
+        // Validate fields first
+        if (!validateFields(newProviderName, newBaseUrl, newModelsEndpoint, newCompletionEndpoint)) {
+            log.warning('Provider validation failed');
+            return;
+        }
+
+        if (isEditing) {
+            // Check for provider name uniqueness (only for creating new providers)
+            const existingProvider = loadedSettingsEditable.availableProviderConfigs.find((p) => p.providerName === newProviderName);
+
+            if (existingProvider) {
+                setProviderNameError('Provider name already exists. Please choose a different name.');
+                log.warning(`Provider name '${newProviderName}' already exists`);
+                return;
+            }
+
+            // Create new provider with headers from Redux state
+            const newProvider: FrontProviderConfig = {
+                providerName: newProviderName,
+                providerType: newProviderType,
+                baseUrl: newBaseUrl,
+                modelsEndpoint: newModelsEndpoint,
+                completionEndpoint: newCompletionEndpoint,
+                headers: providerHeaders.reduce(
+                    (acc, header) => {
+                        if (header.key && header.key.trim()) {
+                            acc[header.key] = header.value;
+                        }
+                        return acc;
+                    },
+                    {} as Record<string, string>,
+                ),
+            };
+
+            try {
+                await dispatch(settingsCreateNewProvider({ providerConfig: newProvider, modelName: validationModel })).unwrap();
+                // Reload settings to get updated provider list // outdated
+                // await dispatch(settingsGetCurrentSettings()).unwrap();
+                setIsEditing(false);
+                // Clear form
+                setNewProviderName('');
+                setValidationModel('');
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            } catch (error) {
+                // Error handled by thunk
+            }
+        } else {
+            // Update existing provider with headers from Redux state
+            const updatedProvider: FrontProviderConfig = {
+                ...currentProviderConfig,
+                providerName: newProviderName || currentProviderConfig.providerName,
+                providerType: newProviderType || currentProviderConfig.providerType,
+                baseUrl: newBaseUrl || currentProviderConfig.baseUrl,
+                modelsEndpoint: newModelsEndpoint || currentProviderConfig.modelsEndpoint,
+                completionEndpoint: newCompletionEndpoint || currentProviderConfig.completionEndpoint,
+                headers: providerHeaders.reduce(
+                    (acc, header) => {
+                        if (header.key && header.key.trim()) {
+                            acc[header.key] = header.value;
+                        }
+                        return acc;
+                    },
+                    {} as Record<string, string>,
+                ),
+            };
+
+            try {
+                await dispatch(settingsUpdateProvider(updatedProvider)).unwrap();
+                // Reload settings to get updated provider
+                await dispatch(settingsGetCurrentSettings()).unwrap();
+                setIsEditing(false);
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            } catch (error) {
+                // Error handled by thunk
+            }
+        }
+    };
+
+    const handleDeleteProviderClick = async () => {
+        try {
+            const success = await dispatch(settingsDeleteProvider(currentProviderConfig)).unwrap();
+            if (success) {
+                // Reload settings to get updated provider list
+                await dispatch(settingsGetCurrentSettings()).unwrap();
+            }
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (error) {
+            // Error handled by thunk
+        }
+    };
+
+    const handleEditClick = () => {
+        if (currentProviderConfig) {
+            setIsEditing(true);
+            setNewProviderName(currentProviderConfig.providerName);
+            setNewProviderType(currentProviderConfig.providerType);
+            setNewBaseUrl(currentProviderConfig.baseUrl);
+            setNewModelsEndpoint(currentProviderConfig.modelsEndpoint);
+            setNewCompletionEndpoint(currentProviderConfig.completionEndpoint);
+            setValidationModel('');
+            // Clear validation errors
+            setProviderNameError('');
+            setBaseUrlError('');
+            setModelsEndpointError('');
+            setCompletionEndpointError('');
+        }
+    };
+
+    const handleCancelClick = () => {
+        setIsEditing(false);
+        // Clear validation errors
+        setProviderNameError('');
+        setBaseUrlError('');
+        setModelsEndpointError('');
+        setCompletionEndpointError('');
     };
 
     // Form Field Handlers
-    const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => dispatch(setProviderName(e.target.value));
-    const handleBaseUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => dispatch(setBaseUrl(e.target.value));
-    const handleModelsParamsChange = (e: React.ChangeEvent<HTMLInputElement>) => dispatch(setModelsEndpoint(e.target.value));
-    const handleCompletionParamsChange = (e: React.ChangeEvent<HTMLInputElement>) => dispatch(setCompletionEndpoint(e.target.value));
-    const handleCompletionModelChange = (e: React.ChangeEvent<HTMLInputElement>) => dispatch(setCompletionEndpointModel(e.target.value));
-
-    // Validations
-    const testCompletionEndpointConnection = () => {
-        dispatch(
-            appSettingsValidateCompletionRequest({
-                baseUrl: currentProviderConfig.baseUrl,
-                endpoint: currentProviderConfig.completionEndpoint,
-                modelName: completionEndpointModel,
-                headers: currentProviderConfig.headers,
-            }),
-        );
+    const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setNewProviderName(e.target.value);
+        // Clear error on change
+        if (providerNameError) setProviderNameError('');
+    };
+    const handleBaseUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setNewBaseUrl(e.target.value);
+        // Clear error on change
+        if (baseUrlError) setBaseUrlError('');
+    };
+    const handleModelsParamsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setNewModelsEndpoint(e.target.value);
+        // Clear error on change
+        if (modelsEndpointError) setModelsEndpointError('');
+    };
+    const handleCompletionParamsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setNewCompletionEndpoint(e.target.value);
+        // Clear error on change
+        if (completionEndpointError) setCompletionEndpointError('');
     };
 
-    // Headers
-    const handleHeaderChange = (obj: any) => dispatch(updateHeader(obj));
-    const handleHeaderDelete = (obj: any) => dispatch(removeDisplayHeader(obj.id));
-    const handleAddHeader = () => dispatch(addDisplayHeader());
+    // Header management
+    const handleAddHeader = () => {
+        dispatch(addNewEmptyProviderHeader());
+    };
+
+    const handleUpdateHeader = (updatedHeader: KeyValuePair) => {
+        dispatch(updateProviderHeader(updatedHeader));
+    };
+
+    const handleRemoveHeader = (header: KeyValuePair) => {
+        dispatch(removeProviderHeader(header.id));
+    };
+
+    // Validations
+    const validateCurrentProvider = async () => {
+        // Build provider config from current form state (use form values, not fallbacks)
+        const providerToValidate: FrontProviderConfig = {
+            providerName: newProviderName || '', // Use form value, don't fallback to current config
+            providerType: newProviderType || '', // Use form value, don't fallback to current config
+            baseUrl: newBaseUrl || '', // Use form value, don't fallback to current config
+            modelsEndpoint: newModelsEndpoint || '', // Use form value, don't fallback to current config
+            completionEndpoint: newCompletionEndpoint || '', // Use form value, don't fallback to current config
+            headers: providerHeaders.reduce(
+                (acc, header) => {
+                    if (header.key && header.key.trim()) {
+                        acc[header.key] = header.value;
+                    }
+                    return acc;
+                },
+                {} as Record<string, string>,
+            ),
+        };
+
+        try {
+            // Pass the validation model to the backend for completion endpoint testing
+            await dispatch(
+                settingsValidateProvider({ providerConfig: providerToValidate, validateHttpCalls: true, modelName: validationModel }),
+            ).unwrap();
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (error) {
+            // Error handled by thunk
+        }
+    };
 
     return (
-        <SettingsGroup top={true} headerText="LLM Provider Configuration">
+        <SettingsGroup top={true} headerText="Provider Configuration">
             <SettingsGroup>
-                <label htmlFor="providerType">Select Provider:</label>
+                <label htmlFor="providerSelect">Select Provider:</label>
                 <Select
-                    id="providerType"
+                    id="providerSelect"
                     items={providerItems}
-                    selectedItem={selectedProviderItem}
+                    selectedItem={providerSelected}
                     onSelect={handleProviderSelect}
+                    disabled={isLoadingSettings || isEditing}
+                />
+            </SettingsGroup>
+            <SettingsGroup>
+                <Button
+                    text={isEditing ? 'Cancel' : 'Edit'}
+                    variant={isEditing ? 'solid' : 'outlined'}
+                    colorStyle={isEditing ? 'warning-color' : 'secondary-color'}
+                    size="small"
+                    onClick={isEditing ? handleCancelClick : handleEditClick}
                     disabled={isLoadingSettings}
+                />
+                <Button
+                    text="Create New"
+                    variant="solid"
+                    colorStyle="success-color"
+                    size="small"
+                    onClick={handleCreateNewClick}
+                    disabled={isLoadingSettings || isEditing}
                 />
             </SettingsGroup>
 
-            <Button
-                text="Create New"
-                variant="outlined"
-                colorStyle="primary-color"
-                size="small"
-                onClick={handleCreateNewClick}
-                disabled={isLoadingSettings}
-            />
-
-            <SettingsGroup headerText={isEditingProvider ? `Edit ${currentProviderConfig.providerName}` : 'Configure New Provider'}>
-                <div className="settings-form-grid">
-                    <label htmlFor="providerName">Provider Name:</label>
-                    <input
-                        type="text"
-                        id="providerName"
-                        value={currentProviderConfig.providerName}
-                        onChange={handleNameChange}
-                        placeholder="My Custom Provider"
-                        disabled={isLoadingSettings}
-                    />
-
-                    <label htmlFor="baseUrl">BaseUrl:</label>
-                    <input
-                        type="text"
-                        id="baseUrl"
-                        value={currentProviderConfig.baseUrl}
-                        onChange={handleBaseUrlChange}
-                        placeholder="http://localhost:11434"
-                        disabled={isLoadingSettings}
-                    />
-
-                    <label htmlFor="modelsEndpoint">Models List endpoint:</label>
-                    <input
-                        style={{ flex: 1 }}
-                        type="text"
-                        id="modelsEndpoint"
-                        value={currentProviderConfig.modelsEndpoint}
-                        onChange={handleModelsParamsChange}
-                        placeholder="/v1/models"
-                        disabled={isLoadingSettings}
-                    />
-
-                    <label htmlFor="completionEndpoint">Chat completion endpoint:</label>
-                    <input
-                        style={{ flex: 1 }}
-                        type="text"
-                        id="completionEndpoint"
-                        value={currentProviderConfig.completionEndpoint}
-                        onChange={handleCompletionParamsChange}
-                        placeholder="/v1/chat/completions"
-                        disabled={isLoadingSettings}
-                    />
-                </div>
-
-                <ValidationMessages success={baseUrlSuccessMsg} error={baseUrlValidationErr} />
-                <ValidationMessages success={modelsEndpointSuccessMsg} error={modelsEndpointValidationErr} />
-
-                <SettingsGroup headerText="Request Headers">
-                    {displayHeaders.map((item) => (
-                        <HeaderKeyValue
-                            key={`header-${item.id}`}
-                            value={item}
-                            onChange={handleHeaderChange}
-                            onDelete={handleHeaderDelete}
-                            isDisabled={isLoadingSettings}
-                        />
-                    ))}
-
-                    <Button
-                        text="Add additional value"
-                        variant="dashed"
-                        colorStyle="primary-color"
-                        size="tiny"
-                        onClick={handleAddHeader}
-                        disabled={isLoadingSettings}
-                    />
-                </SettingsGroup>
-
-                <SettingsGroup headerText="Verify Configuration">
+            {isEditing ? (
+                <>
                     <div className="settings-form-grid">
-                        <label htmlFor="completionEndpointModel">Provide Model ID for verification (Optional):</label>
-                        <input
-                            type="text"
-                            id="completionEndpointModel"
-                            value={completionEndpointModel}
-                            onChange={handleCompletionModelChange}
-                            placeholder="ChatGpt-5-mini"
-                            disabled={isLoadingSettings}
-                        />
-                    </div>
-                    <Button
-                        text="Verify Completion Endpoint"
-                        variant="outlined"
-                        colorStyle="success-color"
-                        size="tiny"
-                        disabled={!currentProviderConfig.completionEndpoint || isLoadingSettings}
-                        onClick={testCompletionEndpointConnection}
-                    />
-                    <ValidationMessages success={completionEndpointSuccessMsg} error={completionEndpointValidationErr} />
-                </SettingsGroup>
+                        <label htmlFor="providerName">Provider Name:</label>
+                        <div>
+                            <input type="text" id="providerName" value={newProviderName} onChange={handleNameChange} disabled={isLoadingSettings} />
+                            {providerNameError && <span className="validation-error">{providerNameError}</span>}
+                        </div>
 
-                <div className="settings-widget-confirmation-buttons-container" style={{ marginTop: '10px' }}>
-                    {isEditingProvider && (
-                        <Button
-                            text="Delete Provider"
-                            variant="outlined"
-                            colorStyle="error-color"
-                            size="small"
-                            onClick={handleDeleteProviderClick}
+                        <label htmlFor="providerType">Provider Type:</label>
+                        <Select
+                            id="providerType"
+                            items={providersTypes}
+                            selectedItem={providersTypes.find((t) => t.itemId === newProviderType) || providersTypes[0]}
+                            onSelect={(item) => setNewProviderType(item.itemId)}
                             disabled={isLoadingSettings}
                         />
-                    )}
-                    <Button
-                        text={isEditingProvider ? 'Update Provider' : 'Save Provider'}
-                        variant="solid"
-                        colorStyle="success-color"
-                        size="small"
-                        onClick={handleSaveProviderClick}
-                        disabled={isLoadingSettings}
-                    />
-                </div>
-            </SettingsGroup>
+
+                        <label htmlFor="baseUrl">Base URL:</label>
+                        <div>
+                            <input type="text" id="baseUrl" value={newBaseUrl} onChange={handleBaseUrlChange} disabled={isLoadingSettings} />
+                            {baseUrlError && <span className="validation-error">{baseUrlError}</span>}
+                        </div>
+
+                        <label htmlFor="modelsEndpoint">Models Endpoint:</label>
+                        <div>
+                            <input
+                                style={{ flex: 1 }}
+                                type="text"
+                                id="modelsEndpoint"
+                                value={newModelsEndpoint}
+                                onChange={handleModelsParamsChange}
+                                disabled={isLoadingSettings}
+                            />
+                            {modelsEndpointError && <span className="validation-error">{modelsEndpointError}</span>}
+                        </div>
+
+                        <label htmlFor="completionEndpoint">Completion Endpoint:</label>
+                        <div>
+                            <input
+                                style={{ flex: 1 }}
+                                type="text"
+                                id="completionEndpoint"
+                                value={newCompletionEndpoint}
+                                onChange={handleCompletionParamsChange}
+                                disabled={isLoadingSettings}
+                            />
+                            {completionEndpointError && <span className="validation-error">{completionEndpointError}</span>}
+                        </div>
+                    </div>
+                    <SettingsGroup headerText="Request Headers">
+                        {providerHeaders.map((header) => (
+                            <HeaderKeyValue
+                                key={header.id}
+                                value={header}
+                                onChange={handleUpdateHeader}
+                                onDelete={handleRemoveHeader}
+                                isDisabled={isLoadingSettings}
+                            />
+                        ))}
+                        <Button
+                            text="Add Header"
+                            variant="outlined"
+                            colorStyle="secondary-color"
+                            size="small"
+                            onClick={handleAddHeader}
+                            disabled={isLoadingSettings}
+                        />
+                    </SettingsGroup>
+                    <SettingsGroup headerText="Verify Configuration">
+                        <div className="settings-form-grid">
+                            <label htmlFor="completionEndpointModel">Provide Model ID for verification (Optional):</label>
+                            <input
+                                type="text"
+                                id="completionEndpointModel"
+                                value={validationModel}
+                                onChange={(e) => setValidationModel(e.target.value)}
+                                placeholder="gpt-4o"
+                                disabled={isLoadingSettings}
+                            />
+                        </div>
+                        <div className="settings-form-grid">
+                            <Button
+                                text="Save Provider"
+                                variant="solid"
+                                colorStyle="success-color"
+                                size="small"
+                                onClick={handleSaveProviderClick}
+                                disabled={isLoadingSettings}
+                            />
+                            <Button
+                                text="Validate Provider"
+                                variant="outlined"
+                                colorStyle="secondary-color"
+                                size="small"
+                                onClick={validateCurrentProvider}
+                                disabled={isLoadingSettings}
+                            />
+                            <Button
+                                text="Delete Provider"
+                                variant="solid"
+                                colorStyle="error-color"
+                                size="small"
+                                onClick={handleDeleteProviderClick}
+                                disabled={isLoadingSettings}
+                            />
+                        </div>
+                    </SettingsGroup>
+                </>
+            ) : (
+                <SettingsGroup>
+                    <label>Current Provider Details:</label>
+                    <div className="provider-details">
+                        <p>
+                            <strong>Name:</strong> {currentProviderConfig.providerName}
+                        </p>
+                        <p>
+                            <strong>Type:</strong> {currentProviderConfig.providerType}
+                        </p>
+                        <p>
+                            <strong>Base URL:</strong> {currentProviderConfig.baseUrl}
+                        </p>
+                        <p>
+                            <strong>Models Endpoint:</strong> {currentProviderConfig.modelsEndpoint}
+                        </p>
+                        <p>
+                            <strong>Completion Endpoint:</strong> {currentProviderConfig.completionEndpoint}
+                        </p>
+                        {currentProviderConfig.headers && Object.keys(currentProviderConfig.headers).length > 0 && (
+                            <>
+                                <p>
+                                    <strong>Headers:</strong>
+                                </p>
+                                <ul style={{ marginLeft: '1rem', marginTop: '0.5rem' }}>
+                                    {Object.entries(currentProviderConfig.headers).map(([key, value]) => (
+                                        <li key={key}>
+                                            <strong>{key}:</strong> {value}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </>
+                        )}
+                    </div>
+                </SettingsGroup>
+            )}
+
+            <ValidationMessages success={providerValidationSuccessMsg} error={providerValidationErrorMsg} />
         </SettingsGroup>
     );
 };

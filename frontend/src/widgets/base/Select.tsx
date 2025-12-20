@@ -50,6 +50,10 @@ const Select: React.FC<SelectProps> = ({
     // Filter items case-insensitively when useFilter is true
     const filteredItems = useFilter ? items.filter((item) => item.displayText.toLowerCase().includes(filterText.toLowerCase())) : items;
 
+    if (useFilter && filterText && filterText.length > 0 && filteredItems.length > 0) {
+        onSelect(filteredItems[0]);
+    }
+
     const classes = [
         'select-base',
         size !== 'default' && `select-${size}`,
@@ -59,6 +63,7 @@ const Select: React.FC<SelectProps> = ({
     ]
         .filter(Boolean)
         .join(' ');
+
     return (
         <>
             {useFilter && <input type="text" value={filterText} onChange={handleFilterChange} placeholder="Filter items..." disabled={disabled} />}

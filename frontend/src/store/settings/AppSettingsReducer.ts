@@ -63,6 +63,7 @@ const resetValidationMessages = (state: AppSettingsState) => {
     state.completionEndpointValidationErr = '';
     state.errorMsg = '';
 };
+
 const setStateFields = (state: AppSettingsState, action: PayloadAction<AppSettings>) => {
     state.availableProviderConfigs = action.payload.availableProviderConfigs;
     // Deep copy to facilitate independent editing
@@ -82,7 +83,7 @@ const setStateFields = (state: AppSettingsState, action: PayloadAction<AppSettin
 
     // Default to editing the loaded provider
     state.isEditingProvider = true;
-    state.currentEditingProvider =  JSON.parse(JSON.stringify(action.payload.currentProviderConfig));
+    state.currentEditingProvider = JSON.parse(JSON.stringify(action.payload.currentProviderConfig));
 };
 
 // Default empty provider for creation
@@ -291,14 +292,14 @@ export const appSettingsSlice = createSlice({
                 state.errorMsg = 'No provider is currently being edited.';
                 return;
             }
-             if (!updatedConfig.providerName || updatedConfig.providerName.trim() === '') {
+            if (!updatedConfig.providerName || updatedConfig.providerName.trim() === '') {
                 state.errorMsg = 'Provider name cannot be empty.';
                 return;
             }
 
             // If name changed, check uniqueness
             if (updatedConfig.providerName !== originalConfig.providerName) {
-                 if (state.availableProviderConfigs.some((p) => p.providerName === updatedConfig.providerName)) {
+                if (state.availableProviderConfigs.some((p) => p.providerName === updatedConfig.providerName)) {
                     state.errorMsg = 'Provider with this name already exists.';
                     return;
                 }
@@ -327,7 +328,7 @@ export const appSettingsSlice = createSlice({
 
                 // Determine what to select next
                 if (state.availableProviderConfigs.length > 0) {
-                     // Try to select the one that slid into this index, or the last one if we deleted the tail
+                    // Try to select the one that slid into this index, or the last one if we deleted the tail
                     const nextIndex = index < state.availableProviderConfigs.length ? index : state.availableProviderConfigs.length - 1;
                     const nextProvider = state.availableProviderConfigs[nextIndex];
 

@@ -1,4 +1,4 @@
-import { Children, ReactNode, useState } from 'react';
+import React, { Children, ReactNode, useState } from 'react';
 
 interface TabWidgetProps {
     tabs: string[];
@@ -8,7 +8,7 @@ interface TabWidgetProps {
 
 const defaultActiveIndex = 0;
 
-export const TabWidget = ({ tabs, children, disabled }: TabWidgetProps) => {
+export const TabWidget: React.FC<TabWidgetProps> = ({ tabs, children, disabled }: TabWidgetProps) => {
     const childrenArray = Children.toArray(children);
 
     if (childrenArray.length !== tabs.length) {

@@ -5,8 +5,8 @@ const NA = 'N/A';
 
 const BottomBarWidget: React.FC = () => {
     const currentTask = useAppSelector((state) => state.appState.currentTask);
-    const currentProvider = useAppSelector((state) => state.appState.currentProvider);
-    const currentModelName = useAppSelector((state) => state.appState.currentModelName);
+    const currentProvider = useAppSelector((state) => state.settingsState.loadedSettingsEditable.currentProviderConfig.providerName);
+    const currentModelName = useAppSelector((state) => state.settingsState.loadedSettingsEditable.modelConfig.modelName);
 
     return (
         <nav>

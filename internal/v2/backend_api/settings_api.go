@@ -11,8 +11,8 @@ type SettingsServiceApi interface {
 	GetDefaultSettings() (*settings.Settings, error)
 	SaveSettings(settings *settings.Settings) (*settings.Settings, error)
 
-	ValidateProvider(config *settings.ProviderConfig) (bool, error)
-	CreateNewProvider(config *settings.ProviderConfig) (*settings.ProviderConfig, error)
+	ValidateProvider(config *settings.ProviderConfig, validateHttpCall bool, modelName string) (bool, error)
+	CreateNewProvider(config *settings.ProviderConfig, modelName string) (*settings.ProviderConfig, error)
 	UpdateProvider(config *settings.ProviderConfig) (*settings.ProviderConfig, error)
 	DeleteProvider(config *settings.ProviderConfig) (bool, error)
 	SelectProvider(config *settings.ProviderConfig) (*settings.ProviderConfig, error)

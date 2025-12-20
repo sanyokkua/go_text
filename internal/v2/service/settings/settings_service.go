@@ -7,6 +7,7 @@ import (
 
 	"go_text/internal/v2/backend_api"
 	"go_text/internal/v2/constants"
+	"go_text/internal/v2/model/llm"
 	"go_text/internal/v2/model/settings"
 )
 
@@ -91,9 +92,9 @@ func (s settingsService) SaveSettings(settings *settings.Settings) (*settings.Se
 	return settings, nil
 }
 
-func (s settingsService) ValidateProvider(config *settings.ProviderConfig) (bool, error) {
+func (s settingsService) ValidateProvider(config *settings.ProviderConfig, validateHttpCall bool, modelName string) (bool, error) {
 	startTime := time.Now()
-	s.logger.LogDebug("[ValidateProvider] Starting provider configuration validation")
+	s.logger.LogDebug(fmt.Sprintf("[ValidateProvider] Starting provider configuration validation with model: %s", modelName))
 
 	if config == nil {
 		errorMsg := "provider config is nil"
@@ -145,13 +146,76 @@ func (s settingsService) ValidateProvider(config *settings.ProviderConfig) (bool
 		return false, fmt.Errorf("validation error: %s", errorMsg)
 	}
 
+	if validateHttpCall {
+		// Test actual API endpoints connectivity
+		s.logger.LogDebug(fmt.Sprintf("[ValidateProvider] Testing API endpoints for provider '%s'", config.ProviderName))
+
+		// Test models endpoint
+		modelsResponse, err := s.llmHttpApi.ModelListRequest(config.BaseUrl, config.ModelsEndpoint, config.Headers)
+		if err != nil {
+			errorMsg := fmt.Sprintf("failed to connect to models endpoint: %v", err)
+			s.logger.LogError(fmt.Sprintf("[ValidateProvider] %s", errorMsg))
+			return false, fmt.Errorf("validation error: %s", errorMsg)
+		}
+
+		// Extract model list from response
+		var modelsList []string
+		if modelsResponse.Data != nil {
+			for _, model := range modelsResponse.Data {
+				modelsList = append(modelsList, model.ID)
+			}
+		}
+
+		if len(modelsList) == 0 {
+			errorMsg := "no models found in models endpoint response"
+			s.logger.LogError(fmt.Sprintf("[ValidateProvider] %s", errorMsg))
+			return false, fmt.Errorf("validation error: %s", errorMsg)
+		}
+
+		s.logger.LogDebug(fmt.Sprintf("[ValidateProvider] Found %d models from models endpoint", len(modelsList)))
+
+		// Test completion endpoint with a model
+		// Use provided modelName if available, otherwise use first model from list
+		testModel := modelName
+		if testModel == "" && len(modelsList) > 0 {
+			testModel = modelsList[0]
+		}
+
+		if testModel == "" {
+			errorMsg := "no model available for completion endpoint testing"
+			s.logger.LogError(fmt.Sprintf("[ValidateProvider] %s", errorMsg))
+			return false, fmt.Errorf("validation error: %s", errorMsg)
+		}
+
+		completionUrl := fmt.Sprintf("%s%s", strings.TrimSuffix(config.BaseUrl, "/"), config.CompletionEndpoint)
+		s.logger.LogDebug(fmt.Sprintf("[ValidateProvider] Testing completion endpoint with model '%s': %s", testModel, completionUrl))
+
+		// Create a simple completion request
+		completionRequest := &llm.ChatCompletionRequest{
+			Model: testModel,
+			Messages: []llm.Message{
+				{
+					Role:    "user",
+					Content: "Give me one random word",
+				},
+			},
+		}
+
+		_, err = s.llmHttpApi.CompletionRequest(config.BaseUrl, config.CompletionEndpoint, config.Headers, completionRequest)
+		if err != nil {
+			errorMsg := fmt.Sprintf("failed to connect to completion endpoint: %v", err)
+			s.logger.LogError(fmt.Sprintf("[ValidateProvider] %s", errorMsg))
+			return false, fmt.Errorf("validation error: %s", errorMsg)
+		}
+	}
+
 	duration := time.Since(startTime)
 	s.logger.LogDebug(fmt.Sprintf("[ValidateProvider] Successfully validated provider '%s' in %v", config.ProviderName, duration))
 
 	return true, nil
 }
 
-func (s settingsService) CreateNewProvider(config *settings.ProviderConfig) (*settings.ProviderConfig, error) {
+func (s settingsService) CreateNewProvider(config *settings.ProviderConfig, modelName string) (*settings.ProviderConfig, error) {
 	startTime := time.Now()
 	s.logger.LogInfo(fmt.Sprintf("[CreateNewProvider] Creating new provider: %s", config.ProviderName))
 
@@ -163,7 +227,7 @@ func (s settingsService) CreateNewProvider(config *settings.ProviderConfig) (*se
 
 	// Validate the provider
 	s.logger.LogDebug(fmt.Sprintf("[CreateNewProvider] Validating provider configuration for '%s'", config.ProviderName))
-	isValid, err := s.ValidateProvider(config)
+	isValid, err := s.ValidateProvider(config, true, modelName)
 	if !isValid {
 		s.logger.LogError(fmt.Sprintf("[CreateNewProvider] Provider validation failed for '%s': %v", config.ProviderName, err))
 		return nil, fmt.Errorf("provider validation failed: %w", err)
@@ -218,7 +282,7 @@ func (s settingsService) UpdateProvider(config *settings.ProviderConfig) (*setti
 
 	// Validate the provider
 	s.logger.LogDebug(fmt.Sprintf("[UpdateProvider] Validating provider configuration for '%s'", config.ProviderName))
-	isValid, err := s.ValidateProvider(config)
+	isValid, err := s.ValidateProvider(config, true, "")
 	if !isValid {
 		s.logger.LogError(fmt.Sprintf("[UpdateProvider] Provider validation failed for '%s': %v", config.ProviderName, err))
 		return nil, fmt.Errorf("provider validation failed: %w", err)
@@ -344,7 +408,7 @@ func (s settingsService) SelectProvider(config *settings.ProviderConfig) (*setti
 
 	// Validate the provider
 	s.logger.LogDebug(fmt.Sprintf("[SelectProvider] Validating provider configuration for '%s'", config.ProviderName))
-	isValid, err := s.ValidateProvider(config)
+	isValid, err := s.ValidateProvider(config, false, "")
 	if !isValid {
 		s.logger.LogError(fmt.Sprintf("[SelectProvider] Provider validation failed for '%s': %v", config.ProviderName, err))
 		return nil, fmt.Errorf("provider validation failed: %w", err)
@@ -405,7 +469,7 @@ func (s settingsService) GetModelsList(config *settings.ProviderConfig) ([]strin
 
 	// Validate the provider
 	s.logger.LogDebug(fmt.Sprintf("[GetModelsList] Validating provider configuration for '%s'", config.ProviderName))
-	isValid, err := s.ValidateProvider(config)
+	isValid, err := s.ValidateProvider(config, false, "")
 	if !isValid {
 		s.logger.LogError(fmt.Sprintf("[GetModelsList] Provider validation failed for '%s': %v", config.ProviderName, err))
 		return nil, fmt.Errorf("provider validation failed: %w", err)
@@ -449,7 +513,7 @@ func (s settingsService) ValidateSettings(settings *settings.Settings) error {
 
 	// Validate current provider
 	s.logger.LogDebug("[ValidateSettings] Validating current provider configuration")
-	_, err := s.ValidateProvider(&settings.CurrentProviderConfig)
+	_, err := s.ValidateProvider(&settings.CurrentProviderConfig, false, "")
 	if err != nil {
 		s.logger.LogError(fmt.Sprintf("[ValidateSettings] Current provider validation failed: %v", err))
 		return fmt.Errorf("current provider validation failed: %w", err)
@@ -459,7 +523,7 @@ func (s settingsService) ValidateSettings(settings *settings.Settings) error {
 	s.logger.LogDebug(fmt.Sprintf("[ValidateSettings] Validating %d available providers", len(settings.AvailableProviderConfigs)))
 	for _, provider := range settings.AvailableProviderConfigs {
 		s.logger.LogDebug(fmt.Sprintf("[ValidateSettings] Validating provider '%s'", provider.ProviderName))
-		_, err := s.ValidateProvider(&provider)
+		_, err := s.ValidateProvider(&provider, false, "")
 		if err != nil {
 			s.logger.LogError(fmt.Sprintf("[ValidateSettings] Provider '%s' validation failed: %v", provider.ProviderName, err))
 			return fmt.Errorf("provider '%s' validation failed: %w", provider.ProviderName, err)

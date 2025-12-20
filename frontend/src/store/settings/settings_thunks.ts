@@ -3,6 +3,7 @@ import { LogDebug, LogWarning } from '../../../wailsjs/runtime';
 import { SettingsApi, UiStateApi } from '../../common';
 import { extractErrorDetails } from '../../common/error_utils';
 import { AppSettings, ProviderType } from '../../common/types';
+import { settingsGetCurrentSettings, settingsGetProviderTypes, settingsGetSettingsFilePath } from '../cfg/settings_thunks';
 import { AppDispatch } from '../store';
 
 export const appSettingsLoadCurrentSettings = createAsyncThunk<AppSettings, void, { dispatch: AppDispatch; rejectValue: string }>(
@@ -154,12 +155,18 @@ export const appSettingsGetListOfModels = createAsyncThunk<string[], void, { rej
 export const initializeSettingsState = createAsyncThunk<void, void, { dispatch: AppDispatch; rejectValue: string }>(
     'appSettings/initialize',
     async (_, { dispatch }) => {
-        await Promise.all([dispatch(appSettingsLoadCurrentSettings()).unwrap(), dispatch(appSettingsGetListOfModels()).unwrap()]);
+        await Promise.all([
+            dispatch(settingsGetCurrentSettings()).unwrap(),
+            dispatch(settingsGetProviderTypes()).unwrap(),
+            dispatch(settingsGetSettingsFilePath()).unwrap(),
+            dispatch(appSettingsLoadCurrentSettings()).unwrap(),
+            dispatch(appSettingsGetListOfModels()).unwrap(),
+        ]);
     },
 );
 
 // Custom provider management thunks
-export const appSettingsAddCustomProvider = createAsyncThunk<void, any, { rejectValue: string }>(
+export const appSettingsAddCustomProvider = createAsyncThunk<void, unknown, { rejectValue: string }>(
     'appSettings/appSettingsAddCustomProvider',
     async (provider, { rejectWithValue }) => {
         try {
@@ -175,7 +182,7 @@ export const appSettingsAddCustomProvider = createAsyncThunk<void, any, { reject
     },
 );
 
-export const appSettingsUpdateCustomProvider = createAsyncThunk<void, any, { rejectValue: string }>(
+export const appSettingsUpdateCustomProvider = createAsyncThunk<void, unknown, { rejectValue: string }>(
     'appSettings/appSettingsUpdateCustomProvider',
     async (provider, { rejectWithValue }) => {
         try {
@@ -207,7 +214,7 @@ export const appSettingsDeleteCustomProvider = createAsyncThunk<void, string, { 
     },
 );
 
-export const appSettingsGetCustomProviders = createAsyncThunk<any[], void, { rejectValue: string }>(
+export const appSettingsGetCustomProviders = createAsyncThunk<unknown[], void, { rejectValue: string }>(
     'appSettings/appSettingsGetCustomProviders',
     async (_, { rejectWithValue }) => {
         try {

@@ -1,13 +1,13 @@
 import React from 'react';
+import { settingsGetModelsList } from '../../../../store/cfg/settings_thunks';
+import {
+    defaultProviderConfig,
+    setEditableModelName,
+    setEditableTemperature,
+    setEditableTemperatureEnabled,
+    setLlmModelSelected,
+} from '../../../../store/cfg/SettingsStateReducer';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
-import {
-    appSettingsGetListOfModels,
-} from '../../../../store/settings/settings_thunks';
-import {
-    setDisplaySelectedModel,
-    setIsTemperatureEnabled,
-    setTemperature
-} from '../../../../store/settings/AppSettingsReducer';
 import Button from '../../../base/Button';
 import Select, { SelectItem } from '../../../base/Select';
 import SettingsGroup from '../helpers/SettingsGroup';
@@ -17,32 +17,39 @@ type ModelConfigurationProps = { text?: string };
 const ModelConfiguration: React.FC<ModelConfigurationProps> = () => {
     const dispatch = useAppDispatch();
 
-    // Selectors
-    const displayListOfModels = useAppSelector((state) => state.settingsState.displayListOfModels);
-    const displaySelectedModel = useAppSelector((state) => state.settingsState.displaySelectedModel);
+    // Selectors from new state
+    const loadedSettingsEditable = useAppSelector((state) => state.settingsState.loadedSettingsEditable);
+    const llmModelList = useAppSelector((state) => state.settingsState.llmModelList);
+    const llmModelSelected = useAppSelector((state) => state.settingsState.llmModelSelected);
     const isLoadingSettings = useAppSelector((state) => state.settingsState.isLoadingSettings);
-    const baseUrl = useAppSelector((state) => state.settingsState.currentProviderConfig.baseUrl);
-    const modelsEndpoint = useAppSelector((state) => state.settingsState.currentProviderConfig.modelsEndpoint);
+    const currentProviderConfig = loadedSettingsEditable.currentProviderConfig || defaultProviderConfig;
 
-    const isTemperatureEnabled = useAppSelector((state) => state.settingsState.modelConfig.isTemperatureEnabled);
-    const temperature = useAppSelector((state) => state.settingsState.modelConfig.temperature);
+    // Model config from editable settings (with null checks)
+    const isTemperatureEnabled = loadedSettingsEditable.modelConfig?.isTemperatureEnabled;
+    const temperature = loadedSettingsEditable.modelConfig?.temperature || 0.5;
 
     // Handlers
     const handleModelSelect = (item: SelectItem) => {
-        dispatch(setDisplaySelectedModel(item));
+        dispatch(setEditableModelName(item.itemId));
+        dispatch(setLlmModelSelected(item));
     };
 
-    const refreshModelsList = () => {
-        dispatch(appSettingsGetListOfModels());
+    const refreshModelsList = async () => {
+        try {
+            await dispatch(settingsGetModelsList(currentProviderConfig)).unwrap();
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (_error) {
+            // Error handled by thunk
+        }
     };
 
     const handleTemperatureEnabledChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        dispatch(setIsTemperatureEnabled(e.currentTarget.checked));
+        dispatch(setEditableTemperatureEnabled(e.currentTarget.checked));
     };
 
     const handleTemperatureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = parseInt(e.target.value);
-        dispatch(setTemperature(value / 100));
+        dispatch(setEditableTemperature(value / 100));
     };
 
     return (
@@ -52,43 +59,49 @@ const ModelConfiguration: React.FC<ModelConfigurationProps> = () => {
                 <Select
                     id="modelSelect"
                     useFilter={true}
-                    items={displayListOfModels}
-                    selectedItem={displaySelectedModel}
+                    items={llmModelList}
+                    selectedItem={llmModelSelected}
                     onSelect={handleModelSelect}
                     disabled={isLoadingSettings}
                 />
                 <Button
-                    text="Refresh Models List"
+                    text="Refresh Models"
                     variant="outlined"
-                    colorStyle="success-color"
+                    colorStyle="secondary-color"
                     size="tiny"
-                    disabled={!baseUrl || baseUrl.trim() === '' || !modelsEndpoint || modelsEndpoint.trim() === '' || isLoadingSettings}
                     onClick={refreshModelsList}
+                    disabled={isLoadingSettings}
                 />
             </SettingsGroup>
+
             <SettingsGroup>
-                <div className="form-group checkbox-group" style={{ marginBottom: '10px' }}>
+                <div className="settings-form-grid">
+                    <label htmlFor="temperatureEnabled">Temperature Control:</label>
                     <input
                         type="checkbox"
-                        id="enableTemperature"
+                        id="temperatureEnabled"
                         checked={isTemperatureEnabled}
                         onChange={handleTemperatureEnabledChange}
                         disabled={isLoadingSettings}
                     />
-                    <label htmlFor="enableTemperature">Enable Temperature</label>
                 </div>
-                <div className={`temperature-controls ${!isTemperatureEnabled ? 'disabled' : ''}`}>
-                    <label htmlFor="temperature">Model Temperature:</label>
+            </SettingsGroup>
+            <SettingsGroup>
+                <div className="settings-form-grid">
+                    <label htmlFor="temperatureSlider">Enable Temperature</label>
                     <input
+                        id="temperatureSlider"
                         type="range"
-                        id="temperature"
                         min="0"
                         max="100"
                         value={temperature * 100}
                         onChange={handleTemperatureChange}
                         disabled={isLoadingSettings || !isTemperatureEnabled}
                     />
-                    <div className="temperature-value">{isTemperatureEnabled ? temperature.toFixed(2) : 'N/A'}</div>
+                </div>
+                <div className="settings-form-grid">
+                    <label htmlFor="temperatureValue">Temperature:</label>
+                    <span id="temperatureValue">{temperature.toFixed(2)}</span>
                 </div>
             </SettingsGroup>
         </SettingsGroup>

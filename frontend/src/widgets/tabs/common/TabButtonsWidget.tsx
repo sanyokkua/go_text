@@ -1,4 +1,5 @@
 import Button from '../../base/Button';
+import React from 'react';
 
 export interface TabContentBtn {
     btnId: string;
@@ -11,7 +12,7 @@ interface TabContentWidgetProps {
     disabled?: boolean;
 }
 
-export const TabButtonsWidget = ({ buttons, onBtnClick, disabled }: TabContentWidgetProps) => {
+export const TabButtonsWidget: React.FC<TabContentWidgetProps> = ({ buttons, onBtnClick, disabled }: TabContentWidgetProps) => {
     return (
         <div className="tab-buttons-widget">
             <div className="tab-buttons-widget-grid">

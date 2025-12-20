@@ -1,10 +1,11 @@
-import React from 'react';
-import { AppSettings } from '../../../common/types';
+import React, { useEffect } from 'react';
 import { setShowSettingsView } from '../../../store/app/AppStateReducer';
+import { settingsGetDefaultSettings, settingsGetModelsList, settingsSaveSettings } from '../../../store/cfg/settings_thunks';
+import { resetEditableSettingsFromReadonly } from '../../../store/cfg/SettingsStateReducer';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
-import { appSettingsGetListOfModels, appSettingsResetToDefaultSettings, appSettingsSaveSettings } from '../../../store/settings/settings_thunks';
 import Button from '../../base/Button';
 import LoadingOverlay from '../../base/LoadingOverlay';
+import SettingsGroup from './helpers/SettingsGroup';
 import LanguageConfiguration from './subview/LanguageConfiguration';
 import ModelConfiguration from './subview/ModelConfiguration';
 import OutputConfiguration from './subview/OutputConfiguration';
@@ -14,65 +15,42 @@ type SettingsWidgetProps = { onClose: () => void };
 const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
     const dispatch = useAppDispatch();
 
-    // Configs
-    const availableProviderConfigs = useAppSelector((state) => state.settingsState.availableProviderConfigs);
-    const currentProviderConfig = useAppSelector((state) => state.settingsState.currentProviderConfig);
-    const modelConfig = useAppSelector((state) => state.settingsState.modelConfig);
-    const languageConfig = useAppSelector((state) => state.settingsState.languageConfig);
-    const useMarkdownForOutput = useAppSelector((state) => state.settingsState.useMarkdownForOutput);
-
-    // Validation & Status
-    // We can block global save if the CURRENT edited provider is invalid, or just loose allow save.
-    // Usually "Save and Close" implies saving the valid state.
-    // If the provider being edited is half-baked, maybe we just save what's in `availableProviderConfigs`?
-    // But `settingsToSave` constructs the object from current state.
-    // The requirement says: "If user clicked ... existing one - changes are reset... Save Provider button... it means provider finalized".
-    // So `availableProviderConfigs` contains the finalized providers.
-    // `currentProviderConfig` is just a draft.
-    // However, the backend likely expects `currentProviderConfig` to be the *selected* one to use?
-    // Actually, `currentProviderConfig` in the `AppSettings` object usually represents the ACTIVE configuration for the app to use.
-    // So we should save `currentProviderConfig` as the one currently in the form (if it's valid and saved to the list? or just the current values?).
-    // If we treat `currentProviderConfig` as a "draft", we might want to make sure it's also inside `availableProviderConfigs` if it's meant to be saved?
-    // Or does `currentProviderConfig` just hold the active settings?
-    // Let's assume `currentProviderConfig` is what the app USES efficiently.
-    // AND `availableProviderConfigs` is the library of stored configs.
-
-    // Logic: The user "selects" a provider to load it.
-    // If they modify it, it's modified in `currentProviderConfig`.
-    // If they click "Save Provider", it updates `availableProviderConfigs`.
-    // When they click "Save and Close", we save everything.
-
+    // Configs from new settings state
+    const loadedSettingsEditable = useAppSelector((state) => state.settingsState.loadedSettingsEditable);
     const isLoadingSettings = useAppSelector((state) => state.settingsState.isLoadingSettings);
-    const errorMsg = useAppSelector((state) => state.settingsState.errorMsg);
+    const settingsGlobalErrorMsg = useAppSelector((state) => state.settingsState.settingsGlobalErrorMsg);
+    const settingsFilePath = useAppSelector((state) => state.settingsState.settingsFilePath);
+    const providerValidationSuccessMsg = useAppSelector((state) => state.settingsState.providerValidationSuccessMsg);
+    const providerValidationErrorMsg = useAppSelector((state) => state.settingsState.providerValidationErrorMsg);
+
+    useEffect(() => {
+        dispatch(settingsGetModelsList(loadedSettingsEditable.currentProviderConfig)).unwrap();
+    }, [loadedSettingsEditable.currentProviderConfig]);
 
     const handleSave = async () => {
         try {
-            const settingsToSave: AppSettings = {
-                availableProviderConfigs,
-                currentProviderConfig,
-                modelConfig,
-                languageConfig,
-                useMarkdownForOutput,
-            };
-            await dispatch(appSettingsSaveSettings(settingsToSave)).unwrap();
-            await dispatch(appSettingsGetListOfModels()).unwrap();
+            await dispatch(settingsSaveSettings(loadedSettingsEditable)).unwrap();
             onClose();
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        } catch (error) {
+        } catch (_error) {
             // Error is handled by the thunk
         }
     };
 
     const handleClose = async () => {
+        dispatch(resetEditableSettingsFromReadonly());
         dispatch(setShowSettingsView(false));
     };
 
     const handleReset = async () => {
         try {
-            await dispatch(appSettingsResetToDefaultSettings()).unwrap();
-            await dispatch(appSettingsGetListOfModels()).unwrap();
+            await dispatch(settingsGetDefaultSettings()).unwrap();
+            // Reload models for the default provider
+            if (loadedSettingsEditable.currentProviderConfig) {
+                await dispatch(settingsGetModelsList(loadedSettingsEditable.currentProviderConfig)).unwrap();
+            }
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        } catch (error) {
+        } catch (_error) {
             // Error is handled by the thunk
         }
     };
@@ -80,9 +58,21 @@ const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
     return (
         <div className="settings-widget-container">
             <div className="settings-widget-form-container">
-                {errorMsg && <div className="settings-error">{errorMsg}</div>}
+                {/* Display global error messages */}
+                {settingsGlobalErrorMsg && <div className="settings-error">{settingsGlobalErrorMsg}</div>}
+
+                <SettingsGroup top={true} headerText="Settings File Path">
+                    {settingsFilePath && (
+                        <div>
+                            <h3>{settingsFilePath}</h3>
+                        </div>
+                    )}
+                </SettingsGroup>
 
                 <ProvidersConfiguration />
+                {/* Display provider validation messages */}
+                {providerValidationSuccessMsg && <div className="settings-success">{providerValidationSuccessMsg}</div>}
+                {providerValidationErrorMsg && <div className="settings-error">{providerValidationErrorMsg}</div>}
 
                 <ModelConfiguration />
 

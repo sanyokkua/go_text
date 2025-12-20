@@ -84,7 +84,7 @@ func (s *settingsService) SaveSettings(settingsObj *settings.Settings) (*setting
 	return savedSettings, nil
 }
 
-func (s *settingsService) ValidateProvider(config *settings.ProviderConfig) (bool, error) {
+func (s *settingsService) ValidateProvider(config *settings.ProviderConfig, validateHttpCall bool, modelName string) (bool, error) {
 	startTime := time.Now()
 
 	if config == nil {
@@ -93,9 +93,9 @@ func (s *settingsService) ValidateProvider(config *settings.ProviderConfig) (boo
 		return false, fmt.Errorf("invalid input: %s", errorMsg)
 	}
 
-	s.logger.LogDebug(fmt.Sprintf("[ValidateProvider] Validating provider configuration: %s", config.ProviderName))
+	s.logger.LogDebug(fmt.Sprintf("[ValidateProvider] Validating provider configuration: %s with model: %s", config.ProviderName, modelName))
 
-	isValid, err := s.settingsService.ValidateProvider(config)
+	isValid, err := s.settingsService.ValidateProvider(config, validateHttpCall, modelName)
 	if err != nil {
 		s.logger.LogError(fmt.Sprintf("[ValidateProvider] Provider validation failed for '%s': %v", config.ProviderName, err))
 		return false, fmt.Errorf("provider validation failed: %w", err)
@@ -107,7 +107,7 @@ func (s *settingsService) ValidateProvider(config *settings.ProviderConfig) (boo
 	return isValid, nil
 }
 
-func (s *settingsService) CreateNewProvider(config *settings.ProviderConfig) (*settings.ProviderConfig, error) {
+func (s *settingsService) CreateNewProvider(config *settings.ProviderConfig, modelName string) (*settings.ProviderConfig, error) {
 	startTime := time.Now()
 
 	if config == nil {
@@ -118,7 +118,7 @@ func (s *settingsService) CreateNewProvider(config *settings.ProviderConfig) (*s
 
 	s.logger.LogInfo(fmt.Sprintf("[CreateNewProvider] Creating new provider: %s", config.ProviderName))
 
-	provider, err := s.settingsService.CreateNewProvider(config)
+	provider, err := s.settingsService.CreateNewProvider(config, modelName)
 	if err != nil {
 		s.logger.LogError(fmt.Sprintf("[CreateNewProvider] Failed to create provider '%s': %v", config.ProviderName, err))
 		return nil, fmt.Errorf("failed to create provider: %w", err)

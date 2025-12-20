@@ -22,7 +22,8 @@ const HeaderKeyValue: React.FC<HeaderKeyValueProps> = ({ value, onChange, onDele
         onChange({ ...value, key: headerKey, value: headerValue });
     };
 
-    const handleKeyBlur = (_: React.FocusEvent<HTMLInputElement>) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const handleKeyBlur = (_e: React.FocusEvent<HTMLInputElement>) => {
         handleChange();
     };
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {

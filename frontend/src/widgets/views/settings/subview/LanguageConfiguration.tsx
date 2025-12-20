@@ -1,25 +1,31 @@
 import React from 'react';
-import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import {
-    setDisplaySelectedInputLanguage,
-    setDisplaySelectedOutputLanguage
-} from '../../../../store/settings/AppSettingsReducer';
+    emptySelectItem,
+    setEditableInputLanguage,
+    setEditableOutputLanguage,
+    setLanguageInputSelected,
+    setLanguageOutputSelected,
+} from '../../../../store/cfg/SettingsStateReducer';
+import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import Select, { SelectItem } from '../../../base/Select';
 import SettingsGroup from '../helpers/SettingsGroup';
 
 const LanguageConfiguration: React.FC = () => {
     const dispatch = useAppDispatch();
 
-    const displayListOfLanguages = useAppSelector((state) => state.settingsState.displayListOfLanguages);
-    const displaySelectedInputLanguage = useAppSelector((state) => state.settingsState.displaySelectedInputLanguage);
-    const displaySelectedOutputLanguage = useAppSelector((state) => state.settingsState.displaySelectedOutputLanguage);
+    // Selectors from new state
+    const languageList = useAppSelector((state) => state.settingsState.languageList) || [];
+    const languageInputSelected = useAppSelector((state) => state.settingsState.languageInputSelected) || emptySelectItem;
+    const languageOutputSelected = useAppSelector((state) => state.settingsState.languageOutputSelected) || emptySelectItem;
     const isLoadingSettings = useAppSelector((state) => state.settingsState.isLoadingSettings);
 
     const handleLanguageSelect = (type: 'input' | 'output', item: SelectItem) => {
         if (type === 'input') {
-            dispatch(setDisplaySelectedInputLanguage(item));
+            dispatch(setEditableInputLanguage(item.itemId));
+            dispatch(setLanguageInputSelected(item));
         } else {
-            dispatch(setDisplaySelectedOutputLanguage(item));
+            dispatch(setEditableOutputLanguage(item.itemId));
+            dispatch(setLanguageOutputSelected(item));
         }
     };
 
@@ -29,8 +35,8 @@ const LanguageConfiguration: React.FC = () => {
                 <label htmlFor="defaultInputLang">Default Input Language:</label>
                 <Select
                     id="defaultInputLang"
-                    items={displayListOfLanguages}
-                    selectedItem={displaySelectedInputLanguage}
+                    items={languageList}
+                    selectedItem={languageInputSelected}
                     onSelect={(item) => handleLanguageSelect('input', item)}
                     disabled={isLoadingSettings}
                 />
@@ -39,8 +45,8 @@ const LanguageConfiguration: React.FC = () => {
                 <label htmlFor="defaultOutputLang">Default Output Language:</label>
                 <Select
                     id="defaultOutputLang"
-                    items={displayListOfLanguages}
-                    selectedItem={displaySelectedOutputLanguage}
+                    items={languageList}
+                    selectedItem={languageOutputSelected}
                     onSelect={(item) => handleLanguageSelect('output', item)}
                     disabled={isLoadingSettings}
                 />
