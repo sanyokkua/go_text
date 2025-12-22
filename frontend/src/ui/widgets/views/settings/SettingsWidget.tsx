@@ -20,8 +20,6 @@ const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
     const isLoadingSettings = useAppSelector((state) => state.settingsState.isLoadingSettings);
     const settingsGlobalErrorMsg = useAppSelector((state) => state.settingsState.settingsGlobalErrorMsg);
     const settingsFilePath = useAppSelector((state) => state.settingsState.settingsFilePath);
-    const providerValidationSuccessMsg = useAppSelector((state) => state.settingsState.providerValidationSuccessMsg);
-    const providerValidationErrorMsg = useAppSelector((state) => state.settingsState.providerValidationErrorMsg);
 
     useEffect(() => {
         dispatch(settingsGetModelsList(loadedSettingsEditable.currentProviderConfig)).unwrap();
@@ -33,7 +31,7 @@ const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
             onClose();
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (_error) {
-            // Error is handled by the thunk
+            // The thunk handles error
         }
     };
 
@@ -51,7 +49,7 @@ const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
             }
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (_error) {
-            // Error is handled by the thunk
+            // The thunk handles error
         }
     };
 
@@ -62,22 +60,15 @@ const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
                 {settingsGlobalErrorMsg && <div className="settings-error">{settingsGlobalErrorMsg}</div>}
 
                 <SettingsGroup top={true} headerText="Settings File Path">
-                    {settingsFilePath && (
-                        <div>
-                            <h3>{settingsFilePath}</h3>
-                        </div>
-                    )}
+                    <div className="settings-form-grid">
+                        <strong>Settings File can be found by the following path:</strong>
+                        <p>{settingsFilePath}</p>
+                    </div>
                 </SettingsGroup>
 
                 <ProvidersConfiguration />
-                {/* Display provider validation messages */}
-                {providerValidationSuccessMsg && <div className="settings-success">{providerValidationSuccessMsg}</div>}
-                {providerValidationErrorMsg && <div className="settings-error">{providerValidationErrorMsg}</div>}
-
                 <ModelConfiguration />
-
                 <LanguageConfiguration />
-
                 <OutputConfiguration />
             </div>
 

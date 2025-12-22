@@ -454,7 +454,7 @@ const ProvidersConfiguration: React.FC = () => {
             ) : (
                 <SettingsGroup>
                     <label>Current Provider Details:</label>
-                    <div className="provider-details">
+                    <div>
                         <p>
                             <strong>Name:</strong> {currentProviderConfig.providerName}
                         </p>

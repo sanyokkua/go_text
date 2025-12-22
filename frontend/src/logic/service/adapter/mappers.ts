@@ -117,7 +117,7 @@ export const fromBackendLanguageConfig = (input: settings.LanguageConfig): Front
 };
 
 /**
- * Converts a frontend ModelConfig to a backend settings.LlmModelConfig
+ * Converts a frontend ModelConfig to a backend setting.LlmModelConfig
  * @param input - Frontend model config to convert
  * @returns Backend settings.LlmModelConfig instance
  */
