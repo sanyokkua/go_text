@@ -1,6 +1,6 @@
 import React from 'react';
-import Button from '../.././base/Button';
-import TextEditor from '../.././base/TextEditor';
+import Button from '../base/Button';
+import TextEditor from '../base/TextEditor';
 
 type IOWidgetProps = {
     header: string;

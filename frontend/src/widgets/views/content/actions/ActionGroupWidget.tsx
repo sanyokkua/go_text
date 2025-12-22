@@ -1,26 +1,22 @@
-import Button from '../../base/Button';
 import React from 'react';
+import { ActionIdentifier } from '../../../../common/types';
+import Button from '../../../base/Button';
 
-export interface TabContentBtn {
-    btnId: string;
-    btnName: string;
-}
-
-interface TabContentWidgetProps {
-    buttons: TabContentBtn[];
+interface ActionGroupWidgetProps {
+    buttons: ActionIdentifier[];
     onBtnClick: (btnId: string) => void;
     disabled?: boolean;
 }
 
-export const TabButtonsWidget: React.FC<TabContentWidgetProps> = ({ buttons, onBtnClick, disabled }: TabContentWidgetProps) => {
+export const ActionGroupWidget: React.FC<ActionGroupWidgetProps> = ({ buttons, onBtnClick, disabled }: ActionGroupWidgetProps) => {
     return (
         <div className="tab-buttons-widget">
             <div className="tab-buttons-widget-grid">
                 {buttons.map((item) => (
-                    <div key={item.btnId}>
+                    <div key={item.id}>
                         <Button
-                            text={item.btnName}
-                            onClick={() => onBtnClick(item.btnId)}
+                            text={item.name}
+                            onClick={() => onBtnClick(item.id)}
                             variant="outlined"
                             colorStyle={'primary-color'}
                             size="small"
@@ -34,4 +30,4 @@ export const TabButtonsWidget: React.FC<TabContentWidgetProps> = ({ buttons, onB
     );
 };
 
-TabButtonsWidget.displayName = 'TabContentWidget';
+ActionGroupWidget.displayName = 'ActionGroupWidget';

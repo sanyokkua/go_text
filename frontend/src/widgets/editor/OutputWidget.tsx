@@ -1,5 +1,5 @@
 import React from 'react';
-import EditorWidget from '../common/EditorWidget';
+import EditorWidget from './EditorWidget';
 
 type OutputWidgetWidgetProps = {
     content: string;

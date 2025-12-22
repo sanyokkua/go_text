@@ -21,7 +21,9 @@ export type Color =
 export type Size = 'tiny' | 'small' | 'default' | 'large';
 
 export type KeyValuePair = { id: string; key: string; value: string };
-
-export type ProviderType = 'custom' | 'ollama' | 'lm-studio' | 'llama-cpp';
+export interface ActionIdentifier {
+    id: string;
+    name: string;
+}
 
 export const UnknownError = 'Unknown error';

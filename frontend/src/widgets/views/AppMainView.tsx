@@ -1,9 +1,9 @@
 import React from 'react';
 
 import { LogDebug } from '../../../wailsjs/runtime';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { initializeState } from '../../store/state/state_thunks';
 import { setShowSettingsView } from '../../store/state/StateReducer';
-import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import BottomBarWidget from './content/BottomBarWidget';
 import ContentWidget from './content/ContentWidget';
 import TopBarWidget from './content/TopBarWidget';

@@ -1,6 +1,6 @@
 import React from 'react';
-import InputWidget from './prepared/InputWidget';
-import OutputWidget from './prepared/OutputWidget';
+import InputWidget from './InputWidget';
+import OutputWidget from './OutputWidget';
 
 type IOPaneWidgetProps = {
     inputContent: string;
@@ -15,7 +15,7 @@ type IOPaneWidgetProps = {
     disabled?: boolean;
 };
 
-const IOViewWidget: React.FC<IOPaneWidgetProps> = (props) => {
+const InputOutputContainerWidget: React.FC<IOPaneWidgetProps> = (props) => {
     return (
         <div className="io-two-columns">
             <InputWidget
@@ -37,5 +37,5 @@ const IOViewWidget: React.FC<IOPaneWidgetProps> = (props) => {
     );
 };
 
-IOViewWidget.displayName = 'IOViewWidget';
-export default IOViewWidget;
+InputOutputContainerWidget.displayName = 'InputOutputContainerWidget';
+export default InputOutputContainerWidget;

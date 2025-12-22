@@ -1,10 +1,10 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { ActionIdentifier } from '../../common/types';
 import { FrontActions } from '../../service';
-import { TabContentBtn } from '../../widgets/tabs/common/TabButtonsWidget';
 import { copyToClipboard, initializeState, pasteFromClipboard, processAction } from './state_thunks';
 
 export interface State {
-    actionGroups: { [key: string]: TabContentBtn[] };
+    actionGroups: { [key: string]: ActionIdentifier[] };
     errorMessage: string;
 
     // UI Managed
@@ -33,11 +33,11 @@ const initialState: State = {
 };
 
 // Helper function to convert FrontActions to actionGroups
-const convertFrontActionsToActionGroups = (frontActions: FrontActions): { [key: string]: TabContentBtn[] } => {
-    const actionGroups: { [key: string]: TabContentBtn[] } = {};
+const convertFrontActionsToActionGroups = (frontActions: FrontActions): { [key: string]: ActionIdentifier[] } => {
+    const actionGroups: { [key: string]: ActionIdentifier[] } = {};
 
     frontActions.actionGroups.forEach((group) => {
-        actionGroups[group.groupName] = group.groupActions.map((action) => ({ btnId: action.id, btnName: action.text }));
+        actionGroups[group.groupName] = group.groupActions.map((action) => ({ id: action.id, name: action.text }));
     });
 
     return actionGroups;
