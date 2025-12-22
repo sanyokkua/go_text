@@ -8,10 +8,9 @@ import {
 } from '../../service';
 import { AppDispatch } from '../store';
 
-// Example
 export const settingsGetCurrentSettings = createAsyncThunk<FrontSettings, void, { dispatch: AppDispatch; rejectValue: string }>(
     'settingsState/settingsGetCurrentSettings',
-    async (_, { dispatch, rejectWithValue }) => {
+    async (_, { rejectWithValue }) => {
         try {
             log.debug('appSettingsLoadCurrentSettings is triggered');
             return await settingsService.getCurrentSettings();
@@ -27,7 +26,7 @@ export const settingsCreateNewProvider = createAsyncThunk<
     FrontProviderConfig,
     { providerConfig: FrontProviderConfig; modelName?: string },
     { dispatch: AppDispatch; rejectValue: string }
->('settingsState/settingsCreateNewProvider', async ({ providerConfig, modelName }, { dispatch, rejectWithValue }) => {
+>('settingsState/settingsCreateNewProvider', async ({ providerConfig, modelName }, { rejectWithValue }) => {
     try {
         log.debug('settingsCreateNewProvider is triggered');
         return await settingsService.createNewProvider(providerConfig, modelName);
@@ -40,7 +39,7 @@ export const settingsCreateNewProvider = createAsyncThunk<
 
 export const settingsDeleteProvider = createAsyncThunk<boolean, FrontProviderConfig, { dispatch: AppDispatch; rejectValue: string }>(
     'settingsState/settingsDeleteProvider',
-    async (providerConfig: FrontProviderConfig, { dispatch, rejectWithValue }) => {
+    async (providerConfig: FrontProviderConfig, { rejectWithValue }) => {
         try {
             log.debug('settingsDeleteProvider is triggered');
             return await settingsService.deleteProvider(providerConfig);
@@ -54,7 +53,7 @@ export const settingsDeleteProvider = createAsyncThunk<boolean, FrontProviderCon
 
 export const settingsGetDefaultSettings = createAsyncThunk<FrontSettings, void, { dispatch: AppDispatch; rejectValue: string }>(
     'settingsState/settingsGetDefaultSettings',
-    async (_, { dispatch, rejectWithValue }) => {
+    async (_, { rejectWithValue }) => {
         try {
             log.debug('settingsGetDefaultSettings is triggered');
             return await settingsService.getDefaultSettings();
@@ -68,7 +67,7 @@ export const settingsGetDefaultSettings = createAsyncThunk<FrontSettings, void, 
 
 export const settingsGetModelsList = createAsyncThunk<Array<string>, FrontProviderConfig, { dispatch: AppDispatch; rejectValue: string }>(
     'settingsState/settingsGetModelsList',
-    async (providerConfig: FrontProviderConfig, { dispatch, rejectWithValue }) => {
+    async (providerConfig: FrontProviderConfig, { rejectWithValue }) => {
         try {
             log.debug('settingsGetModelsList is triggered');
             return await settingsService.getModelsList(providerConfig);
@@ -82,7 +81,7 @@ export const settingsGetModelsList = createAsyncThunk<Array<string>, FrontProvid
 
 export const settingsGetProviderTypes = createAsyncThunk<Array<string>, void, { dispatch: AppDispatch; rejectValue: string }>(
     'settingsState/settingsGetProviderTypes',
-    async (_, { dispatch, rejectWithValue }) => {
+    async (_, { rejectWithValue }) => {
         try {
             log.debug('settingsGetProviderTypes is triggered');
             return await settingsService.getProviderTypes();
@@ -96,7 +95,7 @@ export const settingsGetProviderTypes = createAsyncThunk<Array<string>, void, { 
 
 export const settingsGetSettingsFilePath = createAsyncThunk<string, void, { dispatch: AppDispatch; rejectValue: string }>(
     'settingsState/settingsGetSettingsFilePath',
-    async (_, { dispatch, rejectWithValue }) => {
+    async (_, { rejectWithValue }) => {
         try {
             log.debug('settingsGetSettingsFilePath is triggered');
             return await settingsService.getSettingsFilePath();
@@ -110,7 +109,7 @@ export const settingsGetSettingsFilePath = createAsyncThunk<string, void, { disp
 
 export const settingsSaveSettings = createAsyncThunk<FrontSettings, FrontSettings, { dispatch: AppDispatch; rejectValue: string }>(
     'settingsState/settingsSaveSettings',
-    async (settings: FrontSettings, { dispatch, rejectWithValue }) => {
+    async (settings: FrontSettings, { rejectWithValue }) => {
         try {
             log.debug('settingsSaveSettings is triggered');
             return await settingsService.saveSettings(settings);
@@ -124,7 +123,7 @@ export const settingsSaveSettings = createAsyncThunk<FrontSettings, FrontSetting
 
 export const settingsSelectProvider = createAsyncThunk<FrontProviderConfig, FrontProviderConfig, { dispatch: AppDispatch; rejectValue: string }>(
     'settingsState/settingsSelectProvider',
-    async (providerConfig: FrontProviderConfig, { dispatch, rejectWithValue }) => {
+    async (providerConfig: FrontProviderConfig, { rejectWithValue }) => {
         try {
             log.debug('settingsSelectProvider is triggered');
             return await settingsService.selectProvider(providerConfig);
@@ -138,7 +137,7 @@ export const settingsSelectProvider = createAsyncThunk<FrontProviderConfig, Fron
 
 export const settingsUpdateProvider = createAsyncThunk<FrontProviderConfig, FrontProviderConfig, { dispatch: AppDispatch; rejectValue: string }>(
     'settingsState/settingsUpdateProvider',
-    async (providerConfig: FrontProviderConfig, { dispatch, rejectWithValue }) => {
+    async (providerConfig: FrontProviderConfig, { rejectWithValue }) => {
         try {
             log.debug('settingsUpdateProvider is triggered');
             return await settingsService.updateProvider(providerConfig);
@@ -153,8 +152,8 @@ export const settingsUpdateProvider = createAsyncThunk<FrontProviderConfig, Fron
 export const settingsValidateProvider = createAsyncThunk<
     boolean,
     { providerConfig: FrontProviderConfig; validateHttpCalls: boolean; modelName?: string },
-    { dispatch: AppDispatch; rejectValue: string }
->('settingsState/settingsValidateProvider', async ({ providerConfig, validateHttpCalls, modelName }, { dispatch, rejectWithValue }) => {
+    { rejectValue: string }
+>('settingsState/settingsValidateProvider', async ({ providerConfig, validateHttpCalls, modelName }, { rejectWithValue }) => {
     try {
         log.debug('settingsValidateProvider is triggered');
         return await settingsService.validateProvider(providerConfig, validateHttpCalls, modelName);

@@ -17,7 +17,7 @@ type ModelConfigurationProps = { text?: string };
 const ModelConfiguration: React.FC<ModelConfigurationProps> = () => {
     const dispatch = useAppDispatch();
 
-    // Selectors from new state
+    // Selectors from the new state
     const loadedSettingsEditable = useAppSelector((state) => state.settingsState.loadedSettingsEditable);
     const llmModelList = useAppSelector((state) => state.settingsState.llmModelList);
     const llmModelSelected = useAppSelector((state) => state.settingsState.llmModelSelected);

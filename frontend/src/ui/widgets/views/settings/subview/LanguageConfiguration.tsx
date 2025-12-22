@@ -13,7 +13,7 @@ import SettingsGroup from '../helpers/SettingsGroup';
 const LanguageConfiguration: React.FC = () => {
     const dispatch = useAppDispatch();
 
-    // Selectors from new state
+    // Selectors from the new state
     const languageList = useAppSelector((state) => state.settingsState.languageList) || [];
     const languageInputSelected = useAppSelector((state) => state.settingsState.languageInputSelected) || emptySelectItem;
     const languageOutputSelected = useAppSelector((state) => state.settingsState.languageOutputSelected) || emptySelectItem;

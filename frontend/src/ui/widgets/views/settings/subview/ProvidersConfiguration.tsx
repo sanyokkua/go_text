@@ -13,6 +13,7 @@ import {
     removeProviderHeader,
     setCurrentProviderConfig,
     setProviderSelected,
+    setProviderTestModel,
     updateProviderHeader,
 } from '../../../../../logic/store/cfg/SettingsStateReducer';
 import { useAppDispatch, useAppSelector } from '../../../../../logic/store/hooks';
@@ -42,6 +43,7 @@ const ProvidersConfiguration: React.FC = () => {
     const providersTypes = useAppSelector((state) => state.settingsState.providersTypes);
     const providerHeaders = useAppSelector((state) => state.settingsState.providerHeaders);
     const isLoadingSettings = useAppSelector((state) => state.settingsState.isLoadingSettings);
+    const validationModel = useAppSelector((state) => state.settingsState.providerTestModel);
 
     // Validation messages from new state
     const providerValidationSuccessMsg = useAppSelector((state) => state.settingsState.providerValidationSuccessMsg);
@@ -52,7 +54,6 @@ const ProvidersConfiguration: React.FC = () => {
     const [newProviderType, setNewProviderType] = useState('');
     const [newBaseUrl, setNewBaseUrl] = useState('http://localhost:8080');
     const [newModelsEndpoint, setNewModelsEndpoint] = useState('/v1/models');
-    const [validationModel, setValidationModel] = useState('');
 
     // Validation errors
     const [providerNameError, setProviderNameError] = useState('');
@@ -92,7 +93,7 @@ const ProvidersConfiguration: React.FC = () => {
         setNewBaseUrl('http://localhost:8080');
         setNewModelsEndpoint('v1/models');
         setNewCompletionEndpoint('v1/completions');
-        setValidationModel('');
+        dispatch(setProviderTestModel(''));
         // Clear validation errors
         setProviderNameError('');
         setBaseUrlError('');
@@ -168,7 +169,7 @@ const ProvidersConfiguration: React.FC = () => {
                 setIsEditing(false);
                 // Clear form
                 setNewProviderName('');
-                setValidationModel('');
+                dispatch(setProviderTestModel(''));
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
             } catch (error) {
                 // Error handled by thunk
@@ -226,7 +227,7 @@ const ProvidersConfiguration: React.FC = () => {
             setNewBaseUrl(currentProviderConfig.baseUrl);
             setNewModelsEndpoint(currentProviderConfig.modelsEndpoint);
             setNewCompletionEndpoint(currentProviderConfig.completionEndpoint);
-            setValidationModel('');
+            dispatch(setProviderTestModel(''));
             // Clear validation errors
             setProviderNameError('');
             setBaseUrlError('');
@@ -417,7 +418,7 @@ const ProvidersConfiguration: React.FC = () => {
                                 type="text"
                                 id="completionEndpointModel"
                                 value={validationModel}
-                                onChange={(e) => setValidationModel(e.target.value)}
+                                onChange={(e) => dispatch(setProviderTestModel(e.target.value))}
                                 placeholder="gpt-4o"
                                 disabled={isLoadingSettings}
                             />

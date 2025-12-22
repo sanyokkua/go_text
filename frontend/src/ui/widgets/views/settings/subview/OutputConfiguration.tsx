@@ -6,11 +6,11 @@ import SettingsGroup from '../helpers/SettingsGroup';
 const OutputConfiguration: React.FC = () => {
     const dispatch = useAppDispatch();
 
-    // Selector from new state
+    // Selector from a new state
     const loadedSettingsEditable = useAppSelector((state) => state.settingsState.loadedSettingsEditable);
     const isLoadingSettings = useAppSelector((state) => state.settingsState.isLoadingSettings);
 
-    // Use markdown setting with null check
+    // Use Markdown setting with null check
     const useMarkdownForOutput = loadedSettingsEditable.useMarkdownForOutput || false;
 
     const handleMarkdownToggle = (e: React.ChangeEvent<HTMLInputElement>) => {

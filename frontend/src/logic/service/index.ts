@@ -33,9 +33,7 @@ export const ClipboardServiceInstance: IClipboardService = new ClipboardService(
  */
 export {
     ActionServiceInstance as ActionService,
-    ClipboardServiceInstance as ClipboardService,
-    LoggerServiceInstance as LoggerService,
-    SettingsServiceInstance as SettingsService,
+    ClipboardServiceInstance as ClipboardService
 };
 
 /**

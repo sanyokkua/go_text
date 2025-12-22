@@ -35,7 +35,7 @@ export interface ParsedErrorResult {
 export function parseError(error: unknown, includeOriginal: boolean = false): ParsedErrorResult {
     const timestamp = new Date();
     let errorType: ParsedErrorType = 'UnknownError';
-    let errorMessage: string = 'Unknown error occurred';
+    let errorMessage: string;
 
     if (error === null) {
         errorType = 'NullError';

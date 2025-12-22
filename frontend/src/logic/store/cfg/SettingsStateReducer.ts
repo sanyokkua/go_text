@@ -38,7 +38,7 @@ const mapStringToSelectItem = (value: string): SelectItem => {
 };
 
 /**
- * Maps array of strings to SelectItems
+ * Maps an array of strings to SelectItems
  */
 const mapStringListToSelectItems = (list: string[]): SelectItem[] => {
     return list.map(mapStringToSelectItem);
@@ -180,27 +180,16 @@ export const settingsSlice = createSlice({
     name: 'settingsState',
     initialState: initSettingsState,
     reducers: {
-        setProviderList(state, action: PayloadAction<SelectItem[]>) {
-            state.providerList = action.payload;
-        },
         setProviderSelected(state, action: PayloadAction<SelectItem>) {
             state.providerSelected = action.payload;
         },
         setCurrentProviderConfig(state, action: PayloadAction<FrontProviderConfig>) {
-            // Update current provider in editable settings only (no backend call)
+            // Update the current provider in editable settings only (no backend call)
             state.loadedSettingsEditable.currentProviderConfig = action.payload;
             state.providerSelected = mapStringToSelectItem(action.payload.providerName);
             state.providerHeaders = mapRecordToKeyValuePair(action.payload.headers);
         },
-        setProvidersTypes(state, action: PayloadAction<SelectItem[]>) {
-            state.providersTypes = action.payload;
-            state.providerType = action.payload[0];
-        },
-        setProviderType(state, action: PayloadAction<SelectItem>) {
-            state.providerType = action.payload;
-        },
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        addNewEmptyProviderHeader(state, action: PayloadAction<void>) {
+        addNewEmptyProviderHeader(state) {
             if (state.providerHeaders.some(emptyHeaderPredicate)) {
                 return;
             }
@@ -212,7 +201,6 @@ export const settingsSlice = createSlice({
             newHeaders.push({ id: generateUniqueId(), key: '', value: '' });
             state.providerHeaders = newHeaders.sort((a, b) => a.id.localeCompare(b.id));
             state.loadedSettingsEditable.currentProviderConfig.headers = keyValuePairsToRecord(newHeaders);
-            // resetValidationMessages(state); TODO:
         },
         updateProviderHeader(state, action: PayloadAction<KeyValuePair>) {
             const newHeaders = [...state.providerHeaders];
@@ -221,7 +209,6 @@ export const settingsSlice = createSlice({
 
             state.providerHeaders = filtered.sort((a, b) => a.id.localeCompare(b.id));
             state.loadedSettingsEditable.currentProviderConfig.headers = keyValuePairsToRecord(newHeaders);
-            // resetValidationMessages(state); TODO:
         },
         removeProviderHeader(state, action: PayloadAction<string>) {
             const newHeaders = [...state.providerHeaders];
@@ -229,7 +216,6 @@ export const settingsSlice = createSlice({
 
             state.providerHeaders = filtered.sort((a, b) => a.id.localeCompare(b.id));
             state.loadedSettingsEditable.currentProviderConfig.headers = keyValuePairsToRecord(newHeaders);
-            // resetValidationMessages(state); TODO:
         },
         setProviderTestModel(state, action: PayloadAction<string>) {
             state.providerTestModel = action.payload;
@@ -275,18 +261,6 @@ export const settingsSlice = createSlice({
         },
         setLanguageOutputSelected(state, action: PayloadAction<SelectItem>) {
             state.languageOutputSelected = action.payload;
-        },
-        setProviderValidationSuccessMsg(state, action: PayloadAction<string>) {
-            state.providerValidationSuccessMsg = action.payload;
-        },
-        setProviderValidationErrorMsg(state, action: PayloadAction<string>) {
-            state.providerValidationErrorMsg = action.payload;
-        },
-        setSettingsGlobalErrorMsg(state, action: PayloadAction<string>) {
-            state.settingsGlobalErrorMsg = action.payload;
-        },
-        setIsLoadingSettings(state, action: PayloadAction<boolean>) {
-            state.isLoadingSettings = action.payload;
         },
         resetEditableSettingsFromReadonly(state: SettingsState) {
             // Reset editable settings from readonly settings
@@ -380,7 +354,7 @@ export const settingsSlice = createSlice({
                         // Keep the current selection
                         state.llmModelSelected = stringToSelectItem(currentModelName);
                     } else {
-                        // Fall back to first model if current doesn't exist
+                        // Fall back to the first model if current doesn't exist
                         state.llmModelSelected = stringsToSelectItems([loadedModelsList[0]])[0];
                         state.loadedSettingsEditable.modelConfig.modelName = loadedModelsList[0];
                     }
@@ -417,7 +391,7 @@ export const settingsSlice = createSlice({
             })
             .addCase(settingsUpdateProvider.fulfilled, (state: SettingsState, action: PayloadAction<FrontProviderConfig>) => {
                 state.isLoadingSettings = false;
-                // Update the provider in both available providers and current provider if it matches
+                // Update the provider in both available providers and the current provider if it matches
                 const updatedProvider = action.payload;
 
                 // Update in available providers
@@ -516,31 +490,21 @@ export const settingsSlice = createSlice({
 });
 
 export const {
-    setProviderList,
     setProviderSelected,
-    setProvidersTypes,
-    setProviderType,
     addNewEmptyProviderHeader,
     updateProviderHeader,
     removeProviderHeader,
-    setProviderTestModel,
     setEditableModelName,
     setEditableTemperatureEnabled,
     setEditableTemperature,
     setEditableInputLanguage,
     setEditableOutputLanguage,
     setEditableUseMarkdown,
-    setLlmModelFilterText,
-    setLlmModelList,
     setLlmModelSelected,
-    setLanguageList,
     setLanguageInputSelected,
     setLanguageOutputSelected,
-    setProviderValidationSuccessMsg,
-    setProviderValidationErrorMsg,
-    setSettingsGlobalErrorMsg,
-    setIsLoadingSettings,
     resetEditableSettingsFromReadonly,
+    setProviderTestModel,
     setCurrentProviderConfig,
 } = settingsSlice.actions;
 

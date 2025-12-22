@@ -1,5 +1,5 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import { ActionService, ClipboardService, FrontActionRequest, FrontActions, parseError } from '../../service';
+import { ActionService, ClipboardService, FrontActionRequest, FrontActions, LoggerServiceInstance as log, parseError } from '../../service';
 import { AppDispatch } from '../store';
 import { setCurrentTask } from './StateReducer';
 
@@ -13,6 +13,7 @@ export const initializeState = createAsyncThunk<{ frontActions: FrontActions }, 
             return { frontActions };
         } catch (error: unknown) {
             const msg = parseError(error);
+            log.warning('Failed state/initializeState with error: ' + msg.originalError);
             return rejectWithValue(msg.message);
         }
     },
@@ -26,6 +27,7 @@ export const processAction = createAsyncThunk<string, FrontActionRequest, { disp
             return await ActionService.processAction(actionRequest);
         } catch (error: unknown) {
             const msg = parseError(error);
+            log.warning('Failed state/processAction with error: ' + msg.originalError);
             return rejectWithValue(msg.message);
         }
     },
@@ -38,6 +40,7 @@ export const copyToClipboard = createAsyncThunk<void, string, { rejectValue: str
             await ClipboardService.clipboardSetText(textToCopy);
         } catch (error: unknown) {
             const msg = parseError(error);
+            log.warning('Failed state/copyToClipboard with error: ' + msg.originalError);
             return rejectWithValue(msg.message);
         }
     },
@@ -50,6 +53,7 @@ export const pasteFromClipboard = createAsyncThunk<string, void, { rejectValue: 
             return await ClipboardService.clipboardGetText();
         } catch (error: unknown) {
             const msg = parseError(error);
+            log.warning('Failed state/pasteFromClipboard with error: ' + msg.originalError);
             return rejectWithValue(msg.message);
         }
     },
