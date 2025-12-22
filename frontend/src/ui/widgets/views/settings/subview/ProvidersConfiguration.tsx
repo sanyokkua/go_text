@@ -10,6 +10,7 @@ import {
 } from '../../../../../logic/store/cfg/settings_thunks';
 import {
     addNewEmptyProviderHeader,
+    defaultProviderConfig,
     removeProviderHeader,
     setCurrentProviderConfig,
     setProviderSelected,
@@ -21,17 +22,7 @@ import Button from '../../../base/Button';
 import Select, { SelectItem } from '../../../base/Select';
 import HeaderKeyValue from '../HeaderKeyValue';
 import SettingsGroup from '../helpers/SettingsGroup';
-import ValidationMessages from '../helpers/ValidationMessages'; // Default provider config for fallback
-
-// Default provider config for fallback
-const defaultProviderConfig: FrontProviderConfig = {
-    providerName: '',
-    providerType: 'custom',
-    baseUrl: 'http://localhost:8080',
-    modelsEndpoint: 'v1/models',
-    completionEndpoint: 'v1/completions',
-    headers: {},
-};
+import ValidationMessages from '../helpers/ValidationMessages';
 
 const ProvidersConfiguration: React.FC = () => {
     const dispatch = useAppDispatch();
@@ -369,7 +360,7 @@ const ProvidersConfiguration: React.FC = () => {
                         <label htmlFor="modelsEndpoint">Models Endpoint:</label>
                         <div>
                             <input
-                                style={{ flex: 1 }}
+                                className="settings-input-full-width"
                                 type="text"
                                 id="modelsEndpoint"
                                 value={newModelsEndpoint}
@@ -382,7 +373,7 @@ const ProvidersConfiguration: React.FC = () => {
                         <label htmlFor="completionEndpoint">Completion Endpoint:</label>
                         <div>
                             <input
-                                style={{ flex: 1 }}
+                                className="settings-input-full-width"
                                 type="text"
                                 id="completionEndpoint"
                                 value={newCompletionEndpoint}
@@ -475,7 +466,7 @@ const ProvidersConfiguration: React.FC = () => {
                                 <p>
                                     <strong>Headers:</strong>
                                 </p>
-                                <ul style={{ marginLeft: '1rem', marginTop: '0.5rem' }}>
+                                <ul className="headers-list">
                                     {Object.entries(currentProviderConfig.headers).map(([key, value]) => (
                                         <li key={key}>
                                             <strong>{key}:</strong> {value}

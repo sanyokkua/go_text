@@ -40,7 +40,7 @@ const OutputWidget: React.FC<OutputWidgetWidgetProps> = (props) => {
             onContentChange={onContentChange}
             buttons={BTN_IDS}
             onButtonClick={handleBtnClick}
-            disabled={props.disabled}
+            disabled={props.disabled ?? false}
         />
     );
 };

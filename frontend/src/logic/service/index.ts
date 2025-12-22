@@ -59,41 +59,30 @@ export type {
 } from './adapter/models';
 
 /**
- * Export all mapper functions for advanced use cases
- * Allows consumers to use mapping functions directly if needed
+ * Export mapper functions for advanced use cases (only used internally)
  */
 export {
     fromBackendAction,
-    fromBackendActionRequest,
     fromBackendActions,
     fromBackendGroup,
     fromBackendLanguageConfig,
     fromBackendModelConfig,
     fromBackendProviderConfig,
     fromBackendSettings,
-    toBackendAction,
     toBackendActionRequest,
-    toBackendActions,
-    toBackendGroup,
     toBackendLanguageConfig,
     toBackendModelConfig,
     toBackendProviderConfig,
     toBackendSettings,
 } from './adapter/mappers';
 
-// Re-export error utilities
-export { createContextualError, formatParsedError, isNetworkError, parseError } from './util/error_utils';
-
-// Re-export helper functions
-export { generateShortId } from './util/helpers';
+// Re-export error utilities (only parseError is actively used)
+export { parseError } from './util/error_utils';
 
 // Re-export mapper functions
 export {
     keyValuePairsToRecord,
     recordToKeyValuePairs,
-    recordToSelectItems,
-    selectItemsToRecord,
-    stringsToKeyValuePairs,
     stringsToSelectItems,
     stringToSelectItem,
 } from './util/mappers';
@@ -101,11 +90,7 @@ export {
 // Re-export validator functions
 export {
     validateEndpoint,
-    validateHeaderKey,
-    validateHeaders,
-    validateHeaderValue,
     validateModelName,
     validateProviderName,
     validateUrl,
-    validateUrlWithProtocol,
 } from './util/validators';

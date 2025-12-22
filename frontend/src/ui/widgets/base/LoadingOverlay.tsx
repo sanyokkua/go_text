@@ -13,4 +13,5 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ isLoading }) => {
     );
 };
 
+LoadingOverlay.displayName = 'LoadingOverlay';
 export default LoadingOverlay;

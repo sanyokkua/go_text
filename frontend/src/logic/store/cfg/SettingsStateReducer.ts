@@ -136,7 +136,6 @@ export interface SettingsState {
     providerHeaders: KeyValuePair[];
     providerTestModel: string;
 
-    llmModelFilterText: string;
     llmModelList: SelectItem[];
     llmModelSelected: SelectItem;
 
@@ -163,7 +162,6 @@ const initSettingsState: SettingsState = {
     providerType: emptySelectItem,
     providerHeaders: [],
     providerTestModel: '',
-    llmModelFilterText: '',
     llmModelList: [],
     llmModelSelected: emptySelectItem,
     languageList: [],
@@ -239,9 +237,6 @@ export const settingsSlice = createSlice({
         setEditableUseMarkdown(state, action: PayloadAction<boolean>) {
             state.loadedSettingsEditable.useMarkdownForOutput = action.payload;
         },
-        setLlmModelFilterText(state, action: PayloadAction<string>) {
-            state.llmModelFilterText = action.payload;
-        },
         setLlmModelList(state, action: PayloadAction<SelectItem[]>) {
             state.llmModelList = action.payload;
             if (action.payload.length > 0) {
@@ -252,9 +247,6 @@ export const settingsSlice = createSlice({
         },
         setLlmModelSelected(state, action: PayloadAction<SelectItem>) {
             state.llmModelSelected = action.payload;
-        },
-        setLanguageList(state, action: PayloadAction<SelectItem[]>) {
-            state.languageList = action.payload;
         },
         setLanguageInputSelected(state, action: PayloadAction<SelectItem>) {
             state.languageInputSelected = action.payload;

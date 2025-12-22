@@ -34,7 +34,7 @@ const InputWidget: React.FC<InputWidgetProps> = (props) => {
             onContentChange={onContentChange}
             buttons={BTN_IDS}
             onButtonClick={handleBtnClick}
-            disabled={disabled}
+            disabled={disabled ?? false}
         />
     );
 };

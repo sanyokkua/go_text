@@ -22,16 +22,16 @@ const InputOutputContainerWidget: React.FC<IOPaneWidgetProps> = (props) => {
                 content={props.inputContent}
                 onPaste={props.onInputPaste}
                 onClear={props.onInputClear}
-                onContentChange={props.onInputContentChange}
-                disabled={props.disabled}
+                onContentChange={props.onInputContentChange ?? (() => {})}
+                disabled={props.disabled ?? false}
             />
             <OutputWidget
                 content={props.outputContent}
                 onCopy={props.onOutputCopy}
                 onClear={props.onOutputClear}
                 onUseAsInput={props.onOutputUseAsInput}
-                onContentChange={props.onOutputContentChange}
-                disabled={props.disabled}
+                onContentChange={props.onOutputContentChange ?? (() => {})}
+                disabled={props.disabled ?? false}
             />
         </div>
     );

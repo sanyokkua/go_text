@@ -6,7 +6,7 @@ import './ui/styles/appbar.scss';
 import './ui/styles/bottombar.scss';
 import './ui/styles/button.scss';
 import './ui/styles/colors.scss';
-import './ui/styles/gloabl_styles.scss';
+import './ui/styles/global_styles.scss';
 import './ui/styles/io_widgets.scss';
 import './ui/styles/select.scss';
 import './ui/styles/settings_widget.scss';

@@ -1,13 +1,13 @@
-// @ts-ignore
+// @ts-ignore - Plugin has no TypeScript declarations
 import js from '@eslint/js';
-// @ts-ignore
+// @ts-ignore - Plugin has no TypeScript declarations
 import css from '@eslint/css';
 import json from '@eslint/json';
 import markdown from '@eslint/markdown';
-// @ts-ignore
+// @ts-ignore - Plugin has no TypeScript declarations
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
-// @ts-ignore
+// @ts-ignore - Plugin has no TypeScript declarations
 import pluginReact from 'eslint-plugin-react';
 import { defineConfig } from 'eslint/config';
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Color, Size } from '../../../logic/common/types';
 
 export interface SelectItem {
@@ -50,9 +50,12 @@ const Select: React.FC<SelectProps> = ({
     // Filter items case-insensitively when useFilter is true
     const filteredItems = useFilter ? items.filter((item) => item.displayText.toLowerCase().includes(filterText.toLowerCase())) : items;
 
-    if (useFilter && filterText && filterText.length > 0 && filteredItems.length > 0) {
-        onSelect(filteredItems[0]);
-    }
+    // Auto-select first filtered item when filter changes
+    useEffect(() => {
+        if (useFilter && filterText && filterText.length > 0 && filteredItems.length > 0) {
+            onSelect(filteredItems[0]);
+        }
+    }, [useFilter, filterText, filteredItems, onSelect]);
 
     const classes = [
         'select-base',

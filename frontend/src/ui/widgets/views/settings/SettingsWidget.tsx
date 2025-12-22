@@ -23,7 +23,7 @@ const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
 
     useEffect(() => {
         dispatch(settingsGetModelsList(loadedSettingsEditable.currentProviderConfig)).unwrap();
-    }, [loadedSettingsEditable.currentProviderConfig]);
+    }, [dispatch, loadedSettingsEditable.currentProviderConfig]);
 
     const handleSave = async () => {
         try {

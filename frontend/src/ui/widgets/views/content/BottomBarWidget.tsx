@@ -9,13 +9,11 @@ const BottomBarWidget: React.FC = () => {
     const currentModelName = useAppSelector((state) => state.settingsState.loadedSettingsEditable.modelConfig.modelName);
 
     return (
-        <nav>
-            <footer className="bottom-bar">
-                <p>Provider: {currentProvider || NA}</p>
-                <p>Model: {currentModelName || NA}</p>
-                <p>Task: {currentTask || NA}</p>
-            </footer>
-        </nav>
+        <footer className="bottom-bar">
+            <p>Provider: {currentProvider || NA}</p>
+            <p>Model: {currentModelName || NA}</p>
+            <p>Task: {currentTask || NA}</p>
+        </footer>
     );
 };
 

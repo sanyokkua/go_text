@@ -21,7 +21,7 @@ export const ActionGroupWidget: React.FC<ActionGroupWidgetProps> = ({ buttons, o
                             colorStyle={'primary-color'}
                             size="small"
                             block={true}
-                            disabled={disabled}
+                            disabled={disabled ?? false}
                         />
                     </div>
                 ))}

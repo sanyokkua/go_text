@@ -52,9 +52,9 @@ export const fromBackendActionRequest = (input: action.ActionRequest): FrontActi
     return {
         id: input.id,
         inputText: input.inputText,
-        outputText: input.outputText,
-        inputLanguageId: input.inputLanguageId,
-        outputLanguageId: input.outputLanguageId,
+        ...(input.outputText !== undefined && { outputText: input.outputText }),
+        ...(input.inputLanguageId !== undefined && { inputLanguageId: input.inputLanguageId }),
+        ...(input.outputLanguageId !== undefined && { outputLanguageId: input.outputLanguageId }),
     };
 };
 

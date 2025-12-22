@@ -29,7 +29,7 @@ const EditorWidget: React.FC<IOWidgetProps> = (props) => {
                 variant="solid"
                 colorStyle="tertiary-color"
                 onClick={() => btnClickHandler(btnId)}
-                disabled={props.disabled}
+                disabled={props.disabled ?? false}
             />
         );
     });
@@ -40,7 +40,7 @@ const EditorWidget: React.FC<IOWidgetProps> = (props) => {
                 <h4>{header}</h4>
                 <div>{buttonsToRender}</div>
             </div>
-            <TextEditor content={content} onContentChange={onContentChange} disabled={props.disabled} />
+            <TextEditor content={content} onContentChange={onContentChange ?? (() => {})} disabled={props.disabled ?? false} />
         </div>
     );
 };
