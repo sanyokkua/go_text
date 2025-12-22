@@ -1,0 +1,10 @@
+package backend
+
+import (
+	"go_text/backend/model/llm"
+)
+
+type LlmApi interface {
+	GetModelsList() ([]string, error)
+	GetCompletionResponse(request *llm.ChatCompletionRequest) (string, error)
+}

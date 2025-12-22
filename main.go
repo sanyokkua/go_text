@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"embed"
-	"go_text/backend/v2/model/application"
-	"go_text/backend/v2/service/util"
+	"go_text/backend/model/application"
+	"go_text/backend/service/util"
 	"time"
 
 	"github.com/wailsapp/wails/v2"
