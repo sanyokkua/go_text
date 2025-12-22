@@ -1,13 +1,13 @@
 import React from 'react';
 import { LogDebug } from '../../../../wailsjs/runtime';
-import { setShowSettingsView } from '../../../store/app/AppStateReducer';
+import { setShowSettingsView } from '../../../store/state/StateReducer';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import Button from '../../base/Button';
 
 const TopBarWidget: React.FC = () => {
     const dispatch = useAppDispatch();
-    const showSettingsView = useAppSelector((state) => state.appState.showSettingsView);
-    const isProcessing = useAppSelector((state) => state.appState.isProcessing);
+    const showSettingsView = useAppSelector((state) => state.state.showSettingsView);
+    const isProcessing = useAppSelector((state) => state.state.isProcessing);
 
     const onSettingsClick = () => {
         LogDebug('Settings clicked');

@@ -1,12 +1,10 @@
 import React from 'react';
 import { LogDebug } from '../../../../wailsjs/runtime';
-import { appStateActionProcess, appStateProcessCopyToClipboard, appStateProcessPasteFromClipboard } from '../../../store/app/app_state_thunks';
+import { processAction, copyToClipboard, pasteFromClipboard } from '../../../store/state/state_thunks';
 import {
-    setSelectedInputLanguage,
-    setSelectedOutputLanguage,
     setTextEditorInputContent,
     setTextEditorOutputContent,
-} from '../../../store/app/AppStateReducer';
+} from '../../../store/state/StateReducer';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import LoadingOverlay from '../../base/LoadingOverlay';
 import { SelectItem } from '../../base/Select';
@@ -14,25 +12,35 @@ import ButtonsOnlyWidget from '../../tabs/ButtonsOnlyWidget';
 import { TabWidget } from '../../tabs/common/TabWidget';
 import TranslatingWidget from '../../tabs/TranslatingWidget';
 import IOViewWidget from '../../text/IOViewWidget';
+import { setLanguageInputSelected, setLanguageOutputSelected } from '../../../store/cfg/SettingsStateReducer';
 
 const ContentWidget: React.FC = () => {
     const dispatch = useAppDispatch();
-    const buttonsForProofreading = useAppSelector((state) => state.appState.buttonsForProofreading);
-    const buttonsForFormatting = useAppSelector((state) => state.appState.buttonsForFormatting);
-    const buttonsForTranslating = useAppSelector((state) => state.appState.buttonsForTranslating);
-    const buttonsForSummarization = useAppSelector((state) => state.appState.buttonsForSummarization);
-    const buttonsForTransforming = useAppSelector((state) => state.appState.buttonsForTransforming);
-    const textEditorInputContent = useAppSelector((state) => state.appState.textEditorInputContent);
-    const textEditorOutputContent = useAppSelector((state) => state.appState.textEditorOutputContent);
-    const selectedInputLanguage = useAppSelector((state) => state.appState.selectedInputLanguage);
-    const selectedOutputLanguage = useAppSelector((state) => state.appState.selectedOutputLanguage);
-    const availableInputLanguages = useAppSelector((state) => state.appState.availableInputLanguages);
-    const availableOutputLanguages = useAppSelector((state) => state.appState.availableOutputLanguages);
-    const isProcessing = useAppSelector((state) => state.appState.isProcessing);
+    const actionGroups = useAppSelector((state) => state.state.actionGroups);
+    const languages = useAppSelector((state) => state.settingsState.languageList);
+    const languageInputSelected = useAppSelector((state) => state.settingsState.languageInputSelected);
+    const languageOutputSelected = useAppSelector((state) => state.settingsState.languageOutputSelected);
+
+    const textEditorInputContent = useAppSelector((state) => state.state.textEditorInputContent);
+    const textEditorOutputContent = useAppSelector((state) => state.state.textEditorOutputContent);
+    const isProcessing = useAppSelector((state) => state.state.isProcessing);
+
+    // Dynamically extract all available group names from the backend response
+    const availableGroupNames = Object.keys(actionGroups);
+    
+    // Use backend group names exactly as they are - no formatting or assumptions
+    // The backend is responsible for providing user-friendly names
+    const tabNames = availableGroupNames;
+    
+    // Check if a group is the translation group (needs special handling)
+    // This is the ONLY business logic we need - everything else is just display
+    const isTranslationGroup = (groupName: string): boolean => {
+        return groupName.toLowerCase() === 'translate';
+    };
 
     const onBtnInputPasteClick = () => {
         LogDebug('Pasting sample text');
-        dispatch(appStateProcessPasteFromClipboard());
+        dispatch(pasteFromClipboard());
     };
     const onBtnInputClearClick = () => {
         LogDebug('Clearing input');
@@ -44,7 +52,7 @@ const ContentWidget: React.FC = () => {
     };
     const onBtnOutputCopyClick = () => {
         LogDebug('Copying output to clipboard');
-        dispatch(appStateProcessCopyToClipboard(textEditorOutputContent));
+        dispatch(copyToClipboard(textEditorOutputContent));
     };
     const onBtnOutputClearClick = () => {
         LogDebug('Clearing output');
@@ -61,23 +69,58 @@ const ContentWidget: React.FC = () => {
     };
     const onSelectInputLanguageChanged = (item: SelectItem) => {
         LogDebug(`Input language changed to: ${item.displayText}`);
-        dispatch(setSelectedInputLanguage(item));
+        dispatch(setLanguageInputSelected(item));
     };
     const onSelectOutputLanguageChanged = (item: SelectItem) => {
         LogDebug(`Output language changed to: ${item.displayText}`);
-        dispatch(setSelectedOutputLanguage(item));
+        dispatch(setLanguageOutputSelected(item));
     };
     const onOperationBtnClick = (actionId: string) => {
         LogDebug(`Processing operation: ${actionId}`);
         dispatch(
-            appStateActionProcess({
-                actionId: actionId,
-                actionInput: textEditorInputContent,
-                actionOutput: textEditorOutputContent,
-                actionInputLanguage: selectedInputLanguage.itemId,
-                actionOutputLanguage: selectedOutputLanguage.itemId,
+            processAction({
+                id: actionId,
+                inputText: textEditorInputContent,
+                outputText: textEditorOutputContent,
+                inputLanguageId: languageInputSelected.itemId,
+                outputLanguageId: languageOutputSelected.itemId,
             }),
         );
+    };
+
+    // Dynamically render tab content based on available groups
+    const renderTabContent = () => {
+        return availableGroupNames.map((groupName, index) => {
+            const buttons = actionGroups[groupName] || [];
+            
+            if (isTranslationGroup(groupName)) {
+                // Special handling for translation group with language selectors
+                return (
+                    <TranslatingWidget
+                        key={`${groupName}-${index}`}
+                        buttons={buttons}
+                        inputLanguages={languages}
+                        outputLanguages={languages}
+                        selectedInputLanguage={languageInputSelected}
+                        selectedOutputLanguage={languageOutputSelected}
+                        disabled={isProcessing}
+                        onBtnClick={onOperationBtnClick}
+                        onInputLanguageChanged={onSelectInputLanguageChanged}
+                        onOutputLanguageChanged={onSelectOutputLanguageChanged}
+                    />
+                );
+            } else {
+                // Standard button-only widget for other groups
+                return (
+                    <ButtonsOnlyWidget
+                        key={`${groupName}-${index}`}
+                        buttons={buttons}
+                        disabled={isProcessing}
+                        onBtnClick={onOperationBtnClick}
+                    />
+                );
+            }
+        });
     };
 
     return (
@@ -95,22 +138,8 @@ const ContentWidget: React.FC = () => {
                 onOutputUseAsInput={onBtnOutputUseAsInputClick}
             />
 
-            <TabWidget tabs={['Proofreading', 'Formatting', 'Translating', 'Summarization', 'Transforming']} disabled={isProcessing}>
-                <ButtonsOnlyWidget buttons={buttonsForProofreading} disabled={isProcessing} onBtnClick={onOperationBtnClick} />
-                <ButtonsOnlyWidget buttons={buttonsForFormatting} disabled={isProcessing} onBtnClick={onOperationBtnClick} />
-                <TranslatingWidget
-                    buttons={buttonsForTranslating}
-                    inputLanguages={availableInputLanguages}
-                    outputLanguages={availableOutputLanguages}
-                    selectedInputLanguage={selectedInputLanguage}
-                    selectedOutputLanguage={selectedOutputLanguage}
-                    disabled={isProcessing}
-                    onBtnClick={onOperationBtnClick}
-                    onInputLanguageChanged={onSelectInputLanguageChanged}
-                    onOutputLanguageChanged={onSelectOutputLanguageChanged}
-                />
-                <ButtonsOnlyWidget buttons={buttonsForSummarization} disabled={isProcessing} onBtnClick={onOperationBtnClick} />
-                <ButtonsOnlyWidget buttons={buttonsForTransforming} disabled={isProcessing} onBtnClick={onOperationBtnClick} />
+            <TabWidget tabs={tabNames} disabled={isProcessing}>
+                {renderTabContent()}
             </TabWidget>
             <LoadingOverlay isLoading={isProcessing} />
         </div>

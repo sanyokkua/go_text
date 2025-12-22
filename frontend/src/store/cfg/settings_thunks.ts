@@ -164,3 +164,14 @@ export const settingsValidateProvider = createAsyncThunk<
         return rejectWithValue(msg.message);
     }
 });
+
+export const initializeSettingsState = createAsyncThunk<void, void, { dispatch: AppDispatch; rejectValue: string }>(
+    'appSettings/initialize',
+    async (_, { dispatch }) => {
+        await Promise.all([
+            dispatch(settingsGetCurrentSettings()).unwrap(),
+            dispatch(settingsGetProviderTypes()).unwrap(),
+            dispatch(settingsGetSettingsFilePath()).unwrap(),
+        ]);
+    },
+);

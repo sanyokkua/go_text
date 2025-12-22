@@ -1,22 +1,8 @@
-import { IActionService, IClipboardService, ILoggerService, ISettingsService, IStateService } from './interfaces';
-import {
-    fromBackendActions,
-    fromBackendLanguageItem,
-    fromBackendSettings,
-    toBackendActionRequest,
-    toBackendProviderConfig,
-    toBackendSettings,
-} from './mappers';
-import { FrontActionRequest, FrontActions, FrontLanguageItem, FrontProviderConfig, FrontSettings } from './models';
+import { IActionService, IClipboardService, ILoggerService, ISettingsService } from './interfaces';
+import { fromBackendActions, fromBackendSettings, toBackendActionRequest, toBackendProviderConfig, toBackendSettings } from './mappers';
+import { FrontActionRequest, FrontActions, FrontProviderConfig, FrontSettings } from './models';
 
 import { GetActionGroups as backendGetActionGroups, ProcessAction as backendProcessAction } from '../../../wailsjs/go/frontend/actionService';
-
-import {
-    GetDefaultInputLanguage as backendGetDefaultInputLanguage,
-    GetDefaultOutputLanguage as backendGetDefaultOutputLanguage,
-    GetInputLanguages as backendGetInputLanguages,
-    GetOutputLanguages as backendGetOutputLanguages,
-} from '../../../wailsjs/go/frontend/stateService';
 
 import {
     CreateNewProvider as backendCreateNewProvider,
@@ -76,72 +62,6 @@ export class ActionService implements IActionService {
         } catch (error) {
             backendLogError(`ActionService.processAction failed: ${error}`);
             throw new Error('Failed to process action');
-        }
-    }
-}
-
-/**
- * StateService - Handles UI state and language-related operations
- * Wraps backend state API with proper error handling and data mapping
- */
-export class StateService implements IStateService {
-    /**
-     * Gets the default input language
-     * @returns Promise<FrontLanguageItem> - Default input language
-     * @throws Error if backend call fails
-     */
-    async getDefaultInputLanguage(): Promise<FrontLanguageItem> {
-        try {
-            const backendLanguageItem = await backendGetDefaultInputLanguage();
-            return fromBackendLanguageItem(backendLanguageItem);
-        } catch (error) {
-            backendLogError(`StateService.getDefaultInputLanguage failed: ${error}`);
-            throw new Error('Failed to get default input language');
-        }
-    }
-
-    /**
-     * Gets the default output language
-     * @returns Promise<FrontLanguageItem> - Default output language
-     * @throws Error if backend call fails
-     */
-    async getDefaultOutputLanguage(): Promise<FrontLanguageItem> {
-        try {
-            const backendLanguageItem = await backendGetDefaultOutputLanguage();
-            return fromBackendLanguageItem(backendLanguageItem);
-        } catch (error) {
-            backendLogError(`StateService.getDefaultOutputLanguage failed: ${error}`);
-            throw new Error('Failed to get default output language');
-        }
-    }
-
-    /**
-     * Gets all available input languages
-     * @returns Promise<Array<FrontLanguageItem>> - Available input languages
-     * @throws Error if backend call fails
-     */
-    async getInputLanguages(): Promise<Array<FrontLanguageItem>> {
-        try {
-            const backendLanguageItems = await backendGetInputLanguages();
-            return backendLanguageItems.map(fromBackendLanguageItem);
-        } catch (error) {
-            backendLogError(`StateService.getInputLanguages failed: ${error}`);
-            throw new Error('Failed to get input languages');
-        }
-    }
-
-    /**
-     * Gets all available output languages
-     * @returns Promise<Array<FrontLanguageItem>> - Available output languages
-     * @throws Error if backend call fails
-     */
-    async getOutputLanguages(): Promise<Array<FrontLanguageItem>> {
-        try {
-            const backendLanguageItems = await backendGetOutputLanguages();
-            return backendLanguageItems.map(fromBackendLanguageItem);
-        } catch (error) {
-            backendLogError(`StateService.getOutputLanguages failed: ${error}`);
-            throw new Error('Failed to get output languages');
         }
     }
 }

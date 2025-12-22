@@ -1,14 +1,9 @@
 import { configureStore } from '@reduxjs/toolkit';
-import AppStateReducer from './app/AppStateReducer';
-// import AppSettingsReducer from './settings/AppSettingsReducer';
-import SettingsStateReducer from './cfg/SettingsStateReducer';
 
-export const store = configureStore({
-    reducer: {
-        settingsState: SettingsStateReducer,
-        appState: AppStateReducer,
-    },
-});
+import SettingsStateReducer from './cfg/SettingsStateReducer';
+import StateReducer from './state/StateReducer';
+
+export const store = configureStore({ reducer: { settingsState: SettingsStateReducer, state: StateReducer } });
 
 // Get the type of our store variable
 export type AppStore = typeof store;

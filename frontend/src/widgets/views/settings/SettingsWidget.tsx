@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { setShowSettingsView } from '../../../store/app/AppStateReducer';
+import { setShowSettingsView } from '../../../store/state/StateReducer';
 import { settingsGetDefaultSettings, settingsGetModelsList, settingsSaveSettings } from '../../../store/cfg/settings_thunks';
 import { resetEditableSettingsFromReadonly } from '../../../store/cfg/SettingsStateReducer';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';

@@ -3,8 +3,7 @@ package main
 import (
 	"context"
 	"embed"
-	"go_text/internal"
-	"go_text/internal/v2/util"
+	"go_text/backend/v2/util"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/logger"
@@ -24,7 +23,6 @@ func main() {
 
 	// Create an instance of the app structure
 	app := NewApp(loggerApi)
-	apiContext := internal.NewApplicationContext()
 
 	// Create an application with options
 	err := wails.Run(&options.App{
@@ -49,8 +47,7 @@ func main() {
 			}
 		},
 		Bind: []interface{}{
-			app, app.AppActionApi, app.AppStateApi, app.AppSettingsApi,
-			apiContext.ActionApi, apiContext.SettingsApi, apiContext.StateApi,
+			app, app.AppActionApi, app.AppSettingsApi,
 		},
 	})
 

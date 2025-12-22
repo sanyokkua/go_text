@@ -1,11 +1,10 @@
-import { action, model, settings } from '../../../wailsjs/go/models';
+import { action, settings } from '../../../wailsjs/go/models';
 import {
     FrontAction,
     FrontActionRequest,
     FrontActions,
     FrontGroup,
     FrontLanguageConfig,
-    FrontLanguageItem,
     FrontModelConfig,
     FrontProviderConfig,
     FrontSettings,
@@ -93,24 +92,6 @@ export const toBackendActions = (input: FrontActions): action.Actions => {
  */
 export const fromBackendActions = (input: action.Actions): FrontActions => {
     return { actionGroups: input.actionGroups.map(fromBackendGroup) };
-};
-
-/**
- * Converts a frontend LanguageItem to a backend model.LanguageItem
- * @param input - Frontend language item to convert
- * @returns Backend model.LanguageItem instance
- */
-export const toBackendLanguageItem = (input: FrontLanguageItem): model.LanguageItem => {
-    return model.LanguageItem.createFrom({ languageId: input.languageId, languageText: input.languageText });
-};
-
-/**
- * Converts a backend model.LanguageItem to a frontend LanguageItem
- * @param input - Backend language item to convert
- * @returns Frontend LanguageItem instance
- */
-export const fromBackendLanguageItem = (input: model.LanguageItem): FrontLanguageItem => {
-    return { languageId: input.languageId, languageText: input.languageText };
 };
 
 /**

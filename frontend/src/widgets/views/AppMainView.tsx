@@ -1,8 +1,8 @@
 import React from 'react';
 
 import { LogDebug } from '../../../wailsjs/runtime';
-import { initializeAppState } from '../../store/app/app_state_thunks';
-import { setShowSettingsView } from '../../store/app/AppStateReducer';
+import { initializeState } from '../../store/state/state_thunks';
+import { setShowSettingsView } from '../../store/state/StateReducer';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import BottomBarWidget from './content/BottomBarWidget';
 import ContentWidget from './content/ContentWidget';
@@ -11,13 +11,13 @@ import SettingsWidget from './settings/SettingsWidget';
 
 const AppMainView: React.FC = () => {
     const dispatch = useAppDispatch();
-    const showSettingsView = useAppSelector((state) => state.appState.showSettingsView);
-    const errorMessage = useAppSelector((state) => state.appState.errorMessage);
+    const showSettingsView = useAppSelector((state) => state.state.showSettingsView);
+    const errorMessage = useAppSelector((state) => state.state.errorMessage);
 
     const onSettingsClose = () => {
         LogDebug('onSettingsClose clicked');
         dispatch(setShowSettingsView(!showSettingsView));
-        dispatch(initializeAppState());
+        dispatch(initializeState());
     };
 
     const settingsWidget = <SettingsWidget onClose={onSettingsClose} />;
@@ -27,7 +27,7 @@ const AppMainView: React.FC = () => {
     return (
         <div className="app-main-container">
             <TopBarWidget />
-            <div className="error-msg">{errorMessage ?? <p>{errorMessage}</p>}</div>
+            <div className="error-msg">{errorMessage && <p>{errorMessage}</p>}</div>
             {content}
             <BottomBarWidget />
         </div>

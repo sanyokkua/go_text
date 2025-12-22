@@ -1,17 +1,11 @@
-import { IActionService, IClipboardService, ILoggerService, ISettingsService, IStateService } from './adapter/interfaces';
-import { ActionService, ClipboardService, LoggerService, SettingsService, StateService } from './adapter/services';
+import { IActionService, IClipboardService, ILoggerService, ISettingsService } from './adapter/interfaces';
+import { ActionService, ClipboardService, LoggerService, SettingsService } from './adapter/services';
 
 /**
  * ActionService instance - Singleton pattern for action-related operations
  * Implements IActionService interface for type safety
  */
 export const ActionServiceInstance: IActionService = new ActionService();
-
-/**
- * StateService instance - Singleton pattern for UI state operations
- * Implements IStateService interface for type safety
- */
-export const StateServiceInstance: IStateService = new StateService();
 
 /**
  * SettingsService instance - Singleton pattern for settings operations
@@ -40,7 +34,6 @@ export {
     ClipboardServiceInstance as ClipboardService,
     LoggerServiceInstance as LoggerService,
     SettingsServiceInstance as SettingsService,
-    StateServiceInstance as StateService,
 };
 
 /**
@@ -75,7 +68,6 @@ export {
     fromBackendActions,
     fromBackendGroup,
     fromBackendLanguageConfig,
-    fromBackendLanguageItem,
     fromBackendModelConfig,
     fromBackendProviderConfig,
     fromBackendSettings,
@@ -84,7 +76,6 @@ export {
     toBackendActions,
     toBackendGroup,
     toBackendLanguageConfig,
-    toBackendLanguageItem,
     toBackendModelConfig,
     toBackendProviderConfig,
     toBackendSettings,
