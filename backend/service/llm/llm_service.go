@@ -53,7 +53,7 @@ func (l llmService) GetCompletionResponse(request *llm.ChatCompletionRequest) (s
 	provider := settings.CurrentProviderConfig
 	l.logger.LogDebug(fmt.Sprintf("[GetCompletionResponse] Using provider: BaseURL=%s, Endpoint=%s", provider.BaseUrl, provider.ModelsEndpoint))
 
-	response, err := l.llmHttpApi.CompletionRequest(provider.BaseUrl, provider.ModelsEndpoint, provider.Headers, request)
+	response, err := l.llmHttpApi.CompletionRequest(provider.BaseUrl, provider.CompletionEndpoint, provider.Headers, request)
 	if err != nil {
 		l.logger.LogError(fmt.Sprintf("[GetCompletionResponse] Completion request failed: %v", err))
 		return "", fmt.Errorf("chat completion request failed: %w", err)

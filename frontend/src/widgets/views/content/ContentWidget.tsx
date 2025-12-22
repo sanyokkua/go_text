@@ -1,42 +1,22 @@
 import React from 'react';
 import { LogDebug } from '../../../../wailsjs/runtime';
-import { processAction, copyToClipboard, pasteFromClipboard } from '../../../store/state/state_thunks';
-import {
-    setTextEditorInputContent,
-    setTextEditorOutputContent,
-} from '../../../store/state/StateReducer';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
+import { copyToClipboard, pasteFromClipboard, processAction } from '../../../store/state/state_thunks';
+import { setTextEditorInputContent, setTextEditorOutputContent } from '../../../store/state/StateReducer';
 import LoadingOverlay from '../../base/LoadingOverlay';
-import { SelectItem } from '../../base/Select';
 import ButtonsOnlyWidget from '../../tabs/ButtonsOnlyWidget';
 import { TabWidget } from '../../tabs/common/TabWidget';
-import TranslatingWidget from '../../tabs/TranslatingWidget';
 import IOViewWidget from '../../text/IOViewWidget';
-import { setLanguageInputSelected, setLanguageOutputSelected } from '../../../store/cfg/SettingsStateReducer';
 
 const ContentWidget: React.FC = () => {
     const dispatch = useAppDispatch();
     const actionGroups = useAppSelector((state) => state.state.actionGroups);
-    const languages = useAppSelector((state) => state.settingsState.languageList);
     const languageInputSelected = useAppSelector((state) => state.settingsState.languageInputSelected);
     const languageOutputSelected = useAppSelector((state) => state.settingsState.languageOutputSelected);
-
     const textEditorInputContent = useAppSelector((state) => state.state.textEditorInputContent);
     const textEditorOutputContent = useAppSelector((state) => state.state.textEditorOutputContent);
     const isProcessing = useAppSelector((state) => state.state.isProcessing);
-
-    // Dynamically extract all available group names from the backend response
-    const availableGroupNames = Object.keys(actionGroups);
-    
-    // Use backend group names exactly as they are - no formatting or assumptions
-    // The backend is responsible for providing user-friendly names
-    const tabNames = availableGroupNames;
-    
-    // Check if a group is the translation group (needs special handling)
-    // This is the ONLY business logic we need - everything else is just display
-    const isTranslationGroup = (groupName: string): boolean => {
-        return groupName.toLowerCase() === 'translate';
-    };
+    const tabNames = Object.keys(actionGroups);
 
     const onBtnInputPasteClick = () => {
         LogDebug('Pasting sample text');
@@ -67,14 +47,6 @@ const ContentWidget: React.FC = () => {
         dispatch(setTextEditorInputContent(textEditorOutputContent));
         dispatch(setTextEditorOutputContent(''));
     };
-    const onSelectInputLanguageChanged = (item: SelectItem) => {
-        LogDebug(`Input language changed to: ${item.displayText}`);
-        dispatch(setLanguageInputSelected(item));
-    };
-    const onSelectOutputLanguageChanged = (item: SelectItem) => {
-        LogDebug(`Output language changed to: ${item.displayText}`);
-        dispatch(setLanguageOutputSelected(item));
-    };
     const onOperationBtnClick = (actionId: string) => {
         LogDebug(`Processing operation: ${actionId}`);
         dispatch(
@@ -90,36 +62,9 @@ const ContentWidget: React.FC = () => {
 
     // Dynamically render tab content based on available groups
     const renderTabContent = () => {
-        return availableGroupNames.map((groupName, index) => {
+        return tabNames.map((groupName, index) => {
             const buttons = actionGroups[groupName] || [];
-            
-            if (isTranslationGroup(groupName)) {
-                // Special handling for translation group with language selectors
-                return (
-                    <TranslatingWidget
-                        key={`${groupName}-${index}`}
-                        buttons={buttons}
-                        inputLanguages={languages}
-                        outputLanguages={languages}
-                        selectedInputLanguage={languageInputSelected}
-                        selectedOutputLanguage={languageOutputSelected}
-                        disabled={isProcessing}
-                        onBtnClick={onOperationBtnClick}
-                        onInputLanguageChanged={onSelectInputLanguageChanged}
-                        onOutputLanguageChanged={onSelectOutputLanguageChanged}
-                    />
-                );
-            } else {
-                // Standard button-only widget for other groups
-                return (
-                    <ButtonsOnlyWidget
-                        key={`${groupName}-${index}`}
-                        buttons={buttons}
-                        disabled={isProcessing}
-                        onBtnClick={onOperationBtnClick}
-                    />
-                );
-            }
+            return <ButtonsOnlyWidget key={`${groupName}-${index}`} buttons={buttons} disabled={isProcessing} onBtnClick={onOperationBtnClick} />;
         });
     };
 
