@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"go_text/backend/v2/constants"
+	"go_text/backend/v2/constant"
 	"go_text/backend/v2/model/action"
 )
 
@@ -99,7 +99,7 @@ func TestBuildPromptIntegration(t *testing.T) {
 		{
 			name:     "Valid proofreading prompt",
 			template: "Process: {{user_text}}",
-			category: constants.PromptCategoryProofread,
+			category: constant.PromptCategoryProofread,
 			action: &action.ActionRequest{
 				ID:               "proofread",
 				InputText:        "Hello world",
@@ -112,7 +112,7 @@ func TestBuildPromptIntegration(t *testing.T) {
 		{
 			name:     "Valid translation prompt",
 			template: "Translate {{user_text}} from {{input_language}} to {{output_language}}",
-			category: constants.PromptCategoryTranslation,
+			category: constant.PromptCategoryTranslation,
 			action: &action.ActionRequest{
 				ID:               "translate",
 				InputText:        "Hello",
@@ -125,7 +125,7 @@ func TestBuildPromptIntegration(t *testing.T) {
 		{
 			name:     "Missing translation language",
 			template: "Translate {{user_text}} from {{input_language}} to {{output_language}}",
-			category: constants.PromptCategoryTranslation,
+			category: constant.PromptCategoryTranslation,
 			action: &action.ActionRequest{
 				ID:               "translate",
 				InputText:        "Hello",
@@ -164,7 +164,7 @@ func TestGetSystemPromptIntegration(t *testing.T) {
 	service := NewPromptService(logger)
 
 	// Test valid system prompt
-	systemPrompt, err := service.GetSystemPrompt(constants.PromptCategoryProofread)
+	systemPrompt, err := service.GetSystemPrompt(constant.PromptCategoryProofread)
 	if err != nil {
 		t.Errorf("Expected no error for valid category, got: %v", err)
 	}
@@ -208,7 +208,7 @@ func TestBuildPromptErrorCasesIntegration(t *testing.T) {
 		{
 			name:     "Blank template",
 			template: "",
-			category: constants.PromptCategoryProofread,
+			category: constant.PromptCategoryProofread,
 			action: &action.ActionRequest{
 				ID:               "proofread",
 				InputText:        "Hello world",
@@ -236,7 +236,7 @@ func TestBuildPromptErrorCasesIntegration(t *testing.T) {
 		{
 			name:     "Blank action ID",
 			template: "Process: {{user_text}}",
-			category: constants.PromptCategoryProofread,
+			category: constant.PromptCategoryProofread,
 			action: &action.ActionRequest{
 				ID:               "",
 				InputText:        "Hello world",
@@ -250,7 +250,7 @@ func TestBuildPromptErrorCasesIntegration(t *testing.T) {
 		{
 			name:     "Blank action input text",
 			template: "Process: {{user_text}}",
-			category: constants.PromptCategoryProofread,
+			category: constant.PromptCategoryProofread,
 			action: &action.ActionRequest{
 				ID:               "proofread",
 				InputText:        "",
@@ -264,7 +264,7 @@ func TestBuildPromptErrorCasesIntegration(t *testing.T) {
 		{
 			name:     "Translation missing input language",
 			template: "Translate {{user_text}} from {{input_language}} to {{output_language}}",
-			category: constants.PromptCategoryTranslation,
+			category: constant.PromptCategoryTranslation,
 			action: &action.ActionRequest{
 				ID:               "translate",
 				InputText:        "Hello",
@@ -278,7 +278,7 @@ func TestBuildPromptErrorCasesIntegration(t *testing.T) {
 		{
 			name:     "Translation missing output language",
 			template: "Translate {{user_text}} from {{input_language}} to {{output_language}}",
-			category: constants.PromptCategoryTranslation,
+			category: constant.PromptCategoryTranslation,
 			action: &action.ActionRequest{
 				ID:               "translate",
 				InputText:        "Hello",
@@ -337,7 +337,7 @@ func TestBuildPromptSuccessCasesIntegration(t *testing.T) {
 		{
 			name:     "Proofreading with markdown",
 			template: "Process: {{user_text}} in {{user_format}} format",
-			category: constants.PromptCategoryProofread,
+			category: constant.PromptCategoryProofread,
 			action: &action.ActionRequest{
 				ID:               "proofread",
 				InputText:        "Hello world",
@@ -350,7 +350,7 @@ func TestBuildPromptSuccessCasesIntegration(t *testing.T) {
 		{
 			name:     "Proofreading without markdown",
 			template: "Process: {{user_text}} in {{user_format}} format",
-			category: constants.PromptCategoryProofread,
+			category: constant.PromptCategoryProofread,
 			action: &action.ActionRequest{
 				ID:               "proofread",
 				InputText:        "Hello world",
@@ -363,7 +363,7 @@ func TestBuildPromptSuccessCasesIntegration(t *testing.T) {
 		{
 			name:     "Translation with languages",
 			template: "Translate {{user_text}} from {{input_language}} to {{output_language}}",
-			category: constants.PromptCategoryTranslation,
+			category: constant.PromptCategoryTranslation,
 			action: &action.ActionRequest{
 				ID:               "translate",
 				InputText:        "Hello",
@@ -376,7 +376,7 @@ func TestBuildPromptSuccessCasesIntegration(t *testing.T) {
 		{
 			name:     "Template with format parameter",
 			template: "Process {{user_text}} in {{user_format}} format",
-			category: constants.PromptCategoryProofread,
+			category: constant.PromptCategoryProofread,
 			action: &action.ActionRequest{
 				ID:               "proofread",
 				InputText:        "Hello world",

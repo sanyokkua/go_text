@@ -2,8 +2,8 @@ package completion
 
 import (
 	"fmt"
-	"go_text/backend/v2/backend_api"
-	"go_text/backend/v2/constants"
+	backend_api2 "go_text/backend/v2/abstract/backend"
+	"go_text/backend/v2/constant"
 	"go_text/backend/v2/model/action"
 	"go_text/backend/v2/model/llm"
 	"go_text/backend/v2/model/settings"
@@ -13,11 +13,11 @@ import (
 )
 
 type completionService struct {
-	logger          backend_api.LoggingApi
-	stringUtils     backend_api.StringUtilsApi
-	promptService   backend_api.PromptApi
-	settingsService backend_api.SettingsServiceApi
-	llmService      backend_api.LlmApi
+	logger          backend_api2.LoggingApi
+	stringUtils     backend_api2.StringUtilsApi
+	promptService   backend_api2.PromptApi
+	settingsService backend_api2.SettingsServiceApi
+	llmService      backend_api2.LlmApi
 }
 
 func (c completionService) ProcessAction(action action.ActionRequest) (string, error) {
@@ -100,7 +100,7 @@ func (c completionService) ProcessAction(action action.ActionRequest) (string, e
 	c.logger.LogDebug(fmt.Sprintf("[completionService.ProcessAction] Built user prompt - ActionID: %s, Length: %d chars", actionID, len(userPrompt)))
 
 	// 6. Check for same-language translation optimization
-	if promptDef.Category == constants.PromptCategoryTranslation && action.InputLanguageID == action.OutputLanguageID {
+	if promptDef.Category == constant.PromptCategoryTranslation && action.InputLanguageID == action.OutputLanguageID {
 		c.logger.LogInfo(fmt.Sprintf("[completionService.ProcessAction] Skipping translation - same language (%s) - ActionID: %s",
 			action.InputLanguageID, actionID))
 		return action.InputText, nil
@@ -173,12 +173,12 @@ func NewChatCompletionRequest(cfg *settings.Settings, userPrompt, systemPrompt s
 	return req
 }
 
-func NewCompletionApiService(logger backend_api.LoggingApi,
-	stringUtils backend_api.StringUtilsApi,
-	promptService backend_api.PromptApi,
-	settingsService backend_api.SettingsServiceApi,
-	llmService backend_api.LlmApi,
-) backend_api.CompletionApi {
+func NewCompletionApiService(logger backend_api2.LoggingApi,
+	stringUtils backend_api2.StringUtilsApi,
+	promptService backend_api2.PromptApi,
+	settingsService backend_api2.SettingsServiceApi,
+	llmService backend_api2.LlmApi,
+) backend_api2.CompletionApi {
 	return &completionService{
 		logger:          logger,
 		stringUtils:     stringUtils,

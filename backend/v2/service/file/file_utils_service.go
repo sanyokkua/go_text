@@ -3,12 +3,12 @@ package file
 import (
 	"encoding/json"
 	"fmt"
-	"go_text/backend/v2/backend_api"
+	backend_api2 "go_text/backend/v2/abstract/backend"
 	"os"
 	"path/filepath"
 	"time"
 
-	"go_text/backend/v2/constants"
+	"go_text/backend/v2/constant"
 	"go_text/backend/v2/model/settings"
 )
 
@@ -16,7 +16,7 @@ const AppName = "GoTextApp"
 const SettingsFileName = "settings.json"
 
 type fileUtilsService struct {
-	logger backend_api.LoggingApi
+	logger backend_api2.LoggingApi
 }
 
 func (s *fileUtilsService) InitAndGetAppSettingsFolder() (string, error) {
@@ -75,7 +75,7 @@ func (s *fileUtilsService) InitDefaultSettingsIfAbsent() error {
 
 	// Create default settings file
 	s.logger.LogInfo("[InitDefaultSettingsIfAbsent] Creating default settings file")
-	defaultSettings := constants.DefaultSetting
+	defaultSettings := constant.DefaultSetting
 	data, err := json.MarshalIndent(defaultSettings, "", "  ")
 	if err != nil {
 		s.logger.LogError(fmt.Sprintf("[InitDefaultSettingsIfAbsent] Failed to marshal default settings: %v", err))
@@ -171,7 +171,7 @@ func (s *fileUtilsService) GetSettingsFilePath() string {
 	return filePath
 }
 
-func NewFileUtilsService(logger backend_api.LoggingApi) backend_api.FileUtilsApi {
+func NewFileUtilsService(logger backend_api2.LoggingApi) backend_api2.FileUtilsApi {
 	return &fileUtilsService{
 		logger: logger,
 	}

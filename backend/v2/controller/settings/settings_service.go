@@ -2,16 +2,16 @@ package frontend
 
 import (
 	"fmt"
+	backend_api2 "go_text/backend/v2/abstract/backend"
+	"go_text/backend/v2/abstract/frontend"
 	"time"
 
-	"go_text/backend/v2/api"
-	"go_text/backend/v2/backend_api"
 	"go_text/backend/v2/model/settings"
 )
 
 type settingsService struct {
-	logger          backend_api.LoggingApi
-	settingsService backend_api.SettingsServiceApi
+	logger          backend_api2.LoggingApi
+	settingsService backend_api2.SettingsServiceApi
 }
 
 func (s *settingsService) GetProviderTypes() ([]string, error) {
@@ -234,7 +234,7 @@ func (s *settingsService) GetSettingsFilePath() string {
 	return filePath
 }
 
-func NewSettingsApi(logger backend_api.LoggingApi, settingsServiceApi backend_api.SettingsServiceApi) api.SettingsApi {
+func NewSettingsApi(logger backend_api2.LoggingApi, settingsServiceApi backend_api2.SettingsServiceApi) frontend.SettingsApi {
 	return &settingsService{
 		logger:          logger,
 		settingsService: settingsServiceApi,

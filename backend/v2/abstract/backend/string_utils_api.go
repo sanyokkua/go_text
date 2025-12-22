@@ -1,4 +1,4 @@
-package backend_api
+package backend
 
 type StringUtilsApi interface {
 	IsBlankString(value string) bool

@@ -1,4 +1,4 @@
-package api
+package frontend
 
 import (
 	"go_text/backend/v2/model/settings"

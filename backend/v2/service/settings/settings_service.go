@@ -2,20 +2,20 @@ package settings
 
 import (
 	"fmt"
+	backend_api2 "go_text/backend/v2/abstract/backend"
 	"strings"
 	"time"
 
-	"go_text/backend/v2/backend_api"
-	"go_text/backend/v2/constants"
+	"go_text/backend/v2/constant"
 	"go_text/backend/v2/model/llm"
 	"go_text/backend/v2/model/settings"
 )
 
 type settingsService struct {
-	logger           backend_api.LoggingApi
-	fileUtilsService backend_api.FileUtilsApi
-	llmHttpApi       backend_api.LlmHttpApi
-	mapper           backend_api.MapperUtilsApi
+	logger           backend_api2.LoggingApi
+	fileUtilsService backend_api2.FileUtilsApi
+	llmHttpApi       backend_api2.LlmHttpApi
+	mapper           backend_api2.MapperUtilsApi
 }
 
 func (s settingsService) GetProviderTypes() ([]string, error) {
@@ -53,7 +53,7 @@ func (s settingsService) GetDefaultSettings() (*settings.Settings, error) {
 	startTime := time.Now()
 	s.logger.LogDebug("[GetDefaultSettings] Retrieving default settings configuration")
 
-	defaultSettings := constants.DefaultSetting
+	defaultSettings := constant.DefaultSetting
 	duration := time.Since(startTime)
 	s.logger.LogDebug(fmt.Sprintf("[GetDefaultSettings] Successfully retrieved default settings in %v", duration))
 
@@ -654,10 +654,10 @@ func (s settingsService) ValidateTemperature(temperature float64) (bool, error) 
 }
 
 func NewSettingsService(
-	logger backend_api.LoggingApi,
-	fileUtilsService backend_api.FileUtilsApi,
-	llmHttpApi backend_api.LlmHttpApi,
-	mapper backend_api.MapperUtilsApi) backend_api.SettingsServiceApi {
+	logger backend_api2.LoggingApi,
+	fileUtilsService backend_api2.FileUtilsApi,
+	llmHttpApi backend_api2.LlmHttpApi,
+	mapper backend_api2.MapperUtilsApi) backend_api2.SettingsServiceApi {
 	return &settingsService{
 		logger:           logger,
 		fileUtilsService: fileUtilsService,

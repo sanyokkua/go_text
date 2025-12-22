@@ -1,4 +1,4 @@
-package backend_api
+package backend
 
 import "go_text/backend/v2/model/settings"
 

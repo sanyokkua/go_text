@@ -9,7 +9,7 @@ import (
 	"runtime"
 	"testing"
 
-	"go_text/backend/v2/constants"
+	"go_text/backend/v2/constant"
 	"go_text/backend/v2/model/settings"
 
 	"github.com/stretchr/testify/assert"
@@ -240,7 +240,7 @@ func TestInitDefaultSettingsIfAbsent_CreatesFile(t *testing.T) {
 	require.NoError(t, err)
 
 	// Compare with default settings
-	assert.True(t, reflect.DeepEqual(settings, constants.DefaultSetting))
+	assert.True(t, reflect.DeepEqual(settings, constant.DefaultSetting))
 
 	// Check file permissions (0600)
 	if runtime.GOOS != "windows" {
@@ -344,7 +344,7 @@ func TestLoadSettings_Success(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create test settings file
-	testSettings := constants.DefaultSetting
+	testSettings := constant.DefaultSetting
 	settingsPath := filepath.Join(appConfigDir, SettingsFileName)
 	data, err := json.MarshalIndent(testSettings, "", "  ")
 	require.NoError(t, err)

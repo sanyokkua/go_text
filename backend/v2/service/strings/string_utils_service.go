@@ -2,15 +2,14 @@ package strings
 
 import (
 	"fmt"
+	backend_api2 "go_text/backend/v2/abstract/backend"
 	"regexp"
 	"strings"
 	"time"
-
-	"go_text/backend/v2/backend_api"
 )
 
 type stringUtilsService struct {
-	logger backend_api.LoggingApi
+	logger backend_api2.LoggingApi
 }
 
 func (s stringUtilsService) IsBlankString(value string) bool {
@@ -71,7 +70,7 @@ func (s stringUtilsService) SanitizeReasoningBlock(llmResponse string) (string, 
 	return cleaned, nil
 }
 
-func NewStringUtilsApi(logger backend_api.LoggingApi) backend_api.StringUtilsApi {
+func NewStringUtilsApi(logger backend_api2.LoggingApi) backend_api2.StringUtilsApi {
 	return &stringUtilsService{
 		logger: logger,
 	}

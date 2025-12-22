@@ -1,4 +1,4 @@
-package backend_api
+package backend
 
 type LoggingApi interface {
 	LogDebug(msg string, keysAndValues ...interface{})

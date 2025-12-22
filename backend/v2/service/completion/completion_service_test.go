@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"go_text/backend/v2/constants"
+	"go_text/backend/v2/constant"
 	"go_text/backend/v2/model"
 	"go_text/backend/v2/model/action"
 	"go_text/backend/v2/model/llm"
@@ -95,7 +95,7 @@ func (m *MockPromptService) GetPrompt(promptID string) (model.Prompt, error) {
 }
 
 func (m *MockPromptService) GetPromptsCategories() []string {
-	return []string{constants.PromptCategoryTranslation, constants.PromptCategoryProofread}
+	return []string{constant.PromptCategoryTranslation, constant.PromptCategoryProofread}
 }
 
 func (m *MockPromptService) GetUserPromptsForCategory(category string) ([]model.Prompt, error) {
@@ -226,7 +226,7 @@ func TestProcessAction(t *testing.T) {
 				promptResult: &model.Prompt{
 					ID:       "test-action",
 					Name:     "Test Action",
-					Category: constants.PromptCategoryTranslation,
+					Category: constant.PromptCategoryTranslation,
 					Value:    "{{user_text}}",
 				},
 				systemPromptResult: "You are a helpful assistant",
@@ -327,7 +327,7 @@ func TestProcessAction(t *testing.T) {
 				promptResult: &model.Prompt{
 					ID:       "test-action",
 					Name:     "Test Action",
-					Category: constants.PromptCategoryTranslation,
+					Category: constant.PromptCategoryTranslation,
 					Value:    "{{user_text}}",
 				},
 				systemPromptError: errors.New("system prompt failed"),
@@ -354,7 +354,7 @@ func TestProcessAction(t *testing.T) {
 				promptResult: &model.Prompt{
 					ID:       "test-action",
 					Name:     "Test Action",
-					Category: constants.PromptCategoryTranslation,
+					Category: constant.PromptCategoryTranslation,
 					Value:    "{{user_text}}",
 				},
 				systemPromptResult: "You are a helpful assistant",
@@ -387,7 +387,7 @@ func TestProcessAction(t *testing.T) {
 				promptResult: &model.Prompt{
 					ID:       "test-action",
 					Name:     "Test Action",
-					Category: constants.PromptCategoryTranslation,
+					Category: constant.PromptCategoryTranslation,
 					Value:    "{{user_text}}",
 				},
 				systemPromptResult: "You are a helpful assistant",
@@ -425,7 +425,7 @@ func TestProcessAction(t *testing.T) {
 				promptResult: &model.Prompt{
 					ID:       "test-action",
 					Name:     "Test Action",
-					Category: constants.PromptCategoryTranslation,
+					Category: constant.PromptCategoryTranslation,
 					Value:    "{{user_text}}",
 				},
 				systemPromptResult: "You are a helpful assistant",
@@ -464,7 +464,7 @@ func TestProcessAction(t *testing.T) {
 				promptResult: &model.Prompt{
 					ID:       "test-action",
 					Name:     "Test Action",
-					Category: constants.PromptCategoryTranslation,
+					Category: constant.PromptCategoryTranslation,
 					Value:    "{{user_text}}",
 				},
 				systemPromptResult: "You are a helpful assistant",
@@ -503,7 +503,7 @@ func TestProcessAction(t *testing.T) {
 				promptResult: &model.Prompt{
 					ID:       "test-action",
 					Name:     "Test Action",
-					Category: constants.PromptCategoryTranslation,
+					Category: constant.PromptCategoryTranslation,
 					Value:    "{{user_text}}",
 				},
 				systemPromptResult: "You are a helpful assistant",
@@ -548,7 +548,7 @@ func TestProcessAction(t *testing.T) {
 				promptResult: &model.Prompt{
 					ID:       "test-action",
 					Name:     "Test Action",
-					Category: constants.PromptCategoryTranslation,
+					Category: constant.PromptCategoryTranslation,
 					Value:    "{{user_text}}",
 				},
 				systemPromptResult: "You are a helpful assistant",
@@ -591,7 +591,7 @@ func TestProcessAction(t *testing.T) {
 				promptResult: &model.Prompt{
 					ID:       "test-action",
 					Name:     "Test Action",
-					Category: constants.PromptCategoryTranslation,
+					Category: constant.PromptCategoryTranslation,
 					Value:    "{{user_text}}",
 				},
 				systemPromptResult: "You are a helpful assistant",
@@ -635,7 +635,7 @@ func TestProcessAction(t *testing.T) {
 				promptResult: &model.Prompt{
 					ID:       "test-action",
 					Name:     "Test Action",
-					Category: constants.PromptCategoryTranslation,
+					Category: constant.PromptCategoryTranslation,
 					Value:    "{{user_text}}",
 				},
 				systemPromptResult: "You are a helpful assistant",
@@ -674,7 +674,7 @@ func TestProcessAction(t *testing.T) {
 				promptResult: &model.Prompt{
 					ID:       "test-action",
 					Name:     "Test Action",
-					Category: constants.PromptCategoryProofread,
+					Category: constant.PromptCategoryProofread,
 					Value:    "{{user_text}}",
 				},
 				systemPromptResult: "You are a helpful assistant",
@@ -716,7 +716,7 @@ func TestProcessAction(t *testing.T) {
 				promptResult: &model.Prompt{
 					ID:       "test-action",
 					Name:     "Test Action",
-					Category: constants.PromptCategoryProofread,
+					Category: constant.PromptCategoryProofread,
 					Value:    "{{user_text}}",
 				},
 				systemPromptResult: "You are a helpful assistant",

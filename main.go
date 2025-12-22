@@ -3,12 +3,15 @@ package main
 import (
 	"context"
 	"embed"
-	"go_text/backend/v2/util"
+	"go_text/backend/v2/model/application"
+	"go_text/backend/v2/service/util"
+	"time"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/logger"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"resty.dev/v3"
 )
 
 //go:embed all:frontend/dist
@@ -17,12 +20,18 @@ var assets embed.FS
 const MinimalWidth = 830
 const MinimalHeight = 550
 
+func NewRestyClient() *resty.Client {
+	return resty.New().
+		SetTimeout(2*time.Minute).
+		SetHeader("Content-Type", "application/json").
+		SetHeader("Accept", "application/json")
+}
+
 func main() {
 	// Create custom logger
-	loggerApi := util.NewLogger()
-
-	// Create an instance of the app structure
-	app := NewApp(loggerApi)
+	loggerApi := util.NewLogger()                             // Logger should be created to pass a link to it and later inject context
+	restyClient := NewRestyClient()                           // To configure the REST client before all other objects are created
+	app := application.NewApplication(loggerApi, restyClient) // Main App Structure with all dependencies
 
 	// Create an application with options
 	err := wails.Run(&options.App{

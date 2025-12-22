@@ -1,4 +1,4 @@
-package constants
+package constant
 
 import (
 	"go_text/backend/v2/model/settings"

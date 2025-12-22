@@ -2,7 +2,7 @@ package http
 
 import (
 	"fmt"
-	"go_text/backend/v2/backend_api"
+	backend_api2 "go_text/backend/v2/abstract/backend"
 	"time"
 
 	"go_text/backend/v2/model/llm"
@@ -12,9 +12,9 @@ import (
 )
 
 type llmHttpService struct {
-	logger      backend_api.LoggingApi
+	logger      backend_api2.LoggingApi
 	client      *resty.Client
-	stringUtils backend_api.StringUtilsApi
+	stringUtils backend_api2.StringUtilsApi
 }
 
 func (l llmHttpService) ModelListRequest(baseUrl, endpoint string, headers map[string]string) (*llm.LlmModelListResponse, error) {
@@ -114,7 +114,7 @@ func (l llmHttpService) validateHttpResponse(resp *resty.Response) error {
 	return nil
 }
 
-func NewLlmHttpApiService(logger backend_api.LoggingApi, client *resty.Client, stringUtils backend_api.StringUtilsApi) backend_api.LlmHttpApi {
+func NewLlmHttpApiService(logger backend_api2.LoggingApi, client *resty.Client, stringUtils backend_api2.StringUtilsApi) backend_api2.LlmHttpApi {
 	return &llmHttpService{
 		logger:      logger,
 		client:      client,

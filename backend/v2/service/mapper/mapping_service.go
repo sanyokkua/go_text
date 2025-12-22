@@ -1,14 +1,14 @@
 package mapper
 
 import (
-	"go_text/backend/v2/backend_api"
+	backend_api2 "go_text/backend/v2/abstract/backend"
 	"go_text/backend/v2/model"
 	"go_text/backend/v2/model/action"
 	"go_text/backend/v2/model/llm"
 )
 
 type mapperService struct {
-	stringUtils backend_api.StringUtilsApi
+	stringUtils backend_api2.StringUtilsApi
 }
 
 func (m mapperService) MapPromptsToActionItems(prompts []model.Prompt) []action.Action {
@@ -65,7 +65,7 @@ func (m mapperService) MapModelNames(response *llm.LlmModelListResponse) []strin
 	return items
 }
 
-func NewMapperUtilsService(stringUtils backend_api.StringUtilsApi) backend_api.MapperUtilsApi {
+func NewMapperUtilsService(stringUtils backend_api2.StringUtilsApi) backend_api2.MapperUtilsApi {
 	return &mapperService{
 		stringUtils: stringUtils,
 	}

@@ -1,10 +1,9 @@
-package api
+package backend
 
 import (
 	"go_text/backend/v2/model/action"
 )
 
-type ActionApi interface {
-	GetActionGroups() (*action.Actions, error)
+type CompletionApi interface {
 	ProcessAction(action action.ActionRequest) (string, error)
 }

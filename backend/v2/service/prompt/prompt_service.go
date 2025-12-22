@@ -2,8 +2,8 @@ package prompt
 
 import (
 	"fmt"
-	"go_text/backend/v2/backend_api"
-	"go_text/backend/v2/constants"
+	backend_api2 "go_text/backend/v2/abstract/backend"
+	"go_text/backend/v2/constant"
 	"go_text/backend/v2/model"
 	"go_text/backend/v2/model/action"
 	"strings"
@@ -11,19 +11,19 @@ import (
 )
 
 type promptServiceStruct struct {
-	logger      backend_api.LoggingApi
-	stringUtils backend_api.StringUtilsApi
+	logger      backend_api2.LoggingApi
+	stringUtils backend_api2.StringUtilsApi
 }
 
 func (p *promptServiceStruct) GetAppPrompts() *model.AppPrompts {
-	return constants.GetAppPrompts()
+	return constant.GetAppPrompts()
 }
 
 func (p *promptServiceStruct) GetPrompt(promptId string) (model.Prompt, error) {
 	startTime := time.Now()
 	p.logger.LogInfo(fmt.Sprintf("[GetPrompt] Fetching prompt with ID: %s", promptId))
 
-	prompt, err := constants.GetUserPromptById(promptId)
+	prompt, err := constant.GetUserPromptById(promptId)
 	if err != nil {
 		p.logger.LogError(fmt.Sprintf("[GetPrompt] Failed to get prompt with ID '%s': %v", promptId, err))
 		return model.Prompt{}, fmt.Errorf("failed to retrieve prompt with ID '%s': %w", promptId, err)
@@ -39,7 +39,7 @@ func (p *promptServiceStruct) GetSystemPrompt(category string) (string, error) {
 	startTime := time.Now()
 	p.logger.LogInfo(fmt.Sprintf("[GetSystemPrompt] Fetching system prompt for category: %s", category))
 
-	systemPrompt, err := constants.GetSystemPromptByCategory(category)
+	systemPrompt, err := constant.GetSystemPromptByCategory(category)
 	if err != nil {
 		p.logger.LogError(fmt.Sprintf("[GetSystemPrompt] Failed to get system prompt for category '%s': %v", category, err))
 		return "", fmt.Errorf("failed to retrieve system prompt for category '%s': %w", category, err)
@@ -71,7 +71,7 @@ func (p *promptServiceStruct) BuildPrompt(template, category string, action *act
 		return "", fmt.Errorf("invalid input: %s", errorMsg)
 	}
 
-	isTranslation := category == constants.PromptCategoryTranslation
+	isTranslation := category == constant.PromptCategoryTranslation
 	isValidAction, err := p.isActionRequestValid(action, isTranslation)
 	if !isValidAction {
 		p.logger.LogError(fmt.Sprintf("[BuildPrompt] Action validation failed: %v", err))
@@ -79,20 +79,20 @@ func (p *promptServiceStruct) BuildPrompt(template, category string, action *act
 	}
 
 	replacements := map[string]string{
-		constants.TemplateParamText: action.InputText,
+		constant.TemplateParamText: action.InputText,
 	}
 
 	if isTranslation {
-		replacements[constants.TemplateParamInputLanguage] = action.InputLanguageID
-		replacements[constants.TemplateParamOutputLanguage] = action.OutputLanguageID
+		replacements[constant.TemplateParamInputLanguage] = action.InputLanguageID
+		replacements[constant.TemplateParamOutputLanguage] = action.OutputLanguageID
 	}
 
-	if strings.Contains(template, constants.TemplateParamFormat) {
-		format := constants.OutputFormatPlainText
+	if strings.Contains(template, constant.TemplateParamFormat) {
+		format := constant.OutputFormatPlainText
 		if useMarkdown {
-			format = constants.OutputFormatMarkdown
+			format = constant.OutputFormatMarkdown
 		}
-		replacements[constants.TemplateParamFormat] = format
+		replacements[constant.TemplateParamFormat] = format
 	}
 
 	for token, val := range replacements {
@@ -132,7 +132,7 @@ func (p *promptServiceStruct) isActionRequestValid(obj *action.ActionRequest, is
 	return true, nil
 }
 
-func NewPromptService(logger backend_api.LoggingApi, stringUtils backend_api.StringUtilsApi) backend_api.PromptApi {
+func NewPromptService(logger backend_api2.LoggingApi, stringUtils backend_api2.StringUtilsApi) backend_api2.PromptApi {
 	return &promptServiceStruct{
 		logger:      logger,
 		stringUtils: stringUtils,

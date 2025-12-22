@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"go_text/backend/v2/constants"
+	"go_text/backend/v2/constant"
 	"go_text/backend/v2/model"
 	"go_text/backend/v2/model/action"
 	"go_text/backend/v2/model/llm"
@@ -161,7 +161,7 @@ func TestGetCurrentSettings(t *testing.T) {
 	}{
 		{
 			name:               "Successful settings load",
-			loadSettingsResult: &constants.DefaultSetting,
+			loadSettingsResult: &constant.DefaultSetting,
 			loadSettingsError:  nil,
 			expectError:        false,
 			expectedInfoLogs:   2, // Start and success logs
@@ -249,7 +249,7 @@ func TestGetDefaultSettings(t *testing.T) {
 	}
 
 	// Verify it returns the default settings
-	expected := constants.DefaultSetting
+	expected := constant.DefaultSetting
 	if result.CurrentProviderConfig.ProviderName != expected.CurrentProviderConfig.ProviderName {
 		t.Errorf("GetDefaultSettings() current provider = %s, want %s", result.CurrentProviderConfig.ProviderName, expected.CurrentProviderConfig.ProviderName)
 	}
@@ -274,7 +274,7 @@ func TestSaveSettings(t *testing.T) {
 	}{
 		{
 			name:              "Successful settings save",
-			settings:          &constants.DefaultSetting,
+			settings:          &constant.DefaultSetting,
 			saveSettingsError: nil,
 			expectError:       false,
 			expectedInfoLogs:  2,  // Start and success logs
@@ -293,7 +293,7 @@ func TestSaveSettings(t *testing.T) {
 		},
 		{
 			name:              "Settings save error",
-			settings:          &constants.DefaultSetting,
+			settings:          &constant.DefaultSetting,
 			saveSettingsError: errors.New("permission denied"),
 			expectError:       true,
 			expectedErrorMsg:  "failed to persist settings",
@@ -574,9 +574,9 @@ func TestCreateNewProvider(t *testing.T) {
 			},
 			loadSettingsResult: &settings.Settings{
 				AvailableProviderConfigs: []settings.ProviderConfig{
-					constants.OllamaConfig,
+					constant.OllamaConfig,
 				},
-				CurrentProviderConfig: constants.OllamaConfig,
+				CurrentProviderConfig: constant.OllamaConfig,
 				ModelConfig: settings.LlmModelConfig{
 					ModelName:            "llama2",
 					IsTemperatureEnabled: true,
@@ -605,7 +605,7 @@ func TestCreateNewProvider(t *testing.T) {
 				ModelsEndpoint:     "/v1/models",
 				CompletionEndpoint: "/v1/chat/completions",
 			},
-			loadSettingsResult: &constants.DefaultSetting,
+			loadSettingsResult: &constant.DefaultSetting,
 			loadSettingsError:  nil,
 			saveSettingsError:  nil,
 			expectError:        true,
@@ -623,7 +623,7 @@ func TestCreateNewProvider(t *testing.T) {
 				ModelsEndpoint:     "/v1/models",
 				CompletionEndpoint: "/v1/chat/completions",
 			},
-			loadSettingsResult: &constants.DefaultSetting,
+			loadSettingsResult: &constant.DefaultSetting,
 			loadSettingsError:  nil,
 			saveSettingsError:  nil,
 			expectError:        true,
@@ -659,7 +659,7 @@ func TestCreateNewProvider(t *testing.T) {
 				ModelsEndpoint:     "/v1/models",
 				CompletionEndpoint: "/v1/chat/completions",
 			},
-			loadSettingsResult: &constants.DefaultSetting,
+			loadSettingsResult: &constant.DefaultSetting,
 			loadSettingsError:  nil,
 			saveSettingsError:  errors.New("permission denied"),
 			expectError:        true,
@@ -743,7 +743,7 @@ func TestUpdateProvider(t *testing.T) {
 				ModelsEndpoint:     "/v1/models",
 				CompletionEndpoint: "/v1/chat/completions",
 			},
-			loadSettingsResult: &constants.DefaultSetting,
+			loadSettingsResult: &constant.DefaultSetting,
 			loadSettingsError:  nil,
 			saveSettingsError:  nil,
 			expectError:        false,
@@ -754,7 +754,7 @@ func TestUpdateProvider(t *testing.T) {
 		{
 			name:               "Nil config",
 			config:             nil,
-			loadSettingsResult: &constants.DefaultSetting,
+			loadSettingsResult: &constant.DefaultSetting,
 			loadSettingsError:  nil,
 			saveSettingsError:  nil,
 			expectError:        true,
@@ -772,7 +772,7 @@ func TestUpdateProvider(t *testing.T) {
 				ModelsEndpoint:     "/v1/models",
 				CompletionEndpoint: "/v1/chat/completions",
 			},
-			loadSettingsResult: &constants.DefaultSetting,
+			loadSettingsResult: &constant.DefaultSetting,
 			loadSettingsError:  nil,
 			saveSettingsError:  nil,
 			expectError:        true,
@@ -790,7 +790,7 @@ func TestUpdateProvider(t *testing.T) {
 				ModelsEndpoint:     "/v1/models",
 				CompletionEndpoint: "/v1/chat/completions",
 			},
-			loadSettingsResult: &constants.DefaultSetting,
+			loadSettingsResult: &constant.DefaultSetting,
 			loadSettingsError:  nil,
 			saveSettingsError:  nil,
 			expectError:        true,
@@ -826,7 +826,7 @@ func TestUpdateProvider(t *testing.T) {
 				ModelsEndpoint:     "/v1/models",
 				CompletionEndpoint: "/v1/chat/completions",
 			},
-			loadSettingsResult: &constants.DefaultSetting,
+			loadSettingsResult: &constant.DefaultSetting,
 			loadSettingsError:  nil,
 			saveSettingsError:  errors.New("permission denied"),
 			expectError:        true,
@@ -908,10 +908,10 @@ func TestDeleteProvider(t *testing.T) {
 			},
 			loadSettingsResult: &settings.Settings{
 				AvailableProviderConfigs: []settings.ProviderConfig{
-					constants.OllamaConfig,
-					constants.LMStudioConfig,
+					constant.OllamaConfig,
+					constant.LMStudioConfig,
 				},
-				CurrentProviderConfig: constants.OllamaConfig,
+				CurrentProviderConfig: constant.OllamaConfig,
 				LanguageConfig: settings.LanguageConfig{
 					Languages:             []string{"Lang1", "Lang2"},
 					DefaultInputLanguage:  "Lang1",
@@ -928,7 +928,7 @@ func TestDeleteProvider(t *testing.T) {
 		{
 			name:               "Nil config",
 			config:             nil,
-			loadSettingsResult: &constants.DefaultSetting,
+			loadSettingsResult: &constant.DefaultSetting,
 			loadSettingsError:  nil,
 			saveSettingsError:  nil,
 			expectError:        true,
@@ -942,7 +942,7 @@ func TestDeleteProvider(t *testing.T) {
 			config: &settings.ProviderConfig{
 				ProviderName: "",
 			},
-			loadSettingsResult: &constants.DefaultSetting,
+			loadSettingsResult: &constant.DefaultSetting,
 			loadSettingsError:  nil,
 			saveSettingsError:  nil,
 			expectError:        true,
@@ -956,7 +956,7 @@ func TestDeleteProvider(t *testing.T) {
 			config: &settings.ProviderConfig{
 				ProviderName: "Ollama",
 			},
-			loadSettingsResult: &constants.DefaultSetting,
+			loadSettingsResult: &constant.DefaultSetting,
 			loadSettingsError:  nil,
 			saveSettingsError:  nil,
 			expectError:        true,
@@ -970,7 +970,7 @@ func TestDeleteProvider(t *testing.T) {
 			config: &settings.ProviderConfig{
 				ProviderName: "NonExistent",
 			},
-			loadSettingsResult: &constants.DefaultSetting,
+			loadSettingsResult: &constant.DefaultSetting,
 			loadSettingsError:  nil,
 			saveSettingsError:  nil,
 			expectError:        true,
@@ -1000,10 +1000,10 @@ func TestDeleteProvider(t *testing.T) {
 			},
 			loadSettingsResult: &settings.Settings{
 				AvailableProviderConfigs: []settings.ProviderConfig{
-					constants.OllamaConfig,
-					constants.LMStudioConfig,
+					constant.OllamaConfig,
+					constant.LMStudioConfig,
 				},
-				CurrentProviderConfig: constants.OllamaConfig,
+				CurrentProviderConfig: constant.OllamaConfig,
 			},
 			loadSettingsError: nil,
 			saveSettingsError: errors.New("permission denied"),
@@ -1088,7 +1088,7 @@ func TestSelectProvider(t *testing.T) {
 				ModelsEndpoint:     "/v1/models",
 				CompletionEndpoint: "/v1/chat/completions",
 			},
-			loadSettingsResult: &constants.DefaultSetting,
+			loadSettingsResult: &constant.DefaultSetting,
 			loadSettingsError:  nil,
 			saveSettingsError:  nil,
 			expectError:        false,
@@ -1099,7 +1099,7 @@ func TestSelectProvider(t *testing.T) {
 		{
 			name:               "Nil config",
 			config:             nil,
-			loadSettingsResult: &constants.DefaultSetting,
+			loadSettingsResult: &constant.DefaultSetting,
 			loadSettingsError:  nil,
 			saveSettingsError:  nil,
 			expectError:        true,
@@ -1117,7 +1117,7 @@ func TestSelectProvider(t *testing.T) {
 				ModelsEndpoint:     "/v1/models",
 				CompletionEndpoint: "/v1/chat/completions",
 			},
-			loadSettingsResult: &constants.DefaultSetting,
+			loadSettingsResult: &constant.DefaultSetting,
 			loadSettingsError:  nil,
 			saveSettingsError:  nil,
 			expectError:        true,
@@ -1135,7 +1135,7 @@ func TestSelectProvider(t *testing.T) {
 				ModelsEndpoint:     "/v1/models",
 				CompletionEndpoint: "/v1/chat/completions",
 			},
-			loadSettingsResult: &constants.DefaultSetting,
+			loadSettingsResult: &constant.DefaultSetting,
 			loadSettingsError:  nil,
 			saveSettingsError:  nil,
 			expectError:        true,
@@ -1171,7 +1171,7 @@ func TestSelectProvider(t *testing.T) {
 				ModelsEndpoint:     "/v1/models",
 				CompletionEndpoint: "/v1/chat/completions",
 			},
-			loadSettingsResult: &constants.DefaultSetting,
+			loadSettingsResult: &constant.DefaultSetting,
 			loadSettingsError:  nil,
 			saveSettingsError:  errors.New("permission denied"),
 			expectError:        true,
@@ -1408,7 +1408,7 @@ func TestValidateSettings(t *testing.T) {
 	}{
 		{
 			name:              "Valid settings",
-			settings:          &constants.DefaultSetting,
+			settings:          &constant.DefaultSetting,
 			expectError:       false,
 			expectedDebugLogs: 24, // All validation steps
 			expectedErrorLogs: 0,
@@ -1425,7 +1425,7 @@ func TestValidateSettings(t *testing.T) {
 			name: "Invalid current provider",
 			settings: &settings.Settings{
 				AvailableProviderConfigs: []settings.ProviderConfig{
-					constants.OllamaConfig,
+					constant.OllamaConfig,
 				},
 				CurrentProviderConfig: settings.ProviderConfig{
 					ProviderName:       "", // Invalid
@@ -1452,7 +1452,7 @@ func TestValidateSettings(t *testing.T) {
 						CompletionEndpoint: "/v1/chat/completions",
 					},
 				},
-				CurrentProviderConfig: constants.OllamaConfig,
+				CurrentProviderConfig: constant.OllamaConfig,
 			},
 			expectError:       true,
 			expectedErrorMsg:  "baseUrl cannot be blank",
@@ -1463,9 +1463,9 @@ func TestValidateSettings(t *testing.T) {
 			name: "Invalid temperature",
 			settings: &settings.Settings{
 				AvailableProviderConfigs: []settings.ProviderConfig{
-					constants.OllamaConfig,
+					constant.OllamaConfig,
 				},
-				CurrentProviderConfig: constants.OllamaConfig,
+				CurrentProviderConfig: constant.OllamaConfig,
 				ModelConfig: settings.LlmModelConfig{
 					ModelName:            "llama2",
 					IsTemperatureEnabled: true,
@@ -1481,9 +1481,9 @@ func TestValidateSettings(t *testing.T) {
 			name: "No languages configured",
 			settings: &settings.Settings{
 				AvailableProviderConfigs: []settings.ProviderConfig{
-					constants.OllamaConfig,
+					constant.OllamaConfig,
 				},
-				CurrentProviderConfig: constants.OllamaConfig,
+				CurrentProviderConfig: constant.OllamaConfig,
 				LanguageConfig: settings.LanguageConfig{
 					Languages:             []string{}, // Invalid
 					DefaultInputLanguage:  "English",
@@ -1499,9 +1499,9 @@ func TestValidateSettings(t *testing.T) {
 			name: "Default input language not in available languages",
 			settings: &settings.Settings{
 				AvailableProviderConfigs: []settings.ProviderConfig{
-					constants.OllamaConfig,
+					constant.OllamaConfig,
 				},
-				CurrentProviderConfig: constants.OllamaConfig,
+				CurrentProviderConfig: constant.OllamaConfig,
 				LanguageConfig: settings.LanguageConfig{
 					Languages:             []string{"English", "French"},
 					DefaultInputLanguage:  "Spanish", // Not in available languages
@@ -1517,9 +1517,9 @@ func TestValidateSettings(t *testing.T) {
 			name: "Default output language not in available languages",
 			settings: &settings.Settings{
 				AvailableProviderConfigs: []settings.ProviderConfig{
-					constants.OllamaConfig,
+					constant.OllamaConfig,
 				},
-				CurrentProviderConfig: constants.OllamaConfig,
+				CurrentProviderConfig: constant.OllamaConfig,
 				LanguageConfig: settings.LanguageConfig{
 					Languages:             []string{"English", "French"},
 					DefaultInputLanguage:  "English",

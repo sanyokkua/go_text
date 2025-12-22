@@ -2,17 +2,17 @@ package llm
 
 import (
 	"fmt"
+	backend_api2 "go_text/backend/v2/abstract/backend"
 	"time"
 
-	"go_text/backend/v2/backend_api"
 	"go_text/backend/v2/model/llm"
 )
 
 type llmService struct {
-	logger          backend_api.LoggingApi
-	llmHttpApi      backend_api.LlmHttpApi
-	settingsService backend_api.SettingsServiceApi
-	mapper          backend_api.MapperUtilsApi
+	logger          backend_api2.LoggingApi
+	llmHttpApi      backend_api2.LlmHttpApi
+	settingsService backend_api2.SettingsServiceApi
+	mapper          backend_api2.MapperUtilsApi
 }
 
 func (l llmService) GetModelsList() ([]string, error) {
@@ -73,10 +73,10 @@ func (l llmService) GetCompletionResponse(request *llm.ChatCompletionRequest) (s
 	return responseContent, nil
 }
 
-func NewLlmApiService(logger backend_api.LoggingApi,
-	llmHttpApi backend_api.LlmHttpApi,
-	settingsService backend_api.SettingsServiceApi,
-	mapper backend_api.MapperUtilsApi) backend_api.LlmApi {
+func NewLlmApiService(logger backend_api2.LoggingApi,
+	llmHttpApi backend_api2.LlmHttpApi,
+	settingsService backend_api2.SettingsServiceApi,
+	mapper backend_api2.MapperUtilsApi) backend_api2.LlmApi {
 	return &llmService{
 		logger:          logger,
 		llmHttpApi:      llmHttpApi,

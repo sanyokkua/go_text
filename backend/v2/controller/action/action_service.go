@@ -2,17 +2,17 @@ package frontend
 
 import (
 	"fmt"
+	backend_api2 "go_text/backend/v2/abstract/backend"
+	"go_text/backend/v2/abstract/frontend"
 	"time"
 
-	"go_text/backend/v2/api"
-	"go_text/backend/v2/backend_api"
 	"go_text/backend/v2/model/action"
 )
 
 type actionService struct {
-	logger        backend_api.LoggingApi
-	promptApi     backend_api.PromptApi
-	completionApi backend_api.CompletionApi
+	logger        backend_api2.LoggingApi
+	promptApi     backend_api2.PromptApi
+	completionApi backend_api2.CompletionApi
 	cachedActions *action.Actions
 }
 
@@ -74,7 +74,7 @@ func (a *actionService) ProcessAction(actionReq action.ActionRequest) (string, e
 	return result, nil
 }
 
-func NewActionApi(logger backend_api.LoggingApi, promptApi backend_api.PromptApi, completionApi backend_api.CompletionApi) api.ActionApi {
+func NewActionApi(logger backend_api2.LoggingApi, promptApi backend_api2.PromptApi, completionApi backend_api2.CompletionApi) frontend.ActionApi {
 	return &actionService{
 		logger:        logger,
 		promptApi:     promptApi,
