@@ -9,9 +9,38 @@ import (
 
 // MockLogger for testing
 type MockLogger struct {
+	TraceMessages []string
 	InfoMessages  []string
 	DebugMessages []string
 	ErrorMessages []string
+}
+
+func (m *MockLogger) Fatal(message string) {
+	// Implement if needed
+}
+
+func (m *MockLogger) Error(message string) {
+	m.ErrorMessages = append(m.ErrorMessages, message)
+}
+
+func (m *MockLogger) Warning(message string) {
+	m.WarnMessages = append(m.WarnMessages, message)
+}
+
+func (m *MockLogger) Info(message string) {
+	m.InfoMessages = append(m.InfoMessages, message)
+}
+
+func (m *MockLogger) Debug(message string) {
+	m.DebugMessages = append(m.DebugMessages, message)
+}
+
+func (m *MockLogger) Trace(message string) {
+	m.TraceMessages = append(m.TraceMessages, message)
+}
+
+func (m *MockLogger) Print(message string) {
+	// Implement if needed
 }
 
 func (m *MockLogger) LogInfo(msg string, keysAndValues ...interface{}) {

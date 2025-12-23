@@ -1,8 +1,11 @@
 package backend
 
 type LoggingApi interface {
-	LogDebug(msg string, keysAndValues ...interface{})
-	LogInfo(msg string, keysAndValues ...interface{})
-	LogWarn(msg string, keysAndValues ...interface{})
-	LogError(msg string, keysAndValues ...interface{})
+	Print(message string)
+	Trace(message string)
+	Debug(message string)
+	Info(message string)
+	Warning(message string)
+	Error(message string)
+	Fatal(message string)
 }

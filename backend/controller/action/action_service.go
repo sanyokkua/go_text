@@ -17,20 +17,20 @@ type actionService struct {
 
 func (a *actionService) GetActionGroups() (*action.Actions, error) {
 	startTime := time.Now()
-	a.logger.LogInfo("[GetActionGroups] Fetching action groups and prompts")
+	a.logger.Info("[GetActionGroups] Fetching action groups and prompts")
 
 	if a.cachedActions != nil {
 		return a.cachedActions, nil
 	}
 
 	appPrompts := a.promptApi.GetAppPrompts()
-	a.logger.LogDebug(fmt.Sprintf("[GetActionGroups] Found %d prompt categories", len(appPrompts.PromptGroups)))
+	a.logger.Trace(fmt.Sprintf("[GetActionGroups] Found %d prompt categories", len(appPrompts.PromptGroups)))
 
 	groups := make([]action.Group, 0, len(appPrompts.PromptGroups))
 
 	for _, category := range appPrompts.PromptGroups {
-		a.logger.LogDebug(fmt.Sprintf("[GetActionGroups] Processing category: %s", category.GroupName))
-		a.logger.LogDebug(fmt.Sprintf("[GetActionGroups] Retrieved %d prompts for category '%s'", len(category.Prompts), category))
+		a.logger.Trace(fmt.Sprintf("[GetActionGroups] Processing category: %s", category.GroupName))
+		a.logger.Trace(fmt.Sprintf("[GetActionGroups] Retrieved %d prompts for category '%s'", len(category.Prompts), category.GroupName))
 
 		actions := make([]action.Action, 0, len(category.Prompts))
 		for _, prompt := range category.Prompts {
@@ -52,23 +52,23 @@ func (a *actionService) GetActionGroups() (*action.Actions, error) {
 
 	a.cachedActions = result
 	duration := time.Since(startTime)
-	a.logger.LogInfo(fmt.Sprintf("[GetActionGroups] Successfully retrieved %d action groups with %d total actions in %v", len(groups), len(result.ActionGroups), duration))
+	a.logger.Info(fmt.Sprintf("[GetActionGroups] Successfully retrieved %d action groups with %d total actions in %v", len(groups), len(result.ActionGroups), duration))
 
 	return result, nil
 }
 
 func (a *actionService) ProcessAction(actionReq action.ActionRequest) (string, error) {
 	startTime := time.Now()
-	a.logger.LogInfo(fmt.Sprintf("[ProcessAction] Processing action: %s", actionReq.ID))
+	a.logger.Info(fmt.Sprintf("[ProcessAction] Processing action: %s", actionReq.ID))
 
 	result, err := a.completionApi.ProcessAction(actionReq)
 	if err != nil {
-		a.logger.LogError(fmt.Sprintf("[ProcessAction] Failed to process action '%s': %v", actionReq.ID, err))
+		a.logger.Error(fmt.Sprintf("[ProcessAction] Failed to process action '%s': %v", actionReq.ID, err))
 		return "", fmt.Errorf("action processing failed: %w", err)
 	}
 
 	duration := time.Since(startTime)
-	a.logger.LogInfo(fmt.Sprintf("[ProcessAction] Successfully processed action '%s' in %v, Result length: %d characters", actionReq.ID, duration, len(result)))
+	a.logger.Info(fmt.Sprintf("[ProcessAction] Successfully processed action '%s' in %v, Result length: %d characters", actionReq.ID, duration, len(result)))
 
 	return result, nil
 }

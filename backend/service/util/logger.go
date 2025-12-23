@@ -1,50 +1,48 @@
 package util
 
 import (
-	"context"
-
-	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"github.com/rs/zerolog/log"
 )
 
 type AppLoggerStruct struct {
-	ctx *context.Context
 }
 
-func (a *AppLoggerStruct) SetContext(ctx *context.Context) {
-	a.ctx = ctx
+func (a *AppLoggerStruct) Print(message string) {
+	log.Print(message)
+}
+func (a *AppLoggerStruct) Trace(message string) {
+	log.Trace().Msg(message)
+}
+func (a *AppLoggerStruct) Debug(message string) {
+	log.Debug().Msg(message)
+}
+func (a *AppLoggerStruct) Info(message string) {
+	log.Info().Msg(message)
+}
+func (a *AppLoggerStruct) Warning(message string) {
+	log.Warn().Msg(message)
+}
+func (a *AppLoggerStruct) Error(message string) {
+	log.Error().Msg(message)
+}
+func (a *AppLoggerStruct) Fatal(message string) {
+	log.Fatal().Msg(message)
 }
 
 func (a *AppLoggerStruct) LogDebug(msg string, keysAndValues ...interface{}) {
-	if len(keysAndValues) > 0 {
-		runtime.LogDebugf(*a.ctx, msg, keysAndValues...)
-		return
-	}
-	runtime.LogDebug(*a.ctx, msg)
+	log.Debug().Msg(msg)
 }
 
 func (a *AppLoggerStruct) LogInfo(msg string, keysAndValues ...interface{}) {
-	if len(keysAndValues) > 0 {
-		runtime.LogInfof(*a.ctx, msg, keysAndValues...)
-		return
-	}
-	runtime.LogInfo(*a.ctx, msg)
-
+	log.Info().Msg(msg)
 }
 
 func (a *AppLoggerStruct) LogWarn(msg string, keysAndValues ...interface{}) {
-	if len(keysAndValues) > 0 {
-		runtime.LogWarningf(*a.ctx, msg, keysAndValues...)
-		return
-	}
-	runtime.LogWarning(*a.ctx, msg)
+	log.Warn().Msg(msg)
 }
 
 func (a *AppLoggerStruct) LogError(msg string, keysAndValues ...interface{}) {
-	if len(keysAndValues) > 0 {
-		runtime.LogErrorf(*a.ctx, msg, keysAndValues...)
-		return
-	}
-	runtime.LogError(*a.ctx, msg)
+	log.Error().Msg(msg)
 }
 
 func NewLogger() *AppLoggerStruct {

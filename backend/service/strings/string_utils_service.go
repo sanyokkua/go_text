@@ -18,20 +18,21 @@ func (s stringUtilsService) IsBlankString(value string) bool {
 
 func (s stringUtilsService) ReplaceTemplateParameter(template, value, prompt string) (string, error) {
 	startTime := time.Now()
-	s.logger.LogDebug(fmt.Sprintf("[ReplaceTemplateParameter] Starting replacement - Template: %s, Value length: %d, Prompt length: %d", template, len(value), len(prompt)))
+
+	s.logger.Trace(fmt.Sprintf("[stringUtilsService.ReplaceTemplateParameter] Starting template replacement, template=%s, value_length=%d, prompt_length=%d", template, len(value), len(prompt)))
 
 	if s.IsBlankString(prompt) {
 		errorMsg := "prompt cannot be blank"
-		s.logger.LogError(fmt.Sprintf("[ReplaceTemplateParameter] %s", errorMsg))
+		s.logger.Error(fmt.Sprintf("[stringUtilsService.ReplaceTemplateParameter] Validation failed, error=%s, template=%s, value_length=%d", errorMsg, template, len(value)))
 		return "", fmt.Errorf("invalid input: %s", errorMsg)
 	}
 	if s.IsBlankString(template) {
 		errorMsg := "template cannot be blank"
-		s.logger.LogError(fmt.Sprintf("[ReplaceTemplateParameter] %s", errorMsg))
+		s.logger.Error(fmt.Sprintf("[stringUtilsService.ReplaceTemplateParameter] Validation failed, error=%s, prompt_length=%d", errorMsg, len(prompt)))
 		return prompt, fmt.Errorf("invalid input: %s", errorMsg)
 	}
 	if !strings.Contains(prompt, template) {
-		s.logger.LogDebug(fmt.Sprintf("[ReplaceTemplateParameter] Template '%s' not found in prompt, no replacement needed", template))
+		s.logger.Trace(fmt.Sprintf("[stringUtilsService.ReplaceTemplateParameter] Template not found, no replacement needed, template=%s, prompt_length=%d", template, len(prompt)))
 		return prompt, nil
 	}
 
@@ -39,23 +40,23 @@ func (s stringUtilsService) ReplaceTemplateParameter(template, value, prompt str
 	replaceResult := strings.ReplaceAll(prompt, template, value)
 
 	duration := time.Since(startTime)
-	s.logger.LogDebug(fmt.Sprintf("[ReplaceTemplateParameter] Successfully replaced template '%s' in %v. Before length: %d, After length: %d", template, duration, len(originalPrompt), len(replaceResult)))
+	s.logger.Trace(fmt.Sprintf("[stringUtilsService.ReplaceTemplateParameter] Template replacement completed, duration_ms=%d, template=%s, original_length=%d, result_length=%d, length_change=%d", duration.Milliseconds(), template, len(originalPrompt), len(replaceResult), len(replaceResult)-len(originalPrompt)))
 
 	return replaceResult, nil
 }
 
 func (s stringUtilsService) SanitizeReasoningBlock(llmResponse string) (string, error) {
 	startTime := time.Now()
-	s.logger.LogInfo("[SanitizeReasoningBlock] Starting sanitization of LLM response")
+	s.logger.Info("[SanitizeReasoningBlock] Starting sanitization of LLM response")
 
 	if s.IsBlankString(llmResponse) {
-		s.logger.LogDebug("[SanitizeReasoningBlock] Response is blank, no sanitization needed")
+		s.logger.Trace("[SanitizeReasoningBlock] Response is blank, no sanitization needed")
 		return "", nil
 	}
 
 	re, err := regexp.Compile(`(?s)<think>.*?</think>`)
 	if err != nil {
-		s.logger.LogError(fmt.Sprintf("[SanitizeReasoningBlock] Failed to compile regex pattern: %v", err))
+		s.logger.Error(fmt.Sprintf("[SanitizeReasoningBlock] Failed to compile regex pattern: %v", err))
 		return "", fmt.Errorf("failed to compile sanitization regex: %w", err)
 	}
 
@@ -65,7 +66,7 @@ func (s stringUtilsService) SanitizeReasoningBlock(llmResponse string) (string, 
 	cleanedLength := len(cleaned)
 
 	duration := time.Since(startTime)
-	s.logger.LogInfo(fmt.Sprintf("[SanitizeReasoningBlock] Successfully sanitized response in %v. Original length: %d, Cleaned length: %d, Characters removed: %d", duration, originalLength, cleanedLength, originalLength-cleanedLength))
+	s.logger.Info(fmt.Sprintf("[SanitizeReasoningBlock] Successfully sanitized response in %v. Original length: %d, Cleaned length: %d, Characters removed: %d", duration, originalLength, cleanedLength, originalLength-cleanedLength))
 
 	return cleaned, nil
 }

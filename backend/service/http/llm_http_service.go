@@ -19,46 +19,46 @@ type llmHttpService struct {
 
 func (l llmHttpService) ModelListRequest(baseUrl, endpoint string, headers map[string]string) (*llm2.LlmModelListResponse, error) {
 	startTime := time.Now()
-	l.logger.LogInfo(fmt.Sprintf("[ModelListRequest] Starting request - BaseURL: %s, Endpoint: %s", baseUrl, endpoint))
+	l.logger.Info(fmt.Sprintf("[ModelListRequest] Starting request - BaseURL: %s, Endpoint: %s", baseUrl, endpoint))
 
 	url, err := l.buildRequestURL(baseUrl, endpoint)
 	if err != nil {
-		l.logger.LogError(fmt.Sprintf("[ModelListRequest] Failed to build URL: %v", err))
+		l.logger.Error(fmt.Sprintf("[ModelListRequest] Failed to build URL: %v", err))
 		return nil, fmt.Errorf("failed to construct request URL: %w", err)
 	}
 
 	var response llm2.LlmModelListResponse
 	err = l.makeHttpRequest(resty.MethodGet, url, headers, nil, &response)
 	if err != nil {
-		l.logger.LogError(fmt.Sprintf("[ModelListRequest] HTTP request failed: %v", err))
+		l.logger.Error(fmt.Sprintf("[ModelListRequest] HTTP request failed: %v", err))
 		return nil, fmt.Errorf("model list request failed: %w", err)
 	}
 
 	duration := time.Since(startTime)
-	l.logger.LogInfo(fmt.Sprintf("[ModelListRequest] Successfully completed in %v. Found %d models", duration, len(response.Data)))
+	l.logger.Info(fmt.Sprintf("[ModelListRequest] Successfully completed in %v. Found %d models", duration, len(response.Data)))
 
 	return &response, nil
 }
 
 func (l llmHttpService) CompletionRequest(baseUrl, endpoint string, headers map[string]string, request *llm2.ChatCompletionRequest) (*llm2.ChatCompletionResponse, error) {
 	startTime := time.Now()
-	l.logger.LogInfo(fmt.Sprintf("[CompletionRequest] Starting request - BaseURL: %s, Endpoint: %s", baseUrl, endpoint))
+	l.logger.Info(fmt.Sprintf("[CompletionRequest] Starting request - BaseURL: %s, Endpoint: %s", baseUrl, endpoint))
 
 	url, err := l.buildRequestURL(baseUrl, endpoint)
 	if err != nil {
-		l.logger.LogError(fmt.Sprintf("[CompletionRequest] Failed to build URL: %v", err))
+		l.logger.Error(fmt.Sprintf("[CompletionRequest] Failed to build URL: %v", err))
 		return nil, fmt.Errorf("failed to construct completion URL: %w", err)
 	}
 
 	var response llm2.ChatCompletionResponse
 	err = l.makeHttpRequest(resty.MethodPost, url, headers, request, &response)
 	if err != nil {
-		l.logger.LogError(fmt.Sprintf("[CompletionRequest] HTTP request failed: %v", err))
+		l.logger.Error(fmt.Sprintf("[CompletionRequest] HTTP request failed: %v", err))
 		return nil, fmt.Errorf("completion request failed: %w", err)
 	}
 
 	duration := time.Since(startTime)
-	l.logger.LogInfo(fmt.Sprintf("[CompletionRequest] Successfully completed in %v", duration))
+	l.logger.Info(fmt.Sprintf("[CompletionRequest] Successfully completed in %v", duration))
 
 	return &response, nil
 }
@@ -81,7 +81,7 @@ func (l llmHttpService) buildRequestURL(baseUrl, endpoint string) (string, error
 }
 
 func (l llmHttpService) makeHttpRequest(httpMethod, url string, headers map[string]string, body, result interface{}) error {
-	l.logger.LogDebug(fmt.Sprintf("[makeHttpRequest] %s %s", httpMethod, url))
+	l.logger.Trace(fmt.Sprintf("[makeHttpRequest] %s %s", httpMethod, url))
 
 	req := l.client.R().
 		SetHeaders(headers).
@@ -96,11 +96,11 @@ func (l llmHttpService) makeHttpRequest(httpMethod, url string, headers map[stri
 	duration := time.Since(startTime)
 
 	if err != nil {
-		l.logger.LogError(fmt.Sprintf("[makeHttpRequest] Request failed after %v: %v", duration, err))
+		l.logger.Error(fmt.Sprintf("[makeHttpRequest] Request failed after %v: %v", duration, err))
 		return fmt.Errorf("%s request to %s failed: %w", httpMethod, url, err)
 	}
 
-	l.logger.LogDebug(fmt.Sprintf("[makeHttpRequest] Completed in %v, Status: %s", duration, resp.Status()))
+	l.logger.Trace(fmt.Sprintf("[makeHttpRequest] Completed in %v, Status: %s", duration, resp.Status()))
 
 	return l.validateHttpResponse(resp)
 }
@@ -108,7 +108,7 @@ func (l llmHttpService) makeHttpRequest(httpMethod, url string, headers map[stri
 func (l llmHttpService) validateHttpResponse(resp *resty.Response) error {
 	if resp.IsError() {
 		errorMsg := fmt.Sprintf("API returned error status %d: %s", resp.StatusCode(), resp.Status())
-		l.logger.LogError(fmt.Sprintf("[validateHttpResponse] %s", errorMsg))
+		l.logger.Error(fmt.Sprintf("[validateHttpResponse] %s", errorMsg))
 		return fmt.Errorf("remote server error: %s", errorMsg)
 	}
 	return nil

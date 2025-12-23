@@ -43,13 +43,12 @@ func main() {
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
+		Logger:             loggerApi,
 		LogLevel:           logger.DEBUG,
 		LogLevelProduction: logger.WARNING,
 		BackgroundColour:   &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		OnStartup: func(ctx context.Context) {
-			loggerApi.SetContext(&ctx)
 			app.SetContext(ctx)
-			// Init settings
 			err := app.FileUtilsService.InitDefaultSettingsIfAbsent()
 			if err != nil {
 				return // Ignoring error
