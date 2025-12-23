@@ -24,6 +24,10 @@ func (a *actionService) GetActionGroups() (*action.Actions, error) {
 	}
 
 	appPrompts := a.promptApi.GetAppPrompts()
+	if appPrompts == nil {
+		a.logger.Error("[GetActionGroups] No app prompts returned")
+		return nil, fmt.Errorf("[GetActionGroups] No app prompts returned")
+	}
 	a.logger.Trace(fmt.Sprintf("[GetActionGroups] Found %d prompt categories", len(appPrompts.PromptGroups)))
 
 	groups := make([]action.Group, 0, len(appPrompts.PromptGroups))

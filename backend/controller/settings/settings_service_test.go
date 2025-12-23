@@ -174,7 +174,7 @@ func TestGetProviderTypes(t *testing.T) {
 		expectError           bool
 		expectedErrorMsg      string
 		expectedInfoLogs      int
-		expectedDebugLogs     int
+		expectedTraceLogs     int
 		expectedErrorLogs     int
 		expectedProviderTypes int
 	}{
@@ -184,7 +184,7 @@ func TestGetProviderTypes(t *testing.T) {
 			providerTypesError:    nil,
 			expectError:           false,
 			expectedInfoLogs:      2, // Start and success logs
-			expectedDebugLogs:     0, // Constructor debug logs
+			expectedTraceLogs:     0, // Constructor debug logs
 			expectedErrorLogs:     0,
 			expectedProviderTypes: 3,
 		},
@@ -195,7 +195,7 @@ func TestGetProviderTypes(t *testing.T) {
 			expectError:           true,
 			expectedErrorMsg:      "failed to retrieve provider types",
 			expectedInfoLogs:      1, // Only start log
-			expectedDebugLogs:     2, // Constructor debug logs
+			expectedTraceLogs:     2, // Constructor debug logs
 			expectedErrorLogs:     1, // Error log
 			expectedProviderTypes: 0,
 		},
@@ -205,7 +205,7 @@ func TestGetProviderTypes(t *testing.T) {
 			providerTypesError:    nil,
 			expectError:           false,
 			expectedInfoLogs:      2, // Start and success logs
-			expectedDebugLogs:     0, // Constructor debug logs
+			expectedTraceLogs:     0, // Constructor debug logs
 			expectedErrorLogs:     0,
 			expectedProviderTypes: 0,
 		},
@@ -250,8 +250,8 @@ func TestGetProviderTypes(t *testing.T) {
 				}
 
 				// Verify debug logging occurred
-				if len(logger.DebugMessages) != tt.expectedDebugLogs {
-					t.Errorf("Expected %d debug logs, got %d: %v", tt.expectedDebugLogs, len(logger.DebugMessages), logger.DebugMessages)
+				if len(logger.TraceMessages) != tt.expectedTraceLogs {
+					t.Errorf("Expected %d debug logs, got %d: %v", tt.expectedTraceLogs, len(logger.TraceMessages), logger.DebugMessages)
 				}
 			}
 		})
@@ -267,7 +267,7 @@ func TestGetCurrentSettings(t *testing.T) {
 		expectError           bool
 		expectedErrorMsg      string
 		expectedInfoLogs      int
-		expectedDebugLogs     int
+		expectedTraceLogs     int
 		expectedErrorLogs     int
 	}{
 		{
@@ -281,7 +281,7 @@ func TestGetCurrentSettings(t *testing.T) {
 			currentSettingsError: nil,
 			expectError:          false,
 			expectedInfoLogs:     2, // Start and success logs
-			expectedDebugLogs:    0, // Constructor debug logs
+			expectedTraceLogs:    0, // Constructor debug logs
 			expectedErrorLogs:    0,
 		},
 		{
@@ -291,7 +291,7 @@ func TestGetCurrentSettings(t *testing.T) {
 			expectError:           true,
 			expectedErrorMsg:      "failed to retrieve current settings",
 			expectedInfoLogs:      1, // Only start log
-			expectedDebugLogs:     0, // Constructor debug logs
+			expectedTraceLogs:     0, // Constructor debug logs
 			expectedErrorLogs:     1, // Error log
 		},
 	}
@@ -335,8 +335,8 @@ func TestGetCurrentSettings(t *testing.T) {
 				}
 
 				// Verify debug logging occurred
-				if len(logger.DebugMessages) != tt.expectedDebugLogs {
-					t.Errorf("Expected %d debug logs, got %d: %v", tt.expectedDebugLogs, len(logger.DebugMessages), logger.DebugMessages)
+				if len(logger.TraceMessages) != tt.expectedTraceLogs {
+					t.Errorf("Expected %d debug logs, got %d: %v", tt.expectedTraceLogs, len(logger.TraceMessages), logger.DebugMessages)
 				}
 			}
 		})
@@ -352,7 +352,7 @@ func TestGetDefaultSettings(t *testing.T) {
 		expectError           bool
 		expectedErrorMsg      string
 		expectedInfoLogs      int
-		expectedDebugLogs     int
+		expectedTraceLogs     int
 		expectedErrorLogs     int
 	}{
 		{
@@ -366,7 +366,7 @@ func TestGetDefaultSettings(t *testing.T) {
 			defaultSettingsError: nil,
 			expectError:          false,
 			expectedInfoLogs:     0,
-			expectedDebugLogs:    2, // Constructor + method debug logs
+			expectedTraceLogs:    2, // Constructor + method debug logs
 			expectedErrorLogs:    0,
 		},
 		{
@@ -376,7 +376,7 @@ func TestGetDefaultSettings(t *testing.T) {
 			expectError:           true,
 			expectedErrorMsg:      "failed to retrieve default settings",
 			expectedInfoLogs:      0,
-			expectedDebugLogs:     1, // Constructor + method debug logs // Only start debug log
+			expectedTraceLogs:     1, // Constructor + method debug logs // Only start debug log
 			expectedErrorLogs:     1, // Error log
 		},
 	}
@@ -415,8 +415,8 @@ func TestGetDefaultSettings(t *testing.T) {
 				}
 
 				// Verify debug logging occurred
-				if len(logger.DebugMessages) != tt.expectedDebugLogs {
-					t.Errorf("Expected %d debug logs, got %d: %v", tt.expectedDebugLogs, len(logger.DebugMessages), logger.DebugMessages)
+				if len(logger.TraceMessages) != tt.expectedTraceLogs {
+					t.Errorf("Expected %d debug logs, got %d: %v", tt.expectedTraceLogs, len(logger.TraceMessages), logger.DebugMessages)
 				}
 			}
 		})
@@ -433,7 +433,7 @@ func TestSaveSettings(t *testing.T) {
 		expectError        bool
 		expectedErrorMsg   string
 		expectedInfoLogs   int
-		expectedDebugLogs  int
+		expectedTraceLogs  int
 		expectedErrorLogs  int
 	}{
 		{
@@ -453,7 +453,7 @@ func TestSaveSettings(t *testing.T) {
 			saveSettingsError: nil,
 			expectError:       false,
 			expectedInfoLogs:  2, // Start and success logs
-			expectedDebugLogs: 0, // Constructor debug logs
+			expectedTraceLogs: 0, // Constructor debug logs
 			expectedErrorLogs: 0,
 		},
 		{
@@ -464,7 +464,7 @@ func TestSaveSettings(t *testing.T) {
 			expectError:        true,
 			expectedErrorMsg:   "settings object cannot be nil",
 			expectedInfoLogs:   1, // Only start log
-			expectedDebugLogs:  0, // Constructor debug logs
+			expectedTraceLogs:  0, // Constructor debug logs
 			expectedErrorLogs:  1, // Error log
 		},
 		{
@@ -480,7 +480,7 @@ func TestSaveSettings(t *testing.T) {
 			expectError:        true,
 			expectedErrorMsg:   "failed to save settings",
 			expectedInfoLogs:   1, // Only start log
-			expectedDebugLogs:  0,
+			expectedTraceLogs:  0,
 			expectedErrorLogs:  1, // Error log
 		},
 	}
@@ -524,8 +524,8 @@ func TestSaveSettings(t *testing.T) {
 				}
 
 				// Verify debug logging occurred
-				if len(logger.DebugMessages) != tt.expectedDebugLogs {
-					t.Errorf("Expected %d debug logs, got %d: %v", tt.expectedDebugLogs, len(logger.DebugMessages), logger.DebugMessages)
+				if len(logger.TraceMessages) != tt.expectedTraceLogs {
+					t.Errorf("Expected %d debug logs, got %d: %v", tt.expectedTraceLogs, len(logger.TraceMessages), logger.DebugMessages)
 				}
 			}
 		})
@@ -542,7 +542,7 @@ func TestValidateProvider(t *testing.T) {
 		expectError            bool
 		expectedErrorMsg       string
 		expectedInfoLogs       int
-		expectedDebugLogs      int
+		expectedTraceLogs      int
 		expectedErrorLogs      int
 	}{
 		{
@@ -558,7 +558,7 @@ func TestValidateProvider(t *testing.T) {
 			validateProviderError:  nil,
 			expectError:            false,
 			expectedInfoLogs:       0,
-			expectedDebugLogs:      2, // Constructor + method debug logs
+			expectedTraceLogs:      2, // Constructor + method debug logs
 			expectedErrorLogs:      0,
 		},
 		{
@@ -569,7 +569,7 @@ func TestValidateProvider(t *testing.T) {
 			expectError:            true,
 			expectedErrorMsg:       "invalid input",
 			expectedInfoLogs:       0,
-			expectedDebugLogs:      0, // Constructor debug logs
+			expectedTraceLogs:      0, // Constructor debug logs
 			expectedErrorLogs:      1, // Error log (but will panic due to bug in service)
 		},
 		{
@@ -586,7 +586,7 @@ func TestValidateProvider(t *testing.T) {
 			expectError:            true,
 			expectedErrorMsg:       "provider validation failed",
 			expectedInfoLogs:       0,
-			expectedDebugLogs:      1, // Constructor + method debug logs // Only start debug log
+			expectedTraceLogs:      1, // Constructor + method debug logs // Only start debug log
 			expectedErrorLogs:      1, // Error log
 		},
 	}
@@ -625,8 +625,8 @@ func TestValidateProvider(t *testing.T) {
 				}
 
 				// Verify debug logging occurred
-				if len(logger.DebugMessages) != tt.expectedDebugLogs {
-					t.Errorf("Expected %d debug logs, got %d: %v", tt.expectedDebugLogs, len(logger.DebugMessages), logger.DebugMessages)
+				if len(logger.TraceMessages) != tt.expectedTraceLogs {
+					t.Errorf("Expected %d debug logs, got %d: %v", tt.expectedTraceLogs, len(logger.TraceMessages), logger.DebugMessages)
 				}
 			}
 		})
@@ -643,7 +643,7 @@ func TestCreateNewProvider(t *testing.T) {
 		expectError          bool
 		expectedErrorMsg     string
 		expectedInfoLogs     int
-		expectedDebugLogs    int
+		expectedTraceLogs    int
 		expectedErrorLogs    int
 	}{
 		{
@@ -665,7 +665,7 @@ func TestCreateNewProvider(t *testing.T) {
 			createProviderError: nil,
 			expectError:         false,
 			expectedInfoLogs:    2, // Start and success logs
-			expectedDebugLogs:   0,
+			expectedTraceLogs:   0,
 			expectedErrorLogs:   0,
 		},
 		{
@@ -676,7 +676,7 @@ func TestCreateNewProvider(t *testing.T) {
 			expectError:          true,
 			expectedErrorMsg:     "provider config cannot be nil",
 			expectedInfoLogs:     1, // Only start log
-			expectedDebugLogs:    2, // Constructor debug logs
+			expectedTraceLogs:    2, // Constructor debug logs
 			expectedErrorLogs:    1, // Error log
 		},
 		{
@@ -693,7 +693,7 @@ func TestCreateNewProvider(t *testing.T) {
 			expectError:          true,
 			expectedErrorMsg:     "failed to create provider",
 			expectedInfoLogs:     1, // Only start log
-			expectedDebugLogs:    0,
+			expectedTraceLogs:    0,
 			expectedErrorLogs:    1, // Error log
 		},
 	}
@@ -737,8 +737,8 @@ func TestCreateNewProvider(t *testing.T) {
 				}
 
 				// Verify debug logging occurred
-				if len(logger.DebugMessages) != tt.expectedDebugLogs {
-					t.Errorf("Expected %d debug logs, got %d: %v", tt.expectedDebugLogs, len(logger.DebugMessages), logger.DebugMessages)
+				if len(logger.TraceMessages) != tt.expectedTraceLogs {
+					t.Errorf("Expected %d debug logs, got %d: %v", tt.expectedTraceLogs, len(logger.TraceMessages), logger.DebugMessages)
 				}
 			}
 		})
@@ -755,7 +755,7 @@ func TestUpdateProvider(t *testing.T) {
 		expectError          bool
 		expectedErrorMsg     string
 		expectedInfoLogs     int
-		expectedDebugLogs    int
+		expectedTraceLogs    int
 		expectedErrorLogs    int
 	}{
 		{
@@ -777,7 +777,7 @@ func TestUpdateProvider(t *testing.T) {
 			updateProviderError: nil,
 			expectError:         false,
 			expectedInfoLogs:    2, // Start and success logs
-			expectedDebugLogs:   0,
+			expectedTraceLogs:   0,
 			expectedErrorLogs:   0,
 		},
 		{
@@ -788,7 +788,7 @@ func TestUpdateProvider(t *testing.T) {
 			expectError:          true,
 			expectedErrorMsg:     "provider config cannot be nil",
 			expectedInfoLogs:     1, // Only start log
-			expectedDebugLogs:    0, // Constructor debug logs
+			expectedTraceLogs:    0, // Constructor debug logs
 			expectedErrorLogs:    1, // Error log
 		},
 		{
@@ -805,7 +805,7 @@ func TestUpdateProvider(t *testing.T) {
 			expectError:          true,
 			expectedErrorMsg:     "failed to update provider",
 			expectedInfoLogs:     1, // Only start log
-			expectedDebugLogs:    0,
+			expectedTraceLogs:    0,
 			expectedErrorLogs:    1, // Error log
 		},
 	}
@@ -849,8 +849,8 @@ func TestUpdateProvider(t *testing.T) {
 				}
 
 				// Verify debug logging occurred
-				if len(logger.DebugMessages) != tt.expectedDebugLogs {
-					t.Errorf("Expected %d debug logs, got %d: %v", tt.expectedDebugLogs, len(logger.DebugMessages), logger.DebugMessages)
+				if len(logger.TraceMessages) != tt.expectedTraceLogs {
+					t.Errorf("Expected %d debug logs, got %d: %v", tt.expectedTraceLogs, len(logger.TraceMessages), logger.DebugMessages)
 				}
 			}
 		})
@@ -867,7 +867,7 @@ func TestDeleteProvider(t *testing.T) {
 		expectError          bool
 		expectedErrorMsg     string
 		expectedInfoLogs     int
-		expectedDebugLogs    int
+		expectedTraceLogs    int
 		expectedErrorLogs    int
 	}{
 		{
@@ -880,7 +880,7 @@ func TestDeleteProvider(t *testing.T) {
 			deleteProviderError:  nil,
 			expectError:          false,
 			expectedInfoLogs:     2, // Start and success logs
-			expectedDebugLogs:    0,
+			expectedTraceLogs:    0,
 			expectedErrorLogs:    0,
 		},
 		{
@@ -891,7 +891,7 @@ func TestDeleteProvider(t *testing.T) {
 			expectError:          true,
 			expectedErrorMsg:     "provider config cannot be nil",
 			expectedInfoLogs:     1, // Only start log
-			expectedDebugLogs:    0, // Constructor debug logs
+			expectedTraceLogs:    0, // Constructor debug logs
 			expectedErrorLogs:    1, // Error log
 		},
 		{
@@ -905,7 +905,7 @@ func TestDeleteProvider(t *testing.T) {
 			expectError:          true,
 			expectedErrorMsg:     "failed to delete provider",
 			expectedInfoLogs:     1, // Only start log
-			expectedDebugLogs:    0,
+			expectedTraceLogs:    0,
 			expectedErrorLogs:    1, // Error log
 		},
 	}
@@ -949,8 +949,8 @@ func TestDeleteProvider(t *testing.T) {
 				}
 
 				// Verify debug logging occurred
-				if len(logger.DebugMessages) != tt.expectedDebugLogs {
-					t.Errorf("Expected %d debug logs, got %d: %v", tt.expectedDebugLogs, len(logger.DebugMessages), logger.DebugMessages)
+				if len(logger.TraceMessages) != tt.expectedTraceLogs {
+					t.Errorf("Expected %d debug logs, got %d: %v", tt.expectedTraceLogs, len(logger.TraceMessages), logger.DebugMessages)
 				}
 			}
 		})
@@ -967,7 +967,7 @@ func TestSelectProvider(t *testing.T) {
 		expectError          bool
 		expectedErrorMsg     string
 		expectedInfoLogs     int
-		expectedDebugLogs    int
+		expectedTraceLogs    int
 		expectedErrorLogs    int
 	}{
 		{
@@ -989,7 +989,7 @@ func TestSelectProvider(t *testing.T) {
 			selectProviderError: nil,
 			expectError:         false,
 			expectedInfoLogs:    2, // Start and success logs
-			expectedDebugLogs:   0,
+			expectedTraceLogs:   0,
 			expectedErrorLogs:   0,
 		},
 		{
@@ -1000,7 +1000,7 @@ func TestSelectProvider(t *testing.T) {
 			expectError:          true,
 			expectedErrorMsg:     "provider config cannot be nil",
 			expectedInfoLogs:     1, // Only start log
-			expectedDebugLogs:    2, // Constructor debug logs
+			expectedTraceLogs:    2, // Constructor debug logs
 			expectedErrorLogs:    1, // Error log
 		},
 		{
@@ -1017,7 +1017,7 @@ func TestSelectProvider(t *testing.T) {
 			expectError:          true,
 			expectedErrorMsg:     "failed to select provider",
 			expectedInfoLogs:     1, // Only start log
-			expectedDebugLogs:    0,
+			expectedTraceLogs:    0,
 			expectedErrorLogs:    1, // Error log
 		},
 	}
@@ -1061,8 +1061,8 @@ func TestSelectProvider(t *testing.T) {
 				}
 
 				// Verify debug logging occurred
-				if len(logger.DebugMessages) != tt.expectedDebugLogs {
-					t.Errorf("Expected %d debug logs, got %d: %v", tt.expectedDebugLogs, len(logger.DebugMessages), logger.DebugMessages)
+				if len(logger.TraceMessages) != tt.expectedTraceLogs {
+					t.Errorf("Expected %d debug logs, got %d: %v", tt.expectedTraceLogs, len(logger.TraceMessages), logger.DebugMessages)
 				}
 			}
 		})
@@ -1079,7 +1079,7 @@ func TestGetModelsList(t *testing.T) {
 		expectError         bool
 		expectedErrorMsg    string
 		expectedInfoLogs    int
-		expectedDebugLogs   int
+		expectedTraceLogs   int
 		expectedErrorLogs   int
 		expectedModelsCount int
 	}{
@@ -1096,7 +1096,7 @@ func TestGetModelsList(t *testing.T) {
 			modelsListError:     nil,
 			expectError:         false,
 			expectedInfoLogs:    2, // Start and success logs
-			expectedDebugLogs:   0,
+			expectedTraceLogs:   0,
 			expectedErrorLogs:   0,
 			expectedModelsCount: 3,
 		},
@@ -1108,7 +1108,7 @@ func TestGetModelsList(t *testing.T) {
 			expectError:         true,
 			expectedErrorMsg:    "provider config cannot be nil",
 			expectedInfoLogs:    1, // Only start log
-			expectedDebugLogs:   2, // Constructor debug logs
+			expectedTraceLogs:   2, // Constructor debug logs
 			expectedErrorLogs:   1, // Error log
 			expectedModelsCount: 0,
 		},
@@ -1126,7 +1126,7 @@ func TestGetModelsList(t *testing.T) {
 			expectError:         true,
 			expectedErrorMsg:    "failed to retrieve models",
 			expectedInfoLogs:    1, // Only start log
-			expectedDebugLogs:   0,
+			expectedTraceLogs:   0,
 			expectedErrorLogs:   1, // Error log
 			expectedModelsCount: 0,
 		},
@@ -1171,8 +1171,8 @@ func TestGetModelsList(t *testing.T) {
 				}
 
 				// Verify debug logging occurred
-				if len(logger.DebugMessages) != tt.expectedDebugLogs {
-					t.Errorf("Expected %d debug logs, got %d: %v", tt.expectedDebugLogs, len(logger.DebugMessages), logger.DebugMessages)
+				if len(logger.TraceMessages) != tt.expectedTraceLogs {
+					t.Errorf("Expected %d debug logs, got %d: %v", tt.expectedTraceLogs, len(logger.TraceMessages), logger.DebugMessages)
 				}
 			}
 		})
@@ -1185,21 +1185,21 @@ func TestGetSettingsFilePath(t *testing.T) {
 		name              string
 		settingsFilePath  string
 		expectedInfoLogs  int
-		expectedDebugLogs int
+		expectedTraceLogs int
 		expectedErrorLogs int
 	}{
 		{
 			name:              "Successful settings file path retrieval",
 			settingsFilePath:  "/path/to/settings.json",
 			expectedInfoLogs:  0,
-			expectedDebugLogs: 2, // Constructor + method debug logs
+			expectedTraceLogs: 2, // Constructor + method debug logs
 			expectedErrorLogs: 0,
 		},
 		{
 			name:              "Empty settings file path",
 			settingsFilePath:  "",
 			expectedInfoLogs:  0,
-			expectedDebugLogs: 2, // Constructor + method debug logs
+			expectedTraceLogs: 2, // Constructor + method debug logs
 			expectedErrorLogs: 0,
 		},
 	}
@@ -1221,8 +1221,8 @@ func TestGetSettingsFilePath(t *testing.T) {
 			}
 
 			// Verify debug logging occurred
-			if len(logger.DebugMessages) != tt.expectedDebugLogs {
-				t.Errorf("Expected %d debug logs, got %d: %v", tt.expectedDebugLogs, len(logger.DebugMessages), logger.DebugMessages)
+			if len(logger.TraceMessages) != tt.expectedTraceLogs {
+				t.Errorf("Expected %d debug logs, got %d: %v", tt.expectedTraceLogs, len(logger.TraceMessages), logger.DebugMessages)
 			}
 		})
 	}
