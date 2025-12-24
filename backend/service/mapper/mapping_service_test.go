@@ -5,14 +5,33 @@ import (
 	"go_text/backend/model"
 	"go_text/backend/model/action"
 	"go_text/backend/model/llm"
+	"strings"
 	"testing"
 	"time"
 )
 
+// MockStringUtils is a mock implementation of StringUtilsApi for testing
+type MockStringUtils struct{}
+
+func (m *MockStringUtils) IsBlankString(value string) bool {
+	return strings.TrimSpace(value) == ""
+}
+
+func (m *MockStringUtils) ReplaceTemplateParameter(template, value, prompt string) (string, error) {
+	// Not used in mapper tests
+	return "", nil
+}
+
+func (m *MockStringUtils) SanitizeReasoningBlock(llmResponse string) (string, error) {
+	// Not used in mapper tests
+	return "", nil
+}
+
 // TestNewMapperUtilsService tests the factory function
 func TestNewMapperUtilsService(t *testing.T) {
 	t.Run("Should create mapper service", func(t *testing.T) {
-		service := NewMapperUtilsService()
+		mockStringUtils := &MockStringUtils{}
+		service := NewMapperUtilsService(mockStringUtils)
 
 		if service == nil {
 			t.Fatal("NewMapperUtilsService returned nil")
@@ -92,7 +111,8 @@ func TestMapPromptsToActionItems(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			service := NewMapperUtilsService()
+			mockStringUtils := &MockStringUtils{}
+			service := NewMapperUtilsService(mockStringUtils)
 			result := service.MapPromptsToActionItems(tt.input)
 
 			if len(result) != len(tt.expected) {
@@ -151,7 +171,8 @@ func TestMapLanguageToLanguageItem(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			service := NewMapperUtilsService()
+			mockStringUtils := &MockStringUtils{}
+			service := NewMapperUtilsService(mockStringUtils)
 			result := service.MapLanguageToLanguageItem(tt.input)
 
 			if result.LanguageId != tt.expected.LanguageId {
@@ -209,7 +230,8 @@ func TestMapLanguagesToLanguageItems(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			service := NewMapperUtilsService()
+			mockStringUtils := &MockStringUtils{}
+			service := NewMapperUtilsService(mockStringUtils)
 			result := service.MapLanguagesToLanguageItems(tt.input)
 
 			if len(result) != len(tt.expected) {
@@ -291,7 +313,8 @@ func TestMapModelNames(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			service := NewMapperUtilsService()
+			mockStringUtils := &MockStringUtils{}
+			service := NewMapperUtilsService(mockStringUtils)
 			result := service.MapModelNames(tt.input)
 
 			if len(result) != len(tt.expected) {
@@ -310,7 +333,8 @@ func TestMapModelNames(t *testing.T) {
 // TestEdgeCases tests edge cases and boundary conditions
 func TestEdgeCases(t *testing.T) {
 	t.Run("Large input arrays", func(t *testing.T) {
-		service := NewMapperUtilsService()
+		mockStringUtils := &MockStringUtils{}
+		service := NewMapperUtilsService(mockStringUtils)
 
 		// Test with large array of prompts
 		largePrompts := make([]model.Prompt, 1000)
@@ -339,7 +363,8 @@ func TestEdgeCases(t *testing.T) {
 	})
 
 	t.Run("Unicode and special characters", func(t *testing.T) {
-		service := NewMapperUtilsService()
+		mockStringUtils := &MockStringUtils{}
+		service := NewMapperUtilsService(mockStringUtils)
 
 		// Test unicode in prompts
 		unicodePrompts := []model.Prompt{
@@ -362,7 +387,8 @@ func TestEdgeCases(t *testing.T) {
 	})
 
 	t.Run("Performance with large inputs", func(t *testing.T) {
-		service := NewMapperUtilsService()
+		mockStringUtils := &MockStringUtils{}
+		service := NewMapperUtilsService(mockStringUtils)
 
 		// Test performance with very large input
 		startTime := time.Now()

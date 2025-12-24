@@ -8,25 +8,59 @@ import (
 	"testing"
 )
 
+// MockStringUtils is a mock implementation of StringUtilsApi for testing
+type MockStringUtils struct {
+	ReplaceError error // Optional error to return from ReplaceTemplateParameter
+}
+
+func (m *MockStringUtils) IsBlankString(value string) bool {
+	return strings.TrimSpace(value) == ""
+}
+
+func (m *MockStringUtils) ReplaceTemplateParameter(token, value, template string) (string, error) {
+	// Proper template replacement for testing
+	if m.ReplaceError != nil {
+		return "", m.ReplaceError
+	}
+	return strings.ReplaceAll(template, token, value), nil
+}
+
+func (m *MockStringUtils) SanitizeReasoningBlock(llmResponse string) (string, error) {
+	// Not used in prompt tests
+	return llmResponse, nil
+}
+
 // IntegrationTestLogger is a logger that captures messages for testing
 type IntegrationTestLogger struct {
 	Messages []string
 }
 
-func (l *IntegrationTestLogger) LogDebug(msg string, keysAndValues ...interface{}) {
-	l.Messages = append(l.Messages, fmt.Sprintf("DEBUG: "+msg, keysAndValues...))
+func (l *IntegrationTestLogger) Print(message string) {
+	l.Messages = append(l.Messages, fmt.Sprintf("PRINT: %s", message))
 }
 
-func (l *IntegrationTestLogger) LogInfo(msg string, keysAndValues ...interface{}) {
-	l.Messages = append(l.Messages, fmt.Sprintf("INFO: "+msg, keysAndValues...))
+func (l *IntegrationTestLogger) Trace(message string) {
+	l.Messages = append(l.Messages, fmt.Sprintf("TRACE: %s", message))
 }
 
-func (l *IntegrationTestLogger) LogWarn(msg string, keysAndValues ...interface{}) {
-	l.Messages = append(l.Messages, fmt.Sprintf("WARN: "+msg, keysAndValues...))
+func (l *IntegrationTestLogger) Debug(message string) {
+	l.Messages = append(l.Messages, fmt.Sprintf("DEBUG: %s", message))
 }
 
-func (l *IntegrationTestLogger) LogError(msg string, keysAndValues ...interface{}) {
-	l.Messages = append(l.Messages, fmt.Sprintf("ERROR: "+msg, keysAndValues...))
+func (l *IntegrationTestLogger) Info(message string) {
+	l.Messages = append(l.Messages, fmt.Sprintf("INFO: %s", message))
+}
+
+func (l *IntegrationTestLogger) Warning(message string) {
+	l.Messages = append(l.Messages, fmt.Sprintf("WARN: %s", message))
+}
+
+func (l *IntegrationTestLogger) Error(message string) {
+	l.Messages = append(l.Messages, fmt.Sprintf("ERROR: %s", message))
+}
+
+func (l *IntegrationTestLogger) Fatal(message string) {
+	l.Messages = append(l.Messages, fmt.Sprintf("FATAL: %s", message))
 }
 
 func (l *IntegrationTestLogger) Clear() {
@@ -45,7 +79,8 @@ func (l *IntegrationTestLogger) Contains(substring string) bool {
 // TestPromptServiceIntegration tests the real prompt service with mock logger
 func TestPromptServiceIntegration(t *testing.T) {
 	logger := &IntegrationTestLogger{}
-	service := NewPromptService(logger)
+	mockStringUtils := &MockStringUtils{}
+	service := NewPromptService(logger, mockStringUtils)
 
 	if service == nil {
 		t.Fatal("NewPromptService returned nil")
@@ -58,7 +93,8 @@ func TestPromptServiceIntegration(t *testing.T) {
 // TestGetPromptIntegration tests the real GetPrompt method
 func TestGetPromptIntegration(t *testing.T) {
 	logger := &IntegrationTestLogger{}
-	service := NewPromptService(logger)
+	mockStringUtils := &MockStringUtils{}
+	service := NewPromptService(logger, mockStringUtils)
 
 	// Test valid prompt
 	prompt, err := service.GetPrompt("proofread")
@@ -85,7 +121,6 @@ func TestGetPromptIntegration(t *testing.T) {
 // TestBuildPromptIntegration tests the real BuildPrompt method
 func TestBuildPromptIntegration(t *testing.T) {
 	logger := &IntegrationTestLogger{}
-	service := NewPromptService(logger)
 
 	testCases := []struct {
 		name        string
@@ -139,6 +174,13 @@ func TestBuildPromptIntegration(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			logger.Clear()
+
+			// Create a new service with a mock that can return errors for template replacement
+			mockStringUtils := &MockStringUtils{}
+			if tc.name == "Template replacement error" {
+				mockStringUtils.ReplaceError = fmt.Errorf("template replacement failed")
+			}
+			service := NewPromptService(logger, mockStringUtils)
 			result, err := service.BuildPrompt(tc.template, tc.category, tc.action, tc.useMarkdown)
 
 			if (err != nil) != tc.wantError {
@@ -160,7 +202,8 @@ func TestBuildPromptIntegration(t *testing.T) {
 // TestGetSystemPromptIntegration tests the real GetSystemPrompt method
 func TestGetSystemPromptIntegration(t *testing.T) {
 	logger := &IntegrationTestLogger{}
-	service := NewPromptService(logger)
+	mockStringUtils := &MockStringUtils{}
+	service := NewPromptService(logger, mockStringUtils)
 
 	// Test valid system prompt
 	systemPrompt, err := service.GetSystemPrompt(constant.PromptCategoryProofread)
@@ -192,7 +235,6 @@ func TestGetSystemPromptIntegration(t *testing.T) {
 // TestBuildPromptErrorCasesIntegration tests error cases in BuildPrompt
 func TestBuildPromptErrorCasesIntegration(t *testing.T) {
 	logger := &IntegrationTestLogger{}
-	service := NewPromptService(logger)
 
 	testCases := []struct {
 		name          string
@@ -288,11 +330,32 @@ func TestBuildPromptErrorCasesIntegration(t *testing.T) {
 			wantError:     true,
 			errorContains: "invalid action OutputLanguageID",
 		},
+		{
+			name:     "Template replacement error",
+			template: "Process: {{user_text}}",
+			category: constant.PromptCategoryProofread,
+			action: &action.ActionRequest{
+				ID:               "proofread",
+				InputText:        "Hello world",
+				InputLanguageID:  "",
+				OutputLanguageID: "",
+			},
+			useMarkdown:   false,
+			wantError:     true,
+			errorContains: "template parameter replacement failed",
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			logger.Clear()
+
+			// Create a new service with a mock that can return errors for template replacement
+			mockStringUtils := &MockStringUtils{}
+			if tc.name == "Template replacement error" {
+				mockStringUtils.ReplaceError = fmt.Errorf("template replacement failed")
+			}
+			service := NewPromptService(logger, mockStringUtils)
 			result, err := service.BuildPrompt(tc.template, tc.category, tc.action, tc.useMarkdown)
 
 			if (err != nil) != tc.wantError {
@@ -323,7 +386,6 @@ func TestBuildPromptErrorCasesIntegration(t *testing.T) {
 // TestBuildPromptSuccessCasesIntegration tests success cases in BuildPrompt
 func TestBuildPromptSuccessCasesIntegration(t *testing.T) {
 	logger := &IntegrationTestLogger{}
-	service := NewPromptService(logger)
 
 	testCases := []struct {
 		name             string
@@ -385,11 +447,26 @@ func TestBuildPromptSuccessCasesIntegration(t *testing.T) {
 			useMarkdown:      true,
 			expectedContains: "Markdown",
 		},
+		{
+			name:     "Template with format parameter plain text",
+			template: "Process {{user_text}} in {{user_format}} format",
+			category: constant.PromptCategoryProofread,
+			action: &action.ActionRequest{
+				ID:               "proofread",
+				InputText:        "Hello world",
+				InputLanguageID:  "",
+				OutputLanguageID: "",
+			},
+			useMarkdown:      false,
+			expectedContains: "PlainText",
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			logger.Clear()
+			mockStringUtils := &MockStringUtils{}
+			service := NewPromptService(logger, mockStringUtils)
 			result, err := service.BuildPrompt(tc.template, tc.category, tc.action, tc.useMarkdown)
 
 			if err != nil {
@@ -408,8 +485,8 @@ func TestBuildPromptSuccessCasesIntegration(t *testing.T) {
 			if !logger.Contains("INFO") {
 				t.Error("Expected INFO logging to occur")
 			}
-			if !logger.Contains("DEBUG") {
-				t.Error("Expected DEBUG logging to occur")
+			if !logger.Contains("TRACE") {
+				t.Error("Expected TRACE logging to occur")
 			}
 		})
 	}
@@ -418,7 +495,8 @@ func TestBuildPromptSuccessCasesIntegration(t *testing.T) {
 // TestIsActionRequestValidIntegration tests the private isActionRequestValid method
 func TestIsActionRequestValidIntegration(t *testing.T) {
 	logger := &IntegrationTestLogger{}
-	service := NewPromptService(logger)
+	mockStringUtils := &MockStringUtils{}
+	service := NewPromptService(logger, mockStringUtils)
 
 	// Access the private method through type assertion
 	serviceImpl := service.(*promptServiceStruct)
@@ -547,7 +625,8 @@ func TestIsActionRequestValidIntegration(t *testing.T) {
 // TestPromptServiceLogging tests that the service properly uses the logger
 func TestPromptServiceLogging(t *testing.T) {
 	logger := &IntegrationTestLogger{}
-	service := NewPromptService(logger)
+	mockStringUtils := &MockStringUtils{}
+	service := NewPromptService(logger, mockStringUtils)
 
 	// Call a method that should log
 	_, _ = service.GetPrompt("proofread")

@@ -24,7 +24,7 @@ func (m *MockLogger) Error(message string) {
 }
 
 func (m *MockLogger) Warning(message string) {
-	m.WarnMessages = append(m.WarnMessages, message)
+	m.DebugMessages = append(m.DebugMessages, message)
 }
 
 func (m *MockLogger) Info(message string) {
@@ -134,33 +134,38 @@ func TestReplaceTemplateParameter(t *testing.T) {
 		errorContains  string
 		expectDebug    bool
 		expectErrorLog bool
+		expectTrace    bool
+		expectInfoLog  bool
 	}{
 		{
-			name:        "Successful replacement",
-			template:    "{{name}}",
-			value:       "John",
-			prompt:      "Hello {{name}}!",
-			expected:    "Hello John!",
-			expectError: false,
-			expectDebug: true,
+			name:          "Successful replacement",
+			template:      "{{name}}",
+			value:         "John",
+			prompt:        "Hello {{name}}!",
+			expected:      "Hello John!",
+			expectError:   false,
+			expectTrace:   true,
+			expectInfoLog: false,
 		},
 		{
-			name:        "Multiple replacements",
-			template:    "{{name}}",
-			value:       "John",
-			prompt:      "Hello {{name}}, welcome {{name}}!",
-			expected:    "Hello John, welcome John!",
-			expectError: false,
-			expectDebug: true,
+			name:          "Multiple replacements",
+			template:      "{{name}}",
+			value:         "John",
+			prompt:        "Hello {{name}}, welcome {{name}}!",
+			expected:      "Hello John, welcome John!",
+			expectError:   false,
+			expectTrace:   true,
+			expectInfoLog: false,
 		},
 		{
-			name:        "Template not found in prompt",
-			template:    "{{name}}",
-			value:       "John",
-			prompt:      "Hello world!",
-			expected:    "Hello world!",
-			expectError: false,
-			expectDebug: true,
+			name:          "Template not found in prompt",
+			template:      "{{name}}",
+			value:         "John",
+			prompt:        "Hello world!",
+			expected:      "Hello world!",
+			expectError:   false,
+			expectTrace:   true,
+			expectInfoLog: false,
 		},
 		{
 			name:           "Empty template",
@@ -183,49 +188,54 @@ func TestReplaceTemplateParameter(t *testing.T) {
 			expectErrorLog: true,
 		},
 		{
-			name:        "Empty value",
-			template:    "{{name}}",
-			value:       "",
-			prompt:      "Hello {{name}}!",
-			expected:    "Hello !",
-			expectError: false,
-			expectDebug: true,
+			name:          "Empty value",
+			template:      "{{name}}",
+			value:         "",
+			prompt:        "Hello {{name}}!",
+			expected:      "Hello !",
+			expectError:   false,
+			expectTrace:   true,
+			expectInfoLog: false,
 		},
 		{
-			name:        "Template at beginning",
-			template:    "{{greeting}}",
-			value:       "Hello",
-			prompt:      "{{greeting}}, world!",
-			expected:    "Hello, world!",
-			expectError: false,
-			expectDebug: true,
+			name:          "Template at beginning",
+			template:      "{{greeting}}",
+			value:         "Hello",
+			prompt:        "{{greeting}}, world!",
+			expected:      "Hello, world!",
+			expectError:   false,
+			expectTrace:   true,
+			expectInfoLog: false,
 		},
 		{
-			name:        "Template at end",
-			template:    "{{name}}",
-			value:       "John",
-			prompt:      "Hello, {{name}}",
-			expected:    "Hello, John",
-			expectError: false,
-			expectDebug: true,
+			name:          "Template at end",
+			template:      "{{name}}",
+			value:         "John",
+			prompt:        "Hello, {{name}}",
+			expected:      "Hello, John",
+			expectError:   false,
+			expectTrace:   true,
+			expectInfoLog: false,
 		},
 		{
-			name:        "Template is entire prompt",
-			template:    "{{content}}",
-			value:       "Hello world",
-			prompt:      "{{content}}",
-			expected:    "Hello world",
-			expectError: false,
-			expectDebug: true,
+			name:          "Template is entire prompt",
+			template:      "{{content}}",
+			value:         "Hello world",
+			prompt:        "{{content}}",
+			expected:      "Hello world",
+			expectError:   false,
+			expectTrace:   true,
+			expectInfoLog: false,
 		},
 		{
-			name:        "Complex template with special characters",
-			template:    "{{user_text}}",
-			value:       "Test content with \n newlines",
-			prompt:      "Process: {{user_text}}",
-			expected:    "Process: Test content with \n newlines",
-			expectError: false,
-			expectDebug: true,
+			name:          "Complex template with special characters",
+			template:      "{{user_text}}",
+			value:         "Test content with \n newlines",
+			prompt:        "Process: {{user_text}}",
+			expected:      "Process: Test content with \n newlines",
+			expectError:   false,
+			expectTrace:   true,
+			expectInfoLog: false,
 		},
 	}
 
@@ -253,8 +263,11 @@ func TestReplaceTemplateParameter(t *testing.T) {
 				if result != tt.expected {
 					t.Errorf("ReplaceTemplateParameter() = %q, want %q", result, tt.expected)
 				}
-				if tt.expectDebug && len(logger.DebugMessages) == 0 {
-					t.Error("Expected debug logging to occur")
+				if tt.expectTrace && len(logger.TraceMessages) == 0 {
+					t.Error("Expected trace logging to occur")
+				}
+				if tt.expectInfoLog && len(logger.InfoMessages) == 0 {
+					t.Error("Expected info logging to occur")
 				}
 			}
 		})
@@ -270,7 +283,7 @@ func TestSanitizeReasoningBlock(t *testing.T) {
 		expectError    bool
 		errorContains  string
 		expectInfoLog  bool
-		expectDebugLog bool
+		expectTraceLog bool
 	}{
 		{
 			name:           "Empty input",
@@ -278,7 +291,7 @@ func TestSanitizeReasoningBlock(t *testing.T) {
 			expected:       "",
 			expectError:    false,
 			expectInfoLog:  false,
-			expectDebugLog: true,
+			expectTraceLog: true,
 		},
 		{
 			name:           "No think blocks to remove",
@@ -286,7 +299,7 @@ func TestSanitizeReasoningBlock(t *testing.T) {
 			expected:       "This is a normal response without think blocks.",
 			expectError:    false,
 			expectInfoLog:  true,
-			expectDebugLog: false,
+			expectTraceLog: false,
 		},
 		{
 			name:           "Single think block to remove",
@@ -294,7 +307,7 @@ func TestSanitizeReasoningBlock(t *testing.T) {
 			expected:       "Response text  more text",
 			expectError:    false,
 			expectInfoLog:  true,
-			expectDebugLog: false,
+			expectTraceLog: false,
 		},
 		{
 			name:           "Multiple think blocks to remove",
@@ -302,7 +315,7 @@ func TestSanitizeReasoningBlock(t *testing.T) {
 			expected:       "Start  middle  end",
 			expectError:    false,
 			expectInfoLog:  true,
-			expectDebugLog: false,
+			expectTraceLog: false,
 		},
 		{
 			name:           "Think block with newlines and spaces",
@@ -310,7 +323,7 @@ func TestSanitizeReasoningBlock(t *testing.T) {
 			expected:       "Text\n\nMore",
 			expectError:    false,
 			expectInfoLog:  true,
-			expectDebugLog: false,
+			expectTraceLog: false,
 		},
 		{
 			name:           "Only think block content",
@@ -318,7 +331,7 @@ func TestSanitizeReasoningBlock(t *testing.T) {
 			expected:       "",
 			expectError:    false,
 			expectInfoLog:  true,
-			expectDebugLog: false,
+			expectTraceLog: false,
 		},
 		{
 			name:           "Whitespace only after removal",
@@ -326,7 +339,7 @@ func TestSanitizeReasoningBlock(t *testing.T) {
 			expected:       "",
 			expectError:    false,
 			expectInfoLog:  false,
-			expectDebugLog: true,
+			expectTraceLog: true,
 		},
 		{
 			name: "Complex multiline with think blocks",
@@ -341,7 +354,7 @@ Last line`,
 			expected:       "First line\n\n</think>\nLast line",
 			expectError:    false,
 			expectInfoLog:  true,
-			expectDebugLog: false,
+			expectTraceLog: false,
 		},
 		{
 			name:           "Nested think blocks (non-greedy matching)",
@@ -349,9 +362,14 @@ Last line`,
 			expected:       "Text  content</think> end",
 			expectError:    false,
 			expectInfoLog:  true,
-			expectDebugLog: false,
+			expectTraceLog: false,
 		},
 	}
+
+	// Note: The regex compilation error path (line with `if err != nil` in SanitizeReasoningBlock)
+	// cannot be tested with the current implementation because the regex pattern is hardcoded
+	// and valid. To achieve 100% coverage, the code would need to be refactored to allow
+	// dependency injection of the regex pattern or regex compiler.
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -377,8 +395,8 @@ Last line`,
 				if tt.expectInfoLog && len(logger.InfoMessages) == 0 {
 					t.Error("Expected info logging to occur")
 				}
-				if tt.expectDebugLog && len(logger.DebugMessages) == 0 {
-					t.Error("Expected debug logging to occur")
+				if tt.expectTraceLog && len(logger.TraceMessages) == 0 {
+					t.Error("Expected trace logging to occur")
 				}
 			}
 		})

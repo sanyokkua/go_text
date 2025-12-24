@@ -6,6 +6,7 @@ import (
 	llm2 "go_text/backend/model/llm"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -18,6 +19,7 @@ type MockLogger struct {
 	InfoMessages  []string
 	DebugMessages []string
 	ErrorMessages []string
+	WarnMessages  []string
 }
 
 func (m *MockLogger) Fatal(message string) {
@@ -57,7 +59,7 @@ func (m *MockLogger) LogDebug(msg string, keysAndValues ...interface{}) {
 }
 
 func (m *MockLogger) LogWarn(msg string, keysAndValues ...interface{}) {
-	// Not used in current implementation
+	m.WarnMessages = append(m.WarnMessages, fmt.Sprintf(msg, keysAndValues...))
 }
 
 func (m *MockLogger) LogError(msg string, keysAndValues ...interface{}) {
@@ -68,6 +70,26 @@ func (m *MockLogger) Clear() {
 	m.InfoMessages = nil
 	m.DebugMessages = nil
 	m.ErrorMessages = nil
+	m.WarnMessages = nil
+}
+
+// MockStringUtils for testing
+type MockStringUtils struct{}
+
+func (m *MockStringUtils) IsBlankString(value string) bool {
+	return strings.TrimSpace(value) == ""
+}
+
+func (m *MockStringUtils) SanitizeReasoningBlock(llmResponse string) (string, error) {
+	return llmResponse, nil
+}
+
+func (m *MockStringUtils) BuildPrompt(promptTemplate, category string, actionRequest interface{}, useMarkdown bool) (string, error) {
+	return "built prompt", nil
+}
+
+func (m *MockStringUtils) ReplaceTemplateParameter(template, value, prompt string) (string, error) {
+	return prompt, nil
 }
 
 // Test ModelListRequest - Focus on URL validation and error handling
@@ -112,7 +134,7 @@ func TestModelListRequest(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			logger := &MockLogger{}
-			service := NewLlmHttpApiService(logger, &resty.Client{})
+			service := NewLlmHttpApiService(logger, &resty.Client{}, &MockStringUtils{})
 
 			_, err := service.ModelListRequest(tt.baseUrl, tt.endpoint, nil)
 
@@ -193,7 +215,7 @@ func TestCompletionRequest(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			logger := &MockLogger{}
-			service := NewLlmHttpApiService(logger, &resty.Client{})
+			service := NewLlmHttpApiService(logger, &resty.Client{}, &MockStringUtils{})
 
 			_, err := service.CompletionRequest(tt.baseUrl, tt.endpoint, nil, tt.request)
 
@@ -262,7 +284,7 @@ func TestBuildRequestURL(t *testing.T) {
 			name:          "Empty endpoint",
 			baseUrl:       "http://localhost:11434",
 			endpoint:      "",
-			expectedURL:   "http://localhost:11434",
+			expectedURL:   "",
 			expectError:   true, // Empty endpoint is considered invalid
 			expectedError: "endpoint path cannot be empty or whitespace",
 		},
@@ -302,7 +324,7 @@ func TestBuildRequestURL(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			logger := &MockLogger{}
-			service := NewLlmHttpApiService(logger, &resty.Client{})
+			service := NewLlmHttpApiService(logger, &resty.Client{}, &MockStringUtils{})
 
 			// Access the private method through type assertion
 			serviceImpl := service.(*llmHttpService)
@@ -355,7 +377,7 @@ func TestModelListRequest_Success(t *testing.T) {
 
 		logger := &MockLogger{}
 		client := resty.New()
-		service := NewLlmHttpApiService(logger, client)
+		service := NewLlmHttpApiService(logger, client, &MockStringUtils{})
 
 		resp, err := service.ModelListRequest(server.URL, "/v1/models", nil)
 
@@ -427,7 +449,7 @@ func TestCompletionRequest_Success(t *testing.T) {
 
 		logger := &MockLogger{}
 		client := resty.New()
-		service := NewLlmHttpApiService(logger, client)
+		service := NewLlmHttpApiService(logger, client, &MockStringUtils{})
 
 		request := &llm2.ChatCompletionRequest{
 			Model: "gpt-3.5-turbo",
@@ -473,7 +495,7 @@ func TestMakeHttpRequest(t *testing.T) {
 
 		logger := &MockLogger{}
 		client := resty.New()
-		service := NewLlmHttpApiService(logger, client)
+		service := NewLlmHttpApiService(logger, client, &MockStringUtils{})
 		serviceImpl := service.(*llmHttpService)
 
 		var result map[string]string
@@ -487,9 +509,9 @@ func TestMakeHttpRequest(t *testing.T) {
 			t.Errorf("Expected status 'ok', got %s", result["status"])
 		}
 
-		// Verify debug logging occurred
-		if len(logger.DebugMessages) == 0 {
-			t.Error("Expected debug logging to occur")
+		// Verify trace logging occurred
+		if len(logger.TraceMessages) == 0 {
+			t.Error("Expected trace logging to occur")
 		}
 	})
 
@@ -514,7 +536,7 @@ func TestMakeHttpRequest(t *testing.T) {
 
 		logger := &MockLogger{}
 		client := resty.New()
-		service := NewLlmHttpApiService(logger, client)
+		service := NewLlmHttpApiService(logger, client, &MockStringUtils{})
 		serviceImpl := service.(*llmHttpService)
 
 		var result map[string]string
@@ -539,7 +561,7 @@ func TestMakeHttpRequest(t *testing.T) {
 
 		logger := &MockLogger{}
 		client := resty.New()
-		service := NewLlmHttpApiService(logger, client)
+		service := NewLlmHttpApiService(logger, client, &MockStringUtils{})
 		serviceImpl := service.(*llmHttpService)
 
 		var result map[string]string
@@ -565,7 +587,7 @@ func TestValidateHttpResponse(t *testing.T) {
 	t.Run("200 OK response", func(t *testing.T) {
 		logger := &MockLogger{}
 		client := resty.New()
-		service := NewLlmHttpApiService(logger, client)
+		service := NewLlmHttpApiService(logger, client, &MockStringUtils{})
 		serviceImpl := service.(*llmHttpService)
 
 		resp := &resty.Response{
@@ -587,7 +609,7 @@ func TestValidateHttpResponse(t *testing.T) {
 	t.Run("404 Not Found response", func(t *testing.T) {
 		logger := &MockLogger{}
 		client := resty.New()
-		service := NewLlmHttpApiService(logger, client)
+		service := NewLlmHttpApiService(logger, client, &MockStringUtils{})
 		serviceImpl := service.(*llmHttpService)
 
 		resp := &resty.Response{
@@ -613,7 +635,7 @@ func TestValidateHttpResponse(t *testing.T) {
 	t.Run("500 Server Error response", func(t *testing.T) {
 		logger := &MockLogger{}
 		client := resty.New()
-		service := NewLlmHttpApiService(logger, client)
+		service := NewLlmHttpApiService(logger, client, &MockStringUtils{})
 		serviceImpl := service.(*llmHttpService)
 
 		resp := &resty.Response{
@@ -643,7 +665,7 @@ func TestModelListRequest_ServerError(t *testing.T) {
 
 		logger := &MockLogger{}
 		client := resty.New()
-		service := NewLlmHttpApiService(logger, client)
+		service := NewLlmHttpApiService(logger, client, &MockStringUtils{})
 
 		_, err := service.ModelListRequest(server.URL, "/v1/models", nil)
 
@@ -673,7 +695,7 @@ func TestCompletionRequest_ServerError(t *testing.T) {
 
 		logger := &MockLogger{}
 		client := resty.New()
-		service := NewLlmHttpApiService(logger, client)
+		service := NewLlmHttpApiService(logger, client, &MockStringUtils{})
 
 		request := &llm2.ChatCompletionRequest{
 			Model: "gpt-3.5-turbo",
@@ -705,7 +727,7 @@ func TestLlmHttpApiInterface(t *testing.T) {
 		logger := &MockLogger{}
 		client := &resty.Client{}
 
-		service := NewLlmHttpApiService(logger, client)
+		service := NewLlmHttpApiService(logger, client, &MockStringUtils{})
 
 		if service == nil {
 			t.Fatal("NewLlmHttpApiService returned nil")
@@ -727,7 +749,7 @@ func TestLoggingBehavior(t *testing.T) {
 
 		logger := &MockLogger{}
 		client := resty.New()
-		service := NewLlmHttpApiService(logger, client)
+		service := NewLlmHttpApiService(logger, client, &MockStringUtils{})
 
 		_, err := service.ModelListRequest(server.URL, "/v1/models", nil)
 
@@ -769,7 +791,7 @@ func TestLoggingBehavior(t *testing.T) {
 
 		logger := &MockLogger{}
 		client := resty.New()
-		service := NewLlmHttpApiService(logger, client)
+		service := NewLlmHttpApiService(logger, client, &MockStringUtils{})
 
 		_, err := service.ModelListRequest(server.URL, "/v1/models", nil)
 
@@ -815,7 +837,7 @@ func TestTimeoutHandling(t *testing.T) {
 		// Set a very short timeout to force timeout
 		client.SetTimeout(1 * time.Nanosecond)
 
-		service := NewLlmHttpApiService(logger, client)
+		service := NewLlmHttpApiService(logger, client, &MockStringUtils{})
 
 		_, err := service.ModelListRequest(server.URL, "/v1/models", nil)
 

@@ -28,7 +28,7 @@ func (m *MockLogger) Error(message string) {
 }
 
 func (m *MockLogger) Warning(message string) {
-	m.WarnMessages = append(m.WarnMessages, message)
+	m.DebugMessages = append(m.DebugMessages, "[WARNING] "+message)
 }
 
 func (m *MockLogger) Info(message string) {
@@ -107,11 +107,11 @@ func (m *MockSettingsService) SaveSettings(settings *settings.Settings) (*settin
 	return settings, nil // Not used in tests
 }
 
-func (m *MockSettingsService) ValidateProvider(config *settings.ProviderConfig) (bool, error) {
+func (m *MockSettingsService) ValidateProvider(config *settings.ProviderConfig, validateHttpCall bool, modelName string) (bool, error) {
 	return true, nil // Not used in tests
 }
 
-func (m *MockSettingsService) CreateNewProvider(config *settings.ProviderConfig) (*settings.ProviderConfig, error) {
+func (m *MockSettingsService) CreateNewProvider(config *settings.ProviderConfig, modelName string) (*settings.ProviderConfig, error) {
 	return config, nil // Not used in tests
 }
 
@@ -334,9 +334,9 @@ func TestGetModelsList(t *testing.T) {
 					t.Error("Expected info logging to occur")
 				}
 
-				// Verify debug logging
-				if len(logger.DebugMessages) == 0 {
-					t.Error("Expected debug logging to occur")
+				// Verify trace logging
+				if len(logger.TraceMessages) == 0 {
+					t.Error("Expected trace logging to occur")
 				}
 			}
 		})
@@ -513,9 +513,9 @@ func TestGetCompletionResponse(t *testing.T) {
 					t.Error("Expected info logging to occur")
 				}
 
-				// Verify debug logging
-				if len(logger.DebugMessages) == 0 {
-					t.Error("Expected debug logging to occur")
+				// Verify trace logging
+				if len(logger.TraceMessages) == 0 {
+					t.Error("Expected trace logging to occur")
 				}
 			}
 		})

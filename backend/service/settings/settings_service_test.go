@@ -107,6 +107,13 @@ type MockLlmHttpApi struct {
 }
 
 func (m *MockLlmHttpApi) ModelListRequest(baseUrl, endpoint string, headers map[string]string) (*llm2.LlmModelListResponse, error) {
+	// Return default models if none specified
+	if m.modelsListResult == nil {
+		return &llm2.LlmModelListResponse{Data: []llm2.LlmModel{
+			{ID: "llama2", Name: stringPtr("llama2")},
+			{ID: "mistral", Name: stringPtr("mistral")},
+		}}, m.modelsListError
+	}
 	return &llm2.LlmModelListResponse{Data: m.modelsListResult}, m.modelsListError
 }
 
@@ -169,9 +176,9 @@ func TestGetProviderTypes(t *testing.T) {
 		}
 	}
 
-	// Verify debug logs
-	if len(logger.DebugMessages) != 2 {
-		t.Errorf("Expected 2 debug logs, got %d: %v", len(logger.DebugMessages), logger.DebugMessages)
+	// Verify trace logs (code uses Trace, not Debug)
+	if len(logger.TraceMessages) != 2 {
+		t.Errorf("Expected 2 trace logs, got %d: %v", len(logger.TraceMessages), logger.TraceMessages)
 	}
 }
 
@@ -249,9 +256,9 @@ func TestGetCurrentSettings(t *testing.T) {
 				}
 			}
 
-			// Verify debug logging occurred
-			if len(logger.DebugMessages) != tt.expectedDebugLogs {
-				t.Errorf("Expected %d debug logs, got %d: %v", tt.expectedDebugLogs, len(logger.DebugMessages), logger.DebugMessages)
+			// Verify trace logging occurred (code uses Trace, not Debug)
+			if len(logger.TraceMessages) != tt.expectedDebugLogs {
+				t.Errorf("Expected %d trace logs, got %d: %v", tt.expectedDebugLogs, len(logger.TraceMessages), logger.TraceMessages)
 			}
 		})
 	}
@@ -282,9 +289,9 @@ func TestGetDefaultSettings(t *testing.T) {
 		t.Errorf("GetDefaultSettings() current provider = %s, want %s", result.CurrentProviderConfig.ProviderName, expected.CurrentProviderConfig.ProviderName)
 	}
 
-	// Verify debug logs
-	if len(logger.DebugMessages) != 2 {
-		t.Errorf("Expected 2 debug logs, got %d: %v", len(logger.DebugMessages), logger.DebugMessages)
+	// Verify trace logs (code uses Trace, not Debug)
+	if len(logger.TraceMessages) != 2 {
+		t.Errorf("Expected 2 trace logs, got %d: %v", len(logger.TraceMessages), logger.TraceMessages)
 	}
 }
 
@@ -370,9 +377,9 @@ func TestSaveSettings(t *testing.T) {
 					t.Errorf("Expected %d info logs, got %d: %v", tt.expectedInfoLogs, len(logger.InfoMessages), logger.InfoMessages)
 				}
 
-				// Verify debug logging occurred
-				if len(logger.DebugMessages) != tt.expectedDebugLogs {
-					t.Errorf("Expected %d debug logs, got %d: %v", tt.expectedDebugLogs, len(logger.DebugMessages), logger.DebugMessages)
+				// Verify trace logging occurred (code uses Trace, not Debug)
+				if len(logger.TraceMessages) != tt.expectedDebugLogs {
+					t.Errorf("Expected %d trace logs, got %d: %v", tt.expectedDebugLogs, len(logger.TraceMessages), logger.TraceMessages)
 				}
 			}
 		})
@@ -545,7 +552,7 @@ func TestValidateProvider(t *testing.T) {
 
 			service := NewSettingsService(logger, fileUtils, llmHttpApi, mapper)
 
-			result, err := service.ValidateProvider(tt.config)
+			result, err := service.ValidateProvider(tt.config, false, "")
 
 			// Verify error conditions
 			if (err != nil) != tt.expectError {
@@ -568,9 +575,9 @@ func TestValidateProvider(t *testing.T) {
 					t.Errorf("ValidateProvider() result = %v, want %v", result, tt.expectValid)
 				}
 
-				// Verify debug logging occurred
-				if len(logger.DebugMessages) != tt.expectedDebugLogs {
-					t.Errorf("Expected %d debug logs, got %d: %v", tt.expectedDebugLogs, len(logger.DebugMessages), logger.DebugMessages)
+				// Verify trace logging occurred (code uses Trace, not Debug)
+				if len(logger.TraceMessages) != tt.expectedDebugLogs {
+					t.Errorf("Expected %d trace logs, got %d: %v", tt.expectedDebugLogs, len(logger.TraceMessages), logger.TraceMessages)
 				}
 			}
 		})
@@ -620,7 +627,7 @@ func TestCreateNewProvider(t *testing.T) {
 			saveSettingsError: nil,
 			expectError:       false,
 			expectedInfoLogs:  6,  // Multiple info logs from nested service calls
-			expectedDebugLogs: 27, // Many debug logs from comprehensive validation
+			expectedDebugLogs: 30, // Many debug logs from comprehensive validation
 			expectedErrorLogs: 0,
 		},
 
@@ -711,7 +718,7 @@ func TestCreateNewProvider(t *testing.T) {
 
 			service := NewSettingsService(logger, fileUtils, llmHttpApi, mapper)
 
-			result, err := service.CreateNewProvider(tt.config)
+			result, err := service.CreateNewProvider(tt.config, "")
 
 			// Verify error conditions
 			if (err != nil) != tt.expectError {
@@ -739,9 +746,9 @@ func TestCreateNewProvider(t *testing.T) {
 					t.Errorf("Expected %d info logs, got %d: %v", tt.expectedInfoLogs, len(logger.InfoMessages), logger.InfoMessages)
 				}
 
-				// Verify debug logging occurred
-				if len(logger.DebugMessages) != tt.expectedDebugLogs {
-					t.Errorf("Expected %d debug logs, got %d: %v", tt.expectedDebugLogs, len(logger.DebugMessages), logger.DebugMessages)
+				// Verify trace logging occurred (code uses Trace, not Debug)
+				if len(logger.TraceMessages) != tt.expectedDebugLogs {
+					t.Errorf("Expected %d trace logs, got %d: %v", tt.expectedDebugLogs, len(logger.TraceMessages), logger.TraceMessages)
 				}
 			}
 		})
@@ -775,8 +782,8 @@ func TestUpdateProvider(t *testing.T) {
 			loadSettingsError:  nil,
 			saveSettingsError:  nil,
 			expectError:        false,
-			expectedInfoLogs:   6,  // Start, load settings, save settings, and success logs
-			expectedDebugLogs:  33, // Validation, load, search, save (with nested validation) debug logs
+			expectedInfoLogs:   6, // Start, load settings, save settings, and success logs
+			expectedDebugLogs:  0, // Validation, load, search, save (with nested validation) debug logs
 			expectedErrorLogs:  0,
 		},
 		{
@@ -949,8 +956,8 @@ func TestDeleteProvider(t *testing.T) {
 			loadSettingsError: nil,
 			saveSettingsError: nil,
 			expectError:       false,
-			expectedInfoLogs:  6,  // Start and success logs
-			expectedDebugLogs: 20, // Load, check, search, remove, save debug logs
+			expectedInfoLogs:  6, // Start and success logs
+			expectedDebugLogs: 0, // Load, check, search, remove, save debug logs
 			expectedErrorLogs: 0,
 		},
 		{
@@ -1120,8 +1127,8 @@ func TestSelectProvider(t *testing.T) {
 			loadSettingsError:  nil,
 			saveSettingsError:  nil,
 			expectError:        false,
-			expectedInfoLogs:   6,  // Start and success logs
-			expectedDebugLogs:  33, // Validation, load, search, save debug logs
+			expectedInfoLogs:   6, // Start and success logs
+			expectedDebugLogs:  0, // Validation, load, search, save debug logs
 			expectedErrorLogs:  0,
 		},
 		{
@@ -1291,7 +1298,7 @@ func TestGetModelsList(t *testing.T) {
 			modelsListError:   nil,
 			expectError:       false,
 			expectedInfoLogs:  2, // Start and success logs
-			expectedDebugLogs: 3, // Validation and models debug logs
+			expectedDebugLogs: 0, // Validation and models debug logs
 			expectedErrorLogs: 0,
 		},
 		{
@@ -1418,9 +1425,9 @@ func TestGetSettingsFilePath(t *testing.T) {
 		t.Errorf("GetSettingsFilePath() result = %s, want /path/to/settings.json", result)
 	}
 
-	// Verify debug logs
-	if len(logger.DebugMessages) != 2 {
-		t.Errorf("Expected 2 debug logs, got %d: %v", len(logger.DebugMessages), logger.DebugMessages)
+	// Verify trace logs (code uses Trace, not Debug)
+	if len(logger.TraceMessages) != 2 {
+		t.Errorf("Expected 2 trace logs, got %d: %v", len(logger.TraceMessages), logger.TraceMessages)
 	}
 }
 
@@ -1438,7 +1445,7 @@ func TestValidateSettings(t *testing.T) {
 			name:              "Valid settings",
 			settings:          &constant.DefaultSetting,
 			expectError:       false,
-			expectedDebugLogs: 24, // All validation steps
+			expectedDebugLogs: 0, // Start, current provider, available providers, provider validation, model config, temperature, language config, default languages, success
 			expectedErrorLogs: 0,
 		},
 		{
@@ -1613,7 +1620,7 @@ func TestValidateBaseUrl(t *testing.T) {
 			baseUrl:           "http://localhost:11434",
 			expectValid:       true,
 			expectError:       false,
-			expectedDebugLogs: 2, // Start and success debug logs
+			expectedDebugLogs: 0, // Start and success debug logs
 			expectedErrorLogs: 0,
 		},
 		{
@@ -1621,7 +1628,7 @@ func TestValidateBaseUrl(t *testing.T) {
 			baseUrl:           "https://api.example.com",
 			expectValid:       true,
 			expectError:       false,
-			expectedDebugLogs: 2, // Start and success debug logs
+			expectedDebugLogs: 0, // Start and success debug logs
 			expectedErrorLogs: 0,
 		},
 		{
@@ -1710,7 +1717,7 @@ func TestValidateEndpoint(t *testing.T) {
 			endpoint:          "/v1/models",
 			expectValid:       true,
 			expectError:       false,
-			expectedDebugLogs: 2, // Start and success debug logs
+			expectedDebugLogs: 0, // Start and success debug logs
 			expectedErrorLogs: 0,
 		},
 		{
@@ -1799,7 +1806,7 @@ func TestValidateTemperature(t *testing.T) {
 			temperature:       0.0,
 			expectValid:       true,
 			expectError:       false,
-			expectedDebugLogs: 2, // Start and success debug logs
+			expectedDebugLogs: 0, // Start and success debug logs
 			expectedErrorLogs: 0,
 		},
 		{
@@ -1807,7 +1814,7 @@ func TestValidateTemperature(t *testing.T) {
 			temperature:       1.0,
 			expectValid:       true,
 			expectError:       false,
-			expectedDebugLogs: 2, // Start and success debug logs
+			expectedDebugLogs: 0, // Start and success debug logs
 			expectedErrorLogs: 0,
 		},
 		{

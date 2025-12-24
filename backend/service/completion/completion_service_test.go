@@ -102,13 +102,15 @@ func (m *MockStringUtils) ReplaceTemplateParameter(template, value, prompt strin
 
 // MockPromptService for testing
 type MockPromptService struct {
-	promptResult       *model.Prompt
-	promptError        error
-	systemPromptResult string
-	systemPromptError  error
-	buildPromptResult  string
-	buildPromptError   error
-	appPromptsResult   *model.AppPrompts
+	promptResult                *model.Prompt
+	promptError                 error
+	systemPromptResult          string
+	systemPromptError           error
+	buildPromptResult           string
+	buildPromptError            error
+	appPromptsResult            *model.AppPrompts
+	systemPromptByCategory      *model.Prompt
+	systemPromptByCategoryError error
 }
 
 func (m *MockPromptService) GetAppPrompts() *model.AppPrompts {
@@ -120,6 +122,17 @@ func (m *MockPromptService) GetPrompt(promptID string) (model.Prompt, error) {
 		return *m.promptResult, m.promptError
 	}
 	return model.Prompt{}, m.promptError
+}
+
+func (m *MockPromptService) GetSystemPromptByCategory(category string) (model.Prompt, error) {
+	if m.systemPromptByCategory != nil {
+		return *m.systemPromptByCategory, m.systemPromptByCategoryError
+	}
+	return model.Prompt{}, m.systemPromptByCategoryError
+}
+
+func (m *MockPromptService) GetUserPromptById(id string) (model.Prompt, error) {
+	return model.Prompt{}, nil
 }
 
 func (m *MockPromptService) GetPromptsCategories() []string {
@@ -160,11 +173,11 @@ func (m *MockSettingsService) SaveSettings(settings *settings.Settings) (*settin
 	return settings, nil
 }
 
-func (m *MockSettingsService) ValidateProvider(config *settings.ProviderConfig) (bool, error) {
+func (m *MockSettingsService) ValidateProvider(config *settings.ProviderConfig, validateHttpCall bool, modelName string) (bool, error) {
 	return true, nil
 }
 
-func (m *MockSettingsService) CreateNewProvider(config *settings.ProviderConfig) (*settings.ProviderConfig, error) {
+func (m *MockSettingsService) CreateNewProvider(config *settings.ProviderConfig, modelName string) (*settings.ProviderConfig, error) {
 	return config, nil
 }
 
@@ -233,6 +246,7 @@ func TestProcessAction(t *testing.T) {
 		expectError         bool
 		expectedErrorMsg    string
 		expectedInfoLogs    int
+		expectedTraceLogs   int
 		expectedDebugLogs   int
 		expectedErrorLogs   int
 		expectedWarnLogs    int
@@ -299,7 +313,7 @@ func TestProcessAction(t *testing.T) {
 			expectedResult:    "Cleaned result",
 			expectError:       false,
 			expectedInfoLogs:  4, // Start, settings loaded, LLM success, completion logs
-			expectedDebugLogs: 3, // Prompt retrieved, system prompt retrieved, user prompt built
+			expectedTraceLogs: 3, // Prompt retrieved, system prompt retrieved, user prompt built
 			expectedErrorLogs: 0,
 			expectedWarnLogs:  0,
 		},
@@ -318,6 +332,7 @@ func TestProcessAction(t *testing.T) {
 			expectError:         true,
 			expectedErrorMsg:    "action id is blank",
 			expectedInfoLogs:    1, // Only start log
+			expectedTraceLogs:   0,
 			expectedDebugLogs:   0,
 			expectedErrorLogs:   1, // Error log
 			expectedWarnLogs:    0,
@@ -366,7 +381,8 @@ func TestProcessAction(t *testing.T) {
 			expectError:         true,
 			expectedErrorMsg:    "failed to GetSystemPrompt",
 			expectedInfoLogs:    1, // Only start log
-			expectedDebugLogs:   1, // Prompt retrieved debug log
+			expectedTraceLogs:   1, // Prompt retrieved trace log
+			expectedDebugLogs:   0,
 			expectedErrorLogs:   1, // Error log
 			expectedWarnLogs:    0,
 		},
@@ -395,7 +411,8 @@ func TestProcessAction(t *testing.T) {
 			expectError:       true,
 			expectedErrorMsg:  "failed to load settings",
 			expectedInfoLogs:  1, // Only start log
-			expectedDebugLogs: 2, // Prompt retrieved and system prompt debug logs
+			expectedTraceLogs: 2, // Prompt retrieved and system prompt trace logs
+			expectedDebugLogs: 0,
 			expectedErrorLogs: 1, // Error log
 			expectedWarnLogs:  0,
 		},
@@ -433,7 +450,8 @@ func TestProcessAction(t *testing.T) {
 			expectError:       true,
 			expectedErrorMsg:  "provider BaseURL is not configured properly",
 			expectedInfoLogs:  2, // Start and settings loaded logs
-			expectedDebugLogs: 3, // Prompt, system prompt, and user prompt debug logs
+			expectedTraceLogs: 3, // Prompt, system prompt, and user prompt trace logs
+			expectedDebugLogs: 0,
 			expectedErrorLogs: 1, // Error log
 			expectedWarnLogs:  0,
 		},
@@ -472,7 +490,8 @@ func TestProcessAction(t *testing.T) {
 			expectError:       true,
 			expectedErrorMsg:  "provider completion endpoint is not configured properly",
 			expectedInfoLogs:  2, // Start and settings loaded logs
-			expectedDebugLogs: 3, // Prompt, system prompt, and user prompt debug logs
+			expectedTraceLogs: 3, // Prompt, system prompt, and user prompt trace logs
+			expectedDebugLogs: 0,
 			expectedErrorLogs: 1, // Error log
 			expectedWarnLogs:  0,
 		},
@@ -514,7 +533,8 @@ func TestProcessAction(t *testing.T) {
 			expectError:       true,
 			expectedErrorMsg:  "model is not configured properly",
 			expectedInfoLogs:  2, // Start and settings loaded logs
-			expectedDebugLogs: 3, // Prompt, system prompt, and user prompt debug logs
+			expectedTraceLogs: 3, // Prompt, system prompt, and user prompt trace logs
+			expectedDebugLogs: 0,
 			expectedErrorLogs: 1, // Error log
 			expectedWarnLogs:  0,
 		},
@@ -555,7 +575,8 @@ func TestProcessAction(t *testing.T) {
 			expectError:       true,
 			expectedErrorMsg:  "failed to load models",
 			expectedInfoLogs:  2, // Start and settings loaded logs
-			expectedDebugLogs: 3, // Prompt, system prompt, and user prompt debug logs
+			expectedTraceLogs: 3, // Prompt, system prompt, and user prompt trace logs
+			expectedDebugLogs: 0,
 			expectedErrorLogs: 1, // Error log
 			expectedWarnLogs:  0,
 		},
@@ -600,7 +621,8 @@ func TestProcessAction(t *testing.T) {
 			expectedResult:    "Cleaned result",
 			expectError:       false, // Should not fail, just log warning
 			expectedInfoLogs:  4,     // Start, settings loaded, LLM success, completion logs
-			expectedDebugLogs: 3,     // Prompt, system prompt, and user prompt debug logs
+			expectedTraceLogs: 3,     // Prompt, system prompt, and user prompt trace logs
+			expectedDebugLogs: 0,
 			expectedErrorLogs: 0,
 			expectedWarnLogs:  1, // Warning about model not found
 		},
@@ -644,8 +666,9 @@ func TestProcessAction(t *testing.T) {
 			expectError:       true,
 			expectedErrorMsg:  "prompt build failed", // Returns the error directly
 			expectedInfoLogs:  2,                     // Start and settings loaded logs
-			expectedDebugLogs: 3,                     // Prompt, system prompt, and user prompt debug logs
-			expectedErrorLogs: 1,                     // Error log
+			expectedTraceLogs: 3,                     // Prompt, system prompt, and user prompt trace logs
+			expectedDebugLogs: 0,
+			expectedErrorLogs: 1, // Error log
 			expectedWarnLogs:  0,
 		},
 		{
@@ -685,7 +708,8 @@ func TestProcessAction(t *testing.T) {
 			expectedResult:    "Hello", // Should return input text directly
 			expectError:       false,
 			expectedInfoLogs:  3, // Start, settings loaded, and optimization logs
-			expectedDebugLogs: 3, // Prompt, system prompt, and user prompt debug logs
+			expectedTraceLogs: 3, // Prompt, system prompt, and user prompt trace logs
+			expectedDebugLogs: 0,
 			expectedErrorLogs: 0,
 			expectedWarnLogs:  0,
 		},
@@ -768,8 +792,101 @@ func TestProcessAction(t *testing.T) {
 			expectError:       true,
 			expectedErrorMsg:  "SanitizeResponse",
 			expectedInfoLogs:  3, // Start, settings loaded, and LLM completion logs
-			expectedDebugLogs: 4, // Prompt, system prompt, user prompt, and LLM request debug logs
+			expectedTraceLogs: 4, // Prompt, system prompt, user prompt, and LLM request trace logs
+			expectedDebugLogs: 0,
 			expectedErrorLogs: 1, // Error log
+			expectedWarnLogs:  0,
+		},
+		{
+			name: "Empty models list (no warning)",
+			actionRequest: action.ActionRequest{
+				ID:               "test-action",
+				InputText:        "Test input",
+				InputLanguageID:  "en",
+				OutputLanguageID: "fr",
+			},
+			mockStringUtils: MockStringUtils{
+				isBlankStringResult: false,
+				buildPromptResult:   "Built prompt",
+				sanitizeResult:      "Cleaned result",
+			},
+			mockPromptService: MockPromptService{
+				promptResult: &model.Prompt{
+					ID:       "test-action",
+					Name:     "Test Action",
+					Category: constant.PromptCategoryTranslation,
+					Value:    "{{user_text}}",
+				},
+				systemPromptResult: "You are a helpful assistant",
+			},
+			mockSettingsService: MockSettingsService{
+				settingsResult: &settings.Settings{
+					CurrentProviderConfig: settings.ProviderConfig{
+						BaseUrl:            "http://localhost:11434",
+						CompletionEndpoint: "/v1/chat/completions",
+						ProviderName:       "Test Provider",
+					},
+					ModelConfig: settings.LlmModelConfig{
+						ModelName: "test-model",
+					},
+				},
+			},
+			mockLlmService: MockLlmService{
+				modelsListResult: []string{}, // Empty models list
+				completionResult: "Raw LLM response",
+			},
+			expectedResult:    "Cleaned result",
+			expectError:       false,
+			expectedInfoLogs:  4, // Start, settings loaded, LLM success, completion logs
+			expectedTraceLogs: 3, // Prompt, system prompt, user prompt trace logs (no LLM request trace)
+			expectedDebugLogs: 0,
+			expectedErrorLogs: 0,
+			expectedWarnLogs:  2, // Warning about no models available + model not found
+		},
+		{
+			name: "Non-translation category with same language IDs (should not optimize)",
+			actionRequest: action.ActionRequest{
+				ID:               "test-action",
+				InputText:        "Test input",
+				InputLanguageID:  "en",
+				OutputLanguageID: "en", // Same language but not translation category
+			},
+			mockStringUtils: MockStringUtils{
+				isBlankStringResult: false,
+				buildPromptResult:   "Built prompt",
+				sanitizeResult:      "Cleaned result",
+			},
+			mockPromptService: MockPromptService{
+				promptResult: &model.Prompt{
+					ID:       "test-action",
+					Name:     "Test Action",
+					Category: constant.PromptCategoryProofread, // Not translation
+					Value:    "{{user_text}}",
+				},
+				systemPromptResult: "You are a helpful assistant",
+			},
+			mockSettingsService: MockSettingsService{
+				settingsResult: &settings.Settings{
+					CurrentProviderConfig: settings.ProviderConfig{
+						BaseUrl:            "http://localhost:11434",
+						CompletionEndpoint: "/v1/chat/completions",
+						ProviderName:       "Test Provider",
+					},
+					ModelConfig: settings.LlmModelConfig{
+						ModelName: "test-model",
+					},
+				},
+			},
+			mockLlmService: MockLlmService{
+				modelsListResult: []string{"test-model"},
+				completionResult: "Raw LLM response",
+			},
+			expectedResult:    "Cleaned result",
+			expectError:       false,
+			expectedInfoLogs:  4, // Start, settings loaded, LLM success, completion logs
+			expectedTraceLogs: 3, // Prompt, system prompt, user prompt trace logs (no LLM request trace)
+			expectedDebugLogs: 0,
+			expectedErrorLogs: 0,
 			expectedWarnLogs:  0,
 		},
 	}
@@ -813,6 +930,11 @@ func TestProcessAction(t *testing.T) {
 					t.Errorf("Expected %d info logs, got %d: %v", tt.expectedInfoLogs, len(logger.InfoMessages), logger.InfoMessages)
 				}
 
+				// Verify trace logging occurred
+				if len(logger.TraceMessages) != tt.expectedTraceLogs {
+					t.Errorf("Expected %d trace logs, got %d: %v", tt.expectedTraceLogs, len(logger.TraceMessages), logger.TraceMessages)
+				}
+
 				// Verify debug logging occurred
 				if len(logger.DebugMessages) != tt.expectedDebugLogs {
 					t.Errorf("Expected %d debug logs, got %d: %v", tt.expectedDebugLogs, len(logger.DebugMessages), logger.DebugMessages)
@@ -846,7 +968,218 @@ func TestCompletionApiInterface(t *testing.T) {
 	})
 }
 
+// Test NewMessage function
+func TestNewMessage(t *testing.T) {
+	tests := []struct {
+		name    string
+		role    string
+		content string
+		want    llm.Message
+	}{
+		{
+			name:    "Normal message",
+			role:    llm.RoleUserMsg,
+			content: "Hello world",
+			want:    llm.Message{Role: llm.RoleUserMsg, Content: "Hello world"},
+		},
+		{
+			name:    "Message with leading/trailing whitespace",
+			role:    llm.RoleSystemMsg,
+			content: "  Trim me  ",
+			want:    llm.Message{Role: llm.RoleSystemMsg, Content: "Trim me"},
+		},
+		{
+			name:    "Empty content",
+			role:    llm.RoleUserMsg,
+			content: "",
+			want:    llm.Message{Role: llm.RoleUserMsg, Content: ""},
+		},
+		{
+			name:    "Message with newlines",
+			role:    llm.RoleSystemMsg,
+			content: "Line 1\nLine 2\n",
+			want:    llm.Message{Role: llm.RoleSystemMsg, Content: "Line 1\nLine 2"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := NewMessage(tt.role, tt.content)
+			if got.Role != tt.want.Role {
+				t.Errorf("NewMessage() role = %v, want %v", got.Role, tt.want.Role)
+			}
+			if got.Content != tt.want.Content {
+				t.Errorf("NewMessage() content = %q, want %q", got.Content, tt.want.Content)
+			}
+		})
+	}
+}
+
+// Test NewChatCompletionRequest function
+func TestNewChatCompletionRequest(t *testing.T) {
+	tests := []struct {
+		name            string
+		settings        *settings.Settings
+		userPrompt      string
+		systemPrompt    string
+		wantModel       string
+		wantMessages    int
+		wantTemperature *float64
+		wantOptions     *llm.Options
+	}{
+		{
+			name: "Temperature enabled with custom provider",
+			settings: &settings.Settings{
+				CurrentProviderConfig: settings.ProviderConfig{
+					ProviderType: settings.ProviderTypeCustom,
+				},
+				ModelConfig: settings.LlmModelConfig{
+					ModelName:            "gpt-4",
+					IsTemperatureEnabled: true,
+					Temperature:          0.7,
+				},
+			},
+			userPrompt:      "User prompt",
+			systemPrompt:    "System prompt",
+			wantModel:       "gpt-4",
+			wantMessages:    2,
+			wantTemperature: float64Ptr(0.7),
+			wantOptions:     nil,
+		},
+		{
+			name: "Temperature disabled",
+			settings: &settings.Settings{
+				CurrentProviderConfig: settings.ProviderConfig{
+					ProviderType: settings.ProviderTypeCustom,
+				},
+				ModelConfig: settings.LlmModelConfig{
+					ModelName:            "gpt-4",
+					IsTemperatureEnabled: false,
+					Temperature:          0.7,
+				},
+			},
+			userPrompt:      "User prompt",
+			systemPrompt:    "System prompt",
+			wantModel:       "gpt-4",
+			wantMessages:    2,
+			wantTemperature: nil,
+			wantOptions:     nil,
+		},
+		{
+			name: "Temperature enabled with Ollama provider",
+			settings: &settings.Settings{
+				CurrentProviderConfig: settings.ProviderConfig{
+					ProviderType: settings.ProviderTypeOllama,
+				},
+				ModelConfig: settings.LlmModelConfig{
+					ModelName:            "llama2",
+					IsTemperatureEnabled: true,
+					Temperature:          0.5,
+				},
+			},
+			userPrompt:      "User prompt",
+			systemPrompt:    "System prompt",
+			wantModel:       "llama2",
+			wantMessages:    2,
+			wantTemperature: float64Ptr(0.5),
+			wantOptions:     &llm.Options{Temperature: 0.5},
+		},
+		{
+			name: "Empty prompts",
+			settings: &settings.Settings{
+				CurrentProviderConfig: settings.ProviderConfig{
+					ProviderType: settings.ProviderTypeCustom,
+				},
+				ModelConfig: settings.LlmModelConfig{
+					ModelName:            "gpt-4",
+					IsTemperatureEnabled: false,
+				},
+			},
+			userPrompt:      "",
+			systemPrompt:    "",
+			wantModel:       "gpt-4",
+			wantMessages:    2,
+			wantTemperature: nil,
+			wantOptions:     nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := NewChatCompletionRequest(tt.settings, tt.userPrompt, tt.systemPrompt)
+
+			// Check model
+			if got.Model != tt.wantModel {
+				t.Errorf("NewChatCompletionRequest() model = %v, want %v", got.Model, tt.wantModel)
+			}
+
+			// Check messages count
+			if len(got.Messages) != tt.wantMessages {
+				t.Errorf("NewChatCompletionRequest() messages count = %d, want %d", len(got.Messages), tt.wantMessages)
+			}
+
+			// Check message roles and content
+			if len(got.Messages) >= 1 {
+				if got.Messages[0].Role != llm.RoleSystemMsg {
+					t.Errorf("NewChatCompletionRequest() first message role = %v, want %v", got.Messages[0].Role, llm.RoleSystemMsg)
+				}
+				if got.Messages[0].Content != tt.systemPrompt {
+					t.Errorf("NewChatCompletionRequest() first message content = %q, want %q", got.Messages[0].Content, tt.systemPrompt)
+				}
+			}
+
+			if len(got.Messages) >= 2 {
+				if got.Messages[1].Role != llm.RoleUserMsg {
+					t.Errorf("NewChatCompletionRequest() second message role = %v, want %v", got.Messages[1].Role, llm.RoleUserMsg)
+				}
+				if got.Messages[1].Content != tt.userPrompt {
+					t.Errorf("NewChatCompletionRequest() second message content = %q, want %q", got.Messages[1].Content, tt.userPrompt)
+				}
+			}
+
+			// Check temperature
+			if tt.wantTemperature == nil {
+				if got.Temperature != nil {
+					t.Errorf("NewChatCompletionRequest() temperature = %v, want nil", got.Temperature)
+				}
+			} else {
+				if got.Temperature == nil {
+					t.Errorf("NewChatCompletionRequest() temperature = nil, want %v", tt.wantTemperature)
+				} else if *got.Temperature != *tt.wantTemperature {
+					t.Errorf("NewChatCompletionRequest() temperature = %v, want %v", *got.Temperature, *tt.wantTemperature)
+				}
+			}
+
+			// Check options
+			if tt.wantOptions == nil {
+				if got.Options != nil {
+					t.Errorf("NewChatCompletionRequest() options = %v, want nil", got.Options)
+				}
+			} else {
+				if got.Options == nil {
+					t.Errorf("NewChatCompletionRequest() options = nil, want %v", tt.wantOptions)
+				} else if got.Options.Temperature != tt.wantOptions.Temperature {
+					t.Errorf("NewChatCompletionRequest() options.temperature = %v, want %v", got.Options.Temperature, tt.wantOptions.Temperature)
+				}
+			}
+
+			// Check other fields
+			if got.Stream != false {
+				t.Errorf("NewChatCompletionRequest() stream = %v, want false", got.Stream)
+			}
+			if got.N != 1 {
+				t.Errorf("NewChatCompletionRequest() n = %v, want 1", got.N)
+			}
+		})
+	}
+}
+
 // Helper function to check if error message contains expected substring
 func containsErrorMessage(actual, expected string) bool {
 	return len(actual) >= len(expected) && (actual == expected || len(actual) > len(expected) && actual[:len(expected)] == expected)
+}
+
+// Helper function to create float64 pointer
+func float64Ptr(v float64) *float64 {
+	return &v
 }
