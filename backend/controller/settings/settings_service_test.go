@@ -2,7 +2,6 @@ package frontend
 
 import (
 	"errors"
-	"fmt"
 	"go_text/backend/model/settings"
 	"strings"
 	"testing"
@@ -43,22 +42,6 @@ func (m *MockLogger) Error(message string) {
 
 func (m *MockLogger) Fatal(message string) {
 	// Implement if needed
-}
-
-func (m *MockLogger) LogDebug(msg string, keysAndValues ...interface{}) {
-	m.DebugMessages = append(m.DebugMessages, fmt.Sprintf(msg, keysAndValues...))
-}
-
-func (m *MockLogger) LogInfo(msg string, keysAndValues ...interface{}) {
-	m.InfoMessages = append(m.InfoMessages, fmt.Sprintf(msg, keysAndValues...))
-}
-
-func (m *MockLogger) LogWarn(msg string, keysAndValues ...interface{}) {
-	m.WarnMessages = append(m.WarnMessages, fmt.Sprintf(msg, keysAndValues...))
-}
-
-func (m *MockLogger) LogError(msg string, keysAndValues ...interface{}) {
-	m.ErrorMessages = append(m.ErrorMessages, fmt.Sprintf(msg, keysAndValues...))
 }
 
 func (m *MockLogger) Clear() {

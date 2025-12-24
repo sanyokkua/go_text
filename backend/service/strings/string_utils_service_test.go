@@ -1,7 +1,6 @@
 package strings
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -41,22 +40,6 @@ func (m *MockLogger) Trace(message string) {
 
 func (m *MockLogger) Print(message string) {
 	// Implement if needed
-}
-
-func (m *MockLogger) LogInfo(msg string, keysAndValues ...interface{}) {
-	m.InfoMessages = append(m.InfoMessages, fmt.Sprintf(msg, keysAndValues...))
-}
-
-func (m *MockLogger) LogDebug(msg string, keysAndValues ...interface{}) {
-	m.DebugMessages = append(m.DebugMessages, fmt.Sprintf(msg, keysAndValues...))
-}
-
-func (m *MockLogger) LogWarn(msg string, keysAndValues ...interface{}) {
-	// Not used in current implementation
-}
-
-func (m *MockLogger) LogError(msg string, keysAndValues ...interface{}) {
-	m.ErrorMessages = append(m.ErrorMessages, fmt.Sprintf(msg, keysAndValues...))
 }
 
 func (m *MockLogger) Clear() {

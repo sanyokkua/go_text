@@ -29,22 +29,6 @@ func (a *AppLoggerStruct) Fatal(message string) {
 	log.Fatal().Msg(message)
 }
 
-func (a *AppLoggerStruct) LogDebug(msg string, keysAndValues ...interface{}) {
-	log.Debug().Msg(msg)
-}
-
-func (a *AppLoggerStruct) LogInfo(msg string, keysAndValues ...interface{}) {
-	log.Info().Msg(msg)
-}
-
-func (a *AppLoggerStruct) LogWarn(msg string, keysAndValues ...interface{}) {
-	log.Warn().Msg(msg)
-}
-
-func (a *AppLoggerStruct) LogError(msg string, keysAndValues ...interface{}) {
-	log.Error().Msg(msg)
-}
-
 func NewLogger() *AppLoggerStruct {
 	return &AppLoggerStruct{}
 }
