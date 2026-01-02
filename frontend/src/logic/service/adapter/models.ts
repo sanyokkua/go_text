@@ -10,6 +10,7 @@ export interface FrontActionRequest {
     outputLanguageId?: string;
 }
 export interface FrontGroup {
+    groupId: string;
     groupName: string;
     groupActions: FrontAction[];
 }

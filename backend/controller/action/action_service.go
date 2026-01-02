@@ -45,6 +45,7 @@ func (a *actionService) GetActionGroups() (*action.Actions, error) {
 		}
 
 		groups = append(groups, action.Group{
+			GroupID:      category.GroupID,
 			GroupName:    category.GroupName,
 			GroupActions: actions,
 		})

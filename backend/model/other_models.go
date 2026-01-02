@@ -14,6 +14,7 @@ type LanguageItem struct {
 }
 
 type AppPromptGroup struct {
+	GroupID      string
 	GroupName    string
 	SystemPrompt Prompt
 	Prompts      map[string]Prompt

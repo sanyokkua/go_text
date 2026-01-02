@@ -1141,6 +1141,7 @@ Format: markdown
 var ApplicationPrompts = model.AppPrompts{
 	PromptGroups: map[string]model.AppPromptGroup{
 		PromptCategoryProofread: {
+      GroupID: "001",
 			GroupName:    PromptCategoryProofread,
 			SystemPrompt: model.Prompt{ID: "systemProofread", Name: "System Proofread", Type: PromptTypeSystem, Category: PromptCategoryProofread, Value: systemPromptProofreading},
 			Prompts: map[string]model.Prompt{
@@ -1155,6 +1156,7 @@ var ApplicationPrompts = model.AppPrompts{
 			},
 		},
 		PromptCategoryFormat: {
+      GroupID: "002",
 			GroupName:    PromptCategoryFormat,
 			SystemPrompt: model.Prompt{ID: "systemFormat", Name: "System Format", Type: PromptTypeSystem, Category: PromptCategoryFormat, Value: systemPromptFormatting},
 			Prompts: map[string]model.Prompt{
@@ -1167,15 +1169,8 @@ var ApplicationPrompts = model.AppPrompts{
 				"formatWikiMarkdown":     {ID: "formatWikiMarkdown", Name: "Wiki Markdown", Type: PromptTypeUser, Category: PromptCategoryFormat, Value: userFormatWikiMarkdown},
 			},
 		},
-		PromptCategoryTranslation: {
-			GroupName:    PromptCategoryTranslation,
-			SystemPrompt: model.Prompt{ID: "systemTranslate", Name: "System Translate", Type: PromptTypeSystem, Category: PromptCategoryTranslation, Value: systemPromptTranslation},
-			Prompts: map[string]model.Prompt{
-				"translatePlain":      {ID: "translatePlain", Name: "Translate", Type: PromptTypeUser, Category: PromptCategoryTranslation, Value: userTranslatePlain},
-				"translateDictionary": {ID: "translateDictionary", Name: "Translate as Dictionary", Type: PromptTypeUser, Category: PromptCategoryTranslation, Value: userTranslateDictionary},
-			},
-		},
-		PromptCategorySummary: {
+    PromptCategorySummary: {
+      GroupID: "003",
 			GroupName:    PromptCategorySummary,
 			SystemPrompt: model.Prompt{ID: "systemSummary", Name: "System Translate", Type: PromptTypeSystem, Category: PromptCategorySummary, Value: systemPromptSummarization},
 			Prompts: map[string]model.Prompt{
@@ -1185,7 +1180,17 @@ var ApplicationPrompts = model.AppPrompts{
 				"summaryExplanation": {ID: "summaryExplanation", Name: "Explain text", Type: PromptTypeUser, Category: PromptCategorySummary, Value: userSummarizeExplain},
 			},
 		},
+		PromptCategoryTranslation: {
+      GroupID: "004",
+			GroupName:    PromptCategoryTranslation,
+			SystemPrompt: model.Prompt{ID: "systemTranslate", Name: "System Translate", Type: PromptTypeSystem, Category: PromptCategoryTranslation, Value: systemPromptTranslation},
+			Prompts: map[string]model.Prompt{
+				"translatePlain":      {ID: "translatePlain", Name: "Translate", Type: PromptTypeUser, Category: PromptCategoryTranslation, Value: userTranslatePlain},
+				"translateDictionary": {ID: "translateDictionary", Name: "Translate as Dictionary", Type: PromptTypeUser, Category: PromptCategoryTranslation, Value: userTranslateDictionary},
+			},
+		},
 		PromptCategoryTransforming: {
+      GroupID: "005",
 			GroupName:    PromptCategoryTransforming,
 			SystemPrompt: model.Prompt{ID: "systemTransforming", Name: "System Transforming", Type: PromptTypeSystem, Category: PromptCategoryTransforming, Value: systemPromptTransforming},
 			Prompts: map[string]model.Prompt{

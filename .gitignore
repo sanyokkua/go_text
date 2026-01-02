@@ -6,3 +6,6 @@ frontend/dist
 frontend/*.js
 frontend/*.d.ts
 frontend/wailsjs
+.DS_Store
+.vscode/*
+.continue/*

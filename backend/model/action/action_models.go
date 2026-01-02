@@ -6,6 +6,7 @@ type Action struct {
 }
 
 type Group struct {
+	GroupID      string   `json:"groupID"`
 	GroupName    string   `json:"groupName"`
 	GroupActions []Action `json:"groupActions"`
 }

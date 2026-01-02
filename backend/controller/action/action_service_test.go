@@ -252,6 +252,7 @@ func TestActionService_GetActionGroups(t *testing.T) {
 			want: &action.Actions{
 				ActionGroups: []action.Group{
 					{
+						GroupID: "001",
 						GroupName: "translation",
 						GroupActions: []action.Action{
 							{ID: "translate-en-fr", Text: "English to French"},

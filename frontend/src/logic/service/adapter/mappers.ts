@@ -64,7 +64,7 @@ export const fromBackendActionRequest = (input: action.ActionRequest): FrontActi
  * @returns Backend action.Group instance
  */
 export const toBackendGroup = (input: FrontGroup): action.Group => {
-    return action.Group.createFrom({ groupName: input.groupName, groupActions: input.groupActions.map(toBackendAction) });
+    return action.Group.createFrom({ groupID: input.groupId, groupName: input.groupName, groupActions: input.groupActions.map(toBackendAction) });
 };
 
 /**
@@ -73,7 +73,7 @@ export const toBackendGroup = (input: FrontGroup): action.Group => {
  * @returns Frontend Group instance
  */
 export const fromBackendGroup = (input: action.Group): FrontGroup => {
-    return { groupName: input.groupName, groupActions: input.groupActions.map(fromBackendAction) };
+    return {groupId: input.groupID, groupName: input.groupName, groupActions: input.groupActions.map(fromBackendAction) };
 };
 
 /**

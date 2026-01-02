@@ -36,7 +36,11 @@ const initialState: State = {
 const convertFrontActionsToActionGroups = (frontActions: FrontActions): { [key: string]: ActionIdentifier[] } => {
     const actionGroups: { [key: string]: ActionIdentifier[] } = {};
 
-    frontActions.actionGroups.forEach((group) => {
+    frontActions.actionGroups
+    .toSorted((a,b)=>{
+        return a.groupId.localeCompare(b.groupId);
+    })
+    .forEach((group) => {
         actionGroups[group.groupName] = group.groupActions.map((action) => ({ id: action.id, name: action.text }));
     });
 
@@ -69,7 +73,8 @@ export const stateSlice = createSlice({
             })
             .addCase(initializeState.fulfilled, (state: State, action: PayloadAction<{ frontActions: FrontActions }>) => {
                 state.isProcessing = false;
-                state.actionGroups = convertFrontActionsToActionGroups(action.payload.frontActions);
+                const frontActions = action.payload.frontActions;
+                state.actionGroups = convertFrontActionsToActionGroups(frontActions);
             })
             .addCase(initializeState.rejected, (state: State, action) => {
                 state.isProcessing = false;
