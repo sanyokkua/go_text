@@ -10,6 +10,7 @@ import LanguageConfiguration from './subview/LanguageConfiguration';
 import ModelConfiguration from './subview/ModelConfiguration';
 import OutputConfiguration from './subview/OutputConfiguration';
 import ProvidersConfiguration from './subview/ProvidersConfiguration';
+import { copyToClipboard } from '../../../../logic/store/state/state_thunks';
 
 type SettingsWidgetProps = { onClose: () => void };
 const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
@@ -53,6 +54,15 @@ const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
         }
     };
 
+    const handleCopyPath = async ()=> {
+        try {
+            await dispatch(copyToClipboard(settingsFilePath)).unwrap();
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (_error){
+            // The thunk handles error
+        }
+    }
+
     return (
         <div className="settings-widget-container">
             <div className="settings-widget-form-container">
@@ -64,6 +74,7 @@ const SettingsWidget: React.FC<SettingsWidgetProps> = ({ onClose }) => {
                         <strong>Settings File can be found by the following path:</strong>
                         <p>{settingsFilePath}</p>
                     </div>
+                    <Button text={"Copy Path to the Settings"} disabled={isLoadingSettings} colorStyle="primary-color" variant="outlined" onClick={handleCopyPath}/>
                 </SettingsGroup>
 
                 <ProvidersConfiguration />

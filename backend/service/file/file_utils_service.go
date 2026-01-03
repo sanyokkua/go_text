@@ -20,28 +20,28 @@ type fileUtilsService struct {
 
 func (s *fileUtilsService) InitAndGetAppSettingsFolder() (string, error) {
 	startTime := time.Now()
-	s.logger.Info("[fileUtilsService.InitAndGetAppSettingsFolder] Initializing application settings folder")
+	s.logger.Info("[fileUtilsService.initAndGetAppSettingsFolder] Initializing application settings folder")
 
 	configDir, err := os.UserConfigDir()
 	if err != nil {
-		s.logger.Trace(fmt.Sprintf("[InitAndGetAppSettingsFolder] Failed to get user config dir: %v, falling back to home directory", err))
+		s.logger.Trace(fmt.Sprintf("[initAndGetAppSettingsFolder] Failed to get user config dir: %v, falling back to home directory", err))
 		configDir, err = os.UserHomeDir()
 		if err != nil {
-			s.logger.Error(fmt.Sprintf("[InitAndGetAppSettingsFolder] Failed to get user home directory: %v", err))
+			s.logger.Error(fmt.Sprintf("[initAndGetAppSettingsFolder] Failed to get user home directory: %v", err))
 			return "", fmt.Errorf("failed to determine application directory: %w", err)
 		}
 	}
 
 	appConfigDir := filepath.Join(configDir, AppName)
-	s.logger.Trace(fmt.Sprintf("[InitAndGetAppSettingsFolder] Application config directory: %s", appConfigDir))
+	s.logger.Trace(fmt.Sprintf("[initAndGetAppSettingsFolder] Application config directory: %s", appConfigDir))
 
 	if err := os.MkdirAll(appConfigDir, 0700); err != nil {
-		s.logger.Error(fmt.Sprintf("[InitAndGetAppSettingsFolder] Failed to create directory '%s': %v", appConfigDir, err))
+		s.logger.Error(fmt.Sprintf("[initAndGetAppSettingsFolder] Failed to create directory '%s': %v", appConfigDir, err))
 		return "", fmt.Errorf("failed to create application directory: %w", err)
 	}
 
 	duration := time.Since(startTime)
-	s.logger.Info(fmt.Sprintf("[InitAndGetAppSettingsFolder] Successfully initialized settings folder in %v", duration))
+	s.logger.Info(fmt.Sprintf("[initAndGetAppSettingsFolder] Successfully initialized settings folder in %v", duration))
 
 	return appConfigDir, nil
 }

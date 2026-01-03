@@ -323,14 +323,18 @@ const ProvidersConfiguration: React.FC = () => {
                     onClick={isEditing ? handleCancelClick : handleEditClick}
                     disabled={isLoadingSettings}
                 />
-                <Button
-                    text="Create New"
-                    variant="solid"
-                    colorStyle="success-color"
-                    size="small"
-                    onClick={handleCreateNewClick}
-                    disabled={isLoadingSettings || isEditing}
-                />
+                {isEditing ? (
+                    <></>
+                ) : (
+                    <Button
+                        text="Create New"
+                        variant="solid"
+                        colorStyle="success-color"
+                        size="small"
+                        onClick={handleCreateNewClick}
+                        disabled={isLoadingSettings || isEditing}
+                    />
+                )}
             </SettingsGroup>
 
             {isEditing ? (
