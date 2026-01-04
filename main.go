@@ -5,6 +5,7 @@ import (
 	"embed"
 	"go_text/backend/model/application"
 	"go_text/backend/service/util"
+	application2 "go_text/internal/application"
 	"time"
 
 	"github.com/wailsapp/wails/v2"
@@ -32,6 +33,7 @@ func main() {
 	loggerApi := util.NewLogger()                             // Logger should be created to pass a link to it and later inject context
 	restyClient := NewRestyClient()                           // To configure the REST client before all other objects are created
 	app := application.NewApplication(loggerApi, restyClient) // Main App Structure with all dependencies
+	app2 := application2.NewApplicationContextHolder(loggerApi, restyClient)
 
 	// Create an application with options
 	err := wails.Run(&options.App{
@@ -49,13 +51,19 @@ func main() {
 		BackgroundColour:   &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		OnStartup: func(ctx context.Context) {
 			app.SetContext(ctx)
+			app2.SetContext(ctx)
 			err := app.FileUtilsService.InitDefaultSettingsIfAbsent()
+			if err != nil {
+				return // Ignoring error
+			}
+
+			err = app2.SettingsService.InitDefaultSettingsIfAbsent()
 			if err != nil {
 				return // Ignoring error
 			}
 		},
 		Bind: []interface{}{
-			app, app.AppActionApi, app.AppSettingsApi,
+			app, app.AppActionApi, app.AppSettingsApi, app2, app2.ActionHandler, app2.SettingsHandler,
 		},
 	})
 

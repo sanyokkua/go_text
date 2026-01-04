@@ -3,19 +3,6 @@ package settings
 type ProviderType string
 type AuthType string
 
-const (
-	ProviderTypeOpenAICompatible ProviderType = "open-ai-compatible"
-	ProviderTypeOllama           ProviderType = "ollama"
-)
-const (
-	AuthTypeNone   AuthType = "none"
-	AuthTypeApiKey AuthType = "api-key"
-	AuthTypeBearer AuthType = "bearer"
-)
-
-var ProviderTypes = []ProviderType{ProviderTypeOpenAICompatible, ProviderTypeOllama}
-var AuthTypes = []AuthType{AuthTypeNone, AuthTypeApiKey, AuthTypeBearer}
-
 type ProviderConfig struct {
 	// Generated on the backend side, unique
 	ProviderID string `json:"providerId"`
@@ -34,8 +21,8 @@ type ProviderConfig struct {
 	// Optional
 	AuthToken string `json:"authToken"`
 	// Default false, but if it is true - EnvVarTokenName shouldn't be empty
-	LoadAuthTokenFromEnv bool `json:"loadAuthTokenFromEnv"`
-	// Optional, but if LoadAuthTokenFromEnv is true - should present
+	UseAuthTokenFromEnv bool `json:"useAuthTokenFromEnv"`
+	// Optional, but if UseAuthTokenFromEnv is true - should present
 	EnvVarTokenName string `json:"envVarTokenName"`
 	// Default false
 	UseCustomHeaders bool `json:"useCustomHeaders"`

@@ -2,6 +2,7 @@ package settings
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -18,8 +19,8 @@ type SettingsRepository struct {
 	currentSettings *Settings
 }
 
-// NewRepository creates a new SettingsRepository with required dependencies
-func NewRepository(logger logger.Logger, fileUtils *file.FileUtilsService) *SettingsRepository {
+// NewSettingsRepository creates a new SettingsRepository with required dependencies
+func NewSettingsRepository(logger logger.Logger, fileUtils *file.FileUtilsService) *SettingsRepository {
 	if logger == nil {
 		panic("logger cannot be nil")
 	}
@@ -47,13 +48,14 @@ func (s *SettingsRepository) InitDefaultSettingsIfAbsent() error {
 	s.logger.Trace(fmt.Sprintf("%s: settings file path: %s", op, settingsPath))
 
 	// Check if a settings file already exists
-	if _, err := os.Stat(settingsPath); err == nil {
+	_, err = os.Stat(settingsPath)
+	if err == nil {
 		s.logger.Info(fmt.Sprintf("%s: settings file already exists, skipping initialization", op))
 		return nil
 	}
 
 	// Handle only "file not found" errors, fail on others
-	if !os.IsNotExist(err) {
+	if !errors.Is(err, os.ErrNotExist) {
 		s.logger.Error(fmt.Sprintf("%s: unexpected error checking settings file: %v", op, err))
 		return fmt.Errorf("%s: failed to check settings file existence: %w", op, err)
 	}

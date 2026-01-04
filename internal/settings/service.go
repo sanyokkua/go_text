@@ -114,7 +114,7 @@ func ValidateProviderConfig(cfg *ProviderConfig) error {
 		}
 	}
 
-	if cfg.LoadAuthTokenFromEnv {
+	if cfg.UseAuthTokenFromEnv {
 		if cfg.EnvVarTokenName == "" {
 			return errors.New("environment variable name required when loading token from environment")
 		}
