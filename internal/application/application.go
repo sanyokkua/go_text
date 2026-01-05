@@ -16,9 +16,9 @@ import (
 
 type ApplicationContextHolder struct {
 	ctx             context.Context
-	SettingsHandler *settings.SettingsHandler
-	SettingsService *settings.SettingsService
-	ActionHandler   *actions.ActionHandler
+	SettingsHandler settings.SettingsHandlerAPI
+	SettingsService settings.SettingsServiceAPI
+	ActionHandler   actions.ActionHandlerAPI
 	RestyClient     *resty.Client
 }
 

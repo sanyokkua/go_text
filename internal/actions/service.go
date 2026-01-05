@@ -51,11 +51,45 @@ func newChatCompletionRequest(cfg *settings.Settings, userPrompt, systemPrompt s
 	return req
 }
 
+type ActionServiceAPI interface {
+	GetModelsList() ([]string, error)
+	GetCompletionResponse(request *llms.ChatCompletionRequest) (string, error)
+	GetModelsListForProvider(provider *settings.ProviderConfig) ([]string, error)
+	GetCompletionResponseForProvider(provider *settings.ProviderConfig, request *llms.ChatCompletionRequest) (string, error)
+	GetPromptGroups() (*prompts.Prompts, error)
+	ProcessPromptActionRequest(actionReq *prompts.PromptActionRequest) (string, error)
+}
+
 type ActionService struct {
 	logger          logger.Logger
-	promptService   *prompts.PromptService
-	llmService      *llms.LLMService
-	settingsService *settings.SettingsService
+	promptService   prompts.PromptServiceAPI
+	llmService      llms.LLMServiceAPI
+	settingsService settings.SettingsServiceAPI
+}
+
+func NewActionService(logger logger.Logger, promptService prompts.PromptServiceAPI, llmService llms.LLMServiceAPI, settingsService settings.SettingsServiceAPI) ActionServiceAPI {
+	const op = "ActionService.NewActionService"
+
+	if logger == nil {
+		panic(fmt.Sprintf("%s: logger cannot be nil", op))
+	}
+	if promptService == nil {
+		panic(fmt.Sprintf("%s: prompt service cannot be nil", op))
+	}
+	if llmService == nil {
+		panic(fmt.Sprintf("%s: LLM service cannot be nil", op))
+	}
+	if settingsService == nil {
+		panic(fmt.Sprintf("%s: settings service cannot be nil", op))
+	}
+
+	logger.Info(fmt.Sprintf("[%s] Initializing action service", op))
+	return &ActionService{
+		logger:          logger,
+		promptService:   promptService,
+		llmService:      llmService,
+		settingsService: settingsService,
+	}
 }
 
 func (a *ActionService) GetModelsList() ([]string, error) {
@@ -281,29 +315,4 @@ func (a *ActionService) validateProviderConfiguration(provider *settings.Provide
 	}
 
 	return nil
-}
-
-func NewActionService(logger logger.Logger, promptService *prompts.PromptService, llmService *llms.LLMService, settingsService *settings.SettingsService) *ActionService {
-	const op = "ActionService.NewActionService"
-
-	if logger == nil {
-		panic(fmt.Sprintf("%s: logger cannot be nil", op))
-	}
-	if promptService == nil {
-		panic(fmt.Sprintf("%s: prompt service cannot be nil", op))
-	}
-	if llmService == nil {
-		panic(fmt.Sprintf("%s: LLM service cannot be nil", op))
-	}
-	if settingsService == nil {
-		panic(fmt.Sprintf("%s: settings service cannot be nil", op))
-	}
-
-	logger.Info(fmt.Sprintf("[%s] Initializing action service", op))
-	return &ActionService{
-		logger:          logger,
-		promptService:   promptService,
-		llmService:      llmService,
-		settingsService: settingsService,
-	}
 }

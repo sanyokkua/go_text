@@ -7,12 +7,30 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/logger"
 )
 
-type SettingsHandler struct {
-	logger          logger.Logger
-	settingsService *SettingsService
+type SettingsHandlerAPI interface {
+	GetAppSettingsMetadata() (AppSettingsMetadata, error)
+	GetSettings() (Settings, error)
+	ResetSettingsToDefault() (Settings, error)
+	GetAllProviderConfigs() ([]ProviderConfig, error)
+	GetCurrentProviderConfig() (ProviderConfig, error)
+	GetProviderConfig(providerId string) (ProviderConfig, error)
+	CreateProviderConfig(cfg ProviderConfig) (ProviderConfig, error)
+	UpdateProviderConfig(cfg ProviderConfig) (ProviderConfig, error)
+	DeleteProviderConfig(providerId string) error
+	SetAsCurrentProviderConfig(providerId string) (ProviderConfig, error)
+	GetInferenceBaseConfig() (InferenceBaseConfig, error)
+	UpdateInferenceBaseConfig(cfg InferenceBaseConfig) (InferenceBaseConfig, error)
+	GetModelConfig() (ModelConfig, error)
+	UpdateModelConfig(cfg ModelConfig) (ModelConfig, error)
+	GetLanguageConfig() (LanguageConfig, error)
 }
 
-func NewSettingsHandler(logger logger.Logger, settingsService *SettingsService) *SettingsHandler {
+type SettingsHandler struct {
+	logger          logger.Logger
+	settingsService SettingsServiceAPI
+}
+
+func NewSettingsHandler(logger logger.Logger, settingsService SettingsServiceAPI) SettingsHandlerAPI {
 	if logger == nil {
 		panic("logger cannot be nil")
 	}

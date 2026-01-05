@@ -10,12 +10,23 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/logger"
 )
 
+type PromptServiceAPI interface {
+	ReplaceTemplateParameter(token, replacementValue, sourceTemplate string) (string, error)
+	SanitizeReasoningBlock(llmResponse string) (string, error)
+	GetAppPrompts() *Prompts
+	GetSystemPromptByCategory(category string) (Prompt, error)
+	GetUserPromptById(id string) (Prompt, error)
+	GetPrompt(promptID string) (Prompt, error)
+	GetSystemPrompt(category string) (string, error)
+	BuildPrompt(template, category string, action *PromptActionRequest, useMarkdown bool) (string, error)
+}
+
 type PromptService struct {
 	logger         logger.Logger
 	sanitizeRegexp *regexp.Regexp
 }
 
-func NewPromptService(logger logger.Logger) *PromptService {
+func NewPromptService(logger logger.Logger) PromptServiceAPI {
 	if logger == nil {
 		panic("PromptService: logger must not be nil")
 	}

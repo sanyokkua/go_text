@@ -10,9 +10,18 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/logger"
 )
 
+type ActionHandlerAPI interface {
+	GetModelsList() ([]string, error)
+	GetCompletionResponse(request *llms.ChatCompletionRequest) (string, error)
+	GetModelsListForProvider(provider *settings.ProviderConfig) ([]string, error)
+	GetCompletionResponseForProvider(provider *settings.ProviderConfig, request *llms.ChatCompletionRequest) (string, error)
+	GetPromptGroups() (*prompts.Prompts, error)
+	ProcessPrompt(actionReq prompts.PromptActionRequest) (string, error)
+}
+
 type ActionHandler struct {
 	logger        logger.Logger
-	actionService *ActionService
+	actionService ActionServiceAPI
 }
 
 func (h *ActionHandler) GetModelsList() ([]string, error) {
@@ -23,48 +32,19 @@ func (h *ActionHandler) GetModelsList() ([]string, error) {
 
 func (h *ActionHandler) GetCompletionResponse(request *llms.ChatCompletionRequest) (string, error) {
 	const op = "ActionHandler.GetCompletionResponse"
-
-	if request == nil {
-		err := fmt.Errorf("completion request cannot be nil")
-		h.logger.Error(fmt.Sprintf("[%s] %v", op, err))
-		return "", fmt.Errorf("%s: %w", op, err)
-	}
-
-	h.logger.Debug(fmt.Sprintf("[%s] Sending completion request, model=%s, messages_count=%d",
-		op, request.Model, len(request.Messages)))
+	h.logger.Debug(fmt.Sprintf("[%s] Sending completion request, model=%s, messages_count=%d", op, request.Model, len(request.Messages)))
 	return h.actionService.GetCompletionResponse(request)
 }
 
 func (h *ActionHandler) GetModelsListForProvider(provider *settings.ProviderConfig) ([]string, error) {
 	const op = "ActionHandler.GetModelsListForProvider"
-
-	if provider == nil {
-		err := fmt.Errorf("provider configuration cannot be nil")
-		h.logger.Error(fmt.Sprintf("[%s] %v", op, err))
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-
 	h.logger.Debug(fmt.Sprintf("[%s] Retrieving models list for provider=%s", op, provider.ProviderName))
 	return h.actionService.GetModelsListForProvider(provider)
 }
 
 func (h *ActionHandler) GetCompletionResponseForProvider(provider *settings.ProviderConfig, request *llms.ChatCompletionRequest) (string, error) {
 	const op = "ActionHandler.GetCompletionResponseForProvider"
-
-	if provider == nil {
-		err := fmt.Errorf("provider configuration cannot be nil")
-		h.logger.Error(fmt.Sprintf("[%s] %v", op, err))
-		return "", fmt.Errorf("%s: %w", op, err)
-	}
-
-	if request == nil {
-		err := fmt.Errorf("completion request cannot be nil")
-		h.logger.Error(fmt.Sprintf("[%s] %v", op, err))
-		return "", fmt.Errorf("%s: %w", op, err)
-	}
-
-	h.logger.Debug(fmt.Sprintf("[%s] Sending completion request for provider=%s, model=%s, messages_count=%d",
-		op, provider.ProviderName, request.Model, len(request.Messages)))
+	h.logger.Debug(fmt.Sprintf("[%s] Sending completion request for provider=%s, model=%s, messages_count=%d", op, provider.ProviderName, request.Model, len(request.Messages)))
 	return h.actionService.GetCompletionResponseForProvider(provider, request)
 }
 
@@ -115,7 +95,7 @@ func (h *ActionHandler) ProcessPrompt(actionReq prompts.PromptActionRequest) (st
 	return result, nil
 }
 
-func NewActionHandler(logger logger.Logger, actionService *ActionService) *ActionHandler {
+func NewActionHandler(logger logger.Logger, actionService ActionServiceAPI) ActionHandlerAPI {
 	const op = "ActionHandler.NewActionHandler"
 
 	if logger == nil {

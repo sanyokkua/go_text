@@ -3,10 +3,11 @@ package settings
 import (
 	"testing"
 
+	"go_text/internal/file"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/wailsapp/wails/v2/pkg/logger"
-	"go_text/internal/file"
 )
 
 // Test SettingsService Constructor
@@ -14,8 +15,8 @@ func TestSettingsService_Constructor(t *testing.T) {
 	tests := []struct {
 		name         string
 		logger       logger.Logger
-		repo         *SettingsRepository
-		fileUtils    *file.FileUtilsService
+		repo         SettingsRepositoryAPI
+		fileUtils    file.FileUtilsServiceAPI
 		expectPanic  bool
 		panicMessage string
 	}{
@@ -69,7 +70,7 @@ func TestSettingsService_Constructor(t *testing.T) {
 }
 
 // Test helper functions for creating test data
-func createTestSettingsService(t *testing.T) *SettingsService {
+func createTestSettingsService(t *testing.T) SettingsServiceAPI {
 	logger := &TestLogger{}
 	fileUtils := file.NewFileUtilsService(logger)
 	repo := NewSettingsRepository(logger, fileUtils)

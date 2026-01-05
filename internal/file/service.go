@@ -9,11 +9,16 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/logger"
 )
 
+type FileUtilsServiceAPI interface {
+	GetAppSettingsFolderPath() (string, error)
+	GetAppSettingsFilePath() (string, error)
+}
+
 type FileUtilsService struct {
 	logger logger.Logger
 }
 
-func NewFileUtilsService(logger logger.Logger) *FileUtilsService {
+func NewFileUtilsService(logger logger.Logger) FileUtilsServiceAPI {
 	if logger == nil {
 		panic("logger cannot be nil")
 	}

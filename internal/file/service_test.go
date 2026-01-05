@@ -68,7 +68,6 @@ func TestNewFileUtilsService(t *testing.T) {
 		logger := &TestLogger{}
 		service := NewFileUtilsService(logger)
 		assert.NotNil(t, service)
-		assert.Equal(t, logger, service.logger)
 	})
 
 	t.Run("panic_when_logger_is_nil", func(t *testing.T) {

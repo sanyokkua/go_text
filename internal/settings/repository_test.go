@@ -7,9 +7,10 @@ import (
 	"runtime"
 	"testing"
 
+	"go_text/internal/file"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go_text/internal/file"
 )
 
 // TestLogger is a simple logger for testing
@@ -66,7 +67,7 @@ func getSettingsFilePath(tmpDir string) string {
 }
 
 // createTestRepo creates a test repository with a real file utils service
-func createTestRepo(t *testing.T) *SettingsRepository {
+func createTestRepo(t *testing.T) SettingsRepositoryAPI {
 	logger := &TestLogger{}
 	fileUtils := file.NewFileUtilsService(logger)
 	return NewSettingsRepository(logger, fileUtils)

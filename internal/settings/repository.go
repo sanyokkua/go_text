@@ -12,15 +12,26 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/logger"
 )
 
+type SettingsRepositoryAPI interface {
+	InitDefaultSettingsIfAbsent() error
+	GetSettings() (*Settings, error)
+	SaveSettings(settings *Settings) (*Settings, error)
+	GetAvailableProviderConfigs() ([]ProviderConfig, error)
+	GetCurrentProviderConfig() (*ProviderConfig, error)
+	GetInferenceBaseConfig() (*InferenceBaseConfig, error)
+	GetModelConfig() (*ModelConfig, error)
+	GetLanguageConfig() (*LanguageConfig, error)
+}
+
 // SettingsRepository handles the persistence of application settings
 type SettingsRepository struct {
 	logger          logger.Logger
-	fileUtils       *file.FileUtilsService
+	fileUtils       file.FileUtilsServiceAPI
 	currentSettings *Settings
 }
 
 // NewSettingsRepository creates a new SettingsRepository with required dependencies
-func NewSettingsRepository(logger logger.Logger, fileUtils *file.FileUtilsService) *SettingsRepository {
+func NewSettingsRepository(logger logger.Logger, fileUtils file.FileUtilsServiceAPI) SettingsRepositoryAPI {
 	if logger == nil {
 		panic("logger cannot be nil")
 	}

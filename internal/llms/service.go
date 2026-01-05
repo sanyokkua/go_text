@@ -11,10 +11,38 @@ import (
 	"resty.dev/v3"
 )
 
+type LLMServiceAPI interface {
+	GetModelsList() ([]string, error)
+	GetCompletionResponse(request *ChatCompletionRequest) (string, error)
+	GetModelsListForProvider(provider *settings.ProviderConfig) ([]string, error)
+	GetCompletionResponseForProvider(provider *settings.ProviderConfig, request *ChatCompletionRequest) (string, error)
+}
+
 type LLMService struct {
 	logger          logger.Logger
 	client          *resty.Client
-	settingsService *settings.SettingsService
+	settingsService settings.SettingsServiceAPI
+}
+
+func NewLLMApiService(logger logger.Logger, client *resty.Client, settingsService settings.SettingsServiceAPI) LLMServiceAPI {
+	const op = "LLMService.NewLLMApiService"
+
+	if logger == nil {
+		panic(fmt.Sprintf("%s: logger cannot be nil", op))
+	}
+	if client == nil {
+		panic(fmt.Sprintf("%s: REST client cannot be nil", op))
+	}
+	if settingsService == nil {
+		panic(fmt.Sprintf("%s: settings service cannot be nil", op))
+	}
+
+	logger.Info(fmt.Sprintf("[%s] Initializing LLM service", op))
+	return &LLMService{
+		logger:          logger,
+		client:          client,
+		settingsService: settingsService,
+	}
 }
 
 func (l *LLMService) GetModelsList() ([]string, error) {
@@ -490,25 +518,4 @@ func (l *LLMService) mapModelNames(response *ModelsListResponse) []string {
 
 	l.logger.Trace(fmt.Sprintf("[%s] Mapped %d model IDs from response data", op, len(modelIDs)))
 	return modelIDs
-}
-
-func NewLLMApiService(logger logger.Logger, client *resty.Client, settingsService *settings.SettingsService) *LLMService {
-	const op = "LLMService.NewLLMApiService"
-
-	if logger == nil {
-		panic(fmt.Sprintf("%s: logger cannot be nil", op))
-	}
-	if client == nil {
-		panic(fmt.Sprintf("%s: REST client cannot be nil", op))
-	}
-	if settingsService == nil {
-		panic(fmt.Sprintf("%s: settings service cannot be nil", op))
-	}
-
-	logger.Info(fmt.Sprintf("[%s] Initializing LLM service", op))
-	return &LLMService{
-		logger:          logger,
-		client:          client,
-		settingsService: settingsService,
-	}
 }

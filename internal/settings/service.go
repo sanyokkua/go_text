@@ -186,13 +186,36 @@ func ValidateSettings(s Settings) error {
 	return nil
 }
 
-type SettingsService struct {
-	logger       logger.Logger
-	settingsRepo *SettingsRepository
-	fileUtils    *file.FileUtilsService
+type SettingsServiceAPI interface {
+	InitDefaultSettingsIfAbsent() error
+	GetAppSettingsMetadata() (*AppSettingsMetadata, error)
+	GetSettings() (*Settings, error)
+	ResetSettingsToDefault() (*Settings, error)
+	GetAllProviderConfigs() ([]ProviderConfig, error)
+	GetCurrentProviderConfig() (*ProviderConfig, error)
+	GetProviderConfig(providerId string) (*ProviderConfig, error)
+	CreateProviderConfig(cfg *ProviderConfig) (*ProviderConfig, error)
+	UpdateProviderConfig(cfg *ProviderConfig) (*ProviderConfig, error)
+	DeleteProviderConfig(providerId string) error
+	SetAsCurrentProviderConfig(providerId string) (*ProviderConfig, error)
+	GetInferenceBaseConfig() (*InferenceBaseConfig, error)
+	GetModelConfig() (*ModelConfig, error)
+	UpdateInferenceBaseConfig(cfg *InferenceBaseConfig) (*InferenceBaseConfig, error)
+	UpdateModelConfig(cfg *ModelConfig) (*ModelConfig, error)
+	GetLanguageConfig() (*LanguageConfig, error)
+	SetDefaultInputLanguage(language string) error
+	SetDefaultOutputLanguage(language string) error
+	AddLanguage(language string) ([]string, error)
+	RemoveLanguage(language string) ([]string, error)
 }
 
-func NewSettingsService(logger logger.Logger, settingsRepo *SettingsRepository, fileUtils *file.FileUtilsService) *SettingsService {
+type SettingsService struct {
+	logger       logger.Logger
+	settingsRepo SettingsRepositoryAPI
+	fileUtils    file.FileUtilsServiceAPI
+}
+
+func NewSettingsService(logger logger.Logger, settingsRepo SettingsRepositoryAPI, fileUtils file.FileUtilsServiceAPI) SettingsServiceAPI {
 	if logger == nil {
 		panic("logger cannot be nil")
 	}
