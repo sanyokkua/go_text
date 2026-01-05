@@ -165,6 +165,73 @@ LanguageConfig:           LanguageConfig{...},
 
 **Usage:** Initial settings load, settings view refresh
 
+**Response Example:**
+```json
+{
+  "authTypes": ["none", "apiKey", "bearer"],
+  "providerTypes": ["openaiCompatible", "ollama"],
+  "settingsFolder": "/Users/username/Library/Application Support/MyApp",
+  "settingsFile": "/Users/username/Library/Application Support/MyApp/settings.json"
+}
+```
+
+### 2. GetSettings()
+
+**Response Example:**
+```json
+{
+  "availableProviderConfigs": [
+    {
+      "providerId": "prov-123",
+      "providerName": "OpenAI Compatible",
+      "providerType": "openaiCompatible",
+      "baseUrl": "https://api.openai.com/v1/",
+      "modelsEndpoint": "models",
+      "completionEndpoint": "chat/completions",
+      "authType": "bearer",
+      "authToken": "sk-...",
+      "useAuthTokenFromEnv": false,
+      "envVarTokenName": "",
+      "useCustomHeaders": false,
+      "headers": {},
+      "useCustomModels": false,
+      "customModels": []
+    }
+  ],
+  "currentProviderConfig": {
+    "providerId": "prov-123",
+    "providerName": "OpenAI Compatible",
+    "providerType": "openaiCompatible",
+    "baseUrl": "https://api.openai.com/v1/",
+    "modelsEndpoint": "models",
+    "completionEndpoint": "chat/completions",
+    "authType": "bearer",
+    "authToken": "sk-...",
+    "useAuthTokenFromEnv": false,
+    "envVarTokenName": "",
+    "useCustomHeaders": false,
+    "headers": {},
+    "useCustomModels": false,
+    "customModels": []
+  },
+  "inferenceBaseConfig": {
+    "timeout": 30,
+    "maxRetries": 3,
+    "useMarkdownForOutput": true
+  },
+  "modelConfig": {
+    "name": "gpt-3.5-turbo",
+    "useTemperature": true,
+    "temperature": 0.7
+  },
+  "languageConfig": {
+    "languages": ["English", "Spanish", "French", "German"],
+    "defaultInputLanguage": "English",
+    "defaultOutputLanguage": "Spanish"
+  }
+}
+```
+
 ### 3. ResetSettingsToDefault()
 
 **Signature:**
@@ -233,6 +300,77 @@ LanguageConfig: {DefaultInputLanguage: "English", DefaultOutputLanguage: "Ukrain
 
 **Usage:** Factory reset, troubleshooting, initial setup
 
+**Response Example:**
+```json
+{
+  "availableProviderConfigs": [
+    {
+      "providerId": "ollama-default",
+      "providerName": "Ollama",
+      "providerType": "ollama",
+      "baseUrl": "http://localhost:11434/",
+      "modelsEndpoint": "api/tags",
+      "completionEndpoint": "api/chat",
+      "authType": "none",
+      "authToken": "",
+      "useAuthTokenFromEnv": false,
+      "envVarTokenName": "",
+      "useCustomHeaders": false,
+      "headers": {},
+      "useCustomModels": false,
+      "customModels": []
+    },
+    {
+      "providerId": "openai-default",
+      "providerName": "OpenAI",
+      "providerType": "openaiCompatible",
+      "baseUrl": "https://api.openai.com/v1/",
+      "modelsEndpoint": "models",
+      "completionEndpoint": "chat/completions",
+      "authType": "bearer",
+      "authToken": "",
+      "useAuthTokenFromEnv": true,
+      "envVarTokenName": "OPENAI_API_KEY",
+      "useCustomHeaders": false,
+      "headers": {},
+      "useCustomModels": false,
+      "customModels": []
+    }
+  ],
+  "currentProviderConfig": {
+    "providerId": "ollama-default",
+    "providerName": "Ollama",
+    "providerType": "ollama",
+    "baseUrl": "http://localhost:11434/",
+    "modelsEndpoint": "api/tags",
+    "completionEndpoint": "api/chat",
+    "authType": "none",
+    "authToken": "",
+    "useAuthTokenFromEnv": false,
+    "envVarTokenName": "",
+    "useCustomHeaders": false,
+    "headers": {},
+    "useCustomModels": false,
+    "customModels": []
+  },
+  "inferenceBaseConfig": {
+    "timeout": 60,
+    "maxRetries": 3,
+    "useMarkdownForOutput": false
+  },
+  "modelConfig": {
+    "name": "",
+    "useTemperature": true,
+    "temperature": 0.5
+  },
+  "languageConfig": {
+    "languages": ["English", "Ukrainian", "Spanish", "French", "German", "Italian", "Portuguese", "Russian", "Chinese", "Japanese", "Korean", "Arabic", "Hindi", "Bengali", "Turkish"],
+    "defaultInputLanguage": "English",
+    "defaultOutputLanguage": "Ukrainian"
+  }
+}
+```
+
 ### 4. GetAllProviderConfigs()
 
 **Signature:**
@@ -268,6 +406,44 @@ graph TD
 
 **Error Conditions:** Settings retrieval failure
 
+**Response Example:**
+```json
+[
+  {
+    "providerId": "prov-123",
+    "providerName": "OpenAI Compatible",
+    "providerType": "openaiCompatible",
+    "baseUrl": "https://api.openai.com/v1/",
+    "modelsEndpoint": "models",
+    "completionEndpoint": "chat/completions",
+    "authType": "bearer",
+    "authToken": "sk-...",
+    "useAuthTokenFromEnv": false,
+    "envVarTokenName": "",
+    "useCustomHeaders": false,
+    "headers": {},
+    "useCustomModels": false,
+    "customModels": []
+  },
+  {
+    "providerId": "prov-456",
+    "providerName": "Local Ollama",
+    "providerType": "ollama",
+    "baseUrl": "http://localhost:11434/",
+    "modelsEndpoint": "api/tags",
+    "completionEndpoint": "api/chat",
+    "authType": "none",
+    "authToken": "",
+    "useAuthTokenFromEnv": false,
+    "envVarTokenName": "",
+    "useCustomHeaders": false,
+    "headers": {},
+    "useCustomModels": false,
+    "customModels": []
+  }
+]
+```
+
 ### 5. GetCurrentProviderConfig()
 
 **Signature:**
@@ -296,6 +472,26 @@ graph TD
 **State Changes:**
 
 - **No state changes**
+
+**Response Example:**
+```json
+{
+  "providerId": "prov-123",
+  "providerName": "OpenAI Compatible",
+  "providerType": "openaiCompatible",
+  "baseUrl": "https://api.openai.com/v1/",
+  "modelsEndpoint": "models",
+  "completionEndpoint": "chat/completions",
+  "authType": "bearer",
+  "authToken": "sk-...",
+  "useAuthTokenFromEnv": false,
+  "envVarTokenName": "",
+  "useCustomHeaders": false,
+  "headers": {},
+  "useCustomModels": false,
+  "customModels": []
+}
+```
 
 ### 6. GetProviderConfig(providerId string)
 
@@ -336,6 +532,26 @@ graph TD
 - Empty providerId
 - Provider not found
 - Config is nil
+
+**Response Example:**
+```json
+{
+  "providerId": "prov-123",
+  "providerName": "OpenAI Compatible",
+  "providerType": "openaiCompatible",
+  "baseUrl": "https://api.openai.com/v1/",
+  "modelsEndpoint": "models",
+  "completionEndpoint": "chat/completions",
+  "authType": "bearer",
+  "authToken": "sk-...",
+  "useAuthTokenFromEnv": false,
+  "envVarTokenName": "",
+  "useCustomHeaders": false,
+  "headers": {},
+  "useCustomModels": false,
+  "customModels": []
+}
+```
 
 ### 7. CreateProviderConfig(cfg ProviderConfig)
 
@@ -432,6 +648,26 @@ graph TD
 - **Cache updated**: In-memory cache reflects changes
 - **Current provider sync**: If updating current provider, both arrays updated
 
+**Response Example:**
+```json
+{
+  "providerId": "prov-123",
+  "providerName": "OpenAI Compatible Updated",
+  "providerType": "openaiCompatible",
+  "baseUrl": "https://api.openai.com/v1/",
+  "modelsEndpoint": "models",
+  "completionEndpoint": "chat/completions",
+  "authType": "bearer",
+  "authToken": "sk-new-token...",
+  "useAuthTokenFromEnv": false,
+  "envVarTokenName": "",
+  "useCustomHeaders": false,
+  "headers": {},
+  "useCustomModels": false,
+  "customModels": []
+}
+```
+
 ### 9. DeleteProviderConfig(providerId string)
 
 **Signature:**
@@ -475,6 +711,13 @@ graph TD
 - Provider not found
 - Settings save failure
 
+**Response Example:**
+```json
+{
+  "success": true
+}
+```
+
 ### 10. SetAsCurrentProviderConfig(providerId string)
 
 **Signature:**
@@ -509,6 +752,26 @@ graph TD
 - **Persistent state changes**: Current provider updated
 - **Cache updated**: In-memory cache reflects new current provider
 
+**Response Example:**
+```json
+{
+  "providerId": "prov-456",
+  "providerName": "Local Ollama",
+  "providerType": "ollama",
+  "baseUrl": "http://localhost:11434/",
+  "modelsEndpoint": "api/tags",
+  "completionEndpoint": "api/chat",
+  "authType": "none",
+  "authToken": "",
+  "useAuthTokenFromEnv": false,
+  "envVarTokenName": "",
+  "useCustomHeaders": false,
+  "headers": {},
+  "useCustomModels": false,
+  "customModels": []
+}
+```
+
 ### 11. GetInferenceBaseConfig()
 
 **Signature:**
@@ -537,6 +800,15 @@ graph TD
 **State Changes:**
 
 - **No state changes**
+
+**Response Example:**
+```json
+{
+  "timeout": 30,
+  "maxRetries": 3,
+  "useMarkdownForOutput": true
+}
+```
 
 ### 12. UpdateInferenceBaseConfig(cfg InferenceBaseConfig)
 
@@ -570,6 +842,15 @@ graph TD
 
 - **Persistent state changes**: Inference config updated
 
+**Response Example:**
+```json
+{
+  "timeout": 45,
+  "maxRetries": 5,
+  "useMarkdownForOutput": false
+}
+```
+
 ### 13. GetModelConfig()
 
 **Signature:**
@@ -598,6 +879,15 @@ graph TD
 **State Changes:**
 
 - **No state changes**
+
+**Response Example:**
+```json
+{
+  "name": "gpt-3.5-turbo",
+  "useTemperature": true,
+  "temperature": 0.7
+}
+```
 
 ### 14. UpdateModelConfig(cfg ModelConfig)
 
@@ -631,6 +921,15 @@ graph TD
 
 - **Persistent state changes**: Model config updated
 
+**Response Example:**
+```json
+{
+  "name": "gpt-4",
+  "useTemperature": true,
+  "temperature": 0.9
+}
+```
+
 ### 15. GetLanguageConfig()
 
 **Signature:**
@@ -659,6 +958,15 @@ graph TD
 **State Changes:**
 
 - **No state changes**
+
+**Response Example:**
+```json
+{
+  "languages": ["English", "Spanish", "French", "German"],
+  "defaultInputLanguage": "English",
+  "defaultOutputLanguage": "Spanish"
+}
+```
 
 ### 16. SetDefaultInputLanguage(language string)
 
@@ -693,6 +1001,13 @@ graph TD
 
 - **Persistent state changes**: Default input language updated
 
+**Response Example:**
+```json
+{
+  "success": true
+}
+```
+
 ### 17. SetDefaultOutputLanguage(language string)
 
 **Signature:**
@@ -725,6 +1040,13 @@ graph TD
 **State Changes:**
 
 - **Persistent state changes**: Default output language updated
+
+**Response Example:**
+```json
+{
+  "success": true
+}
+```
 
 ### 18. AddLanguage(language string)
 
@@ -760,6 +1082,11 @@ graph TD
 
 - **Persistent state changes**: New language added to supported list
 - **Returns**: Updated languages array
+
+**Response Example:**
+```json
+["English", "Spanish", "French", "German", "Italian"]
+```
 
 ### 19. RemoveLanguage(language string)
 
@@ -801,6 +1128,11 @@ graph TD
 
 - **Persistent state changes**: Language removed from supported list
 - **Returns**: Updated languages array
+
+**Response Example:**
+```json
+["English", "Spanish", "French", "German"]
+```
 
 ## Summary
 
