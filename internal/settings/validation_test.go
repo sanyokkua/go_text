@@ -585,8 +585,8 @@ func TestValidateSettings(t *testing.T) {
 					DefaultOutputLanguage: "Spanish",
 				},
 			},
-			expectError:   true,
-			errorContains: "model name cannot be empty",
+			expectError:   false,
+			errorContains: "",
 		},
 		{
 			name: "invalid_temperature_range",

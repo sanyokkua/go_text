@@ -255,16 +255,15 @@ func TestSettingsService_UpdateModelConfig(t *testing.T) {
 	assert.Equal(t, 0.7, updatedConfig.Temperature)
 
 	// Test empty model name
-	invalidConfig := &ModelConfig{
+	validConfigWithEmptyModelName := &ModelConfig{
 		Name:           "",
 		UseTemperature: true,
 		Temperature:    0.7,
 	}
 
-	_, err = service.UpdateModelConfig(invalidConfig)
+	_, err = service.UpdateModelConfig(validConfigWithEmptyModelName)
 
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "model name cannot be empty")
+	assert.NoError(t, err)
 
 	// Test invalid temperature range
 	invalidConfig2 := &ModelConfig{
@@ -406,7 +405,7 @@ func TestSettingsService_GetSettings(t *testing.T) {
 	assert.NotNil(t, settings)
 	assert.NotEmpty(t, settings.AvailableProviderConfigs)
 	assert.NotEmpty(t, settings.CurrentProviderConfig.ProviderName)
-	assert.NotEmpty(t, settings.ModelConfig.Name)
+	assert.Empty(t, settings.ModelConfig.Name)
 	assert.NotEmpty(t, settings.LanguageConfig.Languages)
 }
 

@@ -23,6 +23,10 @@ type SettingsHandlerAPI interface {
 	GetModelConfig() (ModelConfig, error)
 	UpdateModelConfig(cfg ModelConfig) (ModelConfig, error)
 	GetLanguageConfig() (LanguageConfig, error)
+	SetDefaultInputLanguage(language string) error
+	SetDefaultOutputLanguage(language string) error
+	AddLanguage(language string) ([]string, error)
+	RemoveLanguage(language string) ([]string, error)
 }
 
 type SettingsHandler struct {

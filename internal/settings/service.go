@@ -165,9 +165,7 @@ func ValidateSettings(s Settings) error {
 	}
 
 	// Model config
-	if s.ModelConfig.Name == "" {
-		return errors.New("model name cannot be empty")
-	}
+	// Model name can be empty (user may not have selected a model yet)
 	if s.ModelConfig.UseTemperature && (s.ModelConfig.Temperature < 0 || s.ModelConfig.Temperature > 2) {
 		return errors.New("temperature must be between 0 and 2 when enabled")
 	}
@@ -620,10 +618,7 @@ func (s *SettingsService) UpdateModelConfig(cfg *ModelConfig) (*ModelConfig, err
 	startTime := time.Now()
 	s.logger.Info(fmt.Sprintf("%s: updating model configuration", op))
 
-	if strings.TrimSpace(cfg.Name) == "" {
-		s.logger.Error(fmt.Sprintf("%s: model name cannot be empty", op))
-		return nil, fmt.Errorf("%s: model name cannot be empty", op)
-	}
+	// Model name can be empty (user may not have selected a model yet)
 	if cfg.UseTemperature && (cfg.Temperature < 0 || cfg.Temperature > 2) {
 		s.logger.Error(fmt.Sprintf("%s: invalid temperature value: %f", op, cfg.Temperature))
 		return nil, fmt.Errorf("%s: temperature must be between 0 and 2 when enabled", op)
