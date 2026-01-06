@@ -1,4 +1,4 @@
-import { action, settings } from '../../../../wailsjs/go/models';
+import { settings } from '../../../../wailsjs/go/models';
 import {
     FrontAction,
     FrontActionRequest,

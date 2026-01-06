@@ -2,7 +2,7 @@ import { IActionService, IClipboardService, ILoggerService, ISettingsService } f
 import { fromBackendActions, fromBackendSettings, toBackendActionRequest, toBackendProviderConfig, toBackendSettings } from './mappers';
 import { FrontActionRequest, FrontActions, FrontProviderConfig, FrontSettings } from './models';
 
-import { GetActionGroups as backendGetActionGroups, ProcessAction as backendProcessAction } from '../../../../wailsjs/go/frontend/actionService';
+import { GetActionGroups as backendGetActionGroups, ProcessAction as backendProcessAction } from/class '../../../../wailsjs/go/frontend/actionService';
 
 import {
     CreateNewProvider as backendCreateNewProvider,

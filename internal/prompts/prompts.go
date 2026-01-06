@@ -9,14 +9,14 @@ type Prompt struct {
 }
 
 type PromptGroup struct {
-	GroupID      string
-	GroupName    string
-	SystemPrompt Prompt
-	Prompts      map[string]Prompt
+	GroupID      string            `json:"groupId"`
+	GroupName    string            `json:"groupName"`
+	SystemPrompt Prompt            `json:"systemPrompt"`
+	Prompts      map[string]Prompt `json:"prompts"`
 }
 
 type Prompts struct {
-	PromptGroups map[string]PromptGroup
+	PromptGroups map[string]PromptGroup `json:"promptGroups"`
 }
 
 type PromptActionRequest struct {

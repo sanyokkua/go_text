@@ -3,9 +3,8 @@ package main
 import (
 	"context"
 	"embed"
-	"go_text/backend/model/application"
-	"go_text/backend/service/util"
-	application2 "go_text/internal/application"
+	"go_text/internal/application"
+	"go_text/internal/logging"
 	"time"
 
 	"github.com/wailsapp/wails/v2"
@@ -30,10 +29,9 @@ func NewRestyClient() *resty.Client {
 
 func main() {
 	// Create custom logger
-	loggerApi := util.NewLogger()                             // Logger should be created to pass a link to it and later inject context
-	restyClient := NewRestyClient()                           // To configure the REST client before all other objects are created
-	app := application.NewApplication(loggerApi, restyClient) // Main App Structure with all dependencies
-	app2 := application2.NewApplicationContextHolder(loggerApi, restyClient)
+	loggerApi := logging.NewAppStructLogger()                              // Logger should be created to pass a link to it and later inject context
+	restyClient := NewRestyClient()                                        // To configure the REST client before all other objects are created
+	app := application.NewApplicationContextHolder(loggerApi, restyClient) // Main App Structure with all dependencies
 
 	// Create an application with options
 	err := wails.Run(&options.App{
@@ -51,19 +49,13 @@ func main() {
 		BackgroundColour:   &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		OnStartup: func(ctx context.Context) {
 			app.SetContext(ctx)
-			app2.SetContext(ctx)
-			err := app.FileUtilsService.InitDefaultSettingsIfAbsent()
-			if err != nil {
-				return // Ignoring error
-			}
-
-			err = app2.SettingsService.InitDefaultSettingsIfAbsent()
+			err := app.SettingsService.InitDefaultSettingsIfAbsent()
 			if err != nil {
 				return // Ignoring error
 			}
 		},
 		Bind: []interface{}{
-			app, app.AppActionApi, app.AppSettingsApi, app2, app2.ActionHandler, app2.SettingsHandler,
+			app, app.ActionHandler, app.SettingsHandler,
 		},
 	})
 
