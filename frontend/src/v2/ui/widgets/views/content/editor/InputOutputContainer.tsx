@@ -1,7 +1,7 @@
-import { Box, Paper } from '@mui/material';
+import { Box } from '@mui/material';
 import React from 'react';
-import TextPanel from './TextPanel';
 import { getLogger } from '../../../../../logic/adapter';
+import TextPanel from './TextPanel';
 
 const logger = getLogger('InputOutputContainer');
 
@@ -11,7 +11,7 @@ const panelContainerStyle = {
     height: '100%',
     display: 'flex',
     flexDirection: 'column',
-    overflow: 'hidden',
+    // overflow: 'hidden',
     minWidth: 0, // Prevent flex item overflow
 };
 
@@ -55,15 +55,14 @@ const InputOutputContainer: React.FC = () => {
     };
 
     return (
-        <Paper
-            elevation={1}
+        <Box
             sx={{
                 width: '100%',
                 height: '100%',
                 display: 'flex',
-                gap: 1,
+                gap: 2,
                 overflow: 'hidden',
-                padding: 0,
+                padding: 1,
                 minHeight: 0, // Important for flex children
             }}
         >
@@ -71,13 +70,13 @@ const InputOutputContainer: React.FC = () => {
             <Box sx={panelContainerStyle}>
                 <TextPanel
                     title="Input"
-                    headerColor="primary.main"
+                    headerColor="secondary.main"
                     content={inputContent}
                     onContentChange={setInputContent}
                     placeholder="Enter text here..."
                     buttons={[
-                        { label: 'Clear', onClick: handleInputClear, color: 'warning', disabled: isProcessing },
-                        { label: 'Paste', onClick: handleInputPaste, disabled: isProcessing },
+                        { label: 'Clear', onClick: handleInputClear, color: 'error', disabled: isProcessing },
+                        { label: 'Paste', onClick: handleInputPaste, color: 'primary', disabled: isProcessing },
                     ]}
                     isProcessing={isProcessing}
                 />
@@ -92,14 +91,14 @@ const InputOutputContainer: React.FC = () => {
                     onContentChange={setOutputContent}
                     placeholder="Output will appear here..."
                     buttons={[
-                        { label: 'Clear', onClick: handleOutputClear, color: 'warning', disabled: isProcessing },
-                        { label: 'Copy', onClick: handleOutputCopy, disabled: isProcessing },
-                        { label: 'Use as Input', onClick: handleOutputUseAsInput, disabled: isProcessing || !outputContent },
+                        { label: 'Clear', onClick: handleOutputClear, color: 'error', disabled: isProcessing },
+                        { label: 'Copy', onClick: handleOutputCopy, color: 'primary', disabled: isProcessing },
+                        { label: 'Use as Input', onClick: handleOutputUseAsInput, color: 'primary', disabled: isProcessing || !outputContent },
                     ]}
                     isProcessing={isProcessing}
                 />
             </Box>
-        </Paper>
+        </Box>
     );
 };
 

@@ -1,27 +1,29 @@
 import SettingsIcon from '@mui/icons-material/Settings';
 import { AppBar as MuiAppBar, Box, IconButton, Toolbar, Typography } from '@mui/material';
-import React from 'react';
+import React, { useState } from 'react';
 import { getLogger } from '../../../logic/adapter';
 
 const logger = getLogger('AppBar');
 
-const AppBar: React.FC = () => {
-    // Hardcoded values - will be replaced with Redux later
+interface AppBarProps {
+    onSettingsClick: () => void;
+    showSettings: boolean;
+}
+
+const AppBar: React.FC<AppBarProps> = ({ onSettingsClick, showSettings }) => {
     const title = 'Text Processor';
 
     const handleSettingsClick = () => {
-        // TODO: Replace with Redux dispatch later
-        logger.logInfo('Settings clicked - will connect to Redux later');
+        logger.logInfo('Settings button clicked');
+        onSettingsClick();
     };
 
     return (
         <MuiAppBar
             position="static"
             sx={{
-                backgroundColor: 'primary.main',
                 width: '100%',
                 height: '100%',
-                zIndex: (theme) => theme.zIndex.drawer + 1,
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'center',
@@ -38,7 +40,7 @@ const AppBar: React.FC = () => {
                 }}
             >
                 <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-                    <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', color: 'white', lineHeight: 1 }}>
+                    <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', lineHeight: 1 }}>
                         {title}
                     </Typography>
                 </Box>
@@ -50,7 +52,7 @@ const AppBar: React.FC = () => {
                         onClick={handleSettingsClick}
                         sx={{ ml: 1, height: 'fit-content', width: 'fit-content' }}
                     >
-                        <SettingsIcon />
+                        <SettingsIcon color={showSettings ? 'primary' : 'inherit'} />
                     </IconButton>
                 </Box>
             </Toolbar>

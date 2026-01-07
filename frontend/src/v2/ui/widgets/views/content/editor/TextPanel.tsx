@@ -1,4 +1,4 @@
-import { Box, Button, Divider, Paper, TextField, Typography } from '@mui/material';
+import { Box, Button, Divider, Paper, TextareaAutosize, Typography } from '@mui/material';
 import React from 'react';
 import { getLogger } from '../../../../../logic/adapter';
 
@@ -50,14 +50,24 @@ const TextPanel: React.FC<TextPanelProps> = ({
 
     return (
         <Paper
-            elevation={0}
-            sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}
+            square={false}
+            variant="elevation"
+            elevation={1}
+            sx={{
+                'overflow': 'hidden',
+                'height': '100%',
+                'display': 'flex',
+                'flexDirection': 'column',
+                'borderRadius': '24px',
+                '&:hover': { boxShadow: 3 },
+            }}
         >
             {/* Header - Smaller */}
             <Box
                 sx={{
-                    padding: '1px 12px', // Reduced padding
+                    // borderRadius: '16px 16px 0 0',
                     backgroundColor: headerColor,
+                    textAlign: 'center',
                     color: 'white',
                     minHeight: 'unset', // Remove minimum height
                 }}
@@ -68,43 +78,22 @@ const TextPanel: React.FC<TextPanelProps> = ({
             </Box>
 
             {/* Text Area - Scrollable content */}
-            <Box
-                sx={{
-                    flex: 1,
-                    padding: 1,
-                    overflow: 'auto',
-                    minHeight: 0, // Important for flex children
-                }}
-            >
-                <TextField
+            <Box sx={{ flex: 1, padding: 0, overflow: 'auto' }}>
+                <TextareaAutosize
                     value={content}
                     onChange={handleContentChange}
                     placeholder={placeholder}
-                    multiline
-                    fullWidth
-                    sx={{
-                        '& .MuiOutlinedInput-root': {
-                            '& fieldset': { border: 'none' },
-                            '&:hover fieldset': { border: 'none' },
-                            '&.Mui-focused fieldset': { border: 'none' },
-                            // Make TextField take full height
-                            'height': '100%',
-                            'display': 'flex',
-                            'flexDirection': 'column',
-                        },
-                        '& .MuiInputBase-inputMultiline': { height: '100%', overflow: 'auto' },
-                    }}
-                    inputProps={{ style: { padding: '8px', fontFamily: 'Roboto, sans-serif', fontSize: '14px', height: '100%' } }}
+                    style={{ width: '100%', height: '100%', resize: 'none', fontFamily: 'monospace', overflow: 'auto', fontSize: '0.875rem' }}
                 />
             </Box>
 
             {/* Action Buttons - Smaller, Clear first with warning color */}
             <Divider />
-            <Box sx={{ display: 'flex', justifyContent: 'flex-start', padding: '4px', gap: 1 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', padding: '10px', gap: 1 }}>
                 {buttons.map((button, index) => (
                     <Button
                         key={index}
-                        variant="outlined"
+                        variant="contained"
                         size="small"
                         color={button.color || 'inherit'}
                         onClick={button.onClick}

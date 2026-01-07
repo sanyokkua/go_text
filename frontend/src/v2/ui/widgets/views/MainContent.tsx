@@ -1,15 +1,25 @@
 import React from 'react';
 import MainContentWidget from './content/MainContentWidget';
 import FlexContainer from '../../components/FlexContainer';
+import { SettingsView } from './settings';
+
+interface MainContentProps {
+    showSettings: boolean;
+    onCloseSettings: () => void;
+}
 
 /**
  * Main Content - Container for the main content area
- * Contains the Input/Output panels and Actions panel
+ * Contains either the main content or settings view
  */
-const MainContent: React.FC = () => {
+const MainContent: React.FC<MainContentProps> = ({ showSettings, onCloseSettings }) => {
     return (
         <FlexContainer grow overflowHidden>
-            <MainContentWidget />
+            {showSettings ? (
+                <SettingsView onClose={onCloseSettings} />
+            ) : (
+                <MainContentWidget />
+            )}
         </FlexContainer>
     );
 };

@@ -13,13 +13,13 @@ const logger = getLogger('ActionsPanel');
 const ActionsPanel: React.FC = () => {
     // Hardcoded values - will be replaced with Redux later
     const [activeTab, setActiveTab] = React.useState(0);
-
+    const isProcessing = false;
     // TODO: Replace with Redux state later
     const actionGroups = {
         'Text Processing': [
             'Format',
             'Clean',
-            'Transform',
+            'Transform Pretty long TEXT TEST 666',
             'Format',
             'Clean',
             'Format',
@@ -63,17 +63,22 @@ const ActionsPanel: React.FC = () => {
     const tabNames = Object.keys(actionGroups) as Array<keyof typeof actionGroups>;
 
     return (
-        <Paper elevation={1} sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <Paper
+            elevation={1}
+            square={false}
+            sx={{
+                'width': '100%',
+                'height': '90%',
+                'display': 'flex',
+                'flexDirection': 'column',
+                'overflow': 'hidden',
+                'borderRadius': '24px',
+                '&:hover': { boxShadow: 3 },
+            }}
+        >
             {/* Tab Navigation - Centered with horizontal scrolling */}
             <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', justifyContent: 'center', overflow: 'hidden' }}>
-                <Box
-                    sx={{
-                        width: '100%',
-                        maxWidth: '800px', // Limit max width for centered look
-                        overflowX: 'auto',
-                        overflowY: 'hidden',
-                    }}
-                >
+                <Box sx={{ width: '100%', overflowX: 'auto', overflowY: 'hidden' }}>
                     <Tabs
                         value={activeTab}
                         onChange={handleTabChange}
@@ -81,10 +86,7 @@ const ActionsPanel: React.FC = () => {
                         variant="scrollable"
                         scrollButtons="auto"
                         allowScrollButtonsMobile
-                        sx={{
-                            'minHeight': '48px', // Ensure consistent height
-                            '& .MuiTabs-flexContainer': { justifyContent: 'center' },
-                        }}
+                        sx={{ '& .MuiTabs-flexContainer': { justifyContent: 'center' } }}
                     >
                         {tabNames.map((tabName, index) => (
                             <Tab
@@ -92,10 +94,9 @@ const ActionsPanel: React.FC = () => {
                                 label={tabName}
                                 id={`tab-${index}`}
                                 aria-controls={`tabpanel-${index}`}
-                                disabled={false} // TODO: Connect to Redux isProcessing state
+                                disabled={isProcessing}
                                 sx={{
-                                    minWidth: 'auto', // Allow tabs to shrink
-                                    padding: '6px 16px',
+                                    minWidth: 'auto',
                                 }}
                             />
                         ))}
@@ -105,20 +106,18 @@ const ActionsPanel: React.FC = () => {
 
             {/* Action Buttons for Active Tab - Wraps to new lines, vertical scroll */}
             <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', padding: 2 }}>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignContent: 'flex-start' }}>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
                     {actionGroups[tabNames[activeTab]]?.map((actionId, index) => (
                         <Button
                             key={`action-${activeTab}-${index}`}
                             variant="outlined"
                             color="primary"
                             onClick={() => handleActionClick(actionId)}
-                            disabled={false} // TODO: Connect to Redux isProcessing state
+                            disabled={isProcessing}
                             sx={{
-                                'padding': '8px 16px',
-                                'borderRadius': '4px',
-                                'minWidth': '120px',
-                                'textTransform': 'none', // Prevent uppercase transformation
-                                '&:hover': { borderColor: 'primary.main', backgroundColor: 'action.hover' },
+                                borderRadius: '8px',
+                                minWidth: '120px',
+                                textTransform: 'uppercase',
                             }}
                         >
                             {actionId}
