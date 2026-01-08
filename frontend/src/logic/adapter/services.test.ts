@@ -24,7 +24,7 @@ import {
     LogDebug,
     LogError,
     LogInfo,
-} from '../../../../wailsjs/runtime';
+} from '../../../wailsjs/runtime';
 
 import {
     GetCompletionResponse,
@@ -33,7 +33,7 @@ import {
     GetModelsListForProvider,
     GetPromptGroups,
     ProcessPrompt,
-} from '../../../../wailsjs/go/actions/ActionHandler';
+} from '../../../wailsjs/go/actions/ActionHandler';
 
 import {
     AddLanguage,
@@ -55,10 +55,10 @@ import {
     UpdateInferenceBaseConfig,
     UpdateModelConfig,
     UpdateProviderConfig,
-} from '../../../../wailsjs/go/settings/SettingsHandler';
+} from '../../../wailsjs/go/settings/SettingsHandler';
 
 // Mock Wails generated functions
-jest.mock('../../../../wailsjs/runtime', () => ({
+jest.mock('../../../wailsjs/runtime', () => ({
     LogDebug: jest.fn(),
     LogError: jest.fn(),
     LogFatal: jest.fn(),
@@ -76,7 +76,7 @@ jest.mock('../../../../wailsjs/runtime', () => ({
     EventsOnce: jest.fn(),
 }));
 
-jest.mock('../../../../wailsjs/go/actions/ActionHandler', () => ({
+jest.mock('../../../wailsjs/go/actions/ActionHandler', () => ({
     GetCompletionResponse: jest.fn(),
     GetCompletionResponseForProvider: jest.fn(),
     GetModelsList: jest.fn(),
@@ -85,7 +85,7 @@ jest.mock('../../../../wailsjs/go/actions/ActionHandler', () => ({
     ProcessPrompt: jest.fn(),
 }));
 
-jest.mock('../../../../wailsjs/go/settings/SettingsHandler', () => ({
+jest.mock('../../../wailsjs/go/settings/SettingsHandler', () => ({
     AddLanguage: jest.fn(),
     CreateProviderConfig: jest.fn(),
     DeleteProviderConfig: jest.fn(),
@@ -107,7 +107,7 @@ jest.mock('../../../../wailsjs/go/settings/SettingsHandler', () => ({
     UpdateProviderConfig: jest.fn(),
 }));
 
-jest.mock('../../../../wailsjs/go/models', () => ({
+jest.mock('../../../wailsjs/go/models', () => ({
     llms: { ChatCompletionRequest: { createFrom: jest.fn((req) => req) } },
     settings: {
         ProviderConfig: { createFrom: jest.fn((config) => config) },

@@ -15,12 +15,12 @@ import {
 } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { ModelConfig, Settings } from '../../../../../logic/adapter';
-import { SPACING } from '../../../../styles/constants';
 import { useAppDispatch, useAppSelector } from '../../../../../logic/store';
-import { updateModelConfig } from '../../../../../logic/store/settings';
 import { getModelsList } from '../../../../../logic/store/actions';
-import { setAppBusy } from '../../../../../logic/store/ui';
 import { enqueueNotification } from '../../../../../logic/store/notifications';
+import { updateModelConfig } from '../../../../../logic/store/settings';
+import { setAppBusy } from '../../../../../logic/store/ui';
+import { SPACING } from '../../../../styles/constants';
 
 interface ModelConfigTabProps {
     settings: Settings;

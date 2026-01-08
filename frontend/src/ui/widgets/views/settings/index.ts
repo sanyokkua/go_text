@@ -12,6 +12,6 @@ export { default as ProviderConfigTab } from './tabs/ProviderConfigTab';
 
 // Export tab subcomponents
 export { default as HeadersEditor } from './tabs/components/HeadersEditor';
-export { default as LanguageList } from './tabs/components/LanguageList';export { default as ProviderForm } from './tabs/components/ProviderForm';
+export { default as LanguageList } from './tabs/components/LanguageList';
+export { default as ProviderForm } from './tabs/components/ProviderForm';
 export { default as ProviderList } from './tabs/components/ProviderList';
-

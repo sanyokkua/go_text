@@ -5,8 +5,8 @@ import {
     GetModelsListForProvider,
     GetPromptGroups,
     ProcessPrompt,
-} from '../../../../wailsjs/go/actions/ActionHandler';
-import { llms, settings } from '../../../../wailsjs/go/models';
+} from '../../../wailsjs/go/actions/ActionHandler';
+import { llms, settings } from '../../../wailsjs/go/models';
 import {
     AddLanguage,
     CreateProviderConfig,
@@ -27,7 +27,7 @@ import {
     UpdateInferenceBaseConfig,
     UpdateModelConfig,
     UpdateProviderConfig,
-} from '../../../../wailsjs/go/settings/SettingsHandler';
+} from '../../../wailsjs/go/settings/SettingsHandler';
 import {
     ClipboardGetText,
     ClipboardSetText,
@@ -44,7 +44,7 @@ import {
     LogPrint,
     LogTrace,
     LogWarning,
-} from '../../../../wailsjs/runtime';
+} from '../../../wailsjs/runtime';
 import { parseError } from '../utils/error_utils';
 import { IActionHandler, IClipboardService, IEventsService, ILoggerService, ISettingsHandler } from './interfaces';
 import {

@@ -1,15 +1,15 @@
 import { Box } from '@mui/material';
 import React, { useEffect } from 'react';
+import { getLogger } from '../../../logic/adapter';
+import { useAppDispatch, useAppSelector } from '../../../logic/store';
+import { getPromptGroups } from '../../../logic/store/actions';
+import { initializeSettingsState } from '../../../logic/store/settings';
+import { setActiveActionsTab } from '../../../logic/store/ui';
 import FlexContainer from '../../components/FlexContainer';
 import { CONTAINER_STYLES, UI_HEIGHTS } from '../../styles/constants';
 import AppBar from '../base/AppBar';
 import StatusBar from '../base/StatusBar';
 import MainContent from './MainContent';
-import { getLogger } from '../../../logic/adapter';
-import { useAppDispatch, useAppSelector } from '../../../logic/store';
-import { initializeSettingsState } from '../../../logic/store/settings';
-import { getPromptGroups } from '../../../logic/store/actions';
-import { setActiveActionsTab } from '../../../logic/store/ui';
 
 const logger = getLogger('AppMainView');
 

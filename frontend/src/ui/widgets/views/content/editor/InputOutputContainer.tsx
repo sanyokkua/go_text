@@ -1,11 +1,11 @@
 import { Box } from '@mui/material';
 import React from 'react';
 import { getLogger } from '../../../../../logic/adapter';
-import TextPanel from './TextPanel';
 import { useAppDispatch, useAppSelector } from '../../../../../logic/store';
-import { clearInput, clearOutput, setInputContent, setOutputContent, useOutputAsInput } from '../../../../../logic/store/editor';
 import { getClipboardText, setClipboardText } from '../../../../../logic/store/clipboard';
+import { clearInput, clearOutput, setInputContent, setOutputContent, useOutputAsInput } from '../../../../../logic/store/editor';
 import { enqueueNotification } from '../../../../../logic/store/notifications';
+import TextPanel from './TextPanel';
 
 const logger = getLogger('InputOutputContainer');
 

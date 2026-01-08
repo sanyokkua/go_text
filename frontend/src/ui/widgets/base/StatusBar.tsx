@@ -1,7 +1,7 @@
 import { Paper, Typography } from '@mui/material';
 import React from 'react';
-import { CONTAINER_STYLES } from '../../styles/constants';
 import { useAppSelector } from '../../../logic/store';
+import { CONTAINER_STYLES } from '../../styles/constants';
 
 const StatusBar: React.FC = () => {
     // Get values from Redux store

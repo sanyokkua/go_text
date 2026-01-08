@@ -5,8 +5,8 @@ import '@fontsource/roboto/700.css';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
-import store from './v2/logic/store';
-import AppLayout from './v2/ui/AppLayout';
+import store from './logic/store';
+import AppLayout from './ui/AppLayout';
 
 const container = document.getElementById('root');
 const root = createRoot(container!);
