@@ -1,7 +1,7 @@
-import React from 'react';
-import { Box, Button, Divider } from '@mui/material';
-import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import CloseIcon from '@mui/icons-material/Close';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import { Box, Button } from '@mui/material';
+import React from 'react';
 import { SPACING } from '../../../styles/constants';
 
 interface SettingsGlobalControlsProps {
@@ -16,19 +16,10 @@ interface SettingsGlobalControlsProps {
 const SettingsGlobalControls: React.FC<SettingsGlobalControlsProps> = ({ onClose, onResetToDefault }) => {
     return (
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: SPACING.LARGE, paddingTop: SPACING.SMALL }}>
-            <Button
-                variant="outlined"
-                color="error"
-                startIcon={<RestartAltIcon />}
-                onClick={onResetToDefault}
-            >
+            <Button variant="outlined" color="error" startIcon={<RestartAltIcon />} onClick={onResetToDefault}>
                 Reset To Default
             </Button>
-            <Button
-                variant="contained"
-                startIcon={<CloseIcon />}
-                onClick={onClose}
-            >
+            <Button variant="contained" startIcon={<CloseIcon />} onClick={onClose}>
                 Close
             </Button>
         </Box>

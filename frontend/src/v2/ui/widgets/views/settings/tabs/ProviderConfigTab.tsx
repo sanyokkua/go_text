@@ -7,10 +7,7 @@ import ProviderForm from './components/ProviderForm';
 
 interface ProviderConfigTabProps {
     settings: Settings;
-    metadata: {
-        authTypes: string[];
-        providerTypes: string[];
-    };
+    metadata: { authTypes: string[]; providerTypes: string[] };
     onUpdateSettings: (updatedSettings: Settings) => void;
 }
 
@@ -38,26 +35,21 @@ const ProviderConfigTab: React.FC<ProviderConfigTabProps> = ({ settings, metadat
     };
 
     const handleSaveProvider = (updatedProvider: ProviderConfig) => {
-        const updatedProviders = settings.availableProviderConfigs.map(provider =>
-            provider.providerId === updatedProvider.providerId ? updatedProvider : provider
+        const updatedProviders = settings.availableProviderConfigs.map((provider) =>
+            provider.providerId === updatedProvider.providerId ? updatedProvider : provider,
         );
 
         // If it's a new provider, add it to the list
-        const isNewProvider = !settings.availableProviderConfigs.some(
-            p => p.providerId === updatedProvider.providerId
-        );
+        const isNewProvider = !settings.availableProviderConfigs.some((p) => p.providerId === updatedProvider.providerId);
 
-        const finalProviders = isNewProvider 
-            ? [...settings.availableProviderConfigs, updatedProvider]
-            : updatedProviders;
+        const finalProviders = isNewProvider ? [...settings.availableProviderConfigs, updatedProvider] : updatedProviders;
 
         const updatedSettings = {
             ...settings,
             availableProviderConfigs: finalProviders,
             // If we're editing the current provider, update it
-            currentProviderConfig: settings.currentProviderConfig.providerId === updatedProvider.providerId
-                ? updatedProvider
-                : settings.currentProviderConfig
+            currentProviderConfig:
+                settings.currentProviderConfig.providerId === updatedProvider.providerId ? updatedProvider : settings.currentProviderConfig,
         };
 
         onUpdateSettings(updatedSettings);
@@ -70,35 +62,23 @@ const ProviderConfigTab: React.FC<ProviderConfigTabProps> = ({ settings, metadat
             return;
         }
 
-        const updatedProviders = settings.availableProviderConfigs.filter(
-            provider => provider.providerId !== providerId
-        );
+        const updatedProviders = settings.availableProviderConfigs.filter((provider) => provider.providerId !== providerId);
 
-        const updatedSettings = {
-            ...settings,
-            availableProviderConfigs: updatedProviders
-        };
+        const updatedSettings = { ...settings, availableProviderConfigs: updatedProviders };
 
         onUpdateSettings(updatedSettings);
     };
 
     const handleSetAsCurrent = (providerId: string) => {
-        const newCurrentProvider = settings.availableProviderConfigs.find(
-            provider => provider.providerId === providerId
-        );
+        const newCurrentProvider = settings.availableProviderConfigs.find((provider) => provider.providerId === providerId);
 
         if (newCurrentProvider) {
-            const updatedSettings = {
-                ...settings,
-                currentProviderConfig: newCurrentProvider
-            };
+            const updatedSettings = { ...settings, currentProviderConfig: newCurrentProvider };
             onUpdateSettings(updatedSettings);
         }
     };
 
-    const editingProvider = editingProviderId
-        ? settings.availableProviderConfigs.find(p => p.providerId === editingProviderId)
-        : undefined;
+    const editingProvider = editingProviderId ? settings.availableProviderConfigs.find((p) => p.providerId === editingProviderId) : undefined;
 
     return (
         <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: SPACING.STANDARD }}>
@@ -113,18 +93,14 @@ const ProviderConfigTab: React.FC<ProviderConfigTabProps> = ({ settings, metadat
                         <Typography variant="body2" color="text.secondary">
                             Provider Name
                         </Typography>
-                        <Typography variant="body1">
-                            {settings.currentProviderConfig.providerName}
-                        </Typography>
+                        <Typography variant="body1">{settings.currentProviderConfig.providerName}</Typography>
                     </Box>
 
                     <Box>
                         <Typography variant="body2" color="text.secondary">
                             Provider Type
                         </Typography>
-                        <Typography variant="body1">
-                            {settings.currentProviderConfig.providerType}
-                        </Typography>
+                        <Typography variant="body1">{settings.currentProviderConfig.providerType}</Typography>
                     </Box>
 
                     <Box>
@@ -140,36 +116,28 @@ const ProviderConfigTab: React.FC<ProviderConfigTabProps> = ({ settings, metadat
                         <Typography variant="body2" color="text.secondary">
                             Models Endpoint
                         </Typography>
-                        <Typography variant="body1">
-                            {settings.currentProviderConfig.modelsEndpoint}
-                        </Typography>
+                        <Typography variant="body1">{settings.currentProviderConfig.modelsEndpoint}</Typography>
                     </Box>
 
                     <Box>
                         <Typography variant="body2" color="text.secondary">
                             Completion Endpoint
                         </Typography>
-                        <Typography variant="body1">
-                            {settings.currentProviderConfig.completionEndpoint}
-                        </Typography>
+                        <Typography variant="body1">{settings.currentProviderConfig.completionEndpoint}</Typography>
                     </Box>
 
                     <Box>
                         <Typography variant="body2" color="text.secondary">
                             Auth Type
                         </Typography>
-                        <Typography variant="body1">
-                            {settings.currentProviderConfig.authType}
-                        </Typography>
+                        <Typography variant="body1">{settings.currentProviderConfig.authType}</Typography>
                     </Box>
 
                     <Box>
                         <Typography variant="body2" color="text.secondary">
                             Use Auth Token from Env
                         </Typography>
-                        <Typography variant="body1">
-                            {settings.currentProviderConfig.useAuthTokenFromEnv ? 'Yes' : 'No'}
-                        </Typography>
+                        <Typography variant="body1">{settings.currentProviderConfig.useAuthTokenFromEnv ? 'Yes' : 'No'}</Typography>
                     </Box>
 
                     {settings.currentProviderConfig.useAuthTokenFromEnv && (
@@ -177,9 +145,7 @@ const ProviderConfigTab: React.FC<ProviderConfigTabProps> = ({ settings, metadat
                             <Typography variant="body2" color="text.secondary">
                                 Env Var Token Name
                             </Typography>
-                            <Typography variant="body1">
-                                {settings.currentProviderConfig.envVarTokenName}
-                            </Typography>
+                            <Typography variant="body1">{settings.currentProviderConfig.envVarTokenName}</Typography>
                         </Box>
                     )}
 
@@ -187,9 +153,7 @@ const ProviderConfigTab: React.FC<ProviderConfigTabProps> = ({ settings, metadat
                         <Typography variant="body2" color="text.secondary">
                             Use Custom Headers
                         </Typography>
-                        <Typography variant="body1">
-                            {settings.currentProviderConfig.useCustomHeaders ? 'Yes' : 'No'}
-                        </Typography>
+                        <Typography variant="body1">{settings.currentProviderConfig.useCustomHeaders ? 'Yes' : 'No'}</Typography>
                     </Box>
 
                     {settings.currentProviderConfig.useCustomHeaders && (
@@ -197,9 +161,7 @@ const ProviderConfigTab: React.FC<ProviderConfigTabProps> = ({ settings, metadat
                             <Typography variant="body2" color="text.secondary">
                                 Custom Headers Count
                             </Typography>
-                            <Typography variant="body1">
-                                {Object.keys(settings.currentProviderConfig.headers).length}
-                            </Typography>
+                            <Typography variant="body1">{Object.keys(settings.currentProviderConfig.headers).length}</Typography>
                         </Box>
                     )}
 
@@ -207,9 +169,7 @@ const ProviderConfigTab: React.FC<ProviderConfigTabProps> = ({ settings, metadat
                         <Typography variant="body2" color="text.secondary">
                             Use Custom Models
                         </Typography>
-                        <Typography variant="body1">
-                            {settings.currentProviderConfig.useCustomModels ? 'Yes' : 'No'}
-                        </Typography>
+                        <Typography variant="body1">{settings.currentProviderConfig.useCustomModels ? 'Yes' : 'No'}</Typography>
                     </Box>
 
                     {settings.currentProviderConfig.useCustomModels && (
@@ -217,18 +177,13 @@ const ProviderConfigTab: React.FC<ProviderConfigTabProps> = ({ settings, metadat
                             <Typography variant="body2" color="text.secondary">
                                 Custom Models Count
                             </Typography>
-                            <Typography variant="body1">
-                                {settings.currentProviderConfig.customModels.length}
-                            </Typography>
+                            <Typography variant="body1">{settings.currentProviderConfig.customModels.length}</Typography>
                         </Box>
                     )}
                 </Box>
 
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', marginTop: SPACING.STANDARD }}>
-                    <Button
-                        variant="outlined"
-                        onClick={() => handleEditProvider(settings.currentProviderConfig.providerId)}
-                    >
+                    <Button variant="outlined" onClick={() => handleEditProvider(settings.currentProviderConfig.providerId)}>
                         Edit Current Provider
                     </Button>
                 </Box>

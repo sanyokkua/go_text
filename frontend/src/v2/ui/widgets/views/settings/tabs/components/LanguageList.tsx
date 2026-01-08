@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Button, Chip, Divider, IconButton, Paper, TextField, Typography } from '@mui/material';
+import { Box, Button, Chip, Divider, Paper, TextField, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { SPACING } from '../../../../../styles/constants';
@@ -25,7 +25,7 @@ const LanguageList: React.FC<LanguageListProps> = ({
     onAddLanguage,
     onRemoveLanguage,
     onSetDefaultInput,
-    onSetDefaultOutput
+    onSetDefaultOutput,
 }) => {
     const [newLanguage, setNewLanguage] = useState('');
 
@@ -82,14 +82,14 @@ const LanguageList: React.FC<LanguageListProps> = ({
                             label: language,
                             color: language === defaultInputLanguage ? 'primary' : language === defaultOutputLanguage ? 'secondary' : 'default',
                             variant: language === defaultInputLanguage || language === defaultOutputLanguage ? 'filled' : 'outlined',
-                            sx: { height: 'auto', '& .MuiChip-label': { whiteSpace: 'normal' } }
+                            sx: { 'height': 'auto', '& .MuiChip-label': { whiteSpace: 'normal' } },
                         } as any;
-                        
+
                         if (canDelete) {
                             chipProps.onDelete = handleRemoveLanguageWrapper(language);
                             chipProps.deleteIcon = <DeleteIcon />;
                         }
-                        
+
                         return <Chip {...chipProps} />;
                     })}
                 </Box>

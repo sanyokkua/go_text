@@ -1,13 +1,9 @@
 import { Prompts } from '../../adapter';
 
 export interface ActionsState {
-    completionResponse: string | null;
-    completionResponseForProvider: string | null;
-    modelsList: Array<string>;
-    modelsListForProvider: Array<string>;
-    promptGroups: Prompts | null;
-    processedPrompt: string | null;
-    loading: boolean;
+    promptGroups: Prompts | null; // Structure for buttons/tabs
+    availableModels: string[]; // List of models for current provider
+    loading: boolean; // True while processing LLM prompt
     error: string | null;
 }
 

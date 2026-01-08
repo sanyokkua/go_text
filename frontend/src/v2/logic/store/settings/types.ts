@@ -1,13 +1,14 @@
-import { AppSettingsMetadata, InferenceBaseConfig, LanguageConfig, ModelConfig, ProviderConfig, Settings } from '../../adapter/models';
+import { AppSettingsMetadata, Settings } from '../../adapter';
 
 export interface SettingsState {
-    currentSettings: Settings | null;
-    currentProvider: ProviderConfig | null;
-    allProviders: ProviderConfig[];
-    languageConfig: LanguageConfig | null;
-    modelConfig: ModelConfig | null;
-    inferenceBaseConfig: InferenceBaseConfig | null;
-    appSettingsMetadata: AppSettingsMetadata | null;
-    loading: boolean;
+    // Full object cache (Single Source of Truth)
+    allSettings: Settings | null;
+
+    // Metadata is separate from the main Settings object
+    metadata: AppSettingsMetadata | null;
+
+    // Status Flags
+    loading: boolean; // Initial load
+    saving: boolean; // Saving updates
     error: string | null;
 }

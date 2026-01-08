@@ -1,15 +1,14 @@
+import { Box, Divider } from '@mui/material';
 import React, { useState } from 'react';
-import { Box, Divider, IconButton, Paper, Typography } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import { CONTAINER_STYLES, FLEX_STYLES, SPACING } from '../../../styles/constants';
-import SettingsTabs from './SettingsTabs';
-import SettingsGlobalControls from './SettingsGlobalControls';
-import MetadataTab from './tabs/MetadataTab';
-import ProviderConfigTab from './tabs/ProviderConfigTab';
-import InferenceConfigTab from './tabs/InferenceConfigTab';
-import ModelConfigTab from './tabs/ModelConfigTab';
-import LanguageConfigTab from './tabs/LanguageConfigTab';
 import { AppSettingsMetadata, Settings } from '../../../../logic/adapter';
+import { CONTAINER_STYLES, FLEX_STYLES, SPACING } from '../../../styles/constants';
+import SettingsGlobalControls from './SettingsGlobalControls';
+import SettingsTabs from './SettingsTabs';
+import InferenceConfigTab from './tabs/InferenceConfigTab';
+import LanguageConfigTab from './tabs/LanguageConfigTab';
+import MetadataTab from './tabs/MetadataTab';
+import ModelConfigTab from './tabs/ModelConfigTab';
+import ProviderConfigTab from './tabs/ProviderConfigTab';
 
 interface SettingsViewProps {
     onClose: () => void;
@@ -71,9 +70,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
                 useAuthTokenFromEnv: false,
                 envVarTokenName: 'HELLO_WORLD',
                 useCustomHeaders: true,
-                headers: {
-                    "Access-Control-Allow-Origin": "*",
-                },
+                headers: { 'Access-Control-Allow-Origin': '*' },
                 useCustomModels: false,
                 customModels: [],
             },
@@ -107,7 +104,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
         authTypes: ['none', 'apiKey', 'bearer'],
         providerTypes: ['openaiCompatible', 'ollama'],
         settingsFolder: '/Users/username/Library/Application Support/MyApp',
-        settingsFile: '/Users/username/Library/Application Support/MyApp/settings.json'
+        settingsFile: '/Users/username/Library/Application Support/MyApp/settings.json',
     };
 
     // Initialize with stub data

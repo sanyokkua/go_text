@@ -1,6 +1,6 @@
 import SettingsIcon from '@mui/icons-material/Settings';
 import { AppBar as MuiAppBar, Box, IconButton, Toolbar, Typography } from '@mui/material';
-import React, { useState } from 'react';
+import React from 'react';
 import { getLogger } from '../../../logic/adapter';
 
 const logger = getLogger('AppBar');
@@ -19,16 +19,7 @@ const AppBar: React.FC<AppBarProps> = ({ onSettingsClick, showSettings }) => {
     };
 
     return (
-        <MuiAppBar
-            position="static"
-            sx={{
-                width: '100%',
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-            }}
-        >
+        <MuiAppBar position="static" sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <Toolbar
                 sx={{
                     justifyContent: 'space-between',

@@ -15,11 +15,7 @@ interface MainContentProps {
 const MainContent: React.FC<MainContentProps> = ({ showSettings, onCloseSettings }) => {
     return (
         <FlexContainer grow overflowHidden>
-            {showSettings ? (
-                <SettingsView onClose={onCloseSettings} />
-            ) : (
-                <MainContentWidget />
-            )}
+            {showSettings ? <SettingsView onClose={onCloseSettings} /> : <MainContentWidget />}
         </FlexContainer>
     );
 };

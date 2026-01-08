@@ -1,5 +1,5 @@
 export interface ClipboardState {
-    clipboardText: string | null;
-    setTextSuccess: boolean | null;
+    loading: boolean;
+    lastActionSuccess: boolean | null; // true = copy success, false = fail
     error: string | null;
 }

@@ -1,10 +1,5 @@
+import { Box, Tab, Tabs } from '@mui/material';
 import React from 'react';
-import { Tabs, Tab, Box } from '@mui/material';
-import CloudIcon from '@mui/icons-material/Cloud';
-import TimerIcon from '@mui/icons-material/Timer';
-import ModelTrainingIcon from '@mui/icons-material/ModelTraining';
-import TranslateIcon from '@mui/icons-material/Translate';
-import InfoIcon from '@mui/icons-material/Info';
 
 interface SettingsTabsProps {
     activeTab: number;

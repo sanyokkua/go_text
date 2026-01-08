@@ -95,9 +95,7 @@ const ActionsPanel: React.FC = () => {
                                 id={`tab-${index}`}
                                 aria-controls={`tabpanel-${index}`}
                                 disabled={isProcessing}
-                                sx={{
-                                    minWidth: 'auto',
-                                }}
+                                sx={{ minWidth: 'auto' }}
                             />
                         ))}
                     </Tabs>
@@ -114,11 +112,7 @@ const ActionsPanel: React.FC = () => {
                             color="primary"
                             onClick={() => handleActionClick(actionId)}
                             disabled={isProcessing}
-                            sx={{
-                                borderRadius: '8px',
-                                minWidth: '120px',
-                                textTransform: 'uppercase',
-                            }}
+                            sx={{ borderRadius: '8px', minWidth: '120px', textTransform: 'uppercase' }}
                         >
                             {actionId}
                         </Button>

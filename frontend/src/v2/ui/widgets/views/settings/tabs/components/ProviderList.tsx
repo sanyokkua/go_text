@@ -16,14 +16,7 @@ interface ProviderListProps {
  * Provider List Component
  * Displays list of available providers with actions
  */
-const ProviderList: React.FC<ProviderListProps> = ({
-    providers,
-    currentProviderId,
-    onEdit,
-    onDelete,
-    onSetAsCurrent,
-    onCreateNew
-}) => {
+const ProviderList: React.FC<ProviderListProps> = ({ providers, currentProviderId, onEdit, onDelete, onSetAsCurrent, onCreateNew }) => {
     return (
         <Paper elevation={0} sx={{ padding: SPACING.STANDARD }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.STANDARD }}>

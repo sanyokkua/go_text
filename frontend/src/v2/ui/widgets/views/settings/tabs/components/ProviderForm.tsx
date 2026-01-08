@@ -1,5 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { Box, Button, Checkbox, Divider, FormControl, FormControlLabel, FormLabel, InputLabel, MenuItem, Select, TextField, Typography } from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import {
+    Box,
+    Button,
+    Checkbox,
+    Divider,
+    FormControl,
+    FormControlLabel,
+    FormLabel,
+    InputLabel,
+    MenuItem,
+    Select,
+    TextField,
+    Typography,
+} from '@mui/material';
 import { ProviderConfig } from '../../../../../../logic/adapter';
 import { SPACING } from '../../../../../styles/constants';
 import HeadersEditor from './HeadersEditor';
@@ -16,13 +29,7 @@ interface ProviderFormProps {
  * Provider Form Component
  * Form for creating/editing provider configurations
  */
-const ProviderForm: React.FC<ProviderFormProps> = ({
-    provider,
-    authTypes,
-    providerTypes,
-    onSave,
-    onCancel
-}) => {
+const ProviderForm: React.FC<ProviderFormProps> = ({ provider, authTypes, providerTypes, onSave, onCancel }) => {
     const [formData, setFormData] = useState<ProviderConfig>({
         providerId: '',
         providerName: '',
@@ -37,7 +44,7 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
         useCustomHeaders: false,
         headers: {},
         useCustomModels: false,
-        customModels: []
+        customModels: [],
     });
 
     // Initialize form with provider data if editing
@@ -50,28 +57,28 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         if (name) {
-            setFormData(prev => ({ ...prev, [name]: value }));
+            setFormData((prev) => ({ ...prev, [name]: value }));
         }
     };
 
     const handleSelectChange = (e: any) => {
         const { name, value } = e.target;
         if (name) {
-            setFormData(prev => ({ ...prev, [name]: value }));
+            setFormData((prev) => ({ ...prev, [name]: value }));
         }
     };
 
     const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, checked } = e.target;
-        setFormData(prev => ({ ...prev, [name]: checked }));
+        setFormData((prev) => ({ ...prev, [name]: checked }));
     };
 
     const handleHeadersChange = (headers: Record<string, string>) => {
-        setFormData(prev => ({ ...prev, headers }));
+        setFormData((prev) => ({ ...prev, headers }));
     };
 
     const handleCustomModelsChange = (models: string[]) => {
-        setFormData(prev => ({ ...prev, customModels: models }));
+        setFormData((prev) => ({ ...prev, customModels: models }));
     };
 
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -105,12 +112,12 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if (!validateForm()) {
             console.log('Form validation failed', errors);
             return;
         }
-        
+
         // Generate new ID if creating new provider
         if (!formData.providerId) {
             formData.providerId = `prov-${Date.now()}`;
@@ -141,15 +148,11 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
 
                     <FormControl fullWidth margin="normal">
                         <InputLabel>Provider Type</InputLabel>
-                        <Select
-                            name="providerType"
-                            value={formData.providerType}
-                            onChange={handleSelectChange}
-                            label="Provider Type"
-                            required
-                        >
-                            {providerTypes.map(type => (
-                                <MenuItem key={type} value={type}>{type}</MenuItem>
+                        <Select name="providerType" value={formData.providerType} onChange={handleSelectChange} label="Provider Type" required>
+                            {providerTypes.map((type) => (
+                                <MenuItem key={type} value={type}>
+                                    {type}
+                                </MenuItem>
                             ))}
                         </Select>
                     </FormControl>
@@ -203,15 +206,11 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                 <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: SPACING.STANDARD }}>
                     <FormControl fullWidth margin="normal">
                         <InputLabel>Auth Type</InputLabel>
-                        <Select
-                            name="authType"
-                            value={formData.authType}
-                            onChange={handleSelectChange}
-                            label="Auth Type"
-                            required
-                        >
-                            {authTypes.map(type => (
-                                <MenuItem key={type} value={type}>{type}</MenuItem>
+                        <Select name="authType" value={formData.authType} onChange={handleSelectChange} label="Auth Type" required>
+                            {authTypes.map((type) => (
+                                <MenuItem key={type} value={type}>
+                                    {type}
+                                </MenuItem>
                             ))}
                         </Select>
                     </FormControl>
@@ -228,13 +227,7 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                 </Box>
 
                 <FormControlLabel
-                    control={(
-                        <Checkbox
-                            name="useAuthTokenFromEnv"
-                            checked={formData.useAuthTokenFromEnv}
-                            onChange={handleCheckboxChange}
-                        />
-                    )}
+                    control={<Checkbox name="useAuthTokenFromEnv" checked={formData.useAuthTokenFromEnv} onChange={handleCheckboxChange} />}
                     label="Use Auth Token from Environment Variable"
                 />
 
@@ -253,33 +246,16 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                 {/* Custom Headers */}
                 <Divider sx={{ my: SPACING.STANDARD }} />
                 <FormControlLabel
-                    control={(
-                        <Checkbox
-                            name="useCustomHeaders"
-                            checked={formData.useCustomHeaders}
-                            onChange={handleCheckboxChange}
-                        />
-                    )}
+                    control={<Checkbox name="useCustomHeaders" checked={formData.useCustomHeaders} onChange={handleCheckboxChange} />}
                     label="Use Custom Headers"
                 />
 
-                {formData.useCustomHeaders && (
-                    <HeadersEditor
-                        headers={formData.headers}
-                        onChange={handleHeadersChange}
-                    />
-                )}
+                {formData.useCustomHeaders && <HeadersEditor headers={formData.headers} onChange={handleHeadersChange} />}
 
                 {/* Custom Models */}
                 <Divider sx={{ my: SPACING.STANDARD }} />
                 <FormControlLabel
-                    control={(
-                        <Checkbox
-                            name="useCustomModels"
-                            checked={formData.useCustomModels}
-                            onChange={handleCheckboxChange}
-                        />
-                    )}
+                    control={<Checkbox name="useCustomModels" checked={formData.useCustomModels} onChange={handleCheckboxChange} />}
                     label="Use Custom Models"
                 />
 

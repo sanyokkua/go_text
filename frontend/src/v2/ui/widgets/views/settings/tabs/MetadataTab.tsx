@@ -1,13 +1,10 @@
 import React from 'react';
-import { Box, Paper, Typography, IconButton, Tooltip } from '@mui/material';
+import { Box, IconButton, Paper, Tooltip, Typography } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { SPACING } from '../../../../styles/constants';
 
 interface MetadataTabProps {
-    metadata: {
-        settingsFolder: string;
-        settingsFile: string;
-    };
+    metadata: { settingsFolder: string; settingsFile: string };
 }
 
 /**
@@ -33,11 +30,7 @@ const MetadataTab: React.FC<MetadataTabProps> = ({ metadata }) => {
                             {metadata.settingsFolder}
                         </Typography>
                         <Tooltip title="Copy settings folder path">
-                            <IconButton
-                                size="small"
-                                onClick={() => handleCopy(metadata.settingsFolder)}
-                                aria-label="copy settings folder"
-                            >
+                            <IconButton size="small" onClick={() => handleCopy(metadata.settingsFolder)} aria-label="copy settings folder">
                                 <ContentCopyIcon fontSize="small" />
                             </IconButton>
                         </Tooltip>
@@ -51,17 +44,11 @@ const MetadataTab: React.FC<MetadataTabProps> = ({ metadata }) => {
                             {metadata.settingsFile}
                         </Typography>
                         <Tooltip title="Copy settings file path">
-                            <IconButton
-                                size="small"
-                                onClick={() => handleCopy(metadata.settingsFile)}
-                                aria-label="copy settings file"
-                            >
+                            <IconButton size="small" onClick={() => handleCopy(metadata.settingsFile)} aria-label="copy settings file">
                                 <ContentCopyIcon fontSize="small" />
                             </IconButton>
                         </Tooltip>
                     </Box>
-
-
                 </Box>
             </Paper>
         </Box>

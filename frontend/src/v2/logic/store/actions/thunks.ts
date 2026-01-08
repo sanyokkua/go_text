@@ -2,6 +2,8 @@ import { createAsyncThunk } from '@reduxjs/toolkit';
 import { ActionHandlerAdapter, getLogger } from '../../adapter';
 import { ChatCompletionRequest, PromptActionRequest, Prompts, ProviderConfig } from '../../adapter/models';
 import { parseError } from '../../utils/error_utils';
+import { setOutputContent } from '../editor';
+import { AppDispatch } from '../index';
 
 const logger = getLogger('ActionsThunks');
 
@@ -98,13 +100,17 @@ export const getPromptGroups = createAsyncThunk<Prompts, void, { rejectValue: st
 });
 
 // Thunk for processing prompt
-export const processPrompt = createAsyncThunk<string, PromptActionRequest, { rejectValue: string }>(
+export const processPrompt = createAsyncThunk<string, PromptActionRequest, { rejectValue: string; dispatch: AppDispatch }>(
     'actions/processPrompt',
-    async (promptActionRequest: PromptActionRequest, { rejectWithValue }) => {
+    async (promptActionRequest: PromptActionRequest, { rejectWithValue, dispatch }) => {
         try {
             logger.logInfo(`Attempting to process prompt: ${promptActionRequest.id}`);
             const result = await ActionHandlerAdapter.processPrompt(promptActionRequest);
             logger.logInfo('Successfully processed prompt');
+
+            // Dispatch the result to the editor slice
+            dispatch(setOutputContent(result));
+
             return result;
         } catch (error: unknown) {
             const err = parseError(error);

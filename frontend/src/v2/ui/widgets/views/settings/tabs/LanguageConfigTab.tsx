@@ -1,5 +1,5 @@
+import { Box, Button, Paper } from '@mui/material';
 import React, { useState } from 'react';
-import { Box, Button, Paper, Typography } from '@mui/material';
 import { LanguageConfig, Settings } from '../../../../../logic/adapter';
 import { SPACING } from '../../../../styles/constants';
 import LanguageList from './components/LanguageList';
@@ -19,31 +19,28 @@ const LanguageConfigTab: React.FC<LanguageConfigTabProps> = ({ settings, onUpdat
     const handleAddLanguage = (language: string) => {
         if (!formData.languages.includes(language)) {
             const updatedLanguages = [...formData.languages, language];
-            setFormData(prev => ({ ...prev, languages: updatedLanguages }));
+            setFormData((prev) => ({ ...prev, languages: updatedLanguages }));
         }
     };
 
     const handleRemoveLanguage = (language: string) => {
         if (language !== formData.defaultInputLanguage && language !== formData.defaultOutputLanguage) {
-            const updatedLanguages = formData.languages.filter(l => l !== language);
-            setFormData(prev => ({ ...prev, languages: updatedLanguages }));
+            const updatedLanguages = formData.languages.filter((l) => l !== language);
+            setFormData((prev) => ({ ...prev, languages: updatedLanguages }));
         }
     };
 
     const handleSetDefaultInput = (language: string) => {
-        setFormData(prev => ({ ...prev, defaultInputLanguage: language }));
+        setFormData((prev) => ({ ...prev, defaultInputLanguage: language }));
     };
 
     const handleSetDefaultOutput = (language: string) => {
-        setFormData(prev => ({ ...prev, defaultOutputLanguage: language }));
+        setFormData((prev) => ({ ...prev, defaultOutputLanguage: language }));
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        const updatedSettings = {
-            ...settings,
-            languageConfig: formData
-        };
+        const updatedSettings = { ...settings, languageConfig: formData };
         onUpdateSettings(updatedSettings);
         console.log('Language settings updated:', formData);
     };
@@ -51,7 +48,11 @@ const LanguageConfigTab: React.FC<LanguageConfigTabProps> = ({ settings, onUpdat
     return (
         <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: SPACING.STANDARD }}>
             <Paper elevation={0} sx={{ padding: SPACING.STANDARD, flex: 1 }}>
-                <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: SPACING.STANDARD, height: '100%' }}>
+                <Box
+                    component="form"
+                    onSubmit={handleSubmit}
+                    sx={{ display: 'flex', flexDirection: 'column', gap: SPACING.STANDARD, height: '100%' }}
+                >
                     <LanguageList
                         languages={formData.languages}
                         defaultInputLanguage={formData.defaultInputLanguage}

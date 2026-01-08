@@ -1,7 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { Box, Button, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
+import {
+    Box,
+    Button,
+    IconButton,
+    Paper,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    TextField,
+    Typography,
+} from '@mui/material';
+import React, { useEffect, useState } from 'react';
 import { SPACING } from '../../../../../styles/constants';
 
 interface HeadersEditorProps {
@@ -43,14 +56,17 @@ const HeadersEditor: React.FC<HeadersEditorProps> = ({ headers, onChange }) => {
     };
 
     const updateHeaders = (entries: { key: string; value: string }[]) => {
-        const headersObj = entries.reduce((acc, { key, value }) => {
-            // Only include headers with non-empty keys in the final output
-            // but keep empty headers in the UI for editing
-            if (key.trim()) {
-                acc[key.trim()] = value;
-            }
-            return acc;
-        }, {} as Record<string, string>);
+        const headersObj = entries.reduce(
+            (acc, { key, value }) => {
+                // Only include headers with non-empty keys in the final output
+                // but keep empty headers in the UI for editing
+                if (key.trim()) {
+                    acc[key.trim()] = value;
+                }
+                return acc;
+            },
+            {} as Record<string, string>,
+        );
         onChange(headersObj);
     };
 
@@ -66,7 +82,9 @@ const HeadersEditor: React.FC<HeadersEditorProps> = ({ headers, onChange }) => {
                         <TableRow>
                             <TableCell width="40%">Header Name</TableCell>
                             <TableCell width="50%">Header Value</TableCell>
-                            <TableCell width="10%" align="center">Actions</TableCell>
+                            <TableCell width="10%" align="center">
+                                Actions
+                            </TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -91,11 +109,7 @@ const HeadersEditor: React.FC<HeadersEditorProps> = ({ headers, onChange }) => {
                                     />
                                 </TableCell>
                                 <TableCell align="center">
-                                    <IconButton
-                                        size="small"
-                                        onClick={() => handleRemoveHeader(index)}
-                                        aria-label="remove header"
-                                    >
+                                    <IconButton size="small" onClick={() => handleRemoveHeader(index)} aria-label="remove header">
                                         <DeleteIcon fontSize="small" />
                                     </IconButton>
                                 </TableCell>
@@ -106,11 +120,7 @@ const HeadersEditor: React.FC<HeadersEditorProps> = ({ headers, onChange }) => {
             </TableContainer>
 
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', marginTop: SPACING.SMALL }}>
-                <Button
-                    size="small"
-                    startIcon={<AddIcon />}
-                    onClick={handleAddHeader}
-                >
+                <Button size="small" startIcon={<AddIcon />} onClick={handleAddHeader}>
                     Add Header
                 </Button>
             </Box>

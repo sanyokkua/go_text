@@ -31,14 +31,18 @@ export const addLanguage = createAsyncThunk<Array<string>, string, { rejectValue
 );
 
 // Thunk for creating a provider config
-export const createProviderConfig = createAsyncThunk<ProviderConfig, ProviderConfig, { rejectValue: string }>(
+export const createProviderConfig = createAsyncThunk<Settings, ProviderConfig, { rejectValue: string }>(
     'settings/createProviderConfig',
     async (providerConfig: ProviderConfig, { rejectWithValue }) => {
         try {
             logger.logInfo(`Attempting to create provider config: ${providerConfig.providerName}`);
-            const result = await SettingsHandlerAdapter.createProviderConfig(providerConfig);
-            logger.logInfo(`Successfully created provider config: ${result.providerName}`);
-            return result;
+            await SettingsHandlerAdapter.createProviderConfig(providerConfig);
+            logger.logInfo(`Successfully created provider config: ${providerConfig.providerName}`);
+
+            // Get the full settings after creating the provider
+            const fullSettings = await SettingsHandlerAdapter.getSettings();
+            logger.logInfo(`Retrieved full settings after creating provider`);
+            return fullSettings;
         } catch (error: unknown) {
             const err = parseError(error);
             logger.logError(`Failed to create provider config: ${err.message}`);
