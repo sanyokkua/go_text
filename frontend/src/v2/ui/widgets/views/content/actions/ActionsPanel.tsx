@@ -1,6 +1,10 @@
+import { Box, Button, Paper, Tab, Tabs, Typography } from '@mui/material';
 import React from 'react';
-import { Box, Button, Paper, Tab, Tabs } from '@mui/material';
 import { getLogger } from '../../../../../logic/adapter';
+import { useAppDispatch, useAppSelector } from '../../../../../logic/store';
+import { processPrompt } from '../../../../../logic/store/actions';
+import { enqueueNotification } from '../../../../../logic/store/notifications';
+import { setActiveActionsTab, setAppBusy, setCurrentTask } from '../../../../../logic/store/ui';
 
 const logger = getLogger('ActionsPanel');
 
@@ -11,56 +15,95 @@ const logger = getLogger('ActionsPanel');
  * - Action buttons for each group (wraps to new lines, scrollable)
  */
 const ActionsPanel: React.FC = () => {
-    // Hardcoded values - will be replaced with Redux later
-    const [activeTab, setActiveTab] = React.useState(0);
-    const isProcessing = false;
-    // TODO: Replace with Redux state later
-    const actionGroups = {
-        'Text Processing': [
-            'Format',
-            'Clean',
-            'Transform Pretty long TEXT TEST 666',
-            'Format',
-            'Clean',
-            'Format',
-            'Clean',
-            'Format',
-            'Clean',
-            'Format',
-            'Clean',
-            'Format',
-            'Clean',
-            'Clean',
-            'Clean',
-            'Clean',
-            'Clean',
-            'Clean',
-            'Clean',
-            'Clean',
-            'Clean',
-            'Clean',
-            'Clean',
-            'Format',
-            'Clean',
-            'Format',
-            'Clean',
-        ],
-        'Translation': ['Translate', 'Detect Language'],
-        'Analysis': ['Summarize', 'Extract Keywords'],
-    };
+    const dispatch = useAppDispatch();
+    const promptGroups = useAppSelector((state) => state.actions.promptGroups);
+    const activeTab = useAppSelector((state) => state.ui.activeActionsTab);
+    const isAppBusy = useAppSelector((state) => state.ui.isAppBusy);
+    const inputContent = useAppSelector((state) => state.editor.inputContent);
+    const settings = useAppSelector((state) => state.settings.allSettings);
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-        // TODO: Replace with Redux dispatch later
-        setActiveTab(newValue);
-        logger.logInfo(`Tab changed to ${newValue} - will connect to Redux later`);
+        const newTabName = tabNames[newValue];
+        dispatch(setActiveActionsTab(newTabName));
+        logger.logInfo(`Tab changed to ${newTabName}`);
     };
 
-    const handleActionClick = (actionId: string) => {
-        // TODO: Replace with Redux dispatch later
-        logger.logInfo(`Action clicked: ${actionId} - will connect to Redux later`);
+    const handleActionClick = async (actionId: string, promptName: string) => {
+        if (isAppBusy || !inputContent) {
+            logger.logInfo(`Action click prevented - app busy: ${isAppBusy}, input empty: ${!inputContent}`);
+            return;
+        }
+
+        try {
+            logger.logInfo(`Action clicked: ${actionId}`);
+
+            // Set the current task
+            dispatch(setCurrentTask(promptName));
+            dispatch(setAppBusy(true));
+
+            // Prepare the request
+            const request = {
+                id: actionId,
+                inputText: inputContent,
+                inputLanguageId: settings?.languageConfig.defaultInputLanguage || 'auto',
+                outputLanguageId: settings?.languageConfig.defaultOutputLanguage || 'auto',
+            };
+
+            logger.logInfo(`Processing prompt with request: ${JSON.stringify(request)}`);
+
+            // Process the prompt
+            await dispatch(processPrompt(request)).unwrap();
+
+            logger.logInfo('Prompt processed successfully');
+        } catch (error) {
+            logger.logError(`Failed to process prompt: ${error}`);
+            dispatch(enqueueNotification({ message: `Failed to process prompt: ${error}`, severity: 'error' }));
+        } finally {
+            // Always reset the busy state and current task
+            dispatch(setAppBusy(false));
+            dispatch(setCurrentTask('N/A'));
+        }
     };
 
-    const tabNames = Object.keys(actionGroups) as Array<keyof typeof actionGroups>;
+    if (!promptGroups) {
+        return (
+            <Paper
+                elevation={1}
+                square={false}
+                sx={{
+                    'width': '100%',
+                    'height': '90%',
+                    'display': 'flex',
+                    'flexDirection': 'column',
+                    'overflow': 'hidden',
+                    'borderRadius': '24px',
+                    '&:hover': { boxShadow: 3 },
+                }}
+            >
+                <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                    <Typography variant="body1" color="text.secondary">
+                        Loading prompt groups...
+                    </Typography>
+                </Box>
+            </Paper>
+        );
+    }
+
+    // Get all prompt groups and sort them by groupId
+    const promptGroupsArray = Object.values(promptGroups.promptGroups);
+    const sortedPromptGroups = [...promptGroupsArray].sort((a, b) => a.groupId.localeCompare(b.groupId));
+
+    const tabNames = sortedPromptGroups.map((group) => group.groupId);
+
+    // Ensure activeTab is set to the first tab if it's not found in tabNames
+    const currentTabIndex = tabNames.indexOf(activeTab);
+    if (currentTabIndex === -1 && tabNames.length > 0) {
+        // This can happen if the activeTab was set before promptGroups were loaded
+        // or if the activeTab is invalid
+        logger.logError(`Active tab '${activeTab}' not found in tabNames, defaulting to first tab`);
+        dispatch(setActiveActionsTab(tabNames[0]));
+        return null; // Re-render with the correct tab
+    }
 
     return (
         <Paper
@@ -80,7 +123,7 @@ const ActionsPanel: React.FC = () => {
             <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', justifyContent: 'center', overflow: 'hidden' }}>
                 <Box sx={{ width: '100%', overflowX: 'auto', overflowY: 'hidden' }}>
                     <Tabs
-                        value={activeTab}
+                        value={tabNames.indexOf(activeTab)}
                         onChange={handleTabChange}
                         aria-label="action groups tabs"
                         variant="scrollable"
@@ -88,13 +131,13 @@ const ActionsPanel: React.FC = () => {
                         allowScrollButtonsMobile
                         sx={{ '& .MuiTabs-flexContainer': { justifyContent: 'center' } }}
                     >
-                        {tabNames.map((tabName, index) => (
+                        {sortedPromptGroups.map((group, index) => (
                             <Tab
                                 key={`tab-${index}`}
-                                label={tabName}
+                                label={group.groupName}
                                 id={`tab-${index}`}
                                 aria-controls={`tabpanel-${index}`}
-                                disabled={isProcessing}
+                                disabled={isAppBusy}
                                 sx={{ minWidth: 'auto' }}
                             />
                         ))}
@@ -105,18 +148,19 @@ const ActionsPanel: React.FC = () => {
             {/* Action Buttons for Active Tab - Wraps to new lines, vertical scroll */}
             <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', padding: 2 }}>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
-                    {actionGroups[tabNames[activeTab]]?.map((actionId, index) => (
-                        <Button
-                            key={`action-${activeTab}-${index}`}
-                            variant="outlined"
-                            color="primary"
-                            onClick={() => handleActionClick(actionId)}
-                            disabled={isProcessing}
-                            sx={{ borderRadius: '8px', minWidth: '120px', textTransform: 'uppercase' }}
-                        >
-                            {actionId}
-                        </Button>
-                    ))}
+                    {sortedPromptGroups.find((group) => group.groupId === activeTab)?.prompts &&
+                        Object.entries(sortedPromptGroups.find((group) => group.groupId === activeTab)?.prompts || {}).map(([promptId, prompt]) => (
+                            <Button
+                                key={`action-${activeTab}-${promptId}`}
+                                variant="outlined"
+                                color="primary"
+                                onClick={() => handleActionClick(prompt.id, prompt.name)}
+                                disabled={isAppBusy}
+                                sx={{ borderRadius: '8px', minWidth: '120px', textTransform: 'uppercase' }}
+                            >
+                                {prompt.name}
+                            </Button>
+                        ))}
                 </Box>
             </Box>
         </Paper>

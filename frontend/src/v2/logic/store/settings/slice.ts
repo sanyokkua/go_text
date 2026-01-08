@@ -251,10 +251,6 @@ const settingsSlice = createSlice({
             .addCase(getAppSettingsMetadata.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload || 'Failed to get app settings metadata';
-            })
-            .addCase(initializeSettingsState.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.payload || 'Failed to initialize settings';
             });
     },
 });

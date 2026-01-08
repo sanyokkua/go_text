@@ -2,6 +2,10 @@ import { Box } from '@mui/material';
 import React from 'react';
 import { getLogger } from '../../../../../logic/adapter';
 import TextPanel from './TextPanel';
+import { useAppDispatch, useAppSelector } from '../../../../../logic/store';
+import { clearInput, clearOutput, setInputContent, setOutputContent, useOutputAsInput } from '../../../../../logic/store/editor';
+import { getClipboardText, setClipboardText } from '../../../../../logic/store/clipboard';
+import { enqueueNotification } from '../../../../../logic/store/notifications';
 
 const logger = getLogger('InputOutputContainer');
 
@@ -22,36 +26,67 @@ const panelContainerStyle = {
  * - Output panel (right) - 50% width, scrollable content
  */
 const InputOutputContainer: React.FC = () => {
-    // State management for both panels
-    const [inputContent, setInputContent] = React.useState('');
-    const [outputContent, setOutputContent] = React.useState('');
-    const [isProcessing, setIsProcessing] = React.useState(false);
+    const dispatch = useAppDispatch();
+    const inputContent = useAppSelector((state) => state.editor.inputContent);
+    const outputContent = useAppSelector((state) => state.editor.outputContent);
+    const isAppBusy = useAppSelector((state) => state.ui.isAppBusy);
 
     // Input panel button handlers
     const handleInputClear = () => {
-        setInputContent('');
+        dispatch(clearInput());
         logger.logInfo('Input cleared');
     };
 
-    const handleInputPaste = () => {
-        // TODO: Implement clipboard paste functionality
-        logger.logInfo('Paste from clipboard - will implement later');
+    const handleInputPaste = async () => {
+        try {
+            logger.logInfo('Attempting to paste from clipboard');
+            const clipboardText = await dispatch(getClipboardText()).unwrap();
+
+            if (clipboardText) {
+                dispatch(setInputContent(clipboardText));
+                logger.logInfo('Pasted from clipboard successfully');
+            } else {
+                dispatch(enqueueNotification({ message: 'Clipboard is empty', severity: 'info' }));
+            }
+        } catch (error) {
+            logger.logError(`Failed to paste from clipboard: ${error}`);
+            dispatch(enqueueNotification({ message: 'Failed to paste from clipboard', severity: 'error' }));
+        }
     };
 
     // Output panel button handlers
     const handleOutputClear = () => {
-        setOutputContent('');
+        dispatch(clearOutput());
         logger.logInfo('Output cleared');
     };
 
-    const handleOutputCopy = () => {
-        // TODO: Implement clipboard copy functionality
-        logger.logInfo('Copy to clipboard - will implement later');
+    const handleOutputCopy = async () => {
+        try {
+            if (!outputContent) {
+                dispatch(enqueueNotification({ message: 'No content to copy', severity: 'info' }));
+                return;
+            }
+
+            logger.logInfo('Attempting to copy to clipboard');
+            const success = await dispatch(setClipboardText(outputContent)).unwrap();
+
+            if (success) {
+                dispatch(enqueueNotification({ message: 'Copied to clipboard', severity: 'success' }));
+                logger.logInfo('Copied to clipboard successfully');
+            } else {
+                dispatch(enqueueNotification({ message: 'Failed to copy to clipboard', severity: 'error' }));
+            }
+        } catch (error) {
+            logger.logError(`Failed to copy to clipboard: ${error}`);
+            dispatch(enqueueNotification({ message: 'Failed to copy to clipboard', severity: 'error' }));
+        }
     };
 
     const handleOutputUseAsInput = () => {
-        setInputContent(outputContent);
-        logger.logInfo('Output used as input');
+        if (outputContent) {
+            dispatch(useOutputAsInput());
+            logger.logInfo('Output used as input');
+        }
     };
 
     return (
@@ -72,13 +107,13 @@ const InputOutputContainer: React.FC = () => {
                     title="Input"
                     headerColor="secondary.main"
                     content={inputContent}
-                    onContentChange={setInputContent}
+                    onContentChange={(value) => dispatch(setInputContent(value))}
                     placeholder="Enter text here..."
                     buttons={[
-                        { label: 'Clear', onClick: handleInputClear, color: 'error', disabled: isProcessing },
-                        { label: 'Paste', onClick: handleInputPaste, color: 'primary', disabled: isProcessing },
+                        { label: 'Clear', onClick: handleInputClear, color: 'error', disabled: isAppBusy },
+                        { label: 'Paste', onClick: handleInputPaste, color: 'primary', disabled: isAppBusy },
                     ]}
-                    isProcessing={isProcessing}
+                    isProcessing={isAppBusy}
                 />
             </Box>
 
@@ -88,14 +123,15 @@ const InputOutputContainer: React.FC = () => {
                     title="Output"
                     headerColor="secondary.main"
                     content={outputContent}
-                    onContentChange={setOutputContent}
+                    onContentChange={(value) => dispatch(setOutputContent(value))}
                     placeholder="Output will appear here..."
                     buttons={[
-                        { label: 'Clear', onClick: handleOutputClear, color: 'error', disabled: isProcessing },
-                        { label: 'Copy', onClick: handleOutputCopy, color: 'primary', disabled: isProcessing },
-                        { label: 'Use as Input', onClick: handleOutputUseAsInput, color: 'primary', disabled: isProcessing || !outputContent },
+                        { label: 'Clear', onClick: handleOutputClear, color: 'error', disabled: isAppBusy },
+                        { label: 'Copy', onClick: handleOutputCopy, color: 'primary', disabled: isAppBusy },
+                        { label: 'Use as Input', onClick: handleOutputUseAsInput, color: 'primary', disabled: isAppBusy || !outputContent },
                     ]}
-                    isProcessing={isProcessing}
+                    isProcessing={isAppBusy}
+                    scrollToTop={true}
                 />
             </Box>
         </Box>

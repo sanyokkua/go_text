@@ -2,6 +2,8 @@ import { ThemeProvider } from '@mui/material';
 import CssBaseline from '@mui/material/CssBaseline';
 import React from 'react';
 import theme from './theme';
+import GlobalLoadingOverlay from './widgets/base/GlobalLoadingOverlay';
+import NotificationContainer from './widgets/base/NotificationContainer';
 import AppMainView from './widgets/views/AppMainView';
 
 /**
@@ -14,6 +16,8 @@ const AppLayout: React.FC = () => {
             <React.Fragment>
                 <CssBaseline />
                 <AppMainView />
+                <GlobalLoadingOverlay />
+                <NotificationContainer />
             </React.Fragment>
         </ThemeProvider>
     );

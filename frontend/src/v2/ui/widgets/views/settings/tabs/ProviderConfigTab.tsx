@@ -1,23 +1,35 @@
-import React, { useState } from 'react';
 import { Box, Button, Divider, Paper, Typography } from '@mui/material';
+import React, { useState } from 'react';
 import { ProviderConfig, Settings } from '../../../../../logic/adapter';
+import { useAppDispatch } from '../../../../../logic/store';
+import { getCompletionResponseForProvider, getModelsListForProvider } from '../../../../../logic/store/actions';
+import { enqueueNotification } from '../../../../../logic/store/notifications';
+import {
+    createProviderConfig,
+    deleteProviderConfig,
+    getSettings,
+    setAsCurrentProviderConfig,
+    updateProviderConfig,
+} from '../../../../../logic/store/settings';
+import { setAppBusy } from '../../../../../logic/store/ui';
 import { SPACING } from '../../../../styles/constants';
-import ProviderList from './components/ProviderList';
 import ProviderForm from './components/ProviderForm';
+import ProviderList from './components/ProviderList';
 
 interface ProviderConfigTabProps {
     settings: Settings;
     metadata: { authTypes: string[]; providerTypes: string[] };
-    onUpdateSettings: (updatedSettings: Settings) => void;
 }
 
 /**
  * Provider Config Tab Component
  * Main tab for provider configuration management
  */
-const ProviderConfigTab: React.FC<ProviderConfigTabProps> = ({ settings, metadata, onUpdateSettings }) => {
+const ProviderConfigTab: React.FC<ProviderConfigTabProps> = ({ settings, metadata }) => {
+    const dispatch = useAppDispatch();
     const [editingProviderId, setEditingProviderId] = useState<string | null>(null);
     const [showCreateForm, setShowCreateForm] = useState(false);
+    const [testResults, setTestResults] = useState<{ models: string[]; connectionSuccess: boolean } | null>(null);
 
     const handleEditProvider = (providerId: string) => {
         setEditingProviderId(providerId);
@@ -32,49 +44,98 @@ const ProviderConfigTab: React.FC<ProviderConfigTabProps> = ({ settings, metadat
     const handleCancelEdit = () => {
         setEditingProviderId(null);
         setShowCreateForm(false);
+        setTestResults(null);
     };
 
-    const handleSaveProvider = (updatedProvider: ProviderConfig) => {
-        const updatedProviders = settings.availableProviderConfigs.map((provider) =>
-            provider.providerId === updatedProvider.providerId ? updatedProvider : provider,
-        );
+    const handleSaveProvider = async (updatedProvider: ProviderConfig) => {
+        try {
+            dispatch(setAppBusy(true));
 
-        // If it's a new provider, add it to the list
-        const isNewProvider = !settings.availableProviderConfigs.some((p) => p.providerId === updatedProvider.providerId);
+            if (updatedProvider.providerId) {
+                // Update existing provider
+                await dispatch(updateProviderConfig(updatedProvider)).unwrap();
+                dispatch(enqueueNotification({ message: 'Provider updated successfully', severity: 'success' }));
+            } else {
+                // Create new provider
+                await dispatch(createProviderConfig(updatedProvider)).unwrap();
+                dispatch(enqueueNotification({ message: 'Provider created successfully', severity: 'success' }));
+            }
 
-        const finalProviders = isNewProvider ? [...settings.availableProviderConfigs, updatedProvider] : updatedProviders;
+            // Refresh settings
+            await dispatch(getSettings()).unwrap();
 
-        const updatedSettings = {
-            ...settings,
-            availableProviderConfigs: finalProviders,
-            // If we're editing the current provider, update it
-            currentProviderConfig:
-                settings.currentProviderConfig.providerId === updatedProvider.providerId ? updatedProvider : settings.currentProviderConfig,
-        };
-
-        onUpdateSettings(updatedSettings);
-        handleCancelEdit();
-    };
-
-    const handleDeleteProvider = (providerId: string) => {
-        if (providerId === settings.currentProviderConfig.providerId) {
-            console.log('Cannot delete current provider');
-            return;
+            handleCancelEdit();
+        } catch (error) {
+            dispatch(enqueueNotification({ message: `Failed to save provider: ${error}`, severity: 'error' }));
+        } finally {
+            dispatch(setAppBusy(false));
         }
-
-        const updatedProviders = settings.availableProviderConfigs.filter((provider) => provider.providerId !== providerId);
-
-        const updatedSettings = { ...settings, availableProviderConfigs: updatedProviders };
-
-        onUpdateSettings(updatedSettings);
     };
 
-    const handleSetAsCurrent = (providerId: string) => {
-        const newCurrentProvider = settings.availableProviderConfigs.find((provider) => provider.providerId === providerId);
+    const handleDeleteProvider = async (providerId: string) => {
+        try {
+            if (providerId === settings.currentProviderConfig.providerId) {
+                dispatch(enqueueNotification({ message: 'Cannot delete current provider', severity: 'error' }));
+                return;
+            }
 
-        if (newCurrentProvider) {
-            const updatedSettings = { ...settings, currentProviderConfig: newCurrentProvider };
-            onUpdateSettings(updatedSettings);
+            dispatch(setAppBusy(true));
+            await dispatch(deleteProviderConfig(providerId)).unwrap();
+
+            // Refresh settings
+            await dispatch(getSettings()).unwrap();
+
+            dispatch(enqueueNotification({ message: 'Provider deleted successfully', severity: 'success' }));
+        } catch (error) {
+            dispatch(enqueueNotification({ message: `Failed to delete provider: ${error}`, severity: 'error' }));
+        } finally {
+            dispatch(setAppBusy(false));
+        }
+    };
+
+    const handleSetAsCurrent = async (providerId: string) => {
+        try {
+            dispatch(setAppBusy(true));
+            await dispatch(setAsCurrentProviderConfig(providerId)).unwrap();
+
+            // Refresh settings
+            await dispatch(getSettings()).unwrap();
+
+            dispatch(enqueueNotification({ message: 'Current provider updated successfully', severity: 'success' }));
+        } catch (error) {
+            dispatch(enqueueNotification({ message: `Failed to set current provider: ${error}`, severity: 'error' }));
+        } finally {
+            dispatch(setAppBusy(false));
+        }
+    };
+
+    const handleTestModels = async (providerConfig: ProviderConfig) => {
+        try {
+            dispatch(setAppBusy(true));
+            const models = await dispatch(getModelsListForProvider(providerConfig)).unwrap();
+            setTestResults({ models, connectionSuccess: true });
+            dispatch(enqueueNotification({ message: `Found ${models.length} models for this provider`, severity: 'success' }));
+        } catch (error) {
+            dispatch(enqueueNotification({ message: `Failed to test models: ${error}`, severity: 'error' }));
+            setTestResults({ models: [], connectionSuccess: false });
+        } finally {
+            dispatch(setAppBusy(false));
+        }
+    };
+
+    const handleTestInference = async (providerConfig: ProviderConfig, modelId: string) => {
+        try {
+            dispatch(setAppBusy(true));
+
+            const chatCompletionRequest = { model: modelId, messages: [{ role: 'user', content: 'Hello' }], stream: false };
+
+            const response = await dispatch(getCompletionResponseForProvider({ providerConfig, chatCompletionRequest })).unwrap();
+
+            dispatch(enqueueNotification({ message: 'Connection test successful!', severity: 'success' }));
+        } catch (error) {
+            dispatch(enqueueNotification({ message: `Connection test failed: ${error}`, severity: 'error' }));
+        } finally {
+            dispatch(setAppBusy(false));
         }
     };
 
@@ -199,6 +260,9 @@ const ProviderConfigTab: React.FC<ProviderConfigTabProps> = ({ settings, metadat
                     providerTypes={metadata.providerTypes}
                     onSave={handleSaveProvider}
                     onCancel={handleCancelEdit}
+                    onTestModels={handleTestModels}
+                    onTestInference={handleTestInference}
+                    testResults={testResults}
                 />
             ) : (
                 <ProviderList
@@ -216,12 +280,19 @@ const ProviderConfigTab: React.FC<ProviderConfigTabProps> = ({ settings, metadat
                 <Button
                     variant="contained"
                     color="primary"
-                    onClick={() => {
-                        // TODO: Connect to Redux to save provider settings
-                        console.log('Provider settings updated');
+                    onClick={async () => {
+                        try {
+                            dispatch(setAppBusy(true));
+                            await dispatch(getSettings()).unwrap();
+                            dispatch(enqueueNotification({ message: 'Provider settings refreshed successfully', severity: 'success' }));
+                        } catch (error) {
+                            dispatch(enqueueNotification({ message: `Failed to refresh provider settings: ${error}`, severity: 'error' }));
+                        } finally {
+                            dispatch(setAppBusy(false));
+                        }
                     }}
                 >
-                    Update Provider Settings
+                    Refresh Provider Settings
                 </Button>
             </Box>
         </Box>

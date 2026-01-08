@@ -2,20 +2,20 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import { AppBar as MuiAppBar, Box, IconButton, Toolbar, Typography } from '@mui/material';
 import React from 'react';
 import { getLogger } from '../../../logic/adapter';
+import { useAppDispatch, useAppSelector } from '../../../logic/store';
+import { toggleSettingsView } from '../../../logic/store/ui';
 
 const logger = getLogger('AppBar');
 
-interface AppBarProps {
-    onSettingsClick: () => void;
-    showSettings: boolean;
-}
-
-const AppBar: React.FC<AppBarProps> = ({ onSettingsClick, showSettings }) => {
+const AppBar: React.FC = () => {
+    const dispatch = useAppDispatch();
+    const view = useAppSelector((state) => state.ui.view);
+    const showSettings = view === 'settings';
     const title = 'Text Processor';
 
     const handleSettingsClick = () => {
         logger.logInfo('Settings button clicked');
-        onSettingsClick();
+        dispatch(toggleSettingsView());
     };
 
     return (

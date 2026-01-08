@@ -23,13 +23,25 @@ interface ProviderFormProps {
     providerTypes: string[];
     onSave: (provider: ProviderConfig) => void;
     onCancel: () => void;
+    onTestModels?: (providerConfig: ProviderConfig) => void;
+    onTestInference?: (providerConfig: ProviderConfig, modelId: string) => void;
+    testResults?: { models: string[]; connectionSuccess: boolean } | null;
 }
 
 /**
  * Provider Form Component
  * Form for creating/editing provider configurations
  */
-const ProviderForm: React.FC<ProviderFormProps> = ({ provider, authTypes, providerTypes, onSave, onCancel }) => {
+const ProviderForm: React.FC<ProviderFormProps> = ({
+    provider,
+    authTypes,
+    providerTypes,
+    onSave,
+    onCancel,
+    onTestModels,
+    onTestInference,
+    testResults,
+}) => {
     const [formData, setFormData] = useState<ProviderConfig>({
         providerId: '',
         providerName: '',
@@ -46,6 +58,8 @@ const ProviderForm: React.FC<ProviderFormProps> = ({ provider, authTypes, provid
         useCustomModels: false,
         customModels: [],
     });
+
+    const [selectedModel, setSelectedModel] = useState<string>('');
 
     // Initialize form with provider data if editing
     useEffect(() => {
@@ -123,6 +137,18 @@ const ProviderForm: React.FC<ProviderFormProps> = ({ provider, authTypes, provid
             formData.providerId = `prov-${Date.now()}`;
         }
         onSave(formData);
+    };
+
+    const handleTestModels = () => {
+        if (onTestModels) {
+            onTestModels(formData);
+        }
+    };
+
+    const handleTestInference = () => {
+        if (onTestInference && selectedModel) {
+            onTestInference(formData, selectedModel);
+        }
     };
 
     return (
@@ -271,6 +297,52 @@ const ProviderForm: React.FC<ProviderFormProps> = ({ provider, authTypes, provid
                             placeholder="Enter model names, one per line"
                         />
                     </FormControl>
+                )}
+
+                {/* Test Section */}
+                <Divider sx={{ my: SPACING.STANDARD }} />
+                <Typography variant="subtitle1" gutterBottom>
+                    Test Connection
+                </Typography>
+
+                <Box sx={{ display: 'flex', gap: SPACING.STANDARD, alignItems: 'center' }}>
+                    <Button variant="outlined" color="secondary" onClick={handleTestModels} disabled={!onTestModels}>
+                        Test Models
+                    </Button>
+
+                    {testResults && (
+                        <FormControl fullWidth margin="normal">
+                            <InputLabel>Select Model</InputLabel>
+                            <Select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value as string)} label="Select Model">
+                                {testResults.models.map((model) => (
+                                    <MenuItem key={model} value={model}>
+                                        {model}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    )}
+
+                    <Button variant="outlined" color="secondary" onClick={handleTestInference} disabled={!onTestInference || !selectedModel}>
+                        Test Inference
+                    </Button>
+                </Box>
+
+                {testResults && (
+                    <Box
+                        sx={{
+                            mt: SPACING.SMALL,
+                            p: SPACING.SMALL,
+                            backgroundColor: testResults.connectionSuccess ? 'success.light' : 'error.light',
+                            borderRadius: '4px',
+                        }}
+                    >
+                        <Typography variant="body2">
+                            {testResults.connectionSuccess
+                                ? `Connection successful! Found ${testResults.models.length} models.`
+                                : 'Connection failed.'}
+                        </Typography>
+                    </Box>
                 )}
 
                 {/* Actions */}

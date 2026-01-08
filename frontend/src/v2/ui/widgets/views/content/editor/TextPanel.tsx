@@ -25,6 +25,7 @@ interface TextPanelProps {
     placeholder?: string;
     buttons: TextPanelButton[];
     isProcessing?: boolean;
+    scrollToTop?: boolean; // New prop to control auto-scrolling
 }
 
 /**
@@ -42,7 +43,41 @@ const TextPanel: React.FC<TextPanelProps> = ({
     placeholder = '',
     buttons = [],
     isProcessing = false,
+    scrollToTop = false,
 }) => {
+    const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+
+    // Scroll to top when content changes and scrollToTop is enabled
+    React.useEffect(() => {
+        if (scrollToTop && textareaRef.current) {
+            logger.logDebug(`Scrolling to top for ${title} panel, content length: ${content.length}`);
+
+            // Try multiple approaches to ensure scrolling works
+            const scrollToTopWithFallback = () => {
+                if (textareaRef.current) {
+                    try {
+                        // First try direct scrollTop
+                        textareaRef.current.scrollTop = 0;
+
+                        // If that doesn't work, try scrolling to top of parent container
+                        const parent = textareaRef.current.parentElement;
+                        if (parent) {
+                            parent.scrollTop = 0;
+                        }
+
+                        logger.logDebug(`Scrolled to top successfully, scrollTop: ${textareaRef.current.scrollTop}`);
+                    } catch (error) {
+                        logger.logError(`Failed to scroll to top: ${error}`);
+                    }
+                }
+            };
+
+            // Use setTimeout to ensure DOM is fully updated
+            const timeoutId = setTimeout(scrollToTopWithFallback, 50);
+
+            return () => clearTimeout(timeoutId);
+        }
+    }, [content, scrollToTop]);
     const handleContentChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
         logger.logDebug(`Content changed in ${title} panel, new length: ${event.target.value.length}`);
         onContentChange(event.target.value);
@@ -80,6 +115,7 @@ const TextPanel: React.FC<TextPanelProps> = ({
             {/* Text Area - Scrollable content */}
             <Box sx={{ flex: 1, padding: 0, overflow: 'auto' }}>
                 <TextareaAutosize
+                    ref={textareaRef}
                     value={content}
                     onChange={handleContentChange}
                     placeholder={placeholder}

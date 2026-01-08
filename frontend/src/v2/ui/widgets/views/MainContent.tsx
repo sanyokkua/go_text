@@ -1,21 +1,20 @@
 import React from 'react';
-import MainContentWidget from './content/MainContentWidget';
+import { useAppSelector } from '../../../logic/store';
 import FlexContainer from '../../components/FlexContainer';
+import MainContentWidget from './content/MainContentWidget';
 import { SettingsView } from './settings';
-
-interface MainContentProps {
-    showSettings: boolean;
-    onCloseSettings: () => void;
-}
 
 /**
  * Main Content - Container for the main content area
  * Contains either the main content or settings view
  */
-const MainContent: React.FC<MainContentProps> = ({ showSettings, onCloseSettings }) => {
+const MainContent: React.FC = () => {
+    const view = useAppSelector((state) => state.ui.view);
+    const showSettings = view === 'settings';
+
     return (
         <FlexContainer grow overflowHidden>
-            {showSettings ? <SettingsView onClose={onCloseSettings} /> : <MainContentWidget />}
+            {showSettings ? <SettingsView /> : <MainContentWidget />}
         </FlexContainer>
     );
 };

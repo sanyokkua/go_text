@@ -1,18 +1,22 @@
 import { Box, Button, Checkbox, FormControlLabel, Paper, TextField } from '@mui/material';
 import React, { useState } from 'react';
 import { InferenceBaseConfig, Settings } from '../../../../../logic/adapter';
+import { useAppDispatch } from '../../../../../logic/store';
+import { enqueueNotification } from '../../../../../logic/store/notifications';
+import { updateInferenceBaseConfig } from '../../../../../logic/store/settings';
+import { setAppBusy } from '../../../../../logic/store/ui';
 import { SPACING } from '../../../../styles/constants';
 
 interface InferenceConfigTabProps {
     settings: Settings;
-    onUpdateSettings: (updatedSettings: Settings) => void;
 }
 
 /**
  * Inference Config Tab Component
  * Configuration for inference settings
  */
-const InferenceConfigTab: React.FC<InferenceConfigTabProps> = ({ settings, onUpdateSettings }) => {
+const InferenceConfigTab: React.FC<InferenceConfigTabProps> = ({ settings }) => {
+    const dispatch = useAppDispatch();
     const [formData, setFormData] = useState<InferenceBaseConfig>({ ...settings.inferenceBaseConfig });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -26,11 +30,17 @@ const InferenceConfigTab: React.FC<InferenceConfigTabProps> = ({ settings, onUpd
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const updatedSettings = { ...settings, inferenceBaseConfig: formData };
-        onUpdateSettings(updatedSettings);
-        console.log('Inference settings updated:', formData);
+        try {
+            dispatch(setAppBusy(true));
+            await dispatch(updateInferenceBaseConfig(formData)).unwrap();
+            dispatch(enqueueNotification({ message: 'Inference settings updated successfully', severity: 'success' }));
+        } catch (error) {
+            dispatch(enqueueNotification({ message: `Failed to update inference settings: ${error}`, severity: 'error' }));
+        } finally {
+            dispatch(setAppBusy(false));
+        }
     };
 
     return (

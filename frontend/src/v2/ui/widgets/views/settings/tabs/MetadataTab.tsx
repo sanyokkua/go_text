@@ -1,6 +1,9 @@
-import React from 'react';
-import { Box, IconButton, Paper, Tooltip, Typography } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import { Box, IconButton, Paper, Tooltip, Typography } from '@mui/material';
+import React from 'react';
+import { useAppDispatch } from '../../../../../logic/store';
+import { setClipboardText } from '../../../../../logic/store/clipboard';
+import { enqueueNotification } from '../../../../../logic/store/notifications';
 import { SPACING } from '../../../../styles/constants';
 
 interface MetadataTabProps {
@@ -12,10 +15,17 @@ interface MetadataTabProps {
  * Shows global settings information with copy functionality
  */
 const MetadataTab: React.FC<MetadataTabProps> = ({ metadata }) => {
-    const handleCopy = (text: string) => {
-        navigator.clipboard.writeText(text).then(() => {
-            console.log('Copied to clipboard:', text);
-        });
+    const dispatch = useAppDispatch();
+
+    const handleCopy = async (text: string) => {
+        try {
+            const success = await dispatch(setClipboardText(text)).unwrap();
+            if (success) {
+                dispatch(enqueueNotification({ message: 'Path copied to clipboard', severity: 'success' }));
+            }
+        } catch (error) {
+            dispatch(enqueueNotification({ message: 'Failed to copy path', severity: 'error' }));
+        }
     };
 
     return (

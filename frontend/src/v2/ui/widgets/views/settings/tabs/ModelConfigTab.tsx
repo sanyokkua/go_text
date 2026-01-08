@@ -1,29 +1,68 @@
 import RefreshIcon from '@mui/icons-material/Refresh';
-import { Box, Button, Checkbox, FormControl, FormControlLabel, InputLabel, MenuItem, Paper, Select, Slider, Typography } from '@mui/material';
-import React, { useState } from 'react';
+import {
+    Box,
+    Button,
+    Checkbox,
+    FormControl,
+    FormControlLabel,
+    InputLabel,
+    MenuItem,
+    Paper,
+    Select,
+    Slider,
+    TextField,
+    Typography,
+} from '@mui/material';
+import React, { useEffect, useState } from 'react';
 import { ModelConfig, Settings } from '../../../../../logic/adapter';
 import { SPACING } from '../../../../styles/constants';
+import { useAppDispatch, useAppSelector } from '../../../../../logic/store';
+import { updateModelConfig } from '../../../../../logic/store/settings';
+import { getModelsList } from '../../../../../logic/store/actions';
+import { setAppBusy } from '../../../../../logic/store/ui';
+import { enqueueNotification } from '../../../../../logic/store/notifications';
 
 interface ModelConfigTabProps {
     settings: Settings;
-    onUpdateSettings: (updatedSettings: Settings) => void;
 }
 
 /**
  * Model Config Tab Component
  * Configuration for model settings
  */
-const ModelConfigTab: React.FC<ModelConfigTabProps> = ({ settings, onUpdateSettings }) => {
+const ModelConfigTab: React.FC<ModelConfigTabProps> = ({ settings }) => {
+    const dispatch = useAppDispatch();
+    const availableModels = useAppSelector((state) => state.actions.availableModels);
     const [formData, setFormData] = useState<ModelConfig>({ ...settings.modelConfig });
+    const [filterText, setFilterText] = useState('');
 
-    // Get available models from current provider (stub data for now)
-    const availableModels = ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo', 'claude-3-opus', 'claude-3-sonnet', 'llama-3-70b', 'llama-3-8b'];
+    // Fetch models list on mount if empty
+    useEffect(() => {
+        if (availableModels.length === 0) {
+            const fetchModels = async () => {
+                try {
+                    dispatch(setAppBusy(true));
+                    await dispatch(getModelsList()).unwrap();
+                } catch (error) {
+                    dispatch(enqueueNotification({ message: `Failed to fetch models: ${error}`, severity: 'error' }));
+                } finally {
+                    dispatch(setAppBusy(false));
+                }
+            };
+            fetchModels();
+        }
+    }, [dispatch, availableModels.length]);
 
-    const handleRefreshModels = () => {
-        // TODO: Connect to Redux to refresh models list from current provider
-        console.log('Refreshing models list from provider:', settings.currentProviderConfig.providerName);
-        // This would typically call an API to fetch available models from the current provider
-        // For now, we'll just log the action
+    const handleRefreshModels = async () => {
+        try {
+            dispatch(setAppBusy(true));
+            await dispatch(getModelsList()).unwrap();
+            dispatch(enqueueNotification({ message: 'Models list refreshed successfully', severity: 'success' }));
+        } catch (error) {
+            dispatch(enqueueNotification({ message: `Failed to refresh models: ${error}`, severity: 'error' }));
+        } finally {
+            dispatch(setAppBusy(false));
+        }
     };
 
     const handleChange = (e: any) => {
@@ -39,32 +78,50 @@ const ModelConfigTab: React.FC<ModelConfigTabProps> = ({ settings, onUpdateSetti
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const updatedSettings = { ...settings, modelConfig: formData };
-        onUpdateSettings(updatedSettings);
-        console.log('Model settings updated:', formData);
+        try {
+            dispatch(setAppBusy(true));
+            await dispatch(updateModelConfig(formData)).unwrap();
+            dispatch(enqueueNotification({ message: 'Model settings updated successfully', severity: 'success' }));
+        } catch (error) {
+            dispatch(enqueueNotification({ message: `Failed to update model settings: ${error}`, severity: 'error' }));
+        } finally {
+            dispatch(setAppBusy(false));
+        }
     };
+
+    // Filter models based on filter text
+    const filteredModels = availableModels.filter((model) => model.toLowerCase().includes(filterText.toLowerCase()));
 
     return (
         <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: SPACING.STANDARD }}>
             <Paper elevation={0} sx={{ padding: SPACING.STANDARD, flex: 1 }}>
                 <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: SPACING.STANDARD }}>
                     <Box sx={{ display: 'flex', gap: SPACING.STANDARD, alignItems: 'center' }}>
-                        <FormControl fullWidth>
-                            <InputLabel>Model Name</InputLabel>
-                            <Select name="name" value={formData.name} size="small" onChange={handleChange} label="Model Name" required>
-                                {availableModels.map((model) => (
-                                    <MenuItem key={model} value={model}>
-                                        {model}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
+                        <TextField
+                            fullWidth
+                            label="Filter Models"
+                            value={filterText}
+                            onChange={(e) => setFilterText(e.target.value)}
+                            placeholder="Type to filter models..."
+                            size="small"
+                        />
                         <Button variant="outlined" startIcon={<RefreshIcon />} onClick={handleRefreshModels} sx={{ minWidth: 'fit-content' }}>
                             Refresh Models
                         </Button>
                     </Box>
+
+                    <FormControl fullWidth>
+                        <InputLabel>Model Name</InputLabel>
+                        <Select name="name" value={formData.name} size="small" onChange={handleChange} label="Model Name" required>
+                            {filteredModels.map((model) => (
+                                <MenuItem key={model} value={model}>
+                                    {model}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
 
                     <FormControlLabel
                         control={<Checkbox name="useTemperature" checked={formData.useTemperature} onChange={handleChange} />}

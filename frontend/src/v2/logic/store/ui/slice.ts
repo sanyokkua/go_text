@@ -5,7 +5,7 @@ import { MainView, UIState } from './types';
 const logger = getLogger('UISlice');
 
 // Initial state
-const initialState: UIState = { view: 'main', activeSettingsTab: 0, activeActionsTab: '', isAppBusy: false };
+const initialState: UIState = { view: 'main', activeSettingsTab: 0, activeActionsTab: '', isAppBusy: false, currentTask: 'N/A' };
 
 const uiSlice = createSlice({
     name: 'ui',
@@ -32,12 +32,16 @@ const uiSlice = createSlice({
             logger.logInfo(`Setting app busy state to: ${action.payload}`);
             state.isAppBusy = action.payload;
         },
+        setCurrentTask: (state, action: PayloadAction<string>) => {
+            logger.logInfo(`Setting current task to: ${action.payload}`);
+            state.currentTask = action.payload;
+        },
     },
-    extraReducers: (builder) => {
+    extraReducers: () => {
         // No async thunks for UI - all updates are synchronous
     },
 });
 
-export const { toggleSettingsView, setView, setActiveSettingsTab, setActiveActionsTab, setAppBusy } = uiSlice.actions;
+export const { toggleSettingsView, setView, setActiveSettingsTab, setActiveActionsTab, setAppBusy, setCurrentTask } = uiSlice.actions;
 
 export default uiSlice.reducer;

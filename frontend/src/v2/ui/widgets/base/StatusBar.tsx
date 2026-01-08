@@ -1,12 +1,13 @@
 import { Paper, Typography } from '@mui/material';
 import React from 'react';
 import { CONTAINER_STYLES } from '../../styles/constants';
+import { useAppSelector } from '../../../logic/store';
 
 const StatusBar: React.FC = () => {
-    // Hardcoded values - will be replaced with Redux later
-    const provider = 'N/A';
-    const model = 'N/A';
-    const task = 'N/A';
+    // Get values from Redux store
+    const provider = useAppSelector((state) => state.settings.allSettings?.currentProviderConfig.providerName) || 'N/A';
+    const model = useAppSelector((state) => state.settings.allSettings?.modelConfig.name) || 'N/A';
+    const task = useAppSelector((state) => state.ui.currentTask);
 
     return (
         <Paper

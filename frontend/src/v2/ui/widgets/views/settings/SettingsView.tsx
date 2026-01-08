@@ -1,6 +1,9 @@
 import { Box, Divider } from '@mui/material';
-import React, { useState } from 'react';
-import { AppSettingsMetadata, Settings } from '../../../../logic/adapter';
+import React from 'react';
+import { useAppDispatch, useAppSelector } from '../../../../logic/store';
+import { enqueueNotification } from '../../../../logic/store/notifications';
+import { resetSettingsToDefault } from '../../../../logic/store/settings';
+import { setActiveSettingsTab, setAppBusy, toggleSettingsView } from '../../../../logic/store/ui';
 import { CONTAINER_STYLES, FLEX_STYLES, SPACING } from '../../../styles/constants';
 import SettingsGlobalControls from './SettingsGlobalControls';
 import SettingsTabs from './SettingsTabs';
@@ -10,122 +13,36 @@ import MetadataTab from './tabs/MetadataTab';
 import ModelConfigTab from './tabs/ModelConfigTab';
 import ProviderConfigTab from './tabs/ProviderConfigTab';
 
-interface SettingsViewProps {
-    onClose: () => void;
-}
-
 /**
  * Main Settings View Component
  * This is the root component for the settings view
  */
-const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
-    const [activeTab, setActiveTab] = useState(0);
-    const [settings, setSettings] = useState<Settings | null>(null);
-    const [metadata, setMetadata] = useState<AppSettingsMetadata | null>(null);
-
-    // Stub data for development - will be replaced with Redux later
-    const stubSettings: Settings = {
-        availableProviderConfigs: [
-            {
-                providerId: 'prov-1',
-                providerName: 'OpenAI Compatible',
-                providerType: 'openaiCompatible',
-                baseUrl: 'https://api.openai.com/v1/',
-                modelsEndpoint: 'models',
-                completionEndpoint: 'chat/completions',
-                authType: 'bearer',
-                authToken: 'sk-...',
-                useAuthTokenFromEnv: false,
-                envVarTokenName: '',
-                useCustomHeaders: false,
-                headers: {},
-                useCustomModels: false,
-                customModels: [],
-            },
-            {
-                providerId: 'prov-2',
-                providerName: 'Local Ollama',
-                providerType: 'ollama',
-                baseUrl: 'http://localhost:11434/',
-                modelsEndpoint: 'api/tags',
-                completionEndpoint: 'api/chat',
-                authType: 'none',
-                authToken: '',
-                useAuthTokenFromEnv: false,
-                envVarTokenName: '',
-                useCustomHeaders: false,
-                headers: {},
-                useCustomModels: false,
-                customModels: [],
-            },
-            {
-                providerId: 'prov-3',
-                providerName: 'LM Studio',
-                providerType: 'openaiCompatible',
-                baseUrl: 'http://localhost:1234/',
-                modelsEndpoint: 'api/models',
-                completionEndpoint: 'api/completion',
-                authType: 'none',
-                authToken: '',
-                useAuthTokenFromEnv: false,
-                envVarTokenName: 'HELLO_WORLD',
-                useCustomHeaders: true,
-                headers: { 'Access-Control-Allow-Origin': '*' },
-                useCustomModels: false,
-                customModels: [],
-            },
-        ],
-        currentProviderConfig: {
-            providerId: 'prov-1',
-            providerName: 'OpenAI Compatible',
-            providerType: 'openaiCompatible',
-            baseUrl: 'https://api.openai.com/v1/',
-            modelsEndpoint: 'models',
-            completionEndpoint: 'chat/completions',
-            authType: 'bearer',
-            authToken: 'sk-...',
-            useAuthTokenFromEnv: false,
-            envVarTokenName: '',
-            useCustomHeaders: false,
-            headers: {},
-            useCustomModels: false,
-            customModels: [],
-        },
-        inferenceBaseConfig: { timeout: 30, maxRetries: 3, useMarkdownForOutput: true },
-        modelConfig: { name: 'gpt-3.5-turbo', useTemperature: true, temperature: 0.7 },
-        languageConfig: {
-            languages: ['English', 'Spanish', 'French', 'German', 'Ukrainian'],
-            defaultInputLanguage: 'English',
-            defaultOutputLanguage: 'Ukrainian',
-        },
-    };
-
-    const stubMetadata: AppSettingsMetadata = {
-        authTypes: ['none', 'apiKey', 'bearer'],
-        providerTypes: ['openaiCompatible', 'ollama'],
-        settingsFolder: '/Users/username/Library/Application Support/MyApp',
-        settingsFile: '/Users/username/Library/Application Support/MyApp/settings.json',
-    };
-
-    // Initialize with stub data
-    React.useEffect(() => {
-        setSettings(stubSettings);
-        setMetadata(stubMetadata);
-    }, []);
+const SettingsView: React.FC = () => {
+    const dispatch = useAppDispatch();
+    const activeTab = useAppSelector((state) => state.ui.activeSettingsTab);
+    const settings = useAppSelector((state) => state.settings.allSettings);
+    const metadata = useAppSelector((state) => state.settings.metadata);
+    const isAppBusy = useAppSelector((state) => state.ui.isAppBusy);
 
     const handleClose = () => {
-        // TODO: Connect to Redux to close settings
-        console.log('Settings closed');
-        onClose();
+        dispatch(setActiveSettingsTab(0));
+        dispatch(toggleSettingsView());
     };
 
-    const handleResetToDefault = () => {
-        // TODO: Connect to Redux to reset settings
-        console.log('Reset to default settings');
+    const handleResetToDefault = async () => {
+        try {
+            dispatch(setAppBusy(true));
+            await dispatch(resetSettingsToDefault()).unwrap();
+            dispatch(enqueueNotification({ message: 'Settings reset to default successfully', severity: 'success' }));
+        } catch (error) {
+            dispatch(enqueueNotification({ message: `Failed to reset settings: ${error}`, severity: 'error' }));
+        } finally {
+            dispatch(setAppBusy(false));
+        }
     };
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-        setActiveTab(newValue);
+        dispatch(setActiveSettingsTab(newValue));
     };
 
     if (!settings || !metadata) {
@@ -145,12 +62,10 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
                 {activeTab === 0 && metadata && (
                     <MetadataTab metadata={{ settingsFolder: metadata.settingsFolder, settingsFile: metadata.settingsFile }} />
                 )}
-                {activeTab === 1 && settings && metadata && (
-                    <ProviderConfigTab settings={settings} metadata={metadata} onUpdateSettings={setSettings} />
-                )}
-                {activeTab === 2 && settings && <ModelConfigTab settings={settings} onUpdateSettings={setSettings} />}
-                {activeTab === 3 && settings && <InferenceConfigTab settings={settings} onUpdateSettings={setSettings} />}
-                {activeTab === 4 && settings && <LanguageConfigTab settings={settings} onUpdateSettings={setSettings} />}
+                {activeTab === 1 && settings && metadata && <ProviderConfigTab settings={settings} metadata={metadata} />}
+                {activeTab === 2 && settings && <ModelConfigTab settings={settings} />}
+                {activeTab === 3 && settings && <InferenceConfigTab settings={settings} />}
+                {activeTab === 4 && settings && <LanguageConfigTab settings={settings} />}
             </Box>
 
             <Box sx={{ marginY: SPACING.STANDARD }}>

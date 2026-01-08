@@ -1,48 +1,85 @@
 import { Box, Button, Paper } from '@mui/material';
 import React, { useState } from 'react';
 import { LanguageConfig, Settings } from '../../../../../logic/adapter';
+import { useAppDispatch } from '../../../../../logic/store';
+import { enqueueNotification } from '../../../../../logic/store/notifications';
+import { addLanguage, removeLanguage, setDefaultInputLanguage, setDefaultOutputLanguage } from '../../../../../logic/store/settings';
+import { setAppBusy } from '../../../../../logic/store/ui';
 import { SPACING } from '../../../../styles/constants';
 import LanguageList from './components/LanguageList';
 
 interface LanguageConfigTabProps {
     settings: Settings;
-    onUpdateSettings: (updatedSettings: Settings) => void;
 }
 
 /**
  * Language Config Tab Component
  * Configuration for translation languages
  */
-const LanguageConfigTab: React.FC<LanguageConfigTabProps> = ({ settings, onUpdateSettings }) => {
+const LanguageConfigTab: React.FC<LanguageConfigTabProps> = ({ settings }) => {
+    const dispatch = useAppDispatch();
     const [formData, setFormData] = useState<LanguageConfig>({ ...settings.languageConfig });
 
-    const handleAddLanguage = (language: string) => {
-        if (!formData.languages.includes(language)) {
-            const updatedLanguages = [...formData.languages, language];
-            setFormData((prev) => ({ ...prev, languages: updatedLanguages }));
+    const handleAddLanguage = async (language: string) => {
+        try {
+            if (!formData.languages.includes(language)) {
+                dispatch(setAppBusy(true));
+                await dispatch(addLanguage(language)).unwrap();
+                setFormData((prev) => ({ ...prev, languages: [...prev.languages, language] }));
+                dispatch(enqueueNotification({ message: 'Language added successfully', severity: 'success' }));
+            }
+        } catch (error) {
+            dispatch(enqueueNotification({ message: `Failed to add language: ${error}`, severity: 'error' }));
+        } finally {
+            dispatch(setAppBusy(false));
         }
     };
 
-    const handleRemoveLanguage = (language: string) => {
-        if (language !== formData.defaultInputLanguage && language !== formData.defaultOutputLanguage) {
-            const updatedLanguages = formData.languages.filter((l) => l !== language);
-            setFormData((prev) => ({ ...prev, languages: updatedLanguages }));
+    const handleRemoveLanguage = async (language: string) => {
+        try {
+            if (language !== formData.defaultInputLanguage && language !== formData.defaultOutputLanguage) {
+                dispatch(setAppBusy(true));
+                await dispatch(removeLanguage(language)).unwrap();
+                setFormData((prev) => ({ ...prev, languages: prev.languages.filter((l) => l !== language) }));
+                dispatch(enqueueNotification({ message: 'Language removed successfully', severity: 'success' }));
+            }
+        } catch (error) {
+            dispatch(enqueueNotification({ message: `Failed to remove language: ${error}`, severity: 'error' }));
+        } finally {
+            dispatch(setAppBusy(false));
         }
     };
 
-    const handleSetDefaultInput = (language: string) => {
-        setFormData((prev) => ({ ...prev, defaultInputLanguage: language }));
+    const handleSetDefaultInput = async (language: string) => {
+        try {
+            dispatch(setAppBusy(true));
+            await dispatch(setDefaultInputLanguage(language)).unwrap();
+            setFormData((prev) => ({ ...prev, defaultInputLanguage: language }));
+            dispatch(enqueueNotification({ message: 'Default input language updated successfully', severity: 'success' }));
+        } catch (error) {
+            dispatch(enqueueNotification({ message: `Failed to update default input language: ${error}`, severity: 'error' }));
+        } finally {
+            dispatch(setAppBusy(false));
+        }
     };
 
-    const handleSetDefaultOutput = (language: string) => {
-        setFormData((prev) => ({ ...prev, defaultOutputLanguage: language }));
+    const handleSetDefaultOutput = async (language: string) => {
+        try {
+            dispatch(setAppBusy(true));
+            await dispatch(setDefaultOutputLanguage(language)).unwrap();
+            setFormData((prev) => ({ ...prev, defaultOutputLanguage: language }));
+            dispatch(enqueueNotification({ message: 'Default output language updated successfully', severity: 'success' }));
+        } catch (error) {
+            dispatch(enqueueNotification({ message: `Failed to update default output language: ${error}`, severity: 'error' }));
+        } finally {
+            dispatch(setAppBusy(false));
+        }
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        const updatedSettings = { ...settings, languageConfig: formData };
-        onUpdateSettings(updatedSettings);
-        console.log('Language settings updated:', formData);
+        // All updates are handled in real-time by the individual handlers
+        dispatch(enqueueNotification({ message: 'Language settings updated successfully', severity: 'success' }));
     };
 
     return (

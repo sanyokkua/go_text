@@ -1,11 +1,15 @@
 import { Box } from '@mui/material';
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import FlexContainer from '../../components/FlexContainer';
 import { CONTAINER_STYLES, UI_HEIGHTS } from '../../styles/constants';
 import AppBar from '../base/AppBar';
 import StatusBar from '../base/StatusBar';
 import MainContent from './MainContent';
 import { getLogger } from '../../../logic/adapter';
+import { useAppDispatch, useAppSelector } from '../../../logic/store';
+import { initializeSettingsState } from '../../../logic/store/settings';
+import { getPromptGroups } from '../../../logic/store/actions';
+import { setActiveActionsTab } from '../../../logic/store/ui';
 
 const logger = getLogger('AppMainView');
 
@@ -17,27 +21,56 @@ const logger = getLogger('AppMainView');
  * - StatusBar (bottom)
  */
 const AppMainView: React.FC = () => {
-    const [showSettings, setShowSettings] = useState(false);
+    const dispatch = useAppDispatch();
+    const view = useAppSelector((state) => state.ui.view);
+    const showSettings = view === 'settings';
+
+    // Initialize settings and prompt groups on mount
+    useEffect(() => {
+        const initializeApp = async () => {
+            try {
+                logger.logInfo('Initializing app state');
+
+                // Initialize settings state
+                await dispatch(initializeSettingsState()).unwrap();
+                logger.logInfo('Settings initialized successfully');
+
+                // Fetch prompt groups
+                const promptGroupsResult = await dispatch(getPromptGroups()).unwrap();
+                logger.logInfo('Prompt groups loaded successfully');
+
+                // Set the first prompt group as active
+                if (promptGroupsResult && Object.keys(promptGroupsResult.promptGroups).length > 0) {
+                    const firstGroupId = Object.keys(promptGroupsResult.promptGroups)[0];
+                    dispatch(setActiveActionsTab(firstGroupId));
+                    logger.logInfo(`Set active actions tab to: ${firstGroupId}`);
+                }
+            } catch (error) {
+                logger.logError(`Failed to initialize app: ${error}`);
+            }
+        };
+
+        initializeApp();
+    }, [dispatch]);
 
     const handleSettingsClick = () => {
-        setShowSettings(true);
         logger.logDebug('Settings clicked');
     };
 
     const handleCloseSettings = () => {
-        setShowSettings(false);
+        logger.logDebug('Closing settings');
     };
 
     return (
         <FlexContainer direction="column" overflowHidden sx={{ ...CONTAINER_STYLES.FULL_SIZE, maxHeight: '100vh', minHeight: '100vh' }}>
             {/* Top App Bar - Fixed height */}
             <Box sx={{ height: UI_HEIGHTS.APP_BAR }}>
-                <AppBar onSettingsClick={handleSettingsClick} showSettings={showSettings} />
+                <AppBar />
             </Box>
 
             {/* Main Content Area - Takes remaining space */}
             <FlexContainer grow overflowHidden>
-                <MainContent showSettings={showSettings} onCloseSettings={handleCloseSettings} />
+                <MainContent />
             </FlexContainer>
 
             {/* Bottom Status Bar - Fixed height */}
