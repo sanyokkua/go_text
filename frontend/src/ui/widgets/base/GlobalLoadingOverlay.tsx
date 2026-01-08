@@ -1,6 +1,7 @@
-import { Backdrop, CircularProgress, Typography } from '@mui/material';
+import { Box, CircularProgress, Typography } from '@mui/material';
 import React from 'react';
 import { useAppSelector } from '../../../logic/store';
+import { UI_HEIGHTS } from '../../styles/constants';
 
 /**
  * Global Loading Overlay - Shows a loading spinner when the app is busy
@@ -14,11 +15,14 @@ const GlobalLoadingOverlay: React.FC = () => {
     }
 
     return (
-        <Backdrop
-            open={isAppBusy}
+        <Box
             sx={{
                 position: 'fixed',
                 zIndex: (theme) => theme.zIndex.modal + 1,
+                top: UI_HEIGHTS.APP_BAR,
+                right: 0,
+                bottom: UI_HEIGHTS.STATUS_BAR,
+                left: 0,
                 backgroundColor: 'rgba(0, 0, 0, 0.1)',
                 backdropFilter: 'blur(4px)',
                 display: 'flex',
@@ -31,7 +35,7 @@ const GlobalLoadingOverlay: React.FC = () => {
             <Typography variant="h6" color="text.primary" sx={{ mt: 2 }}>
                 Processing...
             </Typography>
-        </Backdrop>
+        </Box>
     );
 };
 

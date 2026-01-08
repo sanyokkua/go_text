@@ -1,4 +1,5 @@
 import SettingsIcon from '@mui/icons-material/Settings';
+import CloseIcon from '@mui/icons-material/Close';
 import { AppBar as MuiAppBar, Box, IconButton, Toolbar, Typography } from '@mui/material';
 import React from 'react';
 import { getLogger } from '../../../logic/adapter';
@@ -39,11 +40,25 @@ const AppBar: React.FC = () => {
                 <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
                     <IconButton
                         color="inherit"
-                        aria-label="settings"
+                        aria-label={showSettings ? "close settings" : "open settings"}
                         onClick={handleSettingsClick}
-                        sx={{ ml: 1, height: 'fit-content', width: 'fit-content' }}
+                        sx={{
+                            ml: 1, 
+                            height: 'fit-content', 
+                            width: 'fit-content',
+                            ...(showSettings && {
+                                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                                '&:hover': {
+                                    backgroundColor: 'rgba(255, 255, 255, 0.3)'
+                                }
+                            })
+                        }}
                     >
-                        <SettingsIcon color={showSettings ? 'primary' : 'inherit'} />
+                        {showSettings ? (
+                            <CloseIcon color="error" fontSize="medium" />
+                        ) : (
+                            <SettingsIcon color="inherit" fontSize="medium" />
+                        )}
                     </IconButton>
                 </Box>
             </Toolbar>

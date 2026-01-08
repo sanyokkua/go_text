@@ -5,13 +5,13 @@ import { enqueueNotification } from '../../../../logic/store/notifications';
 import { resetSettingsToDefault } from '../../../../logic/store/settings';
 import { setActiveSettingsTab, setAppBusy, toggleSettingsView } from '../../../../logic/store/ui';
 import { CONTAINER_STYLES, FLEX_STYLES, SPACING } from '../../../styles/constants';
-import SettingsGlobalControls from './SettingsGlobalControls';
 import SettingsTabs from './SettingsTabs';
 import InferenceConfigTab from './tabs/InferenceConfigTab';
 import LanguageConfigTab from './tabs/LanguageConfigTab';
 import MetadataTab from './tabs/MetadataTab';
 import ModelConfigTab from './tabs/ModelConfigTab';
 import ProviderConfigTab from './tabs/ProviderConfigTab';
+import FactoryResetTab from './tabs/FactoryResetTab';
 
 /**
  * Main Settings View Component
@@ -23,26 +23,15 @@ const SettingsView: React.FC = () => {
     const settings = useAppSelector((state) => state.settings.allSettings);
     const metadata = useAppSelector((state) => state.settings.metadata);
 
-    const handleClose = () => {
-        dispatch(setActiveSettingsTab(0));
-        dispatch(toggleSettingsView());
-    };
-
-    const handleResetToDefault = async () => {
-        try {
-            dispatch(setAppBusy(true));
-            await dispatch(resetSettingsToDefault()).unwrap();
-            dispatch(enqueueNotification({ message: 'Settings reset to default successfully', severity: 'success' }));
-        } catch (error) {
-            dispatch(enqueueNotification({ message: `Failed to reset settings: ${error}`, severity: 'error' }));
-        } finally {
-            dispatch(setAppBusy(false));
-        }
-    };
+    // Remove the handleClose function since we're removing the Close button
+    // Settings will only be closed via the App Bar button
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
         dispatch(setActiveSettingsTab(newValue));
     };
+
+    // Reset functionality has been moved to the FactoryResetTab component
+    // No longer needed in the main SettingsView
 
     if (!settings || !metadata) {
         return null; // Loading state could be added here
@@ -65,14 +54,15 @@ const SettingsView: React.FC = () => {
                 {activeTab === 2 && settings && <ModelConfigTab settings={settings} />}
                 {activeTab === 3 && settings && <InferenceConfigTab settings={settings} />}
                 {activeTab === 4 && settings && <LanguageConfigTab settings={settings} />}
+                {activeTab === 5 && <FactoryResetTab />}
             </Box>
 
             <Box sx={{ marginY: SPACING.STANDARD }}>
                 <Divider />
             </Box>
 
-            {/* Global Controls */}
-            <SettingsGlobalControls onClose={handleClose} onResetToDefault={handleResetToDefault} />
+            {/* Global Controls have been removed - all functionality is now in dedicated tabs */}
+            {/* Settings can only be closed via App Bar button */}
         </Box>
     );
 };
