@@ -6,8 +6,3 @@ export interface ActionsState {
     loading: boolean; // True while processing LLM prompt
     error: string | null;
 }
-
-export interface KnownError {
-    errorMessage: string;
-    code?: string;
-}
