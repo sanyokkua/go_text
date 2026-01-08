@@ -24,12 +24,6 @@ const InferenceConfigTab: React.FC<InferenceConfigTabProps> = ({ settings }) => 
         setFormData((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : type === 'number' ? Number(value) : value }));
     };
 
-    const handleSliderChange = (name: string) => (event: Event, newValue: number | number[]) => {
-        if (typeof newValue === 'number') {
-            setFormData((prev) => ({ ...prev, [name]: newValue }));
-        }
-    };
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {

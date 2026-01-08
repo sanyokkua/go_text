@@ -23,6 +23,7 @@ const MetadataTab: React.FC<MetadataTabProps> = ({ metadata }) => {
             if (success) {
                 dispatch(enqueueNotification({ message: 'Path copied to clipboard', severity: 'success' }));
             }
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
             dispatch(enqueueNotification({ message: 'Failed to copy path', severity: 'error' }));
         }

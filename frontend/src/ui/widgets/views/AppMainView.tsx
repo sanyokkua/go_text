@@ -53,14 +53,6 @@ const AppMainView: React.FC = () => {
         initializeApp();
     }, [dispatch]);
 
-    const handleSettingsClick = () => {
-        logger.logDebug('Settings clicked');
-    };
-
-    const handleCloseSettings = () => {
-        logger.logDebug('Closing settings');
-    };
-
     return (
         <FlexContainer direction="column" overflowHidden sx={{ ...CONTAINER_STYLES.FULL_SIZE, maxHeight: '100vh', minHeight: '100vh' }}>
             {/* Top App Bar - Fixed height */}

@@ -1,6 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { ActionHandlerAdapter, getLogger } from '../../adapter';
-import { ChatCompletionRequest, PromptActionRequest, Prompts, ProviderConfig } from '../../adapter/models';
+import { ChatCompletionRequest, PromptActionRequest, Prompts, ProviderConfig } from '../../adapter';
 import { parseError } from '../../utils/error_utils';
 import { setOutputContent } from '../editor';
 import { AppDispatch } from '../index';

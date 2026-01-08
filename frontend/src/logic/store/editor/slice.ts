@@ -38,7 +38,7 @@ const editorSlice = createSlice({
             state.outputContent = '';
         },
     },
-    extraReducers: (builder) => {
+    extraReducers: () => {
         // No async thunks for editor - all updates are synchronous
     },
 });

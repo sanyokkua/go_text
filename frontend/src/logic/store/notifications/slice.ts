@@ -25,7 +25,7 @@ const notificationsSlice = createSlice({
             state.queue = [];
         },
     },
-    extraReducers: (builder) => {
+    extraReducers: () => {
         // No async thunks for notifications - all updates are synchronous
     },
 });

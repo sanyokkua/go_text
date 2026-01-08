@@ -22,7 +22,6 @@ const SettingsView: React.FC = () => {
     const activeTab = useAppSelector((state) => state.ui.activeSettingsTab);
     const settings = useAppSelector((state) => state.settings.allSettings);
     const metadata = useAppSelector((state) => state.settings.metadata);
-    const isAppBusy = useAppSelector((state) => state.ui.isAppBusy);
 
     const handleClose = () => {
         dispatch(setActiveSettingsTab(0));

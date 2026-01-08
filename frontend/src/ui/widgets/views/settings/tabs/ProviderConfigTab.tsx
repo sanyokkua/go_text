@@ -129,6 +129,7 @@ const ProviderConfigTab: React.FC<ProviderConfigTabProps> = ({ settings, metadat
 
             const chatCompletionRequest = { model: modelId, messages: [{ role: 'user', content: 'Hello' }], stream: false };
 
+            // TODO: Add log
             const response = await dispatch(getCompletionResponseForProvider({ providerConfig, chatCompletionRequest })).unwrap();
 
             dispatch(enqueueNotification({ message: 'Connection test successful!', severity: 'success' }));

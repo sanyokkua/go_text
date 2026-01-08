@@ -206,7 +206,7 @@ describe('Error Utils', () => {
             const result = formatParsedError(parsedError);
 
             // Assert
-            expect(result).toMatch(/^\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z\] NullError: Null value$/);
+            expect(result).toMatch(/^\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z] NullError: Null value$/);
         });
     });
 

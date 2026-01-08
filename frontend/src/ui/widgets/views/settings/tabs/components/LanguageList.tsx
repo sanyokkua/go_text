@@ -90,7 +90,7 @@ const LanguageList: React.FC<LanguageListProps> = ({
                             chipProps.deleteIcon = <DeleteIcon />;
                         }
 
-                        return <Chip {...chipProps} />;
+                        return <Chip key={language} {...chipProps} />;
                     })}
                 </Box>
 
