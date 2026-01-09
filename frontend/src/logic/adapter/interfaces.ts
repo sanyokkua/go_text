@@ -1,3 +1,9 @@
+/**
+ * Adapter Layer Interfaces
+ * 
+ * Defines the contract between frontend and backend services.
+ * These interfaces abstract the Wails-generated Go backend bindings.
+ */
 import {
     AppSettingsMetadata,
     ChatCompletionRequest,
@@ -10,6 +16,12 @@ import {
     Settings,
 } from './models';
 
+/**
+ * Logging service interface for structured logging across the application
+ * 
+ * Provides different log levels for debugging, error tracking, and information logging.
+ * All methods are synchronous to avoid timing issues in critical paths.
+ */
 export interface ILoggerService {
     logPrint(message: string): void;
     logTrace(message: string): void;
@@ -20,6 +32,12 @@ export interface ILoggerService {
     logWarning(message: string): void;
 }
 
+/**
+ * Action handler interface for LLM operations
+ * 
+ * Manages all AI-related operations including completion requests, model management,
+ * and prompt processing. Acts as the bridge between frontend UI and backend LLM services.
+ */
 export interface IActionHandler {
     getCompletionResponse(chatCompletionRequest: ChatCompletionRequest): Promise<string>;
     getCompletionResponseForProvider(providerConfig: ProviderConfig, arg2: ChatCompletionRequest): Promise<string>;
@@ -29,6 +47,17 @@ export interface IActionHandler {
     processPrompt(promptActionRequest: PromptActionRequest): Promise<string>;
 }
 
+/**
+ * Settings handler interface for application configuration management
+ * 
+ * Provides comprehensive CRUD operations for all application settings including:
+ * - Provider configurations (LLM service endpoints and authentication)
+ * - Model configurations (temperature, model selection)
+ * - Language configurations (supported languages, defaults)
+ * - Inference base configurations (timeouts, retries)
+ * 
+ * Follows a pattern of returning full updated objects rather than just success/failure.
+ */
 export interface ISettingsHandler {
     addLanguage(language: string): Promise<Array<string>>;
     createProviderConfig(providerConfig: ProviderConfig): Promise<ProviderConfig>;
@@ -51,6 +80,12 @@ export interface ISettingsHandler {
     updateProviderConfig(providerConfig: ProviderConfig): Promise<ProviderConfig>;
 }
 
+/**
+ * Event service interface for cross-component communication
+ * 
+ * Provides pub/sub pattern for decoupled component communication.
+ * Supports single, multiple, and one-time event listeners with cleanup methods.
+ */
 export interface IEventsService {
     eventsEmit(eventName: string, ...data: unknown[]): void;
     eventsOn(eventName: string, callback: (...data: unknown[]) => void): () => void;
@@ -60,6 +95,12 @@ export interface IEventsService {
     eventsOffAll(): void;
 }
 
+/**
+ * Clipboard service interface for system clipboard operations
+ * 
+ * Abstracts platform-specific clipboard access with error handling.
+ * Returns boolean success status for write operations to handle permission issues.
+ */
 export interface IClipboardService {
     getText(): Promise<string>;
     setText(text: string): Promise<boolean>;

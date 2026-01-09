@@ -24,6 +24,19 @@ const panelContainerStyle = {
  * Contains two side-by-side panels:
  * - Input panel (left) - 50% width, scrollable content
  * - Output panel (right) - 50% width, scrollable content
+ * 
+ * Key Responsibilities:
+ * - Managing input/output text content
+ * - Providing clipboard integration (paste input, copy output)
+ * - Handling text manipulation actions (clear, use as input)
+ * - State management for editor content
+ * - User notifications for clipboard operations
+ * 
+ * Design Features:
+ * - Equal 50/50 split layout
+ * - Reusable TextPanel components for each side
+ * - Disabled button states during processing
+ * - Comprehensive error handling for clipboard operations
  */
 const InputOutputContainer: React.FC = () => {
     const dispatch = useAppDispatch();

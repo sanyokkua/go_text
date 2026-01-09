@@ -59,12 +59,30 @@ import {
     Settings,
 } from './models';
 
+/**
+ * Formats log messages with service context for consistent logging structure
+ * 
+ * @param message - The log message content
+ * @param serviceName - Optional service name for context
+ * @returns Formatted log message with service prefix
+ */
 function formatLogMessage(message: string, serviceName?: string): string {
     if (serviceName && serviceName.trim().length > 0) {
         return `[FrontendLogger].${serviceName}: ${message}`;
     }
     return `[FrontendLogger].${message}`;
 }
+
+/**
+ * Safely executes log functions with error handling
+ * 
+ * Wraps Wails-generated log functions to prevent crashes from logging errors.
+ * Falls back to console.error if the primary logging mechanism fails.
+ * 
+ * @param message - The log message content
+ * @param logFunction - The Wails-generated log function to call
+ * @param serviceName - Optional service name for context
+ */
 function logMessage(message: string, logFunction: (arg: string) => void, serviceName?: string) {
     try {
         logFunction(formatLogMessage(message, serviceName));
@@ -73,9 +91,26 @@ function logMessage(message: string, logFunction: (arg: string) => void, service
     }
 }
 
+/**
+ * Logger Service Implementation
+ * 
+ * Concrete implementation of ILoggerService that wraps Wails-generated logging functions.
+ * Provides structured logging with service context and error handling.
+ * 
+ * Features:
+ * - Service-specific logging context
+ * - Error-safe logging operations
+ * - Static factory method for easy instantiation
+ */
 export class LoggerService implements ILoggerService {
     constructor(private readonly loggerServiceName?: string) {}
 
+    /**
+     * Factory method to create logger instances with service context
+     * 
+     * @param serviceName - Name of the service for logging context
+     * @returns Configured LoggerService instance
+     */
     static getLogger(serviceName?: string): LoggerService {
         return new LoggerService(serviceName);
     }
@@ -108,9 +143,28 @@ export class LoggerService implements ILoggerService {
         logMessage(message, LogWarning, this.loggerServiceName);
     }
 }
+/**
+ * Action Handler Service Implementation
+ * 
+ * Concrete implementation of IActionHandler that bridges frontend UI with backend LLM services.
+ * Handles all AI-related operations including completion requests, model management, and prompt processing.
+ * 
+ * Key Responsibilities:
+ * - Converting frontend models to Wails-compatible formats
+ * - Error handling and logging for all LLM operations
+ * - Managing provider-specific operations
+ * - Processing user-initiated prompt actions
+ */
 export class ActionHandler implements IActionHandler {
     constructor(private readonly logger: ILoggerService) {}
 
+    /**
+     * Gets completion response from the current provider
+     * 
+     * @param chatCompletionRequest - Complete request with model, messages, and parameters
+     * @returns Generated completion text
+     * @throws Rejects with original error if operation fails
+     */
     async getCompletionResponse(chatCompletionRequest: ChatCompletionRequest): Promise<string> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated GetCompletionResponse with arguments: ${JSON.stringify(chatCompletionRequest)}`);
@@ -125,6 +179,14 @@ export class ActionHandler implements IActionHandler {
         }
     }
 
+    /**
+     * Gets completion response from a specific provider
+     * 
+     * @param providerConfig - Provider configuration to use
+     * @param chatCompletionRequest - Complete request with model, messages, and parameters
+     * @returns Generated completion text
+     * @throws Rejects with original error if operation fails
+     */
     async getCompletionResponseForProvider(providerConfig: ProviderConfig, chatCompletionRequest: ChatCompletionRequest): Promise<string> {
         try {
             this.logger.logInfo(
@@ -142,6 +204,12 @@ export class ActionHandler implements IActionHandler {
         }
     }
 
+    /**
+     * Retrieves list of available models from current provider
+     * 
+     * @returns Array of model names
+     * @throws Rejects with original error if operation fails
+     */
     async getModelsList(): Promise<Array<string>> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated GetModelsList`);
@@ -155,6 +223,13 @@ export class ActionHandler implements IActionHandler {
         }
     }
 
+    /**
+     * Retrieves list of available models from specific provider
+     * 
+     * @param providerConfig - Provider configuration to query
+     * @returns Array of model names
+     * @throws Rejects with original error if operation fails
+     */
     async getModelsListForProvider(providerConfig: ProviderConfig): Promise<Array<string>> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated GetModelsListForProvider with provider: ${providerConfig.providerName}`);
@@ -168,6 +243,12 @@ export class ActionHandler implements IActionHandler {
         }
     }
 
+    /**
+     * Retrieves all available prompt groups
+     * 
+     * @returns Complete prompts collection with all groups and individual prompts
+     * @throws Rejects with original error if operation fails
+     */
     async getPromptGroups(): Promise<Prompts> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated GetPromptGroups`);
@@ -182,6 +263,13 @@ export class ActionHandler implements IActionHandler {
         }
     }
 
+    /**
+     * Processes a specific prompt action with user input
+     * 
+     * @param promptActionRequest - Request containing prompt ID, input text, and language config
+     * @returns Generated output text from prompt processing
+     * @throws Rejects with original error if operation fails
+     */
     async processPrompt(promptActionRequest: PromptActionRequest): Promise<string> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated ProcessPrompt with request: ${JSON.stringify(promptActionRequest)}`);
@@ -195,9 +283,29 @@ export class ActionHandler implements IActionHandler {
         }
     }
 }
+/**
+ * Settings Handler Service Implementation
+ * 
+ * Concrete implementation of ISettingsHandler that manages all application configuration.
+ * Bridges frontend UI with backend settings persistence and provides comprehensive CRUD operations.
+ * 
+ * Key Responsibilities:
+ * - Converting frontend models to Wails-compatible formats
+ * - Error handling and logging for all settings operations
+ * - Managing provider configurations (create, read, update, delete)
+ * - Handling language, model, and inference configurations
+ * - Providing factory reset functionality
+ */
 export class SettingsHandler implements ISettingsHandler {
     constructor(private readonly logger: ILoggerService) {}
 
+    /**
+     * Adds a new language to the supported languages list
+     * 
+     * @param language - Language code to add (e.g., "en", "es")
+     * @returns Updated array of all supported languages
+     * @throws Rejects with original error if operation fails
+     */
     async addLanguage(language: string): Promise<Array<string>> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated AddLanguage with language: ${language}`);
@@ -211,6 +319,13 @@ export class SettingsHandler implements ISettingsHandler {
         }
     }
 
+    /**
+     * Creates a new provider configuration
+     * 
+     * @param providerConfig - Complete provider configuration
+     * @returns Created provider configuration with generated ID
+     * @throws Rejects with original error if operation fails
+     */
     async createProviderConfig(providerConfig: ProviderConfig): Promise<ProviderConfig> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated CreateProviderConfig with provider: ${providerConfig.providerName}`);
@@ -225,6 +340,12 @@ export class SettingsHandler implements ISettingsHandler {
         }
     }
 
+    /**
+     * Deletes a provider configuration by ID
+     * 
+     * @param providerId - ID of provider to delete
+     * @throws Rejects with original error if operation fails
+     */
     async deleteProviderConfig(providerId: string): Promise<void> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated DeleteProviderConfig with providerId: ${providerId}`);
@@ -237,6 +358,12 @@ export class SettingsHandler implements ISettingsHandler {
         }
     }
 
+    /**
+     * Retrieves all available provider configurations
+     * 
+     * @returns Array of all provider configurations
+     * @throws Rejects with original error if operation fails
+     */
     async getAllProviderConfigs(): Promise<Array<ProviderConfig>> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated GetAllProviderConfigs`);
@@ -250,6 +377,12 @@ export class SettingsHandler implements ISettingsHandler {
         }
     }
 
+    /**
+     * Retrieves application settings metadata
+     * 
+     * @returns Metadata including auth types, provider types, and file locations
+     * @throws Rejects with original error if operation fails
+     */
     async getAppSettingsMetadata(): Promise<AppSettingsMetadata> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated GetAppSettingsMetadata`);
@@ -263,6 +396,12 @@ export class SettingsHandler implements ISettingsHandler {
         }
     }
 
+    /**
+     * Retrieves the currently active provider configuration
+     * 
+     * @returns Current provider configuration
+     * @throws Rejects with original error if operation fails
+     */
     async getCurrentProviderConfig(): Promise<ProviderConfig> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated GetCurrentProviderConfig`);
@@ -276,6 +415,12 @@ export class SettingsHandler implements ISettingsHandler {
         }
     }
 
+    /**
+     * Retrieves the inference base configuration
+     * 
+     * @returns Inference configuration with timeout, retries, and formatting options
+     * @throws Rejects with original error if operation fails
+     */
     async getInferenceBaseConfig(): Promise<InferenceBaseConfig> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated GetInferenceBaseConfig`);
@@ -289,6 +434,12 @@ export class SettingsHandler implements ISettingsHandler {
         }
     }
 
+    /**
+     * Retrieves the language configuration
+     * 
+     * @returns Language configuration with supported languages and defaults
+     * @throws Rejects with original error if operation fails
+     */
     async getLanguageConfig(): Promise<LanguageConfig> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated GetLanguageConfig`);
@@ -302,6 +453,12 @@ export class SettingsHandler implements ISettingsHandler {
         }
     }
 
+    /**
+     * Retrieves the model configuration
+     * 
+     * @returns Model configuration with selected model and temperature settings
+     * @throws Rejects with original error if operation fails
+     */
     async getModelConfig(): Promise<ModelConfig> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated GetModelConfig`);
@@ -315,6 +472,13 @@ export class SettingsHandler implements ISettingsHandler {
         }
     }
 
+    /**
+     * Retrieves a specific provider configuration by ID
+     * 
+     * @param providerId - ID of provider to retrieve
+     * @returns Requested provider configuration
+     * @throws Rejects with original error if operation fails
+     */
     async getProviderConfig(providerId: string): Promise<ProviderConfig> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated GetProviderConfig with providerId: ${providerId}`);
@@ -328,6 +492,12 @@ export class SettingsHandler implements ISettingsHandler {
         }
     }
 
+    /**
+     * Retrieves complete application settings
+     * 
+     * @returns Full settings object with all configurations
+     * @throws Rejects with original error if operation fails
+     */
     async getSettings(): Promise<Settings> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated GetSettings`);
@@ -341,6 +511,13 @@ export class SettingsHandler implements ISettingsHandler {
         }
     }
 
+    /**
+     * Removes a language from the supported languages list
+     * 
+     * @param language - Language code to remove (e.g., "en", "es")
+     * @returns Updated array of all supported languages
+     * @throws Rejects with original error if operation fails
+     */
     async removeLanguage(language: string): Promise<Array<string>> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated RemoveLanguage with language: ${language}`);
@@ -354,6 +531,12 @@ export class SettingsHandler implements ISettingsHandler {
         }
     }
 
+    /**
+     * Resets all settings to default values
+     * 
+     * @returns Complete settings object with default values
+     * @throws Rejects with original error if operation fails
+     */
     async resetSettingsToDefault(): Promise<Settings> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated ResetSettingsToDefault`);
@@ -367,6 +550,13 @@ export class SettingsHandler implements ISettingsHandler {
         }
     }
 
+    /**
+     * Sets a provider as the current/active provider
+     * 
+     * @param providerId - ID of provider to activate
+     * @returns Updated provider configuration that is now active
+     * @throws Rejects with original error if operation fails
+     */
     async setAsCurrentProviderConfig(providerId: string): Promise<ProviderConfig> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated SetAsCurrentProviderConfig with providerId: ${providerId}`);
@@ -380,6 +570,12 @@ export class SettingsHandler implements ISettingsHandler {
         }
     }
 
+    /**
+     * Sets the default input language
+     * 
+     * @param language - Language code to set as default for input
+     * @throws Rejects with original error if operation fails
+     */
     async setDefaultInputLanguage(language: string): Promise<void> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated SetDefaultInputLanguage with language: ${language}`);
@@ -392,6 +588,12 @@ export class SettingsHandler implements ISettingsHandler {
         }
     }
 
+    /**
+     * Sets the default output language
+     * 
+     * @param language - Language code to set as default for output
+     * @throws Rejects with original error if operation fails
+     */
     async setDefaultOutputLanguage(language: string): Promise<void> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated SetDefaultOutputLanguage with language: ${language}`);
@@ -404,6 +606,13 @@ export class SettingsHandler implements ISettingsHandler {
         }
     }
 
+    /**
+     * Updates the inference base configuration
+     * 
+     * @param inferenceBaseConfig - Complete inference configuration to update
+     * @returns Updated inference configuration
+     * @throws Rejects with original error if operation fails
+     */
     async updateInferenceBaseConfig(inferenceBaseConfig: InferenceBaseConfig): Promise<InferenceBaseConfig> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated UpdateInferenceBaseConfig`);
@@ -418,6 +627,13 @@ export class SettingsHandler implements ISettingsHandler {
         }
     }
 
+    /**
+     * Updates the model configuration
+     * 
+     * @param modelConfig - Complete model configuration to update
+     * @returns Updated model configuration
+     * @throws Rejects with original error if operation fails
+     */
     async updateModelConfig(modelConfig: ModelConfig): Promise<ModelConfig> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated UpdateModelConfig with model: ${modelConfig.name}`);
@@ -432,6 +648,13 @@ export class SettingsHandler implements ISettingsHandler {
         }
     }
 
+    /**
+     * Updates a provider configuration
+     * 
+     * @param providerConfig - Complete provider configuration to update
+     * @returns Updated provider configuration
+     * @throws Rejects with original error if operation fails
+     */
     async updateProviderConfig(providerConfig: ProviderConfig): Promise<ProviderConfig> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated UpdateProviderConfig with provider: ${providerConfig.providerName}`);
@@ -446,9 +669,28 @@ export class SettingsHandler implements ISettingsHandler {
         }
     }
 }
+/**
+ * Events Service Implementation
+ * 
+ * Concrete implementation of IEventsService that provides pub/sub pattern for cross-component communication.
+ * Wraps Wails-generated event system with error handling and logging.
+ * 
+ * Key Features:
+ * - Event emission with data payloads
+ * - Single and multiple event listeners
+ * - One-time event listeners
+ * - Cleanup methods for event removal
+ * - Automatic fallback for error cases
+ */
 export class EventsService implements IEventsService {
     constructor(private readonly logger: ILoggerService) {}
 
+    /**
+     * Emits an event with optional data payload
+     * 
+     * @param eventName - Name of the event to emit
+     * @param data - Optional data payload to send with the event
+     */
     eventsEmit(eventName: string, ...data: unknown[]): void {
         try {
             this.logger.logInfo(`Attempt to call Wails generated EventsEmit with event: ${eventName}`);
@@ -460,6 +702,12 @@ export class EventsService implements IEventsService {
         }
     }
 
+    /**
+     * Removes event listeners for specific events
+     * 
+     * @param eventName - Name of the event to remove listeners from
+     * @param additionalEventNames - Optional additional event names to remove
+     */
     eventsOff(eventName: string, ...additionalEventNames: string[]): void {
         try {
             this.logger.logInfo(`Attempt to call Wails generated EventsOff with event: ${eventName}`);
@@ -471,6 +719,11 @@ export class EventsService implements IEventsService {
         }
     }
 
+    /**
+     * Removes all event listeners
+     * 
+     * Clears all registered event listeners across all event types.
+     */
     eventsOffAll(): void {
         try {
             this.logger.logInfo(`Attempt to call Wails generated EventsOffAll`);
@@ -482,6 +735,13 @@ export class EventsService implements IEventsService {
         }
     }
 
+    /**
+     * Registers a persistent event listener
+     * 
+     * @param eventName - Name of the event to listen for
+     * @param callback - Callback function to execute when event is emitted
+     * @returns Cleanup function to remove the listener
+     */
     eventsOn(eventName: string, callback: (...data: unknown[]) => void): () => void {
         try {
             this.logger.logInfo(`Attempt to call Wails generated EventsOn with event: ${eventName}`);
@@ -495,6 +755,14 @@ export class EventsService implements IEventsService {
         }
     }
 
+    /**
+     * Registers an event listener with limited executions
+     * 
+     * @param eventName - Name of the event to listen for
+     * @param callback - Callback function to execute when event is emitted
+     * @param maxCallbacks - Maximum number of times the callback should execute
+     * @returns Cleanup function to remove the listener
+     */
     eventsOnMultiple(eventName: string, callback: (...data: unknown[]) => void, maxCallbacks: number): () => void {
         try {
             this.logger.logInfo(`Attempt to call Wails generated EventsOnMultiple with event: ${eventName}, maxCallbacks: ${maxCallbacks}`);
@@ -508,6 +776,13 @@ export class EventsService implements IEventsService {
         }
     }
 
+    /**
+     * Registers a one-time event listener
+     * 
+     * @param eventName - Name of the event to listen for
+     * @param callback - Callback function to execute when event is emitted
+     * @returns Cleanup function to remove the listener
+     */
     eventsOnce(eventName: string, callback: (...data: unknown[]) => void): () => void {
         try {
             this.logger.logInfo(`Attempt to call Wails generated EventsOnce with event: ${eventName}`);
@@ -521,9 +796,27 @@ export class EventsService implements IEventsService {
         }
     }
 }
+/**
+ * Clipboard Service Implementation
+ * 
+ * Concrete implementation of IClipboardService that provides system clipboard access.
+ * Abstracts platform-specific clipboard operations with error handling and logging.
+ * 
+ * Key Features:
+ * - Async operations for non-blocking UI
+ * - Error handling for permission issues
+ * - Success/failure reporting for write operations
+ * - Logging for debugging clipboard operations
+ */
 export class ClipboardService implements IClipboardService {
     constructor(private readonly logger: ILoggerService) {}
 
+    /**
+     * Retrieves text from the system clipboard
+     * 
+     * @returns Clipboard text content
+     * @throws Rejects with error if clipboard access fails or is empty
+     */
     async getText(): Promise<string> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated ClipboardGetText`);
@@ -537,6 +830,13 @@ export class ClipboardService implements IClipboardService {
         }
     }
 
+    /**
+     * Sets text content to the system clipboard
+     * 
+     * @param text - Text content to copy to clipboard
+     * @returns Boolean indicating success (true) or failure (false)
+     * @throws Rejects with error if clipboard access fails
+     */
     async setText(text: string): Promise<boolean> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated ClipboardSetText with text length: ${text.length}`);

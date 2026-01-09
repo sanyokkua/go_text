@@ -1,3 +1,15 @@
+/**
+ * Settings Redux Thunks
+ * 
+ * Async action creators for settings management using Redux Toolkit's createAsyncThunk.
+ * Each thunk handles a specific settings operation with comprehensive error handling and logging.
+ * 
+ * Design Pattern:
+ * - Standardized structure with try/catch blocks
+ * - Error parsing for consistent error messages
+ * - Logging for debugging and monitoring
+ * - Reject with value for error state management
+ */
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import {
     AppSettingsMetadata,
@@ -13,7 +25,13 @@ import { parseError } from '../../utils/error_utils';
 
 const logger = getLogger('SettingsThunks');
 
-// Thunk for adding a language
+/**
+ * Adds a language to the supported languages list
+ * 
+ * @param language - Language code to add
+ * @returns Array of updated languages
+ * @rejects Error message if operation fails
+ */
 export const addLanguage = createAsyncThunk<Array<string>, string, { rejectValue: string }>(
     'settings/addLanguage',
     async (language: string, { rejectWithValue }) => {
@@ -30,7 +48,13 @@ export const addLanguage = createAsyncThunk<Array<string>, string, { rejectValue
     },
 );
 
-// Thunk for creating a provider config
+/**
+ * Creates a new provider configuration
+ * 
+ * @param providerConfig - Complete provider configuration
+ * @returns Full settings object with the new provider
+ * @rejects Error message if operation fails
+ */
 export const createProviderConfig = createAsyncThunk<Settings, ProviderConfig, { rejectValue: string }>(
     'settings/createProviderConfig',
     async (providerConfig: ProviderConfig, { rejectWithValue }) => {
@@ -51,7 +75,12 @@ export const createProviderConfig = createAsyncThunk<Settings, ProviderConfig, {
     },
 );
 
-// Thunk for deleting a provider config
+/**
+ * Deletes a provider configuration by ID
+ * 
+ * @param providerId - ID of provider to delete
+ * @rejects Error message if operation fails
+ */
 export const deleteProviderConfig = createAsyncThunk<void, string, { rejectValue: string }>(
     'settings/deleteProviderConfig',
     async (providerId: string, { rejectWithValue }) => {
@@ -67,7 +96,12 @@ export const deleteProviderConfig = createAsyncThunk<void, string, { rejectValue
     },
 );
 
-// Thunk for getting all provider configs
+/**
+ * Retrieves all available provider configurations
+ * 
+ * @returns Array of provider configurations
+ * @rejects Error message if operation fails
+ */
 export const getAllProviderConfigs = createAsyncThunk<Array<ProviderConfig>, void, { rejectValue: string }>(
     'settings/getAllProviderConfigs',
     async (_, { rejectWithValue }) => {
@@ -84,7 +118,12 @@ export const getAllProviderConfigs = createAsyncThunk<Array<ProviderConfig>, voi
     },
 );
 
-// Thunk for getting app settings metadata
+/**
+ * Retrieves application settings metadata
+ * 
+ * @returns Metadata about auth types, provider types, and file locations
+ * @rejects Error message if operation fails
+ */
 export const getAppSettingsMetadata = createAsyncThunk<AppSettingsMetadata, void, { rejectValue: string }>(
     'settings/getAppSettingsMetadata',
     async (_, { rejectWithValue }) => {
@@ -101,7 +140,12 @@ export const getAppSettingsMetadata = createAsyncThunk<AppSettingsMetadata, void
     },
 );
 
-// Thunk for getting current provider config
+/**
+ * Retrieves the currently active provider configuration
+ * 
+ * @returns Current provider configuration
+ * @rejects Error message if operation fails
+ */
 export const getCurrentProviderConfig = createAsyncThunk<ProviderConfig, void, { rejectValue: string }>(
     'settings/getCurrentProviderConfig',
     async (_, { rejectWithValue }) => {
@@ -118,7 +162,12 @@ export const getCurrentProviderConfig = createAsyncThunk<ProviderConfig, void, {
     },
 );
 
-// Thunk for getting inference base config
+/**
+ * Retrieves the inference base configuration
+ * 
+ * @returns Inference configuration with timeout, retries, and formatting options
+ * @rejects Error message if operation fails
+ */
 export const getInferenceBaseConfig = createAsyncThunk<InferenceBaseConfig, void, { rejectValue: string }>(
     'settings/getInferenceBaseConfig',
     async (_, { rejectWithValue }) => {
@@ -135,7 +184,12 @@ export const getInferenceBaseConfig = createAsyncThunk<InferenceBaseConfig, void
     },
 );
 
-// Thunk for getting language config
+/**
+ * Retrieves the language configuration
+ * 
+ * @returns Language configuration with supported languages and defaults
+ * @rejects Error message if operation fails
+ */
 export const getLanguageConfig = createAsyncThunk<LanguageConfig, void, { rejectValue: string }>(
     'settings/getLanguageConfig',
     async (_, { rejectWithValue }) => {
@@ -152,7 +206,12 @@ export const getLanguageConfig = createAsyncThunk<LanguageConfig, void, { reject
     },
 );
 
-// Thunk for getting model config
+/**
+ * Retrieves the model configuration
+ * 
+ * @returns Model configuration with selected model and temperature settings
+ * @rejects Error message if operation fails
+ */
 export const getModelConfig = createAsyncThunk<ModelConfig, void, { rejectValue: string }>(
     'settings/getModelConfig',
     async (_, { rejectWithValue }) => {
@@ -169,7 +228,13 @@ export const getModelConfig = createAsyncThunk<ModelConfig, void, { rejectValue:
     },
 );
 
-// Thunk for getting provider config by ID
+/**
+ * Retrieves a specific provider configuration by ID
+ * 
+ * @param providerId - ID of provider to retrieve
+ * @returns Requested provider configuration
+ * @rejects Error message if operation fails
+ */
 export const getProviderConfig = createAsyncThunk<ProviderConfig, string, { rejectValue: string }>(
     'settings/getProviderConfig',
     async (providerId: string, { rejectWithValue }) => {
@@ -186,7 +251,12 @@ export const getProviderConfig = createAsyncThunk<ProviderConfig, string, { reje
     },
 );
 
-// Thunk for getting all settings
+/**
+ * Retrieves complete application settings
+ * 
+ * @returns Full settings object with all configurations
+ * @rejects Error message if operation fails
+ */
 export const getSettings = createAsyncThunk<Settings, void, { rejectValue: string }>('settings/getSettings', async (_, { rejectWithValue }) => {
     try {
         logger.logInfo('Attempting to get all settings');
@@ -200,7 +270,13 @@ export const getSettings = createAsyncThunk<Settings, void, { rejectValue: strin
     }
 });
 
-// Thunk for removing a language
+/**
+ * Removes a language from the supported languages list
+ * 
+ * @param language - Language code to remove
+ * @returns Array of updated languages
+ * @rejects Error message if operation fails
+ */
 export const removeLanguage = createAsyncThunk<Array<string>, string, { rejectValue: string }>(
     'settings/removeLanguage',
     async (language: string, { rejectWithValue }) => {
@@ -217,7 +293,12 @@ export const removeLanguage = createAsyncThunk<Array<string>, string, { rejectVa
     },
 );
 
-// Thunk for resetting settings to default
+/**
+ * Resets all settings to default values
+ * 
+ * @returns Complete settings object with default values
+ * @rejects Error message if operation fails
+ */
 export const resetSettingsToDefault = createAsyncThunk<Settings, void, { rejectValue: string }>(
     'settings/resetSettingsToDefault',
     async (_, { rejectWithValue }) => {
@@ -234,7 +315,13 @@ export const resetSettingsToDefault = createAsyncThunk<Settings, void, { rejectV
     },
 );
 
-// Thunk for setting current provider config
+/**
+ * Sets a provider as the current/active provider
+ * 
+ * @param providerId - ID of provider to activate
+ * @returns Updated provider configuration that is now active
+ * @rejects Error message if operation fails
+ */
 export const setAsCurrentProviderConfig = createAsyncThunk<ProviderConfig, string, { rejectValue: string }>(
     'settings/setAsCurrentProviderConfig',
     async (providerId: string, { rejectWithValue }) => {
@@ -251,7 +338,12 @@ export const setAsCurrentProviderConfig = createAsyncThunk<ProviderConfig, strin
     },
 );
 
-// Thunk for setting default input language
+/**
+ * Sets the default input language
+ * 
+ * @param language - Language code to set as default for input
+ * @rejects Error message if operation fails
+ */
 export const setDefaultInputLanguage = createAsyncThunk<void, string, { rejectValue: string }>(
     'settings/setDefaultInputLanguage',
     async (language: string, { rejectWithValue }) => {
@@ -267,7 +359,12 @@ export const setDefaultInputLanguage = createAsyncThunk<void, string, { rejectVa
     },
 );
 
-// Thunk for setting default output language
+/**
+ * Sets the default output language
+ * 
+ * @param language - Language code to set as default for output
+ * @rejects Error message if operation fails
+ */
 export const setDefaultOutputLanguage = createAsyncThunk<void, string, { rejectValue: string }>(
     'settings/setDefaultOutputLanguage',
     async (language: string, { rejectWithValue }) => {
@@ -283,7 +380,13 @@ export const setDefaultOutputLanguage = createAsyncThunk<void, string, { rejectV
     },
 );
 
-// Thunk for updating inference base config
+/**
+ * Updates the inference base configuration
+ * 
+ * @param inferenceBaseConfig - Complete inference configuration to update
+ * @returns Updated inference configuration
+ * @rejects Error message if operation fails
+ */
 export const updateInferenceBaseConfig = createAsyncThunk<InferenceBaseConfig, InferenceBaseConfig, { rejectValue: string }>(
     'settings/updateInferenceBaseConfig',
     async (inferenceBaseConfig: InferenceBaseConfig, { rejectWithValue }) => {
@@ -300,7 +403,13 @@ export const updateInferenceBaseConfig = createAsyncThunk<InferenceBaseConfig, I
     },
 );
 
-// Thunk for updating model config
+/**
+ * Updates the model configuration
+ * 
+ * @param modelConfig - Complete model configuration to update
+ * @returns Updated model configuration
+ * @rejects Error message if operation fails
+ */
 export const updateModelConfig = createAsyncThunk<ModelConfig, ModelConfig, { rejectValue: string }>(
     'settings/updateModelConfig',
     async (modelConfig: ModelConfig, { rejectWithValue }) => {
@@ -317,7 +426,13 @@ export const updateModelConfig = createAsyncThunk<ModelConfig, ModelConfig, { re
     },
 );
 
-// Thunk for updating provider config
+/**
+ * Updates a provider configuration
+ * 
+ * @param providerConfig - Complete provider configuration to update
+ * @returns Updated provider configuration
+ * @rejects Error message if operation fails
+ */
 export const updateProviderConfig = createAsyncThunk<ProviderConfig, ProviderConfig, { rejectValue: string }>(
     'settings/updateProviderConfig',
     async (providerConfig: ProviderConfig, { rejectWithValue }) => {
@@ -334,7 +449,14 @@ export const updateProviderConfig = createAsyncThunk<ProviderConfig, ProviderCon
     },
 );
 
-// Thunk for initializing settings state
+/**
+ * Initializes the complete settings state
+ * 
+ * Orchestrates loading of all settings data in parallel for efficient app startup.
+ * This is the primary initialization thunk called when the app starts.
+ * 
+ * @rejects Error message if any settings load operation fails
+ */
 export const initializeSettingsState = createAsyncThunk<void, void, { rejectValue: string }>(
     'settings/initialize',
     async (_, { dispatch, rejectWithValue }) => {

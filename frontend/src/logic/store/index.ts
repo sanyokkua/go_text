@@ -1,3 +1,17 @@
+/**
+ * Redux Store Configuration
+ * 
+ * Centralized state management for the application using Redux Toolkit.
+ * Defines the root store, typed hooks, and exports all reducers.
+ * 
+ * Store Structure:
+ * - settings: Application configuration and provider management
+ * - actions: Prompt groups and action processing state
+ * - editor: Input/output text content and editing state
+ * - ui: User interface state (views, tabs, busy indicators)
+ * - notifications: User notification system
+ * - clipboard: Clipboard operations state
+ */
 import { configureStore } from '@reduxjs/toolkit';
 import { useDispatch, useSelector, useStore } from 'react-redux';
 import actionsReducer from './actions/slice';

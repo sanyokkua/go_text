@@ -16,6 +16,26 @@ import FactoryResetTab from './tabs/FactoryResetTab';
 /**
  * Main Settings View Component
  * This is the root component for the settings view
+ * 
+ * Key Responsibilities:
+ * - Managing settings tab navigation
+ * - Rendering the appropriate settings tab content
+ * - Providing layout structure for settings panels
+ * - Handling loading states
+ * 
+ * Design Features:
+ * - Tab-based navigation with horizontal layout
+ * - Dynamic content rendering based on active tab
+ * - Consistent spacing and dividers
+ * - Full-size container with proper overflow handling
+ * 
+ * Tab Structure:
+ * 0 - Metadata (settings file locations)
+ * 1 - Provider Configuration (LLM service setup)
+ * 2 - Model Configuration (model selection and parameters)
+ * 3 - Inference Configuration (timeout, retries, formatting)
+ * 4 - Language Configuration (supported languages and defaults)
+ * 5 - Factory Reset (reset to default settings)
  */
 const SettingsView: React.FC = () => {
     const dispatch = useAppDispatch();

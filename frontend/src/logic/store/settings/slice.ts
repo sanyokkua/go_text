@@ -1,3 +1,14 @@
+/**
+ * Settings Redux Slice
+ * 
+ * Manages the settings state and defines reducers for handling settings-related actions.
+ * Implements a comprehensive state management pattern with:
+ * - Initial state definition
+ * - Synchronous reducers (clearError)
+ * - Asynchronous thunk handling via extraReducers
+ * - Optimized state updates (full replacements vs. patch updates)
+ * - Comprehensive error handling
+ */
 import { createSlice } from '@reduxjs/toolkit';
 import { getLogger } from '../../adapter';
 import {

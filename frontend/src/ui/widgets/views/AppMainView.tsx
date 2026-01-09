@@ -19,6 +19,12 @@ const logger = getLogger('AppMainView');
  * - AppBar (top)
  * - MainContent (middle) - shows either main content or settings
  * - StatusBar (bottom)
+ * 
+ * Key Responsibilities:
+ * - Application initialization (settings, prompt groups)
+ * - Layout management with fixed and flexible height components
+ * - Conditional rendering of status bar (hidden in settings view)
+ * - State management for active actions tab
  */
 const AppMainView: React.FC = () => {
     const dispatch = useAppDispatch();

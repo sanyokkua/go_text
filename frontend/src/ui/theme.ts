@@ -1,3 +1,15 @@
+/**
+ * Material-UI Theme Configuration
+ * 
+ * Centralized theme definition for the application using Material-UI's createTheme.
+ * Defines the visual design system including colors, typography, and component styles.
+ * 
+ * Theme Features:
+ * - Light mode color palette with primary/secondary colors
+ * - Roboto font family for consistent typography
+ * - Custom component styling overrides
+ * - Accessible color contrast ratios
+ */
 import { createTheme } from '@mui/material/styles';
 
 export const theme = createTheme({
