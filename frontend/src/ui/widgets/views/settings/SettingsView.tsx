@@ -1,34 +1,32 @@
-import { Box, Divider } from '@mui/material';
+import { Box } from '@mui/material';
 import React from 'react';
 import { useAppDispatch, useAppSelector } from '../../../../logic/store';
-import { enqueueNotification } from '../../../../logic/store/notifications';
-import { resetSettingsToDefault } from '../../../../logic/store/settings';
-import { setActiveSettingsTab, setAppBusy, toggleSettingsView } from '../../../../logic/store/ui';
+import { setActiveSettingsTab } from '../../../../logic/store/ui';
 import { CONTAINER_STYLES, FLEX_STYLES, SPACING } from '../../../styles/constants';
 import SettingsTabs from './SettingsTabs';
+import FactoryResetTab from './tabs/FactoryResetTab';
 import InferenceConfigTab from './tabs/InferenceConfigTab';
 import LanguageConfigTab from './tabs/LanguageConfigTab';
 import MetadataTab from './tabs/MetadataTab';
 import ModelConfigTab from './tabs/ModelConfigTab';
 import ProviderConfigTab from './tabs/ProviderConfigTab';
-import FactoryResetTab from './tabs/FactoryResetTab';
 
 /**
  * Main Settings View Component
  * This is the root component for the settings view
- * 
+ *
  * Key Responsibilities:
  * - Managing settings tab navigation
  * - Rendering the appropriate settings tab content
  * - Providing layout structure for settings panels
  * - Handling loading states
- * 
+ *
  * Design Features:
  * - Tab-based navigation with horizontal layout
  * - Dynamic content rendering based on active tab
  * - Consistent spacing and dividers
  * - Full-size container with proper overflow handling
- * 
+ *
  * Tab Structure:
  * 0 - Metadata (settings file locations)
  * 1 - Provider Configuration (LLM service setup)
@@ -57,32 +55,49 @@ const SettingsView: React.FC = () => {
         return null; // Loading state could be added here
     }
 
+    let activeTabView;
+    switch (activeTab) {
+        case 0: {
+            activeTabView = <MetadataTab metadata={{ settingsFolder: metadata.settingsFolder, settingsFile: metadata.settingsFile }} />;
+            break;
+        }
+        case 1: {
+            activeTabView = <ProviderConfigTab settings={settings} metadata={metadata} />;
+            break;
+        }
+
+        case 2: {
+            activeTabView = <ModelConfigTab settings={settings} />;
+            break;
+        }
+        case 3: {
+            activeTabView = <InferenceConfigTab settings={settings} />;
+            break;
+        }
+        case 4: {
+            activeTabView = <LanguageConfigTab settings={settings} />;
+            break;
+        }
+        case 5: {
+            activeTabView = <FactoryResetTab />;
+            break;
+        }
+        default: {
+            activeTabView = <></>;
+            break;
+        }
+    }
+
     return (
         <Box sx={{ ...CONTAINER_STYLES.FULL_SIZE, ...FLEX_STYLES.COLUMN_OVERFLOW, padding: SPACING.SMALL }}>
             {/* Settings Tabs */}
             <SettingsTabs activeTab={activeTab} onChange={handleTabChange} />
-            <Box sx={{ marginY: SPACING.SMALL }}>
-                <Divider />
-            </Box>
+
+            {/* Margin between tabs and content */}
+            <Box sx={{ marginY: SPACING.SMALL }} />
 
             {/* Tab Content */}
-            <Box sx={{ ...FLEX_STYLES.FLEX_GROW, overflow: 'auto' }}>
-                {activeTab === 0 && metadata && (
-                    <MetadataTab metadata={{ settingsFolder: metadata.settingsFolder, settingsFile: metadata.settingsFile }} />
-                )}
-                {activeTab === 1 && settings && metadata && <ProviderConfigTab settings={settings} metadata={metadata} />}
-                {activeTab === 2 && settings && <ModelConfigTab settings={settings} />}
-                {activeTab === 3 && settings && <InferenceConfigTab settings={settings} />}
-                {activeTab === 4 && settings && <LanguageConfigTab settings={settings} />}
-                {activeTab === 5 && <FactoryResetTab />}
-            </Box>
-
-            <Box sx={{ marginY: SPACING.STANDARD }}>
-                <Divider />
-            </Box>
-
-            {/* Global Controls have been removed - all functionality is now in dedicated tabs */}
-            {/* Settings can only be closed via App Bar button */}
+            <Box sx={{ ...FLEX_STYLES.FLEX_GROW, overflow: 'auto' }}>{activeTabView}</Box>
         </Box>
     );
 };

@@ -1,9 +1,9 @@
 /**
  * Material-UI Theme Configuration
- * 
+ *
  * Centralized theme definition for the application using Material-UI's createTheme.
  * Defines the visual design system including colors, typography, and component styles.
- * 
+ *
  * Theme Features:
  * - Light mode color palette with primary/secondary colors
  * - Roboto font family for consistent typography
@@ -15,19 +15,33 @@ import { createTheme } from '@mui/material/styles';
 export const theme = createTheme({
     palette: {
         mode: 'light',
-        primary: { main: '#1976d2', light: '#42a5f5', dark: '#1565c0' },
-        secondary: { main: '#9c27b0', light: '#ba68c8', dark: '#7b1fa2' },
-        background: { default: '#f5f5f5', paper: '#ffffff' },
-        text: { primary: '#212121', secondary: '#757575' },
+        primary: { main: '#009688', light: '#4db6ac', dark: '#00796b' },
+        secondary: { main: '#455a64', light: '#607d8b', dark: '#37474f' },
+        background: { default: '#E0F2F1', paper: '#B2DFDB' },
     },
     typography: { fontFamily: 'Roboto, sans-serif', h6: { fontWeight: 600 } },
     components: {
-        MuiAppBar: { styleOverrides: { root: { boxShadow: 'inherit' } } },
-        // MuiPaper: {
-        //     styleOverrides: {
-        //         root: { boxShadow: '0px 2px 4px -1px rgba(0,0,0,0.2), 0px 4px 5px 0px rgba(0,0,0,0.14), 0px 1px 10px 0px rgba(0,0,0,0.12)' },
-        //     },
-        // },
+        MuiAppBar: { styleOverrides: { root: { boxShadow: 'inherit', backgroundColor: '#00796b' } } },
+        MuiTabs: {
+            styleOverrides: {
+                root: { backgroundColor: '#009688' },
+                // Selected Tab Underline
+                indicator: { backgroundColor: 'white' },
+            },
+        },
+        MuiTab: {
+            styleOverrides: {
+                root: {
+                    // Text Color for NOT SELECTED tabs
+                    'color': 'black',
+                    '&.Mui-selected': {
+                        // Text Color for SELECTED tab
+                        color: 'white',
+                        fontWeight: 'bold',
+                    },
+                },
+            },
+        },
     },
 });
 

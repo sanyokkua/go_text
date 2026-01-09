@@ -1,4 +1,4 @@
-import { Box, Button, Divider, Paper, TextareaAutosize, Typography } from '@mui/material';
+import { Box, Button, Paper, TextareaAutosize, Typography } from '@mui/material';
 import React from 'react';
 import { getLogger } from '../../../../../logic/adapter';
 
@@ -11,6 +11,7 @@ interface TextPanelButton {
     label: string;
     onClick: () => void;
     color?: 'inherit' | 'primary' | 'secondary' | 'success' | 'error' | 'info' | 'warning';
+    variant?: 'text' | 'outlined' | 'contained';
     disabled?: boolean;
 }
 
@@ -87,23 +88,22 @@ const TextPanel: React.FC<TextPanelProps> = ({
         <Paper
             square={false}
             variant="elevation"
-            elevation={1}
+            elevation={3}
             sx={{
                 'overflow': 'hidden',
                 'height': '100%',
                 'display': 'flex',
                 'flexDirection': 'column',
                 'borderRadius': '24px',
-                '&:hover': { boxShadow: 3 },
+                '&:hover': { boxShadow: 6 },
             }}
         >
             {/* Header - Smaller */}
             <Box
                 sx={{
-                    // borderRadius: '16px 16px 0 0',
                     backgroundColor: headerColor,
                     textAlign: 'center',
-                    color: 'white',
+                    color: 'secondary.contrastText',
                     minHeight: 'unset', // Remove minimum height
                 }}
             >
@@ -119,17 +119,25 @@ const TextPanel: React.FC<TextPanelProps> = ({
                     value={content}
                     onChange={handleContentChange}
                     placeholder={placeholder}
-                    style={{ width: '100%', height: '100%', resize: 'none', fontFamily: 'monospace', overflow: 'auto', fontSize: '0.875rem' }}
+                    style={{
+                        width: '100%',
+                        height: '100%',
+                        resize: 'none',
+                        fontFamily: 'monospace',
+                        overflow: 'auto',
+                        fontSize: '1rem',
+                        backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                    }}
                 />
             </Box>
 
             {/* Action Buttons - Smaller, Clear first with warning color */}
-            <Divider />
+            {/*<Divider />*/}
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', padding: '10px', gap: 1 }}>
                 {buttons.map((button, index) => (
                     <Button
                         key={index}
-                        variant="contained"
+                        variant={button.variant || 'contained'}
                         size="small"
                         color={button.color || 'inherit'}
                         onClick={button.onClick}

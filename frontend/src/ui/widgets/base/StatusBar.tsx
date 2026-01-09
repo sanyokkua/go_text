@@ -16,7 +16,6 @@ const StatusBar: React.FC = () => {
             sx={{
                 ...CONTAINER_STYLES.FULL_SIZE,
                 padding: '8px 16px',
-                backgroundColor: 'background.paper',
                 borderTop: '1px solid',
                 borderColor: 'divider',
                 display: 'flex',

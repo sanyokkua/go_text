@@ -40,25 +40,16 @@ const AppBar: React.FC = () => {
                 <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
                     <IconButton
                         color="inherit"
-                        aria-label={showSettings ? "close settings" : "open settings"}
+                        aria-label={showSettings ? 'close settings' : 'open settings'}
                         onClick={handleSettingsClick}
                         sx={{
-                            ml: 1, 
-                            height: 'fit-content', 
+                            ml: 1,
+                            height: 'fit-content',
                             width: 'fit-content',
-                            ...(showSettings && {
-                                backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                                '&:hover': {
-                                    backgroundColor: 'rgba(255, 255, 255, 0.3)'
-                                }
-                            })
+                            ...(showSettings && { '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.3)' } }),
                         }}
                     >
-                        {showSettings ? (
-                            <CloseIcon color="error" fontSize="medium" />
-                        ) : (
-                            <SettingsIcon color="inherit" fontSize="medium" />
-                        )}
+                        {showSettings ? <CloseIcon color="error" fontSize="small" /> : <SettingsIcon color="inherit" fontSize="medium" />}
                     </IconButton>
                 </Box>
             </Toolbar>

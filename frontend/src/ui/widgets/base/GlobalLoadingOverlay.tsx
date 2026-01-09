@@ -23,7 +23,6 @@ const GlobalLoadingOverlay: React.FC = () => {
                 right: 0,
                 bottom: UI_HEIGHTS.STATUS_BAR,
                 left: 0,
-                backgroundColor: 'rgba(0, 0, 0, 0.1)',
                 backdropFilter: 'blur(4px)',
                 display: 'flex',
                 flexDirection: 'column',

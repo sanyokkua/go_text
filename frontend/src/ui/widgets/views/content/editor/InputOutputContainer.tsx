@@ -24,14 +24,14 @@ const panelContainerStyle = {
  * Contains two side-by-side panels:
  * - Input panel (left) - 50% width, scrollable content
  * - Output panel (right) - 50% width, scrollable content
- * 
+ *
  * Key Responsibilities:
  * - Managing input/output text content
  * - Providing clipboard integration (paste input, copy output)
  * - Handling text manipulation actions (clear, use as input)
  * - State management for editor content
  * - User notifications for clipboard operations
- * 
+ *
  * Design Features:
  * - Equal 50/50 split layout
  * - Reusable TextPanel components for each side
@@ -123,8 +123,8 @@ const InputOutputContainer: React.FC = () => {
                     onContentChange={(value) => dispatch(setInputContent(value))}
                     placeholder="Enter text here..."
                     buttons={[
-                        { label: 'Clear', onClick: handleInputClear, color: 'error', disabled: isAppBusy },
-                        { label: 'Paste', onClick: handleInputPaste, color: 'primary', disabled: isAppBusy },
+                        { label: 'Clear', onClick: handleInputClear, color: 'error', variant: 'text', disabled: isAppBusy },
+                        { label: 'Paste', onClick: handleInputPaste, color: 'secondary', variant: 'text', disabled: isAppBusy },
                     ]}
                     isProcessing={isAppBusy}
                 />
@@ -139,9 +139,15 @@ const InputOutputContainer: React.FC = () => {
                     onContentChange={(value) => dispatch(setOutputContent(value))}
                     placeholder="Output will appear here..."
                     buttons={[
-                        { label: 'Clear', onClick: handleOutputClear, color: 'error', disabled: isAppBusy },
-                        { label: 'Copy', onClick: handleOutputCopy, color: 'primary', disabled: isAppBusy },
-                        { label: 'Use as Input', onClick: handleOutputUseAsInput, color: 'primary', disabled: isAppBusy || !outputContent },
+                        { label: 'Clear', onClick: handleOutputClear, color: 'error', variant: 'text', disabled: isAppBusy },
+                        { label: 'Copy', onClick: handleOutputCopy, color: 'secondary', variant: 'text', disabled: isAppBusy },
+                        {
+                            label: 'Use as Input',
+                            onClick: handleOutputUseAsInput,
+                            color: 'secondary',
+                            variant: 'text',
+                            disabled: isAppBusy || !outputContent,
+                        },
                     ]}
                     isProcessing={isAppBusy}
                     scrollToTop={true}

@@ -1,8 +1,6 @@
 export { default as SettingsTabs } from './SettingsTabs';
 export { default as SettingsView } from './SettingsView';
 
-export { default as SettingsGlobalControls } from './SettingsGlobalControls';
-
 // Export tab components
 export { default as InferenceConfigTab } from './tabs/InferenceConfigTab';
 export { default as LanguageConfigTab } from './tabs/LanguageConfigTab';

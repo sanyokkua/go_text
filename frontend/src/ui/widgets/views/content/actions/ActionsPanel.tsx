@@ -13,14 +13,14 @@ const logger = getLogger('ActionsPanel');
  * Contains:
  * - Tab navigation for different action groups (centered, scrollable)
  * - Action buttons for each group (wraps to new lines, scrollable)
- * 
+ *
  * Key Responsibilities:
  * - Managing prompt group navigation via tabs
  * - Handling action button clicks with proper state management
  * - Preventing actions when app is busy or input is empty
  * - Error handling and user notifications
  * - Loading state management
- * 
+ *
  * Design Features:
  * - Horizontal scrolling for tabs when many prompt groups exist
  * - Vertical scrolling for action buttons with wrap layout
@@ -165,8 +165,8 @@ const ActionsPanel: React.FC = () => {
                         Object.entries(sortedPromptGroups.find((group) => group.groupId === activeTab)?.prompts || {}).map(([promptId, prompt]) => (
                             <Button
                                 key={`action-${activeTab}-${promptId}`}
-                                variant="outlined"
-                                color="primary"
+                                variant="contained"
+                                color="secondary"
                                 onClick={() => handleActionClick(prompt.id, prompt.name)}
                                 disabled={isAppBusy}
                                 sx={{ borderRadius: '8px', minWidth: '120px', textTransform: 'uppercase' }}
