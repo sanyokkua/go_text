@@ -8,7 +8,7 @@ Unlike its [predecessor](https://github.com/sanyokkua/llmedit), which focused on
 
 The application uses Go for the backend and React for the frontend, and is packaged with the Wails framework to deliver a native desktop experience. This architecture aims for efficient performance and a smaller distribution footprint.
 
-![appUiExample](docs/01.AppUIExample.png)
+![appUiExample](docs/screens/01.AppUIExample.png)
 
 ## Key Features
 
@@ -31,15 +31,15 @@ The application uses Go for the backend and React for the frontend, and is packa
 
 ### Formatting Example
 
-![formattingExample](docs/02.FormattingExample.png)
+![formattingExample](docs/screens/02.FormattingExample.png)
 
 ### Translation Example
 
-![translationExample](docs/03.TranslationExample.png)
+![translationExample](docs/screens/03.TranslationExample.png)
 
 ### Summary Example
 
-![summaryExample](docs/04.SummaryExample.png)
+![summaryExample](docs/screens/04.SummaryExample.png)
 
 ## Configuration
 
@@ -166,10 +166,10 @@ The application includes a graphical Settings panel (built with React) that lets
 * Toggle Markdown output formatting.
 * Save the configuration or reset it to default values (defaults are configured for a local Ollama instance).
 
-![settingsExample1](docs/05.SettingsExample_1.png)
-![settingsExample2](docs/05.SettingsExample_2.png)
-![settingsExample3](docs/05.SettingsExample_3.png)
-![settingsExample4](docs/05.SettingsExample_4.png)
+![settingsExample1](docs/screens/05.SettingsExample_1.png)
+![settingsExample2](docs/screens/05.SettingsExample_2.png)
+![settingsExample3](docs/screens/05.SettingsExample_3.png)
+![settingsExample4](docs/screens/05.SettingsExample_4.png)
 
 This UI communicates with the Go backend via Wails bindings to persist settings and validate the connection.
 
@@ -182,18 +182,18 @@ If you install the app from the [GitHub Releases Page](https://github.com/sanyok
 If you prefer to download a release rather than build locally, follow these steps:
 
 1. Download the archive from the releases page.
-   ![release1](docs/06.Release_1.png)
+   ![release1](docs/screens/06.Release_1.png)
 2. Extract the app (you will get `TextProcessingSuite.app`).
-   ![release2](docs/06.Release_2.png)
+   ![release2](docs/screens/06.Release_2.png)
 3. If you try to run the app, macOS may show an error or block launch.
-   ![release3](docs/06.Release_3.png)
+   ![release3](docs/screens/06.Release_3.png)
 4. Remove the quarantine flag via Terminal:
 
 ```shell
 xattr -rd com.apple.quarantine TextProcessingSuite.app
 ```
 
-![release4](docs/06.Release_4.png)
+![release4](docs/screens/06.Release_4.png)
 
 5. Run the app. If macOS still blocks it, open **System Preferences → Security & Privacy → General** and allow the app to run.
 
@@ -241,7 +241,7 @@ The app uses HTTP REST endpoints to perform inference with AI models. As a resul
 
 Different models have different context limits, so do not attempt to translate or proofread entire books or very large documents. Most everyday texts are handled fine, but very large inputs can fail.
 
-![LoadingExample](docs/07.LoadingExample.png)
+![LoadingExample](docs/screens/07.LoadingExample.png)
 
 ## Notes
 

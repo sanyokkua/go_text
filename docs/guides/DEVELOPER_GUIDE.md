@@ -1,6 +1,6 @@
 # Developer Guide - Quick Reference
 
-This guide provides quick reference for common development tasks. For detailed architecture documentation, see [ARCHITECTURE.md](./ARCHITECTURE.md).
+This guide provides quick reference for common development tasks. For detailed architecture documentation, see [ARCHITECTURE.md](../architecture/ARCHITECTURE.md).
 
 ---
 
@@ -560,7 +560,7 @@ npm test
 
 ## Need Help?
 
-1. Check [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed documentation
+1. Check [ARCHITECTURE.md](../architecture/ARCHITECTURE.md) for detailed documentation
 2. Review existing prompts in `private.go` for examples
 3. Test changes incrementally with `wails dev`
 4. Refer to existing code patterns for consistency
