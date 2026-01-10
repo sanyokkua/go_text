@@ -115,6 +115,9 @@ const TextPanel: React.FC<TextPanelProps> = ({
                     value={content}
                     onChange={handleContentChange}
                     placeholder={placeholder}
+                    autoComplete="off"
+                    autoCapitalize="off"
+                    autoCorrect="off"
                     style={{
                         width: '100%',
                         height: '100%',

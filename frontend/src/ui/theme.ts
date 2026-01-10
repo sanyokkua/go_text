@@ -28,10 +28,21 @@ export const theme = createTheme({
     },
     typography: { fontFamily: 'Roboto, sans-serif', h6: { fontWeight: 600 } },
     components: {
-        MuiAppBar: { styleOverrides: { root: { boxShadow: 'inherit', backgroundColor: LIGHT_COLORS.primary.dark } } },
+        MuiAppBar: {
+            styleOverrides: {
+                root: {
+                    boxShadow: 'inherit',
+                    backgroundColor: LIGHT_COLORS.primary.dark,
+                    userSelect: 'none', // Disable selection for all
+                },
+            },
+        },
         MuiTabs: {
             styleOverrides: {
-                root: { backgroundColor: LIGHT_COLORS.primary.dark },
+                root: {
+                    backgroundColor: LIGHT_COLORS.primary.dark,
+                    userSelect: 'none', // Disable selection for all
+                },
                 // Selected Tab Underline
                 indicator: { backgroundColor: LIGHT_COLORS.customs.White },
             },
@@ -47,107 +58,92 @@ export const theme = createTheme({
                         color: LIGHT_COLORS.customs.White,
                         fontWeight: 'bold',
                     },
+                    'userSelect': 'none', // Disable selection for all
                 },
             },
         },
-        // MuiOutlinedInput: {
-        //     styleOverrides: {
-        //         root: {
-        //             // The border color (default state)
-        //             '& .MuiOutlinedInput-notchedOutline': {
-        //                 //
-        //                 borderColor: LIGHT_COLORS.secondary.main,
-        //             },
-        //             // Change border color on hover
-        //             '&:hover:not(.Mui-disabled):not(.Mui-focused) .MuiOutlinedInput-notchedOutline': {
-        //                 //
-        //                 borderColor: LIGHT_COLORS.secondary.main,
-        //             },
-        //             // Change border color when focused
-        //             '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-        //                 //
-        //                 borderColor: LIGHT_COLORS.secondary.dark,
-        //                 borderWidth: 2,
-        //             },
-        //         },
-        //     },
-        // },
-        // MuiInputBase: {
-        //     styleOverrides: {
-        //         root: {
-        //             color: LIGHT_COLORS.secondary.main, // Text inside the input
-        //         },
-        //     },
-        // },
-        // MuiInputLabel: {
-        //     styleOverrides: {
-        //         root: {
-        //             'color': LIGHT_COLORS.secondary.main, // Default label color
-        //             '&.Mui-focused': {
-        //                 color: LIGHT_COLORS.secondary.dark, // Focused label color
-        //             },
-        //         },
-        //     },
-        // },
-        // MuiFormHelperText: {
-        //     styleOverrides: {
-        //         root: {
-        //             color: LIGHT_COLORS.secondary.main, // Helper text color
-        //         },
-        //     },
-        // },
-        // MuiInputAdornment: {
-        //     styleOverrides: {
-        //         root: {
-        //             color: LIGHT_COLORS.secondary.main, // Text/icons inside adornments
-        //         },
-        //     },
-        // },
-        // MuiSelect: {
-        //     styleOverrides: {
-        //         icon: {
-        //             color: LIGHT_COLORS.secondary.main, // Dropdown arrow color
-        //         },
-        //         root: {
-        //             //
-        //             'color': LIGHT_COLORS.secondary.main,
-        //             '&.Mui-focused': { color: LIGHT_COLORS.secondary.dark },
-        //         },
-        //     },
-        // },
-        // MuiMenuItem: {
-        //     styleOverrides: {
-        //         root: {
-        //             color: LIGHT_COLORS.secondary.main, // Dropdown items text color
-        //         },
-        //     },
-        // },
-        // MuiCheckbox: {
-        //     styleOverrides: {
-        //         root: {
-        //             'color': LIGHT_COLORS.secondary.main, // 1. Unchecked box color
-        //
-        //             '&.Mui-checked': {
-        //                 color: LIGHT_COLORS.secondary.main, // 2. Checked box background color
-        //             },
-        //
-        //             '&:hover': {
-        //                 backgroundColor: alpha(LIGHT_COLORS.secondary.main, 0.04), // 3. Hover state for unchecked box
-        //             },
-        //
-        //             '&.Mui-checked:hover': {
-        //                 background: alpha(LIGHT_COLORS.secondary.main, 0.08), // 4. Hover state for checked box
-        //             },
-        //         },
-        //     },
-        // },
-        // MuiSlider: {
-        //     styleOverrides: {
-        //         root: {
-        //             color: LIGHT_COLORS.secondary.main,
-        //         }
-        //     }
-        // },
+        MuiInputBase: {
+            styleOverrides: {
+                root: {
+                    userSelect: 'none', // Disable selection for all
+                },
+            },
+            defaultProps: { autoComplete: 'off', spellCheck: 'false', autoCapitalize: 'off', autoCorrect: 'off' },
+        },
+        MuiTextField: { defaultProps: { autoComplete: 'off', spellCheck: 'false', autoCapitalize: 'off', autoCorrect: 'off' } },
+        MuiButton: {
+            styleOverrides: {
+                root: {
+                    userSelect: 'none', // Disable selection for all
+                },
+            },
+        },
+        MuiOutlinedInput: {
+            styleOverrides: {
+                root: {
+                    userSelect: 'none', // Disable selection for all
+                },
+            },
+        },
+        MuiInputLabel: {
+            styleOverrides: {
+                root: {
+                    userSelect: 'none', // Disable selection for all
+                },
+            },
+        },
+        MuiFormHelperText: {
+            styleOverrides: {
+                root: {
+                    userSelect: 'none', // Disable selection for all
+                },
+            },
+        },
+        MuiInputAdornment: {
+            styleOverrides: {
+                root: {
+                    userSelect: 'none', // Disable selection for all
+                },
+            },
+        },
+        MuiSelect: {
+            styleOverrides: {
+                root: {
+                    //
+                    userSelect: 'none', // Disable selection for all
+                },
+            },
+        },
+        MuiMenuItem: {
+            styleOverrides: {
+                root: {
+                    userSelect: 'none', // Disable selection for all
+                },
+            },
+        },
+        MuiCheckbox: {
+            styleOverrides: {
+                root: {
+                    userSelect: 'none', // Disable selection for all
+                },
+            },
+        },
+        MuiSlider: {
+            styleOverrides: {
+                root: {
+                    userSelect: 'none', // Disable selection for all
+                },
+            },
+        },
+        MuiTypography: {
+            styleOverrides: {
+                root: {
+                    userSelect: 'none', // Disable selection for all
+                },
+            },
+        },
+        MuiSnackbar: { styleOverrides: { root: { userSelect: 'none' } } },
+        MuiSnackbarContent: { styleOverrides: { root: { userSelect: 'none' } } },
     },
 });
 
