@@ -1,4 +1,4 @@
-import { Box, Button, Divider, Paper, Typography } from '@mui/material';
+import { Box, Button, Divider, Typography } from '@mui/material';
 import React, { useState } from 'react';
 import { ProviderConfig, Settings } from '../../../../../logic/adapter';
 import { useAppDispatch } from '../../../../../logic/store';
@@ -145,12 +145,12 @@ const ProviderConfigTab: React.FC<ProviderConfigTabProps> = ({ settings, metadat
     return (
         <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: SPACING.STANDARD }}>
             {/* Current Provider Info */}
-            <Paper elevation={0} sx={{ padding: SPACING.STANDARD }}>
+            <Box sx={{ padding: SPACING.SMALL }}>
                 <Typography variant="subtitle1" gutterBottom>
                     Current Provider Configuration
                 </Typography>
 
-                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: SPACING.STANDARD }}>
+                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: SPACING.SMALL }}>
                     <Box>
                         <Typography variant="body2" color="text.secondary">
                             Provider Name
@@ -249,7 +249,7 @@ const ProviderConfigTab: React.FC<ProviderConfigTabProps> = ({ settings, metadat
                         Edit Current Provider
                     </Button>
                 </Box>
-            </Paper>
+            </Box>
 
             <Divider />
 

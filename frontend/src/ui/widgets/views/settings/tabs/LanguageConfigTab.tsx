@@ -1,4 +1,4 @@
-import { Box, Button, Paper } from '@mui/material';
+import { Box, Button } from '@mui/material';
 import React, { useState } from 'react';
 import { LanguageConfig, Settings } from '../../../../../logic/adapter';
 import { useAppDispatch } from '../../../../../logic/store';
@@ -83,30 +83,24 @@ const LanguageConfigTab: React.FC<LanguageConfigTabProps> = ({ settings }) => {
     };
 
     return (
-        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: SPACING.STANDARD }}>
-            <Paper elevation={0} sx={{ padding: SPACING.STANDARD, flex: 1 }}>
-                <Box
-                    component="form"
-                    onSubmit={handleSubmit}
-                    sx={{ display: 'flex', flexDirection: 'column', gap: SPACING.STANDARD, height: '100%' }}
-                >
-                    <LanguageList
-                        languages={formData.languages}
-                        defaultInputLanguage={formData.defaultInputLanguage}
-                        defaultOutputLanguage={formData.defaultOutputLanguage}
-                        onAddLanguage={handleAddLanguage}
-                        onRemoveLanguage={handleRemoveLanguage}
-                        onSetDefaultInput={handleSetDefaultInput}
-                        onSetDefaultOutput={handleSetDefaultOutput}
-                    />
+        <Box sx={{ padding: SPACING.SMALL }}>
+            <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                <LanguageList
+                    languages={formData.languages}
+                    defaultInputLanguage={formData.defaultInputLanguage}
+                    defaultOutputLanguage={formData.defaultOutputLanguage}
+                    onAddLanguage={handleAddLanguage}
+                    onRemoveLanguage={handleRemoveLanguage}
+                    onSetDefaultInput={handleSetDefaultInput}
+                    onSetDefaultOutput={handleSetDefaultOutput}
+                />
 
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', marginTop: SPACING.STANDARD }}>
-                        <Button variant="contained" color="primary" type="submit">
-                            Update Language Settings
-                        </Button>
-                    </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', marginTop: SPACING.STANDARD }}>
+                    <Button variant="contained" color="primary" type="submit">
+                        Update Language Settings
+                    </Button>
                 </Box>
-            </Paper>
+            </Box>
         </Box>
     );
 };

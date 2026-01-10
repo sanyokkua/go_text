@@ -1,8 +1,7 @@
-import { Box } from '@mui/material';
+import { Box, Divider, Skeleton } from '@mui/material';
 import React from 'react';
 import { useAppDispatch, useAppSelector } from '../../../../logic/store';
 import { setActiveSettingsTab } from '../../../../logic/store/ui';
-import { FLEX_STYLES, SPACING } from '../../../styles/constants';
 import SettingsTabs from './SettingsTabs';
 import FactoryResetTab from './tabs/FactoryResetTab';
 import InferenceConfigTab from './tabs/InferenceConfigTab';
@@ -41,18 +40,14 @@ const SettingsView: React.FC = () => {
     const settings = useAppSelector((state) => state.settings.allSettings);
     const metadata = useAppSelector((state) => state.settings.metadata);
 
-    // Remove the handleClose function since we're removing the Close button
-    // Settings will only be closed via the App Bar button
-
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
         dispatch(setActiveSettingsTab(newValue));
     };
 
-    // Reset functionality has been moved to the FactoryResetTab component
-    // No longer needed in the main SettingsView
+    const nothingToDisplay = <Skeleton />;
 
     if (!settings || !metadata) {
-        return null; // Loading state could be added here
+        return nothingToDisplay;
     }
 
     let activeTabView;
@@ -83,21 +78,24 @@ const SettingsView: React.FC = () => {
             break;
         }
         default: {
-            activeTabView = <></>;
+            activeTabView = nothingToDisplay;
             break;
         }
     }
 
     return (
-        <Box sx={{ width: '100%', height: '100%', ...FLEX_STYLES.COLUMN_OVERFLOW, padding: SPACING.SMALL }}>
-            {/* Settings Tabs */}
-            <SettingsTabs activeTab={activeTab} onChange={handleTabChange} />
+        <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <Box sx={{ overflow: 'hidden', paddingTop: 1 }}>
+                <Divider />
+            </Box>
 
-            {/* Margin between tabs and content */}
-            <Box sx={{ marginY: SPACING.SMALL }} />
+            <Box sx={{ width: '100%', height: '90%', flexGrow: 1, padding: 1, overflowY: 'auto' }}>
+                {/* Settings Tabs Bar */}
+                <SettingsTabs activeTab={activeTab} onChange={handleTabChange} />
 
-            {/* Tab Content */}
-            <Box sx={{ ...FLEX_STYLES.FLEX_GROW, overflow: 'auto' }}>{activeTabView}</Box>
+                {/* Tab Content */}
+                <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto' }}>{activeTabView}</Box>
+            </Box>
         </Box>
     );
 };

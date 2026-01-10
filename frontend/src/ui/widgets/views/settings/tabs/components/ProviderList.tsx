@@ -1,5 +1,5 @@
+import { Box, Button, Divider, List, ListItem, ListItemText, Typography } from '@mui/material';
 import React from 'react';
-import { Box, Button, Divider, List, ListItem, ListItemText, Paper, Typography } from '@mui/material';
 import { ProviderConfig } from '../../../../../../logic/adapter';
 import { SPACING } from '../../../../../styles/constants';
 
@@ -18,7 +18,7 @@ interface ProviderListProps {
  */
 const ProviderList: React.FC<ProviderListProps> = ({ providers, currentProviderId, onEdit, onDelete, onSetAsCurrent, onCreateNew }) => {
     return (
-        <Paper elevation={0} sx={{ padding: SPACING.STANDARD }}>
+        <Box sx={{ padding: SPACING.STANDARD }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.STANDARD }}>
                 <Typography variant="subtitle1">Available Providers</Typography>
                 <Button variant="contained" color="primary" size="small" onClick={onCreateNew}>
@@ -60,7 +60,7 @@ const ProviderList: React.FC<ProviderListProps> = ({ providers, currentProviderI
                     </React.Fragment>
                 ))}
             </List>
-        </Paper>
+        </Box>
     );
 };
 

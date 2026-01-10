@@ -1,6 +1,6 @@
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { Box, Button, Chip, Divider, Paper, TextField, Typography } from '@mui/material';
+import { Box, Button, Chip, Divider, TextField, Typography } from '@mui/material';
 import React, { useState } from 'react';
 import { SPACING } from '../../../../../styles/constants';
 
@@ -42,9 +42,9 @@ const LanguageList: React.FC<LanguageListProps> = ({
     };
 
     return (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: SPACING.STANDARD }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: SPACING.SMALL }}>
             {/* Add Language */}
-            <Paper elevation={0} sx={{ padding: SPACING.STANDARD }}>
+            <Box sx={{ padding: SPACING.SMALL }}>
                 <Typography variant="subtitle2" gutterBottom>
                     Add New Language
                 </Typography>
@@ -58,7 +58,8 @@ const LanguageList: React.FC<LanguageListProps> = ({
                         onKeyPress={(e) => e.key === 'Enter' && handleAddLanguage()}
                     />
                     <Button
-                        variant="contained"
+                        variant="outlined"
+                        color="secondary"
                         startIcon={<AddIcon />}
                         onClick={handleAddLanguage}
                         disabled={!newLanguage.trim() || languages.includes(newLanguage.trim())}
@@ -66,10 +67,10 @@ const LanguageList: React.FC<LanguageListProps> = ({
                         Add
                     </Button>
                 </Box>
-            </Paper>
+            </Box>
 
             {/* Language List */}
-            <Paper elevation={0} sx={{ padding: SPACING.STANDARD }}>
+            <Box sx={{ padding: SPACING.SMALL }}>
                 <Typography variant="subtitle2" gutterBottom>
                     Available Languages
                 </Typography>
@@ -80,7 +81,7 @@ const LanguageList: React.FC<LanguageListProps> = ({
                         const chipProps = {
                             key: language,
                             label: language,
-                            color: language === defaultInputLanguage ? 'primary' : language === defaultOutputLanguage ? 'secondary' : 'default',
+                            color: 'primary',
                             variant: language === defaultInputLanguage || language === defaultOutputLanguage ? 'filled' : 'outlined',
                             sx: { 'height': 'auto', '& .MuiChip-label': { whiteSpace: 'normal' } },
                         } as any;
@@ -99,7 +100,7 @@ const LanguageList: React.FC<LanguageListProps> = ({
                 {/* Default Language Selection */}
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: SPACING.STANDARD }}>
                     <Box>
-                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                        <Typography variant="body2" gutterBottom>
                             Default Input Language
                         </Typography>
                         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: SPACING.SMALL }}>
@@ -108,16 +109,17 @@ const LanguageList: React.FC<LanguageListProps> = ({
                                     key={`input-${language}`}
                                     label={language}
                                     onClick={() => onSetDefaultInput(language)}
-                                    color={language === defaultInputLanguage ? 'primary' : 'default'}
+                                    color="primary"
                                     variant={language === defaultInputLanguage ? 'filled' : 'outlined'}
                                     clickable
+                                    size="small"
                                 />
                             ))}
                         </Box>
                     </Box>
 
                     <Box>
-                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                        <Typography variant="body2" gutterBottom>
                             Default Output Language
                         </Typography>
                         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: SPACING.SMALL }}>
@@ -126,15 +128,16 @@ const LanguageList: React.FC<LanguageListProps> = ({
                                     key={`output-${language}`}
                                     label={language}
                                     onClick={() => onSetDefaultOutput(language)}
-                                    color={language === defaultOutputLanguage ? 'secondary' : 'default'}
+                                    color="primary"
                                     variant={language === defaultOutputLanguage ? 'filled' : 'outlined'}
                                     clickable
+                                    size="small"
                                 />
                             ))}
                         </Box>
                     </Box>
                 </Box>
-            </Paper>
+            </Box>
         </Box>
     );
 };

@@ -15,7 +15,7 @@ import { createTheme } from '@mui/material/styles';
 export const LIGHT_COLORS = {
     primary: { main: '#009688', light: '#4db6ac', dark: '#00796b' },
     secondary: { main: '#5e35b1', light: '#9575cd', dark: '#4527a0' },
-    background: { default: '#e0f2f1', paper: '#80cbc4' },
+    background: { default: '#e0f2f1', paper: '#b2dfdb' },
     customs: { White: 'white' },
 };
 
@@ -50,6 +50,104 @@ export const theme = createTheme({
                 },
             },
         },
+        // MuiOutlinedInput: {
+        //     styleOverrides: {
+        //         root: {
+        //             // The border color (default state)
+        //             '& .MuiOutlinedInput-notchedOutline': {
+        //                 //
+        //                 borderColor: LIGHT_COLORS.secondary.main,
+        //             },
+        //             // Change border color on hover
+        //             '&:hover:not(.Mui-disabled):not(.Mui-focused) .MuiOutlinedInput-notchedOutline': {
+        //                 //
+        //                 borderColor: LIGHT_COLORS.secondary.main,
+        //             },
+        //             // Change border color when focused
+        //             '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+        //                 //
+        //                 borderColor: LIGHT_COLORS.secondary.dark,
+        //                 borderWidth: 2,
+        //             },
+        //         },
+        //     },
+        // },
+        // MuiInputBase: {
+        //     styleOverrides: {
+        //         root: {
+        //             color: LIGHT_COLORS.secondary.main, // Text inside the input
+        //         },
+        //     },
+        // },
+        // MuiInputLabel: {
+        //     styleOverrides: {
+        //         root: {
+        //             'color': LIGHT_COLORS.secondary.main, // Default label color
+        //             '&.Mui-focused': {
+        //                 color: LIGHT_COLORS.secondary.dark, // Focused label color
+        //             },
+        //         },
+        //     },
+        // },
+        // MuiFormHelperText: {
+        //     styleOverrides: {
+        //         root: {
+        //             color: LIGHT_COLORS.secondary.main, // Helper text color
+        //         },
+        //     },
+        // },
+        // MuiInputAdornment: {
+        //     styleOverrides: {
+        //         root: {
+        //             color: LIGHT_COLORS.secondary.main, // Text/icons inside adornments
+        //         },
+        //     },
+        // },
+        // MuiSelect: {
+        //     styleOverrides: {
+        //         icon: {
+        //             color: LIGHT_COLORS.secondary.main, // Dropdown arrow color
+        //         },
+        //         root: {
+        //             //
+        //             'color': LIGHT_COLORS.secondary.main,
+        //             '&.Mui-focused': { color: LIGHT_COLORS.secondary.dark },
+        //         },
+        //     },
+        // },
+        // MuiMenuItem: {
+        //     styleOverrides: {
+        //         root: {
+        //             color: LIGHT_COLORS.secondary.main, // Dropdown items text color
+        //         },
+        //     },
+        // },
+        // MuiCheckbox: {
+        //     styleOverrides: {
+        //         root: {
+        //             'color': LIGHT_COLORS.secondary.main, // 1. Unchecked box color
+        //
+        //             '&.Mui-checked': {
+        //                 color: LIGHT_COLORS.secondary.main, // 2. Checked box background color
+        //             },
+        //
+        //             '&:hover': {
+        //                 backgroundColor: alpha(LIGHT_COLORS.secondary.main, 0.04), // 3. Hover state for unchecked box
+        //             },
+        //
+        //             '&.Mui-checked:hover': {
+        //                 background: alpha(LIGHT_COLORS.secondary.main, 0.08), // 4. Hover state for checked box
+        //             },
+        //         },
+        //     },
+        // },
+        // MuiSlider: {
+        //     styleOverrides: {
+        //         root: {
+        //             color: LIGHT_COLORS.secondary.main,
+        //         }
+        //     }
+        // },
     },
 });
 

@@ -13,13 +13,13 @@ interface SettingsTabsProps {
 const SettingsTabs: React.FC<SettingsTabsProps> = ({ activeTab, onChange }) => {
     return (
         <Box sx={{ width: '100%' }}>
-            <Tabs value={activeTab} onChange={onChange} centered>
-                <Tab label="Settings Info" />
-                <Tab label="Provider Config" />
-                <Tab label="Model Config" />
-                <Tab label="Inference Config" />
-                <Tab label="Language Config" />
-                <Tab label="Factory Reset" />
+            <Tabs value={activeTab} onChange={onChange} centered variant="fullWidth">
+                <Tab wrapped label="Settings Info" />
+                <Tab wrapped label="Provider Config" />
+                <Tab wrapped label="Model Config" />
+                <Tab wrapped label="Inference Config" />
+                <Tab wrapped label="Language Config" />
+                <Tab wrapped label="Factory Reset" />
             </Tabs>
         </Box>
     );

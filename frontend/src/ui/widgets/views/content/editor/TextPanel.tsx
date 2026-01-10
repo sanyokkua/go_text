@@ -91,7 +91,7 @@ const TextPanel: React.FC<TextPanelProps> = ({
         <Paper
             square={false}
             variant="elevation"
-            elevation={3}
+            elevation={1}
             sx={{ 'overflow': 'hidden', 'height': '100%', 'display': 'flex', 'flexDirection': 'column', '&:hover': { boxShadow: 6 } }}
         >
             {/* Header - Smaller */}

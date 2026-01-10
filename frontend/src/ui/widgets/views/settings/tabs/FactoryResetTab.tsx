@@ -1,10 +1,10 @@
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Paper, Typography } from '@mui/material';
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Typography } from '@mui/material';
 import React, { useState } from 'react';
-import { SPACING } from '../../../../styles/constants';
 import { useAppDispatch } from '../../../../../logic/store';
+import { enqueueNotification } from '../../../../../logic/store/notifications';
 import { resetSettingsToDefault } from '../../../../../logic/store/settings';
 import { setAppBusy } from '../../../../../logic/store/ui';
-import { enqueueNotification } from '../../../../../logic/store/notifications';
+import { SPACING } from '../../../../styles/constants';
 
 /**
  * Factory Reset Tab Component
@@ -37,8 +37,8 @@ const FactoryResetTab: React.FC = () => {
 
     return (
         <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: SPACING.STANDARD }}>
-            <Paper elevation={0} sx={{ padding: SPACING.STANDARD, flex: 1 }}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: SPACING.STANDARD, height: '100%' }}>
+            <Box sx={{ padding: SPACING.STANDARD, flex: 1 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: SPACING.SMALL, height: '100%' }}>
                     {/* Warning Header */}
                     <Typography variant="h6" color="error.main" gutterBottom>
                         Factory Reset
@@ -49,7 +49,7 @@ const FactoryResetTab: React.FC = () => {
                         This operation will reset ALL settings to their original factory defaults. This includes:
                     </Typography>
 
-                    <Box sx={{ pl: SPACING.STANDARD, mb: SPACING.STANDARD }}>
+                    <Box sx={{ pl: SPACING.LARGE, mb: SPACING.SMALL }}>
                         <Typography variant="body2" component="ul" sx={{ listStyleType: 'disc', pl: SPACING.STANDARD }}>
                             <li>Provider configurations</li>
                             <li>Model settings</li>
@@ -59,20 +59,12 @@ const FactoryResetTab: React.FC = () => {
                         </Typography>
                     </Box>
 
-                    {/* Warning */}
-                    <Box
-                        sx={{
-                            p: SPACING.STANDARD,
-                            backgroundColor: 'error.light',
-                            borderRadius: '4px',
-                            borderLeft: `4px solid`,
-                            borderColor: 'error.main',
-                        }}
-                    >
-                        <Typography variant="body2" color="error.main" fontWeight="bold">
+                    {/* Warning Message */}
+                    <Box sx={{ p: SPACING.SMALL, backgroundColor: 'error.light', borderRadius: '8px' }}>
+                        <Typography variant="body2" fontWeight="bold">
                             WARNING: This action cannot be undone!
                         </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ mt: SPACING.SMALL }}>
+                        <Typography variant="body2" sx={{ mt: SPACING.SMALL }}>
                             Make sure you have backed up any important configurations before proceeding.
                         </Typography>
                     </Box>
@@ -84,7 +76,7 @@ const FactoryResetTab: React.FC = () => {
                         </Button>
                     </Box>
                 </Box>
-            </Paper>
+            </Box>
 
             {/* Confirmation Dialog */}
             <Dialog

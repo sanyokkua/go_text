@@ -1,5 +1,5 @@
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import { Box, IconButton, Paper, Tooltip, Typography } from '@mui/material';
+import { Box, IconButton, Tooltip, Typography } from '@mui/material';
 import React from 'react';
 import { useAppDispatch } from '../../../../../logic/store';
 import { setClipboardText } from '../../../../../logic/store/clipboard';
@@ -9,6 +9,35 @@ import { SPACING } from '../../../../styles/constants';
 interface MetadataTabProps {
     metadata: { settingsFolder: string; settingsFile: string };
 }
+
+/**
+ * Helper component for displaying a metadata row with label, path, and copy button
+ */
+interface MetadataRowProps {
+    label: string;
+    path: string;
+    tooltip: string;
+    ariaLabel: string;
+    onCopy: (text: string) => void;
+}
+
+const MetadataRow: React.FC<MetadataRowProps> = ({ label, path, tooltip, ariaLabel, onCopy }) => {
+    return (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: SPACING.SMALL }}>
+            <Typography variant="body2" sx={{ fontWeight: 'medium', minWidth: '150px' }}>
+                {label}:
+            </Typography>
+            <Typography variant="body1" sx={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {path}
+            </Typography>
+            <Tooltip title={tooltip}>
+                <IconButton size="small" onClick={() => onCopy(path)} aria-label={ariaLabel}>
+                    <ContentCopyIcon fontSize="small" color="primary" />
+                </IconButton>
+            </Tooltip>
+        </Box>
+    );
+};
 
 /**
  * Metadata Tab Component
@@ -30,38 +59,26 @@ const MetadataTab: React.FC<MetadataTabProps> = ({ metadata }) => {
     };
 
     return (
-        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: SPACING.STANDARD }}>
-            <Paper elevation={0} sx={{ padding: SPACING.STANDARD, flex: 1 }}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: SPACING.STANDARD }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: SPACING.SMALL }}>
-                        <Typography variant="body2" sx={{ fontWeight: 'medium', minWidth: '150px' }}>
-                            Settings Folder:
-                        </Typography>
-                        <Typography variant="body1" sx={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {metadata.settingsFolder}
-                        </Typography>
-                        <Tooltip title="Copy settings folder path">
-                            <IconButton size="small" onClick={() => handleCopy(metadata.settingsFolder)} aria-label="copy settings folder">
-                                <ContentCopyIcon fontSize="small" />
-                            </IconButton>
-                        </Tooltip>
-                    </Box>
+        <Box sx={{ padding: SPACING.SMALL }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: SPACING.STANDARD }}>
+                {/* Folder */}
+                <MetadataRow
+                    label="Settings Folder"
+                    path={metadata.settingsFolder}
+                    tooltip="Copy settings folder path"
+                    ariaLabel="copy settings folder"
+                    onCopy={handleCopy}
+                />
 
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: SPACING.SMALL }}>
-                        <Typography variant="body2" sx={{ fontWeight: 'medium', minWidth: '150px' }}>
-                            Settings File:
-                        </Typography>
-                        <Typography variant="body1" sx={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {metadata.settingsFile}
-                        </Typography>
-                        <Tooltip title="Copy settings file path">
-                            <IconButton size="small" onClick={() => handleCopy(metadata.settingsFile)} aria-label="copy settings file">
-                                <ContentCopyIcon fontSize="small" />
-                            </IconButton>
-                        </Tooltip>
-                    </Box>
-                </Box>
-            </Paper>
+                {/* File */}
+                <MetadataRow
+                    label="Settings File"
+                    path={metadata.settingsFile}
+                    tooltip="Copy settings file path"
+                    ariaLabel="copy settings file"
+                    onCopy={handleCopy}
+                />
+            </Box>
         </Box>
     );
 };
