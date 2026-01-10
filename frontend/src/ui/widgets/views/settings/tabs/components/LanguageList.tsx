@@ -1,7 +1,7 @@
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { Box, Button, Chip, Divider, TextField, Typography } from '@mui/material';
-import React, { useState } from 'react';
+import { Box, Button, Chip, ChipProps, Divider, TextField, Typography } from '@mui/material';
+import React, { useState, MouseEvent } from 'react';
 import { SPACING } from '../../../../../styles/constants';
 
 interface LanguageListProps {
@@ -36,7 +36,7 @@ const LanguageList: React.FC<LanguageListProps> = ({
         }
     };
 
-    const handleRemoveLanguageWrapper = (language: string) => (event: any) => {
+    const handleRemoveLanguageWrapper = (language: string) => (event: MouseEvent<HTMLButtonElement>) => {
         event.stopPropagation();
         onRemoveLanguage(language);
     };
@@ -55,7 +55,7 @@ const LanguageList: React.FC<LanguageListProps> = ({
                         value={newLanguage}
                         onChange={(e) => setNewLanguage(e.target.value)}
                         placeholder="Enter language name"
-                        onKeyPress={(e) => e.key === 'Enter' && handleAddLanguage()}
+                        onKeyDown={(e) => e.key === 'Enter' && handleAddLanguage()}
                     />
                     <Button
                         variant="outlined"
@@ -78,13 +78,13 @@ const LanguageList: React.FC<LanguageListProps> = ({
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: SPACING.SMALL }}>
                     {languages.map((language) => {
                         const canDelete = language !== defaultInputLanguage && language !== defaultOutputLanguage;
-                        const chipProps = {
+                        const chipProps: ChipProps = {
                             key: language,
                             label: language,
                             color: 'primary',
                             variant: language === defaultInputLanguage || language === defaultOutputLanguage ? 'filled' : 'outlined',
                             sx: { 'height': 'auto', '& .MuiChip-label': { whiteSpace: 'normal' } },
-                        } as any;
+                        };
 
                         if (canDelete) {
                             chipProps.onDelete = handleRemoveLanguageWrapper(language);

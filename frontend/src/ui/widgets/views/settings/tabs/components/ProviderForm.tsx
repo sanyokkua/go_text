@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { ChangeEvent, ReactNode, useEffect, useState } from 'react';
 import {
     Box,
     Button,
@@ -75,7 +75,11 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
         }
     };
 
-    const handleSelectChange = (e: any) => {
+    const handleSelectChange = (
+        e: ChangeEvent<Omit<HTMLInputElement, 'value'> & { value: string }> | (Event & { target: { value: string; name: string } }),
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        _: ReactNode,
+    ) => {
         const { name, value } = e.target;
         if (name) {
             setFormData((prev) => ({ ...prev, [name]: value }));
