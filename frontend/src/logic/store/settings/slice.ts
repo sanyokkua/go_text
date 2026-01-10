@@ -1,6 +1,6 @@
 /**
  * Settings Redux Slice
- * 
+ *
  * Manages the settings state and defines reducers for handling settings-related actions.
  * Implements a comprehensive state management pattern with:
  * - Initial state definition

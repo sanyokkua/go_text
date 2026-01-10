@@ -24,16 +24,6 @@ export const FLEX_STYLES = {
     },
 
     /**
-     * Flex row container with overflow handling
-     */
-    ROW_OVERFLOW: {
-        display: 'flex',
-        flexDirection: 'row',
-        overflow: 'hidden',
-        minWidth: 0, // Prevent flex item overflow
-    },
-
-    /**
      * Flex container that takes remaining space
      */
     FLEX_GROW: {
@@ -43,20 +33,6 @@ export const FLEX_STYLES = {
     },
 };
 
-/**
- * Common container styles
- */
-export const CONTAINER_STYLES = {
-    /**
-     * Full size container that fills available space
-     */
-    FULL_SIZE: { width: '100%', height: '100%' },
-
-    /**
-     * Container with standard padding
-     */
-    WITH_PADDING: { padding: 2 },
-};
 
 /**
  * Height calculation utilities

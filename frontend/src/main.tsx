@@ -1,9 +1,9 @@
 /**
  * Application Entry Point
- * 
+ *
  * Initializes the React application and mounts it to the DOM.
  * Sets up the Redux store provider and renders the root AppLayout component.
- * 
+ *
  * Key responsibilities:
  * - Loads Roboto font styles for Material-UI typography
  * - Creates React root and mounts the application

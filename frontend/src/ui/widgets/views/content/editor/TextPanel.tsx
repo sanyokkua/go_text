@@ -10,7 +10,7 @@ const logger = getLogger('TextPanel');
 interface TextPanelButton {
     label: string;
     onClick: () => void;
-    color?: 'inherit' | 'primary' | 'secondary' | 'success' | 'error' | 'info' | 'warning';
+    buttonColor?: 'inherit' | 'primary' | 'secondary' | 'success' | 'error' | 'info' | 'warning';
     variant?: 'text' | 'outlined' | 'contained';
     disabled?: boolean;
 }
@@ -21,6 +21,7 @@ interface TextPanelButton {
 interface TextPanelProps {
     title: string;
     headerColor: string;
+    headerTextColor: string;
     content: string;
     onContentChange: (content: string) => void;
     placeholder?: string;
@@ -39,6 +40,7 @@ interface TextPanelProps {
 const TextPanel: React.FC<TextPanelProps> = ({
     title,
     headerColor,
+    headerTextColor,
     content,
     onContentChange,
     placeholder = '',
@@ -48,7 +50,7 @@ const TextPanel: React.FC<TextPanelProps> = ({
 }) => {
     const textareaRef = React.useRef<HTMLTextAreaElement>(null);
 
-    // Scroll to top when content changes and scrollToTop is enabled
+    // Scroll to the top when content changes and scrollToTop is enabled
     React.useEffect(() => {
         if (scrollToTop && textareaRef.current) {
             logger.logDebug(`Scrolling to top for ${title} panel, content length: ${content.length}`);
@@ -79,6 +81,7 @@ const TextPanel: React.FC<TextPanelProps> = ({
             return () => clearTimeout(timeoutId);
         }
     }, [content, scrollToTop]);
+
     const handleContentChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
         logger.logDebug(`Content changed in ${title} panel, new length: ${event.target.value.length}`);
         onContentChange(event.target.value);
@@ -89,21 +92,14 @@ const TextPanel: React.FC<TextPanelProps> = ({
             square={false}
             variant="elevation"
             elevation={3}
-            sx={{
-                'overflow': 'hidden',
-                'height': '100%',
-                'display': 'flex',
-                'flexDirection': 'column',
-                'borderRadius': '24px',
-                '&:hover': { boxShadow: 6 },
-            }}
+            sx={{ 'overflow': 'hidden', 'height': '100%', 'display': 'flex', 'flexDirection': 'column', '&:hover': { boxShadow: 6 } }}
         >
             {/* Header - Smaller */}
             <Box
                 sx={{
                     backgroundColor: headerColor,
                     textAlign: 'center',
-                    color: 'secondary.contrastText',
+                    color: headerTextColor,
                     minHeight: 'unset', // Remove minimum height
                 }}
             >
@@ -123,6 +119,7 @@ const TextPanel: React.FC<TextPanelProps> = ({
                         width: '100%',
                         height: '100%',
                         resize: 'none',
+                        border: 'none',
                         fontFamily: 'monospace',
                         overflow: 'auto',
                         fontSize: '1rem',
@@ -132,14 +129,13 @@ const TextPanel: React.FC<TextPanelProps> = ({
             </Box>
 
             {/* Action Buttons - Smaller, Clear first with warning color */}
-            {/*<Divider />*/}
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', padding: '10px', gap: 1 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', padding: '1px', gap: 2, backgroundColor: headerColor }}>
                 {buttons.map((button, index) => (
                     <Button
                         key={index}
                         variant={button.variant || 'contained'}
                         size="small"
-                        color={button.color || 'inherit'}
+                        color={button.buttonColor || 'inherit'}
                         onClick={button.onClick}
                         disabled={button.disabled !== undefined ? button.disabled : isProcessing}
                         sx={{ minWidth: '80px' }} // Smaller minimum width

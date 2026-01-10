@@ -1,5 +1,5 @@
-import { RootState } from '../index';
 import { Prompts } from '../../adapter';
+import { RootState } from '../index';
 
 // Basic selectors
 export const selectPromptGroups = (state: RootState): Prompts | null => state.actions.promptGroups;

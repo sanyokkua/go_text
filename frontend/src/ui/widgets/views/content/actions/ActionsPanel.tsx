@@ -1,4 +1,4 @@
-import { Box, Button, Paper, Tab, Tabs, Typography } from '@mui/material';
+import { Box, Button, Skeleton, Tab, Tabs } from '@mui/material';
 import React from 'react';
 import { getLogger } from '../../../../../logic/adapter';
 import { useAppDispatch, useAppSelector } from '../../../../../logic/store';
@@ -79,33 +79,19 @@ const ActionsPanel: React.FC = () => {
     };
 
     if (!promptGroups) {
+        logger.logDebug('Prompts are not loaded yet. Showing Skeleton');
         return (
-            <Paper
-                elevation={1}
-                square={false}
-                sx={{
-                    'width': '100%',
-                    'height': '90%',
-                    'display': 'flex',
-                    'flexDirection': 'column',
-                    'overflow': 'hidden',
-                    'borderRadius': '24px',
-                    '&:hover': { boxShadow: 3 },
-                }}
-            >
-                <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                    <Typography variant="body1" color="text.secondary">
-                        Loading prompt groups...
-                    </Typography>
+            <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', justifyContent: 'center', overflow: 'hidden' }}>
+                    <Skeleton animation="wave" />
                 </Box>
-            </Paper>
+            </Box>
         );
     }
 
     // Get all prompt groups and sort them by groupId
     const promptGroupsArray = Object.values(promptGroups.promptGroups);
     const sortedPromptGroups = [...promptGroupsArray].sort((a, b) => a.groupId.localeCompare(b.groupId));
-
     const tabNames = sortedPromptGroups.map((group) => group.groupId);
 
     // Ensure activeTab is set to the first tab if it's not found in tabNames
@@ -118,65 +104,62 @@ const ActionsPanel: React.FC = () => {
         return null; // Re-render with the correct tab
     }
 
-    return (
-        <Paper
-            elevation={1}
-            square={false}
-            sx={{
-                'width': '100%',
-                'height': '90%',
-                'display': 'flex',
-                'flexDirection': 'column',
-                'overflow': 'hidden',
-                'borderRadius': '24px',
-                '&:hover': { boxShadow: 3 },
-            }}
-        >
-            {/* Tab Navigation - Centered with horizontal scrolling */}
-            <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', justifyContent: 'center', overflow: 'hidden' }}>
-                <Box sx={{ width: '100%', overflowX: 'auto', overflowY: 'hidden' }}>
-                    <Tabs
-                        value={tabNames.indexOf(activeTab)}
-                        onChange={handleTabChange}
-                        aria-label="action groups tabs"
-                        variant="scrollable"
-                        scrollButtons="auto"
-                        allowScrollButtonsMobile
-                        sx={{ '& .MuiTabs-flexContainer': { justifyContent: 'center' } }}
-                    >
-                        {sortedPromptGroups.map((group, index) => (
-                            <Tab
-                                key={`tab-${index}`}
-                                label={group.groupName}
-                                id={`tab-${index}`}
-                                aria-controls={`tabpanel-${index}`}
-                                disabled={isAppBusy}
-                                sx={{ minWidth: 'auto' }}
-                            />
-                        ))}
-                    </Tabs>
-                </Box>
+    const tabs = (
+        /* Tab Navigation - Centered with horizontal scrolling */
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', justifyContent: 'center', overflow: 'hidden' }}>
+            {/* Wrapper for the tabs to stretch the whole line */}
+            <Box sx={{ width: '100%', overflowX: 'auto', overflowY: 'hidden' }}>
+                <Tabs
+                    value={tabNames.indexOf(activeTab)}
+                    onChange={handleTabChange}
+                    aria-label="action groups tabs"
+                    variant="scrollable"
+                    scrollButtons="auto"
+                    allowScrollButtonsMobile
+                    sx={{ '& .MuiTabs-flexContainer': { justifyContent: 'center' } }}
+                >
+                    {sortedPromptGroups.map((group, index) => (
+                        <Tab
+                            key={`tab-${index}`}
+                            label={group.groupName}
+                            id={`tab-${index}`}
+                            aria-controls={`tabpanel-${index}`}
+                            disabled={isAppBusy}
+                            sx={{ minWidth: 'auto' }}
+                        />
+                    ))}
+                </Tabs>
             </Box>
+        </Box>
+    );
 
-            {/* Action Buttons for Active Tab - Wraps to new lines, vertical scroll */}
-            <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', padding: 2 }}>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
-                    {sortedPromptGroups.find((group) => group.groupId === activeTab)?.prompts &&
-                        Object.entries(sortedPromptGroups.find((group) => group.groupId === activeTab)?.prompts || {}).map(([promptId, prompt]) => (
-                            <Button
-                                key={`action-${activeTab}-${promptId}`}
-                                variant="contained"
-                                color="secondary"
-                                onClick={() => handleActionClick(prompt.id, prompt.name)}
-                                disabled={isAppBusy}
-                                sx={{ borderRadius: '8px', minWidth: '120px', textTransform: 'uppercase' }}
-                            >
-                                {prompt.name}
-                            </Button>
-                        ))}
-                </Box>
+    const actionButtons = (
+        /* Action Buttons for Active Tab - Wraps to new lines, vertical scroll */
+        <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', padding: 1 }}>
+            {/* Wrapper for the action buttons */}
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
+                {sortedPromptGroups.find((group) => group.groupId === activeTab)?.prompts &&
+                    Object.entries(sortedPromptGroups.find((group) => group.groupId === activeTab)?.prompts || {}).map(([promptId, prompt]) => (
+                        <Button
+                            key={`action-${activeTab}-${promptId}`}
+                            variant="outlined"
+                            color="primary"
+                            onClick={() => handleActionClick(prompt.id, prompt.name)}
+                            disabled={isAppBusy}
+                            sx={{ borderRadius: '16px', border: '1px solid', minWidth: '150px', textTransform: 'uppercase' }}
+                        >
+                            {prompt.name}
+                        </Button>
+                    ))}
             </Box>
-        </Paper>
+        </Box>
+    );
+
+    return (
+        <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            {tabs}
+            {actionButtons}
+        </Box>
     );
 };
 

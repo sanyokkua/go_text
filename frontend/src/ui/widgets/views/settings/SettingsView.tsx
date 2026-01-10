@@ -2,7 +2,7 @@ import { Box } from '@mui/material';
 import React from 'react';
 import { useAppDispatch, useAppSelector } from '../../../../logic/store';
 import { setActiveSettingsTab } from '../../../../logic/store/ui';
-import { CONTAINER_STYLES, FLEX_STYLES, SPACING } from '../../../styles/constants';
+import { FLEX_STYLES, SPACING } from '../../../styles/constants';
 import SettingsTabs from './SettingsTabs';
 import FactoryResetTab from './tabs/FactoryResetTab';
 import InferenceConfigTab from './tabs/InferenceConfigTab';
@@ -89,7 +89,7 @@ const SettingsView: React.FC = () => {
     }
 
     return (
-        <Box sx={{ ...CONTAINER_STYLES.FULL_SIZE, ...FLEX_STYLES.COLUMN_OVERFLOW, padding: SPACING.SMALL }}>
+        <Box sx={{ width: '100%', height: '100%', ...FLEX_STYLES.COLUMN_OVERFLOW, padding: SPACING.SMALL }}>
             {/* Settings Tabs */}
             <SettingsTabs activeTab={activeTab} onChange={handleTabChange} />
 

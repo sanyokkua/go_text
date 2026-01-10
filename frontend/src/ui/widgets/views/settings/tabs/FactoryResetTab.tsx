@@ -18,15 +18,9 @@ const FactoryResetTab: React.FC = () => {
         try {
             dispatch(setAppBusy(true));
             await dispatch(resetSettingsToDefault()).unwrap();
-            dispatch(enqueueNotification({ 
-                message: 'All settings have been reset to factory defaults', 
-                severity: 'success' 
-            }));
+            dispatch(enqueueNotification({ message: 'All settings have been reset to factory defaults', severity: 'success' }));
         } catch (error) {
-            dispatch(enqueueNotification({ 
-                message: `Failed to reset settings: ${error}`, 
-                severity: 'error' 
-            }));
+            dispatch(enqueueNotification({ message: `Failed to reset settings: ${error}`, severity: 'error' }));
         } finally {
             dispatch(setAppBusy(false));
             setConfirmationOpen(false);
@@ -66,13 +60,15 @@ const FactoryResetTab: React.FC = () => {
                     </Box>
 
                     {/* Warning */}
-                    <Box sx={{ 
-                        p: SPACING.STANDARD, 
-                        backgroundColor: 'error.light',
-                        borderRadius: '4px',
-                        borderLeft: `4px solid`,
-                        borderColor: 'error.main'
-                    }}>
+                    <Box
+                        sx={{
+                            p: SPACING.STANDARD,
+                            backgroundColor: 'error.light',
+                            borderRadius: '4px',
+                            borderLeft: `4px solid`,
+                            borderColor: 'error.main',
+                        }}
+                    >
                         <Typography variant="body2" color="error.main" fontWeight="bold">
                             WARNING: This action cannot be undone!
                         </Typography>
@@ -82,19 +78,8 @@ const FactoryResetTab: React.FC = () => {
                     </Box>
 
                     {/* Reset Button */}
-                    <Box sx={{ 
-                        display: 'flex', 
-                        justifyContent: 'center', 
-                        marginTop: 'auto',
-                        paddingTop: SPACING.LARGE
-                    }}>
-                        <Button
-                            variant="contained"
-                            color="error"
-                            size="large"
-                            onClick={handleOpenConfirmation}
-                            sx={{ minWidth: '200px' }}
-                        >
+                    <Box sx={{ display: 'flex', justifyContent: 'center', marginTop: 'auto', paddingTop: SPACING.LARGE }}>
+                        <Button variant="contained" color="error" size="large" onClick={handleOpenConfirmation} sx={{ minWidth: '200px' }}>
                             Factory Reset
                         </Button>
                     </Box>

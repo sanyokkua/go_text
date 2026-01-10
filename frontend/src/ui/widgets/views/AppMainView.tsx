@@ -6,7 +6,7 @@ import { getPromptGroups } from '../../../logic/store/actions';
 import { initializeSettingsState } from '../../../logic/store/settings';
 import { setActiveActionsTab } from '../../../logic/store/ui';
 import FlexContainer from '../../components/FlexContainer';
-import { CONTAINER_STYLES, UI_HEIGHTS } from '../../styles/constants';
+import { UI_HEIGHTS } from '../../styles/constants';
 import AppBar from '../base/AppBar';
 import StatusBar from '../base/StatusBar';
 import MainContent from './MainContent';
@@ -19,7 +19,7 @@ const logger = getLogger('AppMainView');
  * - AppBar (top)
  * - MainContent (middle) - shows either main content or settings
  * - StatusBar (bottom)
- * 
+ *
  * Key Responsibilities:
  * - Application initialization (settings, prompt groups)
  * - Layout management with fixed and flexible height components
@@ -60,8 +60,8 @@ const AppMainView: React.FC = () => {
     }, [dispatch]);
 
     return (
-        <FlexContainer direction="column" overflowHidden sx={{ ...CONTAINER_STYLES.FULL_SIZE, maxHeight: '100vh', minHeight: '100vh' }}>
-            {/* Top App Bar - Fixed height */}
+        <FlexContainer direction="column" overflowHidden sx={{ width: '100%', height: '100%', maxHeight: '100vh', minHeight: '100vh' }}>
+            {/* Top App Bar */}
             <Box sx={{ height: UI_HEIGHTS.APP_BAR }}>
                 <AppBar />
             </Box>

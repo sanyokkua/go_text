@@ -1,9 +1,9 @@
 /**
  * Redux Store Configuration
- * 
+ *
  * Centralized state management for the application using Redux Toolkit.
  * Defines the root store, typed hooks, and exports all reducers.
- * 
+ *
  * Store Structure:
  * - settings: Application configuration and provider management
  * - actions: Prompt groups and action processing state

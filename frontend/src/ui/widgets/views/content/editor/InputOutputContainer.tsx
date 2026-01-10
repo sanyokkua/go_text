@@ -15,7 +15,6 @@ const panelContainerStyle = {
     height: '100%',
     display: 'flex',
     flexDirection: 'column',
-    // overflow: 'hidden',
     minWidth: 0, // Prevent flex item overflow
 };
 
@@ -103,28 +102,19 @@ const InputOutputContainer: React.FC = () => {
     };
 
     return (
-        <Box
-            sx={{
-                width: '100%',
-                height: '100%',
-                display: 'flex',
-                gap: 2,
-                overflow: 'hidden',
-                padding: 1,
-                minHeight: 0, // Important for flex children
-            }}
-        >
+        <Box sx={{ width: '100%', height: '100%', display: 'flex', gap: 2, overflow: 'hidden', padding: 1, minHeight: 0 }}>
             {/* Input Panel - takes 50% width */}
             <Box sx={panelContainerStyle}>
                 <TextPanel
                     title="Input"
-                    headerColor="secondary.main"
+                    headerColor="primary.main"
+                    headerTextColor="primary.contrastText"
                     content={inputContent}
                     onContentChange={(value) => dispatch(setInputContent(value))}
                     placeholder="Enter text here..."
                     buttons={[
-                        { label: 'Clear', onClick: handleInputClear, color: 'error', variant: 'text', disabled: isAppBusy },
-                        { label: 'Paste', onClick: handleInputPaste, color: 'secondary', variant: 'text', disabled: isAppBusy },
+                        { label: 'Clear', onClick: handleInputClear, buttonColor: 'error', variant: 'text', disabled: isAppBusy },
+                        { label: 'Paste', onClick: handleInputPaste, buttonColor: 'secondary', variant: 'text', disabled: isAppBusy },
                     ]}
                     isProcessing={isAppBusy}
                 />
@@ -134,17 +124,18 @@ const InputOutputContainer: React.FC = () => {
             <Box sx={panelContainerStyle}>
                 <TextPanel
                     title="Output"
-                    headerColor="secondary.main"
+                    headerColor="primary.main"
+                    headerTextColor="primary.contrastText"
                     content={outputContent}
                     onContentChange={(value) => dispatch(setOutputContent(value))}
                     placeholder="Output will appear here..."
                     buttons={[
-                        { label: 'Clear', onClick: handleOutputClear, color: 'error', variant: 'text', disabled: isAppBusy },
-                        { label: 'Copy', onClick: handleOutputCopy, color: 'secondary', variant: 'text', disabled: isAppBusy },
+                        { label: 'Clear', onClick: handleOutputClear, buttonColor: 'error', variant: 'text', disabled: isAppBusy },
+                        { label: 'Copy', onClick: handleOutputCopy, buttonColor: 'secondary', variant: 'text', disabled: isAppBusy },
                         {
                             label: 'Use as Input',
                             onClick: handleOutputUseAsInput,
-                            color: 'secondary',
+                            buttonColor: 'secondary',
                             variant: 'text',
                             disabled: isAppBusy || !outputContent,
                         },

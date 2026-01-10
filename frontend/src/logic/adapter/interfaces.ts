@@ -1,6 +1,6 @@
 /**
  * Adapter Layer Interfaces
- * 
+ *
  * Defines the contract between frontend and backend services.
  * These interfaces abstract the Wails-generated Go backend bindings.
  */
@@ -18,7 +18,7 @@ import {
 
 /**
  * Logging service interface for structured logging across the application
- * 
+ *
  * Provides different log levels for debugging, error tracking, and information logging.
  * All methods are synchronous to avoid timing issues in critical paths.
  */
@@ -34,7 +34,7 @@ export interface ILoggerService {
 
 /**
  * Action handler interface for LLM operations
- * 
+ *
  * Manages all AI-related operations including completion requests, model management,
  * and prompt processing. Acts as the bridge between frontend UI and backend LLM services.
  */
@@ -49,13 +49,13 @@ export interface IActionHandler {
 
 /**
  * Settings handler interface for application configuration management
- * 
+ *
  * Provides comprehensive CRUD operations for all application settings including:
  * - Provider configurations (LLM service endpoints and authentication)
  * - Model configurations (temperature, model selection)
  * - Language configurations (supported languages, defaults)
  * - Inference base configurations (timeouts, retries)
- * 
+ *
  * Follows a pattern of returning full updated objects rather than just success/failure.
  */
 export interface ISettingsHandler {
@@ -82,7 +82,7 @@ export interface ISettingsHandler {
 
 /**
  * Event service interface for cross-component communication
- * 
+ *
  * Provides pub/sub pattern for decoupled component communication.
  * Supports single, multiple, and one-time event listeners with cleanup methods.
  */
@@ -97,7 +97,7 @@ export interface IEventsService {
 
 /**
  * Clipboard service interface for system clipboard operations
- * 
+ *
  * Abstracts platform-specific clipboard access with error handling.
  * Returns boolean success status for write operations to handle permission issues.
  */

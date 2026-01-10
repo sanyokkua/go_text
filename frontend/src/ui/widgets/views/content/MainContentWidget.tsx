@@ -1,7 +1,7 @@
-import { Box, Container } from '@mui/material';
+import { Box } from '@mui/material';
 import React from 'react';
 import FlexContainer from '../../../components/FlexContainer';
-import { CONTAINER_STYLES, FLEX_STYLES, HEIGHT_UTILS, SPACING, UI_HEIGHTS } from '../../../styles/constants';
+import { HEIGHT_UTILS, UI_HEIGHTS } from '../../../styles/constants';
 import ActionsPanel from './actions/ActionsPanel';
 import InputOutputContainer from './editor/InputOutputContainer';
 
@@ -13,21 +13,16 @@ import InputOutputContainer from './editor/InputOutputContainer';
  */
 const MainContentWidget: React.FC = () => {
     return (
-        <Box
-            component="main"
-            sx={{ ...CONTAINER_STYLES.FULL_SIZE, height: HEIGHT_UTILS.contentAreaHeight(), padding: SPACING.SMALL, gap: SPACING.STANDARD }}
-        >
-            <Container maxWidth={false} disableGutters sx={{ ...FLEX_STYLES.COLUMN_OVERFLOW, padding: SPACING.SMALL }}>
-                {/* Input/Output Container Section - takes most space */}
-                <FlexContainer overflowHidden sx={{ height: HEIGHT_UTILS.editorsHeight() }}>
-                    <InputOutputContainer />
-                </FlexContainer>
+        <Box component="main" sx={{ width: '100%', height: '100%', padding: 0 }}>
+            {/* Input/Output Container Section - takes most space */}
+            <FlexContainer overflowHidden sx={{ height: HEIGHT_UTILS.editorsHeight() }}>
+                <InputOutputContainer />
+            </FlexContainer>
 
-                {/* Actions Panel Section - fixed height */}
-                <FlexContainer overflowHidden sx={{ height: UI_HEIGHTS.ACTIONS_PANEL, padding: SPACING.SMALL }}>
-                    <ActionsPanel />
-                </FlexContainer>
-            </Container>
+            {/* Actions Panel Section - fixed height */}
+            <FlexContainer overflowHidden sx={{ spacing: 0, width: '100%', height: UI_HEIGHTS.ACTIONS_PANEL, boxSizing: 'content-box' }}>
+                <ActionsPanel />
+            </FlexContainer>
         </Box>
     );
 };
