@@ -15,7 +15,8 @@ const SettingsTabs: React.FC<SettingsTabsProps> = ({ activeTab, onChange }) => {
         <Box sx={{ width: '100%' }}>
             <Tabs value={activeTab} onChange={onChange} centered variant="fullWidth">
                 <Tab wrapped label="Settings Info" />
-                <Tab wrapped label="Provider Config" />
+                <Tab wrapped label="Current Provider" />
+                <Tab wrapped label="Provider Management" />
                 <Tab wrapped label="Model Config" />
                 <Tab wrapped label="Inference Config" />
                 <Tab wrapped label="Language Config" />

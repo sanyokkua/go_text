@@ -15,7 +15,10 @@ import {
     Typography,
 } from '@mui/material';
 import React, { useEffect, useState } from 'react';
+import { getLogger } from '../../../../../../logic/adapter';
 import { SPACING } from '../../../../../styles/constants';
+
+const logger = getLogger('HeadersEditor');
 
 interface HeadersEditorProps {
     headers: Record<string, string>;
@@ -36,6 +39,7 @@ const HeadersEditor: React.FC<HeadersEditorProps> = ({ headers, onChange }) => {
     }, [headers]);
 
     const handleAddHeader = () => {
+        logger.logDebug('Adding new header entry');
         const newEntries = [...headerEntries, { key: '', value: '' }];
         setHeaderEntries(newEntries);
         // Don't call updateHeaders here - let the user fill in the key first
@@ -43,12 +47,14 @@ const HeadersEditor: React.FC<HeadersEditorProps> = ({ headers, onChange }) => {
     };
 
     const handleRemoveHeader = (index: number) => {
+        logger.logDebug(`Removing header at index: ${index}`);
         const newEntries = headerEntries.filter((_, i) => i !== index);
         setHeaderEntries(newEntries);
         updateHeaders(newEntries);
     };
 
     const handleHeaderChange = (index: number, field: 'key' | 'value', value: string) => {
+        logger.logDebug(`Header changed: index=${index}, field=${field}, value=${value}`);
         const newEntries = [...headerEntries];
         newEntries[index][field] = value;
         setHeaderEntries(newEntries);
@@ -56,6 +62,7 @@ const HeadersEditor: React.FC<HeadersEditorProps> = ({ headers, onChange }) => {
     };
 
     const updateHeaders = (entries: { key: string; value: string }[]) => {
+        logger.logDebug('Updating headers from editor');
         const headersObj = entries.reduce(
             (acc, { key, value }) => {
                 // Only include headers with non-empty keys in the final output
@@ -67,6 +74,7 @@ const HeadersEditor: React.FC<HeadersEditorProps> = ({ headers, onChange }) => {
             },
             {} as Record<string, string>,
         );
+        logger.logDebug(`Headers updated: ${Object.keys(headersObj).length} valid headers`);
         onChange(headersObj);
     };
 

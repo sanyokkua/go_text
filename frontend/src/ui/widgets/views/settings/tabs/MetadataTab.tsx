@@ -1,10 +1,13 @@
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { Box, IconButton, Tooltip, Typography } from '@mui/material';
 import React from 'react';
+import { getLogger } from '../../../../../logic/adapter';
 import { useAppDispatch } from '../../../../../logic/store';
 import { setClipboardText } from '../../../../../logic/store/clipboard';
 import { enqueueNotification } from '../../../../../logic/store/notifications';
 import { SPACING } from '../../../../styles/constants';
+
+const logger = getLogger('MetadataTab');
 
 interface MetadataTabProps {
     metadata: { settingsFolder: string; settingsFile: string };
@@ -48,18 +51,34 @@ const MetadataTab: React.FC<MetadataTabProps> = ({ metadata }) => {
 
     const handleCopy = async (text: string) => {
         try {
+            logger.logDebug(`Attempting to copy path to clipboard: ${text}`);
             const success = await dispatch(setClipboardText(text)).unwrap();
             if (success) {
+                logger.logInfo('Path copied to clipboard successfully');
                 dispatch(enqueueNotification({ message: 'Path copied to clipboard', severity: 'success' }));
             }
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
+            logger.logError(`Failed to copy path to clipboard: ${error}`);
             dispatch(enqueueNotification({ message: 'Failed to copy path', severity: 'error' }));
         }
     };
 
     return (
         <Box sx={{ padding: SPACING.SMALL }}>
+            {/* Tab Description */}
+            <Box sx={{ marginBottom: SPACING.STANDARD }}>
+                <Typography variant="body2" color="text.secondary" component="div" gutterBottom>
+                    This tab displays the file system locations where your application settings are stored.
+                </Typography>
+                <Typography variant="body2" color="text.secondary" component="div" gutterBottom>
+                    Settings are automatically saved when you make changes in other tabs. You can copy these paths to locate your configuration files
+                    if needed for backup or manual editing.
+                </Typography>
+                <Typography variant="body2" color="text.secondary" component="div" gutterBottom>
+                    <strong>Note:</strong> Manual file editing is not recommended as it may cause configuration inconsistencies.
+                </Typography>
+            </Box>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: SPACING.STANDARD }}>
                 {/* Folder */}
                 <MetadataRow

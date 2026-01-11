@@ -13,9 +13,11 @@ import {
     TextField,
     Typography,
 } from '@mui/material';
-import { ProviderConfig } from '../../../../../../logic/adapter';
+import { getLogger, ProviderConfig } from '../../../../../../logic/adapter';
 import { SPACING } from '../../../../../styles/constants';
 import HeadersEditor from './HeadersEditor';
+
+const logger = getLogger('ProviderForm');
 
 interface ProviderFormProps {
     provider?: ProviderConfig;
@@ -71,6 +73,7 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         if (name) {
+            logger.logDebug(`Input changed: ${name} = ${value}`);
             setFormData((prev) => ({ ...prev, [name]: value }));
         }
     };
@@ -82,26 +85,31 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
     ) => {
         const { name, value } = e.target;
         if (name) {
+            logger.logDebug(`Select changed: ${name} = ${value}`);
             setFormData((prev) => ({ ...prev, [name]: value }));
         }
     };
 
     const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, checked } = e.target;
+        logger.logDebug(`Checkbox changed: ${name} = ${checked}`);
         setFormData((prev) => ({ ...prev, [name]: checked }));
     };
 
     const handleHeadersChange = (headers: Record<string, string>) => {
+        logger.logDebug(`Headers changed: ${Object.keys(headers).length} headers configured`);
         setFormData((prev) => ({ ...prev, headers }));
     };
 
     const handleCustomModelsChange = (models: string[]) => {
+        logger.logDebug(`Custom models changed: ${models.length} models configured`);
         setFormData((prev) => ({ ...prev, customModels: models }));
     };
 
     const [errors, setErrors] = useState<Record<string, string>>({});
 
     const validateForm = (): boolean => {
+        logger.logDebug('Validating provider form');
         const newErrors: Record<string, string> = {};
 
         // Required fields validation
@@ -124,33 +132,42 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
             newErrors.baseUrl = 'Base URL should end with /';
         }
 
+        if (Object.keys(newErrors).length > 0) {
+            logger.logWarning(`Form validation failed: ${Object.keys(newErrors).join(', ')}`);
+        }
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        logger.logDebug('Provider form submission attempted');
 
         if (!validateForm()) {
-            console.log('Form validation failed', errors);
+            logger.logError('Form validation failed, submission aborted');
             return;
         }
 
+        logger.logInfo(`Submitting provider: ${formData.providerName}`);
         // Generate new ID if creating new provider
         if (!formData.providerId) {
             formData.providerId = `prov-${Date.now()}`;
+            logger.logDebug(`Generated new provider ID: ${formData.providerId}`);
         }
         onSave(formData);
     };
 
     const handleTestModels = () => {
         if (onTestModels) {
+            logger.logDebug('Testing models for current provider configuration');
             onTestModels(formData);
         }
     };
 
     const handleTestInference = () => {
         if (onTestInference && selectedModel) {
+            logger.logDebug(`Testing inference with model: ${selectedModel}`);
             onTestInference(formData, selectedModel);
         }
     };

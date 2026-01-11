@@ -3,12 +3,13 @@ import React from 'react';
 import { useAppDispatch, useAppSelector } from '../../../../logic/store';
 import { setActiveSettingsTab } from '../../../../logic/store/ui';
 import SettingsTabs from './SettingsTabs';
+import CurrentProviderTab from './tabs/CurrentProviderTab';
 import FactoryResetTab from './tabs/FactoryResetTab';
 import InferenceConfigTab from './tabs/InferenceConfigTab';
 import LanguageConfigTab from './tabs/LanguageConfigTab';
 import MetadataTab from './tabs/MetadataTab';
 import ModelConfigTab from './tabs/ModelConfigTab';
-import ProviderConfigTab from './tabs/ProviderConfigTab';
+import ProviderManagementTab from './tabs/ProviderManagementTab';
 
 /**
  * Main Settings View Component
@@ -28,11 +29,12 @@ import ProviderConfigTab from './tabs/ProviderConfigTab';
  *
  * Tab Structure:
  * 0 - Metadata (settings file locations)
- * 1 - Provider Configuration (LLM service setup)
- * 2 - Model Configuration (model selection and parameters)
- * 3 - Inference Configuration (timeout, retries, formatting)
- * 4 - Language Configuration (supported languages and defaults)
- * 5 - Factory Reset (reset to default settings)
+ * 1 - Current Provider (view and edit current provider)
+ * 2 - Provider Management (manage all providers: list, create, edit, delete)
+ * 3 - Model Configuration (model selection and parameters)
+ * 4 - Inference Configuration (timeout, retries, formatting)
+ * 5 - Language Configuration (supported languages and defaults)
+ * 6 - Factory Reset (reset to default settings)
  */
 const SettingsView: React.FC = () => {
     const dispatch = useAppDispatch();
@@ -57,23 +59,28 @@ const SettingsView: React.FC = () => {
             break;
         }
         case 1: {
-            activeTabView = <ProviderConfigTab settings={settings} metadata={metadata} />;
+            activeTabView = <CurrentProviderTab settings={settings} metadata={metadata} />;
             break;
         }
 
         case 2: {
+            activeTabView = <ProviderManagementTab settings={settings} metadata={metadata} />;
+            break;
+        }
+
+        case 3: {
             activeTabView = <ModelConfigTab settings={settings} />;
             break;
         }
-        case 3: {
+        case 4: {
             activeTabView = <InferenceConfigTab settings={settings} />;
             break;
         }
-        case 4: {
+        case 5: {
             activeTabView = <LanguageConfigTab settings={settings} />;
             break;
         }
-        case 5: {
+        case 6: {
             activeTabView = <FactoryResetTab />;
             break;
         }

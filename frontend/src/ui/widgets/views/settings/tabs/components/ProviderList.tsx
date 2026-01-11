@@ -1,7 +1,9 @@
 import { Box, Button, Divider, List, ListItem, ListItemText, Typography } from '@mui/material';
 import React from 'react';
-import { ProviderConfig } from '../../../../../../logic/adapter';
+import { getLogger, ProviderConfig } from '../../../../../../logic/adapter';
 import { SPACING } from '../../../../../styles/constants';
+
+const logger = getLogger('ProviderList');
 
 interface ProviderListProps {
     providers: ProviderConfig[];
@@ -17,11 +19,33 @@ interface ProviderListProps {
  * Displays list of available providers with actions
  */
 const ProviderList: React.FC<ProviderListProps> = ({ providers, currentProviderId, onEdit, onDelete, onSetAsCurrent, onCreateNew }) => {
+    
+    // Create logging wrappers for action handlers
+    const handleEdit = (providerId: string) => {
+        logger.logDebug(`Edit requested for provider: ${providerId}`);
+        onEdit(providerId);
+    };
+
+    const handleDelete = (providerId: string) => {
+        logger.logDebug(`Delete requested for provider: ${providerId}`);
+        onDelete(providerId);
+    };
+
+    const handleSetAsCurrent = (providerId: string) => {
+        logger.logDebug(`Set as current requested for provider: ${providerId}`);
+        onSetAsCurrent(providerId);
+    };
+
+    const handleCreateNew = () => {
+        logger.logDebug('Create new provider requested');
+        onCreateNew();
+    };
+
     return (
         <Box sx={{ padding: SPACING.STANDARD }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.STANDARD }}>
                 <Typography variant="subtitle1">Available Providers</Typography>
-                <Button variant="contained" color="primary" size="small" onClick={onCreateNew}>
+                <Button variant="contained" color="primary" size="small" onClick={handleCreateNew}>
                     Create New Provider
                 </Button>
             </Box>
@@ -33,15 +57,15 @@ const ProviderList: React.FC<ProviderListProps> = ({ providers, currentProviderI
                             secondaryAction={
                                 <Box sx={{ display: 'flex', gap: SPACING.SMALL }}>
                                     {provider.providerId !== currentProviderId && (
-                                        <Button size="small" variant="outlined" onClick={() => onSetAsCurrent(provider.providerId)}>
+                                        <Button size="small" variant="outlined" onClick={() => handleSetAsCurrent(provider.providerId)}>
                                             Apply as Current
                                         </Button>
                                     )}
-                                    <Button size="small" variant="outlined" onClick={() => onEdit(provider.providerId)}>
+                                    <Button size="small" variant="outlined" onClick={() => handleEdit(provider.providerId)}>
                                         Edit
                                     </Button>
                                     {provider.providerId !== currentProviderId && (
-                                        <Button size="small" variant="outlined" color="error" onClick={() => onDelete(provider.providerId)}>
+                                        <Button size="small" variant="outlined" color="error" onClick={() => handleDelete(provider.providerId)}>
                                             Delete
                                         </Button>
                                     )}

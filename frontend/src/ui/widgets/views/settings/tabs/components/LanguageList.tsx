@@ -2,7 +2,10 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { Box, Button, Chip, ChipProps, Divider, TextField, Typography } from '@mui/material';
 import React, { useState, MouseEvent } from 'react';
+import { getLogger } from '../../../../../../logic/adapter';
 import { SPACING } from '../../../../../styles/constants';
+
+const logger = getLogger('LanguageList');
 
 interface LanguageListProps {
     languages: string[];
@@ -30,14 +33,19 @@ const LanguageList: React.FC<LanguageListProps> = ({
     const [newLanguage, setNewLanguage] = useState('');
 
     const handleAddLanguage = () => {
-        if (newLanguage.trim() && !languages.includes(newLanguage.trim())) {
-            onAddLanguage(newLanguage.trim());
+        const trimmedLanguage = newLanguage.trim();
+        if (trimmedLanguage && !languages.includes(trimmedLanguage)) {
+            logger.logDebug(`Adding new language: ${trimmedLanguage}`);
+            onAddLanguage(trimmedLanguage);
             setNewLanguage('');
+        } else if (languages.includes(trimmedLanguage)) {
+            logger.logWarning(`Language already exists: ${trimmedLanguage}`);
         }
     };
 
     const handleRemoveLanguageWrapper = (language: string) => (event: MouseEvent<HTMLButtonElement>) => {
         event.stopPropagation();
+        logger.logDebug(`Removing language: ${language}`);
         onRemoveLanguage(language);
     };
 

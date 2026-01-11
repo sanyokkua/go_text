@@ -1,10 +1,13 @@
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Typography } from '@mui/material';
 import React, { useState } from 'react';
+import { getLogger } from '../../../../../logic/adapter';
 import { useAppDispatch } from '../../../../../logic/store';
 import { enqueueNotification } from '../../../../../logic/store/notifications';
 import { resetSettingsToDefault } from '../../../../../logic/store/settings';
 import { setAppBusy } from '../../../../../logic/store/ui';
 import { SPACING } from '../../../../styles/constants';
+
+const logger = getLogger('FactoryResetTab');
 
 /**
  * Factory Reset Tab Component
@@ -16,10 +19,13 @@ const FactoryResetTab: React.FC = () => {
 
     const handleFactoryReset = async () => {
         try {
+            logger.logInfo('Initiating factory reset - all settings will be reset to defaults');
             dispatch(setAppBusy(true));
             await dispatch(resetSettingsToDefault()).unwrap();
+            logger.logInfo('Factory reset completed successfully - all settings restored to factory defaults');
             dispatch(enqueueNotification({ message: 'All settings have been reset to factory defaults', severity: 'success' }));
         } catch (error) {
+            logger.logError(`Factory reset failed: ${error}`);
             dispatch(enqueueNotification({ message: `Failed to reset settings: ${error}`, severity: 'error' }));
         } finally {
             dispatch(setAppBusy(false));
@@ -28,10 +34,12 @@ const FactoryResetTab: React.FC = () => {
     };
 
     const handleOpenConfirmation = () => {
+        logger.logWarning('User requested factory reset - showing confirmation dialog');
         setConfirmationOpen(true);
     };
 
     const handleCloseConfirmation = () => {
+        logger.logInfo('Factory reset confirmation dialog closed - operation cancelled');
         setConfirmationOpen(false);
     };
 

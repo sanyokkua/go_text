@@ -1,6 +1,6 @@
-import { Box, Button, Divider, Typography } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import React, { useState } from 'react';
-import { ProviderConfig, Settings } from '../../../../../logic/adapter';
+import { getLogger, ProviderConfig, Settings } from '../../../../../logic/adapter';
 import { useAppDispatch } from '../../../../../logic/store';
 import { getCompletionResponseForProvider, getModelsListForProvider } from '../../../../../logic/store/actions';
 import { enqueueNotification } from '../../../../../logic/store/notifications';
@@ -16,32 +16,37 @@ import { SPACING } from '../../../../styles/constants';
 import ProviderForm from './components/ProviderForm';
 import ProviderList from './components/ProviderList';
 
-interface ProviderConfigTabProps {
+const logger = getLogger('ProviderManagementTab');
+
+interface ProviderManagementTabProps {
     settings: Settings;
     metadata: { authTypes: string[]; providerTypes: string[] };
 }
 
 /**
- * Provider Config Tab Component
- * Main tab for provider configuration management
+ * Provider Management Tab Component
+ * Tab for managing all provider configurations (list, create, edit, delete)
  */
-const ProviderConfigTab: React.FC<ProviderConfigTabProps> = ({ settings, metadata }) => {
+const ProviderManagementTab: React.FC<ProviderManagementTabProps> = ({ settings, metadata }) => {
     const dispatch = useAppDispatch();
     const [editingProviderId, setEditingProviderId] = useState<string | null>(null);
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [testResults, setTestResults] = useState<{ models: string[]; connectionSuccess: boolean } | null>(null);
 
     const handleEditProvider = (providerId: string) => {
+        logger.logDebug(`Editing provider with ID: ${providerId}`);
         setEditingProviderId(providerId);
         setShowCreateForm(false);
     };
 
     const handleCreateNew = () => {
+        logger.logDebug('Creating new provider');
         setShowCreateForm(true);
         setEditingProviderId(null);
     };
 
     const handleCancelEdit = () => {
+        logger.logDebug('Canceling provider edit/create');
         setEditingProviderId(null);
         setShowCreateForm(false);
         setTestResults(null);
@@ -49,23 +54,28 @@ const ProviderConfigTab: React.FC<ProviderConfigTabProps> = ({ settings, metadat
 
     const handleSaveProvider = async (updatedProvider: ProviderConfig) => {
         try {
+            logger.logDebug(`Saving provider: ${updatedProvider.providerName}`);
             dispatch(setAppBusy(true));
 
             if (updatedProvider.providerId) {
                 // Update existing provider
+                logger.logInfo(`Updating existing provider: ${updatedProvider.providerId}`);
                 await dispatch(updateProviderConfig(updatedProvider)).unwrap();
                 dispatch(enqueueNotification({ message: 'Provider updated successfully', severity: 'success' }));
             } else {
                 // Create new provider
+                logger.logInfo(`Creating new provider: ${updatedProvider.providerName}`);
                 await dispatch(createProviderConfig(updatedProvider)).unwrap();
                 dispatch(enqueueNotification({ message: 'Provider created successfully', severity: 'success' }));
             }
 
             // Refresh settings
+            logger.logDebug('Refreshing settings after provider save');
             await dispatch(getSettings()).unwrap();
 
             handleCancelEdit();
         } catch (error) {
+            logger.logError(`Failed to save provider: ${error}`);
             dispatch(enqueueNotification({ message: `Failed to save provider: ${error}`, severity: 'error' }));
         } finally {
             dispatch(setAppBusy(false));
@@ -74,19 +84,25 @@ const ProviderConfigTab: React.FC<ProviderConfigTabProps> = ({ settings, metadat
 
     const handleDeleteProvider = async (providerId: string) => {
         try {
+            logger.logDebug(`Attempting to delete provider: ${providerId}`);
             if (providerId === settings.currentProviderConfig.providerId) {
+                logger.logWarning('Attempted to delete current provider - operation blocked');
                 dispatch(enqueueNotification({ message: 'Cannot delete current provider', severity: 'error' }));
                 return;
             }
 
+            logger.logInfo(`Deleting provider: ${providerId}`);
             dispatch(setAppBusy(true));
             await dispatch(deleteProviderConfig(providerId)).unwrap();
 
             // Refresh settings
+            logger.logDebug('Refreshing settings after provider deletion');
             await dispatch(getSettings()).unwrap();
 
+            logger.logInfo('Provider deleted successfully');
             dispatch(enqueueNotification({ message: 'Provider deleted successfully', severity: 'success' }));
         } catch (error) {
+            logger.logError(`Failed to delete provider: ${error}`);
             dispatch(enqueueNotification({ message: `Failed to delete provider: ${error}`, severity: 'error' }));
         } finally {
             dispatch(setAppBusy(false));
@@ -95,14 +111,18 @@ const ProviderConfigTab: React.FC<ProviderConfigTabProps> = ({ settings, metadat
 
     const handleSetAsCurrent = async (providerId: string) => {
         try {
+            logger.logDebug(`Setting provider as current: ${providerId}`);
             dispatch(setAppBusy(true));
             await dispatch(setAsCurrentProviderConfig(providerId)).unwrap();
 
             // Refresh settings
+            logger.logDebug('Refreshing settings after setting current provider');
             await dispatch(getSettings()).unwrap();
 
+            logger.logInfo('Current provider updated successfully');
             dispatch(enqueueNotification({ message: 'Current provider updated successfully', severity: 'success' }));
         } catch (error) {
+            logger.logError(`Failed to set current provider: ${error}`);
             dispatch(enqueueNotification({ message: `Failed to set current provider: ${error}`, severity: 'error' }));
         } finally {
             dispatch(setAppBusy(false));
@@ -111,11 +131,14 @@ const ProviderConfigTab: React.FC<ProviderConfigTabProps> = ({ settings, metadat
 
     const handleTestModels = async (providerConfig: ProviderConfig) => {
         try {
+            logger.logDebug(`Testing models for provider: ${providerConfig.providerName}`);
             dispatch(setAppBusy(true));
             const models = await dispatch(getModelsListForProvider(providerConfig)).unwrap();
+            logger.logInfo(`Found ${models.length} models for provider: ${providerConfig.providerName}`);
             setTestResults({ models, connectionSuccess: true });
             dispatch(enqueueNotification({ message: `Found ${models.length} models for this provider`, severity: 'success' }));
         } catch (error) {
+            logger.logError(`Failed to test models for provider ${providerConfig.providerName}: ${error}`);
             dispatch(enqueueNotification({ message: `Failed to test models: ${error}`, severity: 'error' }));
             setTestResults({ models: [], connectionSuccess: false });
         } finally {
@@ -125,15 +148,17 @@ const ProviderConfigTab: React.FC<ProviderConfigTabProps> = ({ settings, metadat
 
     const handleTestInference = async (providerConfig: ProviderConfig, modelId: string) => {
         try {
+            logger.logDebug(`Testing inference with model: ${modelId}`);
             dispatch(setAppBusy(true));
 
             const chatCompletionRequest = { model: modelId, messages: [{ role: 'user', content: 'Hello' }], stream: false };
 
-            // TODO: Add log
             const response = await dispatch(getCompletionResponseForProvider({ providerConfig, chatCompletionRequest })).unwrap();
+            logger.logInfo('Connection test successful');
 
             dispatch(enqueueNotification({ message: 'Connection test successful!', severity: 'success' }));
         } catch (error) {
+            logger.logError(`Connection test failed: ${error}`);
             dispatch(enqueueNotification({ message: `Connection test failed: ${error}`, severity: 'error' }));
         } finally {
             dispatch(setAppBusy(false));
@@ -144,114 +169,24 @@ const ProviderConfigTab: React.FC<ProviderConfigTabProps> = ({ settings, metadat
 
     return (
         <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: SPACING.STANDARD }}>
-            {/* Current Provider Info */}
-            <Box sx={{ padding: SPACING.SMALL }}>
-                <Typography variant="subtitle1" gutterBottom>
-                    Current Provider Configuration
+            {/* Tab Description */}
+            <Box sx={{ padding: SPACING.SMALL, marginBottom: SPACING.SMALL }}>
+                <Typography variant="body2" color="text.secondary" component="div" gutterBottom>
+                    This tab allows you to manage all your LLM provider configurations. You can create multiple providers and switch between them as
+                    needed.
                 </Typography>
-
-                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: SPACING.SMALL }}>
-                    <Box>
-                        <Typography variant="body2" color="text.secondary">
-                            Provider Name
-                        </Typography>
-                        <Typography variant="body1">{settings.currentProviderConfig.providerName}</Typography>
-                    </Box>
-
-                    <Box>
-                        <Typography variant="body2" color="text.secondary">
-                            Provider Type
-                        </Typography>
-                        <Typography variant="body1">{settings.currentProviderConfig.providerType}</Typography>
-                    </Box>
-
-                    <Box>
-                        <Typography variant="body2" color="text.secondary">
-                            Base URL
-                        </Typography>
-                        <Typography variant="body1" sx={{ wordBreak: 'break-all' }}>
-                            {settings.currentProviderConfig.baseUrl}
-                        </Typography>
-                    </Box>
-
-                    <Box>
-                        <Typography variant="body2" color="text.secondary">
-                            Models Endpoint
-                        </Typography>
-                        <Typography variant="body1">{settings.currentProviderConfig.modelsEndpoint}</Typography>
-                    </Box>
-
-                    <Box>
-                        <Typography variant="body2" color="text.secondary">
-                            Completion Endpoint
-                        </Typography>
-                        <Typography variant="body1">{settings.currentProviderConfig.completionEndpoint}</Typography>
-                    </Box>
-
-                    <Box>
-                        <Typography variant="body2" color="text.secondary">
-                            Auth Type
-                        </Typography>
-                        <Typography variant="body1">{settings.currentProviderConfig.authType}</Typography>
-                    </Box>
-
-                    <Box>
-                        <Typography variant="body2" color="text.secondary">
-                            Use Auth Token from Env
-                        </Typography>
-                        <Typography variant="body1">{settings.currentProviderConfig.useAuthTokenFromEnv ? 'Yes' : 'No'}</Typography>
-                    </Box>
-
-                    {settings.currentProviderConfig.useAuthTokenFromEnv && (
-                        <Box>
-                            <Typography variant="body2" color="text.secondary">
-                                Env Var Token Name
-                            </Typography>
-                            <Typography variant="body1">{settings.currentProviderConfig.envVarTokenName}</Typography>
-                        </Box>
-                    )}
-
-                    <Box>
-                        <Typography variant="body2" color="text.secondary">
-                            Use Custom Headers
-                        </Typography>
-                        <Typography variant="body1">{settings.currentProviderConfig.useCustomHeaders ? 'Yes' : 'No'}</Typography>
-                    </Box>
-
-                    {settings.currentProviderConfig.useCustomHeaders && (
-                        <Box>
-                            <Typography variant="body2" color="text.secondary">
-                                Custom Headers Count
-                            </Typography>
-                            <Typography variant="body1">{Object.keys(settings.currentProviderConfig.headers).length}</Typography>
-                        </Box>
-                    )}
-
-                    <Box>
-                        <Typography variant="body2" color="text.secondary">
-                            Use Custom Models
-                        </Typography>
-                        <Typography variant="body1">{settings.currentProviderConfig.useCustomModels ? 'Yes' : 'No'}</Typography>
-                    </Box>
-
-                    {settings.currentProviderConfig.useCustomModels && (
-                        <Box>
-                            <Typography variant="body2" color="text.secondary">
-                                Custom Models Count
-                            </Typography>
-                            <Typography variant="body1">{settings.currentProviderConfig.customModels.length}</Typography>
-                        </Box>
-                    )}
-                </Box>
-
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', marginTop: SPACING.STANDARD }}>
-                    <Button variant="outlined" onClick={() => handleEditProvider(settings.currentProviderConfig.providerId)}>
-                        Edit Current Provider
-                    </Button>
-                </Box>
+                <Typography variant="body2" color="text.secondary" component="div" gutterBottom>
+                    <strong>How to use:</strong> Click &quot;Create New Provider&quot; to add a new configuration, or use the Edit/Delete buttons for
+                    existing providers. Click &quot;Apply as Current&quot; to switch to a different provider.
+                </Typography>
+                <Typography variant="body2" color="text.secondary" component="div" gutterBottom>
+                    <strong>Important:</strong> After changing providers or provider settings, you may need to select a model again as the available
+                    models list will be refreshed.
+                </Typography>
+                <Typography variant="body2" color="text.secondary" component="div" gutterBottom>
+                    <strong>Note:</strong> You cannot delete the currently active provider. Set another provider as current first.
+                </Typography>
             </Box>
-
-            <Divider />
 
             {/* Provider List or Form */}
             {showCreateForm || editingProviderId ? (
@@ -275,30 +210,9 @@ const ProviderConfigTab: React.FC<ProviderConfigTabProps> = ({ settings, metadat
                     onCreateNew={handleCreateNew}
                 />
             )}
-
-            {/* Update Button */}
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={async () => {
-                        try {
-                            dispatch(setAppBusy(true));
-                            await dispatch(getSettings()).unwrap();
-                            dispatch(enqueueNotification({ message: 'Provider settings refreshed successfully', severity: 'success' }));
-                        } catch (error) {
-                            dispatch(enqueueNotification({ message: `Failed to refresh provider settings: ${error}`, severity: 'error' }));
-                        } finally {
-                            dispatch(setAppBusy(false));
-                        }
-                    }}
-                >
-                    Refresh Provider Settings
-                </Button>
-            </Box>
         </Box>
     );
 };
 
-ProviderConfigTab.displayName = 'ProviderConfigTab';
-export default ProviderConfigTab;
+ProviderManagementTab.displayName = 'ProviderManagementTab';
+export default ProviderManagementTab;

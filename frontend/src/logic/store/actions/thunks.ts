@@ -3,9 +3,6 @@ import { ActionHandlerAdapter, ChatCompletionRequest, getLogger, PromptActionReq
 import { parseError } from '../../utils/error_utils';
 import { setOutputContent } from '../editor';
 import { AppDispatch } from '../index';
-import { parseError } from '../../utils/error_utils';
-import { setOutputContent } from '../editor';
-import { AppDispatch } from '../index';
 
 const logger = getLogger('ActionsThunks');
 

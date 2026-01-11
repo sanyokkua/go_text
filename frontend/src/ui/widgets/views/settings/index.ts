@@ -2,11 +2,12 @@ export { default as SettingsTabs } from './SettingsTabs';
 export { default as SettingsView } from './SettingsView';
 
 // Export tab components
+export { default as CurrentProviderTab } from './tabs/CurrentProviderTab';
 export { default as InferenceConfigTab } from './tabs/InferenceConfigTab';
 export { default as LanguageConfigTab } from './tabs/LanguageConfigTab';
 export { default as MetadataTab } from './tabs/MetadataTab';
 export { default as ModelConfigTab } from './tabs/ModelConfigTab';
-export { default as ProviderConfigTab } from './tabs/ProviderConfigTab';
+export { default as ProviderManagementTab } from './tabs/ProviderManagementTab';
 
 // Export tab subcomponents
 export { default as HeadersEditor } from './tabs/components/HeadersEditor';

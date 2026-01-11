@@ -105,7 +105,7 @@ var OpenrouterConfig = ProviderConfig{
 
 var OpenAIConfig = ProviderConfig{
 	ProviderID:          uuid.NewString(),
-	ProviderName:        "OpenAI/",
+	ProviderName:        "OpenAI",
 	ProviderType:        ProviderTypeOpenAICompatible,
 	BaseUrl:             "https://api.openai.com/",
 	ModelsEndpoint:      "v1/models",
