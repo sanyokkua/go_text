@@ -7,6 +7,7 @@ import { AppDispatch } from '../store';
 import { getModelsListForProvider } from '../store/actions';
 import { enqueueNotification } from '../store/notifications';
 import { setAppBusy } from '../store/ui';
+import { parseError } from './error_utils';
 
 const logger = getLogger('ProviderUtils');
 
@@ -29,9 +30,10 @@ export async function testProviderModels(
         logger.logInfo(`Found ${models.length} models for provider: ${providerConfig.providerName}`);
         setTestResults({ models, connectionSuccess: true });
         dispatch(enqueueNotification({ message: `Found ${models.length} models for this provider`, severity: 'success' }));
-    } catch (error) {
-        logger.logError(`Failed to test models for provider ${providerConfig.providerName}: ${error}`);
-        dispatch(enqueueNotification({ message: `Failed to test models: ${error}`, severity: 'error' }));
+    } catch (error: unknown) {
+        const err = parseError(error);
+        logger.logError(`Failed to test models for provider ${providerConfig.providerName}: ${err.message}`);
+        dispatch(enqueueNotification({ message: `Failed to test models: ${err.message}`, severity: 'error' }));
         setTestResults({ models: [], connectionSuccess: false });
     } finally {
         dispatch(setAppBusy(false));

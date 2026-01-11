@@ -4,6 +4,7 @@ import { getLogger } from '../../../logic/adapter';
 import { selectCurrentView, useAppDispatch, useAppSelector } from '../../../logic/store';
 import { getPromptGroups } from '../../../logic/store/actions';
 import { initializeSettingsState } from '../../../logic/store/settings';
+import { parseError } from '../../../logic/utils/error_utils';
 import { setActiveActionsTab } from '../../../logic/store/ui';
 import FlexContainer from '../../components/FlexContainer';
 import { UI_HEIGHTS } from '../../styles/constants';
@@ -57,8 +58,9 @@ const AppMainView: React.FC = () => {
                     dispatch(setActiveActionsTab(firstGroupId));
                     logger.logInfo(`Set active actions tab to: ${firstGroupId}`);
                 }
-            } catch (error) {
-                logger.logError(`Failed to initialize app: ${error}`);
+            } catch (error: unknown) {
+                const err = parseError(error);
+                logger.logError(`Failed to initialize app: ${err.message}`);
             }
         };
 

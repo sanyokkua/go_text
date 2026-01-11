@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { ActionHandlerAdapter, getLogger, ProviderConfig, Settings } from '../../../../../logic/adapter';
 import { useAppDispatch } from '../../../../../logic/store';
 import { enqueueNotification } from '../../../../../logic/store/notifications';
+import { parseError } from '../../../../../logic/utils/error_utils';
 import {
     createProviderConfig,
     deleteProviderConfig,
@@ -74,9 +75,10 @@ const ProviderManagementTab: React.FC<ProviderManagementTabProps> = ({ settings,
             await dispatch(getSettings()).unwrap();
 
             handleCancelEdit();
-        } catch (error) {
-            logger.logError(`Failed to save provider: ${error}`);
-            dispatch(enqueueNotification({ message: `Failed to save provider: ${error}`, severity: 'error' }));
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logError(`Failed to save provider: ${err.message}`);
+            dispatch(enqueueNotification({ message: `Failed to save provider: ${err.message}`, severity: 'error' }));
         } finally {
             dispatch(setAppBusy(false));
         }
@@ -101,9 +103,10 @@ const ProviderManagementTab: React.FC<ProviderManagementTabProps> = ({ settings,
 
             logger.logInfo('Provider deleted successfully');
             dispatch(enqueueNotification({ message: 'Provider deleted successfully', severity: 'success' }));
-        } catch (error) {
-            logger.logError(`Failed to delete provider: ${error}`);
-            dispatch(enqueueNotification({ message: `Failed to delete provider: ${error}`, severity: 'error' }));
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logError(`Failed to delete provider: ${err.message}`);
+            dispatch(enqueueNotification({ message: `Failed to delete provider: ${err.message}`, severity: 'error' }));
         } finally {
             dispatch(setAppBusy(false));
         }
@@ -121,9 +124,10 @@ const ProviderManagementTab: React.FC<ProviderManagementTabProps> = ({ settings,
 
             logger.logInfo('Current provider updated successfully');
             dispatch(enqueueNotification({ message: 'Current provider updated successfully', severity: 'success' }));
-        } catch (error) {
-            logger.logError(`Failed to set current provider: ${error}`);
-            dispatch(enqueueNotification({ message: `Failed to set current provider: ${error}`, severity: 'error' }));
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logError(`Failed to set current provider: ${err.message}`);
+            dispatch(enqueueNotification({ message: `Failed to set current provider: ${err.message}`, severity: 'error' }));
         } finally {
             dispatch(setAppBusy(false));
         }
@@ -144,9 +148,10 @@ const ProviderManagementTab: React.FC<ProviderManagementTabProps> = ({ settings,
             logger.logInfo(`Connection test successful: ${response && JSON.stringify(response)}`);
 
             dispatch(enqueueNotification({ message: 'Connection test successful!', severity: 'success' }));
-        } catch (error) {
-            logger.logError(`Connection test failed: ${error}`);
-            dispatch(enqueueNotification({ message: `Connection test failed: ${error}`, severity: 'error' }));
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logError(`Connection test failed: ${err.message}`);
+            dispatch(enqueueNotification({ message: `Connection test failed: ${err.message}`, severity: 'error' }));
         } finally {
             dispatch(setAppBusy(false));
         }

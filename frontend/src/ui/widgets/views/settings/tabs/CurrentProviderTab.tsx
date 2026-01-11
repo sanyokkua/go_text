@@ -5,6 +5,7 @@ import { useAppDispatch } from '../../../../../logic/store';
 import { enqueueNotification } from '../../../../../logic/store/notifications';
 import { getSettings, updateProviderConfig } from '../../../../../logic/store/settings';
 import { setAppBusy } from '../../../../../logic/store/ui';
+import { parseError } from '../../../../../logic/utils/error_utils';
 import { testProviderModels } from '../../../../../logic/utils/provider_utils';
 import { SPACING } from '../../../../styles/constants';
 import ProviderForm from './components/ProviderForm';
@@ -61,9 +62,10 @@ const CurrentProviderTab: React.FC<CurrentProviderTabProps> = ({ settings, metad
             await dispatch(getSettings()).unwrap();
 
             handleCancelEdit();
-        } catch (error) {
-            logger.logError(`Failed to save provider: ${error}`);
-            dispatch(enqueueNotification({ message: `Failed to save provider: ${error}`, severity: 'error' }));
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logError(`Failed to save provider: ${err.message}`);
+            dispatch(enqueueNotification({ message: `Failed to save provider: ${err.message}`, severity: 'error' }));
         } finally {
             dispatch(setAppBusy(false));
         }
@@ -84,9 +86,10 @@ const CurrentProviderTab: React.FC<CurrentProviderTabProps> = ({ settings, metad
             logger.logInfo(`Connection test successful: ${response && JSON.stringify(response)}`);
 
             dispatch(enqueueNotification({ message: 'Connection test successful!', severity: 'success' }));
-        } catch (error) {
-            logger.logError(`Connection test failed: ${error}`);
-            dispatch(enqueueNotification({ message: `Connection test failed: ${error}`, severity: 'error' }));
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logError(`Connection test failed: ${err.message}`);
+            dispatch(enqueueNotification({ message: `Connection test failed: ${err.message}`, severity: 'error' }));
         } finally {
             dispatch(setAppBusy(false));
         }

@@ -4,6 +4,7 @@ import React from 'react';
 import { ClipboardServiceAdapter, getLogger } from '../../../../../logic/adapter';
 import { useAppDispatch } from '../../../../../logic/store';
 import { enqueueNotification } from '../../../../../logic/store/notifications';
+import { parseError } from '../../../../../logic/utils/error_utils';
 import { SPACING } from '../../../../styles/constants';
 
 const logger = getLogger('MetadataTab');
@@ -56,8 +57,9 @@ const MetadataTab: React.FC<MetadataTabProps> = ({ metadata }) => {
                 logger.logInfo('Path copied to clipboard successfully');
                 dispatch(enqueueNotification({ message: 'Path copied to clipboard', severity: 'success' }));
             }
-        } catch (error) {
-            logger.logError(`Failed to copy path to clipboard: ${error}`);
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logError(`Failed to copy path to clipboard: ${err.message}`);
             dispatch(enqueueNotification({ message: 'Failed to copy path', severity: 'error' }));
         }
     };

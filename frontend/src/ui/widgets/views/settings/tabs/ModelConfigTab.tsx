@@ -9,6 +9,7 @@ import { getModelsList } from '../../../../../logic/store/actions';
 import { enqueueNotification } from '../../../../../logic/store/notifications';
 import { updateModelConfig } from '../../../../../logic/store/settings';
 import { setAppBusy } from '../../../../../logic/store/ui';
+import { parseError } from '../../../../../logic/utils/error_utils';
 import { SPACING } from '../../../../styles/constants';
 
 const logger = getLogger('ModelConfigTab');
@@ -33,9 +34,10 @@ const ModelConfigTab: React.FC<ModelConfigTabProps> = ({ settings }) => {
             await dispatch(getModelsList()).unwrap();
             logger.logInfo('Models list refreshed successfully');
             dispatch(enqueueNotification({ message: 'Models list refreshed successfully', severity: 'success' }));
-        } catch (error) {
-            logger.logError(`Failed to refresh models: ${error}`);
-            dispatch(enqueueNotification({ message: `Failed to refresh models: ${error}`, severity: 'error' }));
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logError(`Failed to refresh models: ${err.message}`);
+            dispatch(enqueueNotification({ message: `Failed to refresh models: ${err.message}`, severity: 'error' }));
         } finally {
             dispatch(setAppBusy(false));
         }
@@ -77,9 +79,10 @@ const ModelConfigTab: React.FC<ModelConfigTabProps> = ({ settings }) => {
             await dispatch(updateModelConfig(formData)).unwrap();
             logger.logInfo('Model settings updated successfully');
             dispatch(enqueueNotification({ message: 'Model settings updated successfully', severity: 'success' }));
-        } catch (error) {
-            logger.logError(`Failed to update model settings: ${error}`);
-            dispatch(enqueueNotification({ message: `Failed to update model settings: ${error}`, severity: 'error' }));
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logError(`Failed to update model settings: ${err.message}`);
+            dispatch(enqueueNotification({ message: `Failed to update model settings: ${err.message}`, severity: 'error' }));
         } finally {
             dispatch(setAppBusy(false));
         }

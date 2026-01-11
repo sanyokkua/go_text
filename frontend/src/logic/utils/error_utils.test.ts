@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { createContextualError, formatParsedError, isNetworkError, ParsedErrorResult, parseError } from './error_utils';
+import { parseError } from './error_utils';
 
 describe('Error Utils', () => {
     describe('parseError', () => {
@@ -173,230 +173,131 @@ describe('Error Utils', () => {
             expect(result).toMatchObject({ type: 'Error', message: 'Original error', timestamp: expect.any(Date) });
             expect(result.originalError).toBeUndefined();
         });
-    });
 
-    describe('formatParsedError', () => {
-        it('formats parsed error with timestamp by default', () => {
-            // Arrange
-            const parsedError: ParsedErrorResult = { type: 'Error', message: 'Test error', timestamp: new Date('2024-01-01T00:00:00.000Z') };
+        describe('Backend Error Formatting', () => {
+            it('formats backend error with multiple levels separated by colons', () => {
+                // Arrange
+                const backendError =
+                    'Connection test failed: LLMService.GetCompletionResponseForProvider: chat completion request failed: LLMService.completionRequest: completion request failed: LLMService.makeHttpRequest: remote server error: API returned error status 404: 404 Not Found';
 
-            // Act
-            const result = formatParsedError(parsedError);
+                // Act
+                const result = parseError(backendError);
 
-            // Assert
-            expect(result).toBe('[2024-01-01T00:00:00.000Z] Error: Test error');
-        });
-
-        it('formats parsed error without timestamp when includeTimestamp is false', () => {
-            // Arrange
-            const parsedError: ParsedErrorResult = { type: 'Error', message: 'Test error', timestamp: new Date('2024-01-01T00:00:00.000Z') };
-
-            // Act
-            const result = formatParsedError(parsedError, false);
-
-            // Assert
-            expect(result).toBe('Error: Test error');
-        });
-
-        it('formats parsed error with current timestamp', () => {
-            // Arrange
-            const parsedError: ParsedErrorResult = { type: 'NullError', message: 'Null value', timestamp: new Date() };
-
-            // Act
-            const result = formatParsedError(parsedError);
-
-            // Assert
-            expect(result).toMatch(/^\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z] NullError: Null value$/);
-        });
-    });
-
-    describe('createContextualError', () => {
-        it('creates contextual error with context message', () => {
-            // Arrange
-            const context = 'UserService.createUser';
-            const error = new Error('Database connection failed');
-
-            // Act
-            const result = createContextualError(context, error);
-
-            // Assert
-            expect(result).toMatchObject({
-                type: 'Error',
-                message: 'UserService.createUser: Database connection failed',
-                timestamp: expect.any(Date),
+                // Assert
+                expect(result.type).toBe('StringError');
+                expect(result.message).toContain('Connection test failed');
+                expect(result.message).toContain('LLMService.GetCompletionResponseForProvider');
+                expect(result.message).toContain('404 Not Found');
+                expect(result.message).toContain('. ');
             });
-        });
 
-        it('creates contextual error with additional info', () => {
-            // Arrange
-            const context = 'PaymentService.processPayment';
-            const error = 'Insufficient funds';
-            const additionalInfo = { userId: 123, amount: 1000 };
+            it('formats Error object with backend-style message', () => {
+                // Arrange
+                const error = new Error('Service failed: database connection: timeout exceeded');
 
-            // Act
-            const result = createContextualError(context, error, additionalInfo);
+                // Act
+                const result = parseError(error);
 
-            // Assert
-            expect(result).toMatchObject({
-                type: 'StringError',
-                message: 'PaymentService.processPayment ({"userId":123,"amount":1000}): Insufficient funds',
-                timestamp: expect.any(Date),
+                // Assert
+                expect(result.type).toBe('Error');
+                expect(result.message).toContain('Service failed');
+                expect(result.message).toContain('database connection');
+                expect(result.message).toContain('timeout exceeded');
+                expect(result.message).toContain('. ');
             });
-        });
 
-        it('creates contextual error with null error', () => {
-            // Arrange
-            const context = 'ConfigService.loadConfig';
-            const error = null;
+            it('formats object error with backend-style message', () => {
+                // Arrange
+                const error = { name: 'BackendError', message: 'Validation failed: field required: name cannot be empty' };
 
-            // Act
-            const result = createContextualError(context, error);
+                // Act
+                const result = parseError(error);
 
-            // Assert
-            expect(result).toMatchObject({
-                type: 'NullError',
-                message: 'ConfigService.loadConfig: Received null value',
-                timestamp: expect.any(Date),
+                // Assert
+                expect(result.type).toBe('BackendError');
+                expect(result.message).toContain('Validation failed');
+                expect(result.message).toContain('field required');
+                expect(result.message).toContain('name cannot be empty');
+                expect(result.message).toContain('. ');
             });
-        });
 
-        it('creates contextual error with undefined error', () => {
-            // Arrange
-            const context = 'ApiService.fetchData';
-            const error = undefined;
+            it('does not format single-level error messages', () => {
+                // Arrange
+                const error = 'Simple error message';
 
-            // Act
-            const result = createContextualError(context, error);
+                // Act
+                const result = parseError(error);
 
-            // Assert
-            expect(result).toMatchObject({
-                type: 'UndefinedError',
-                message: 'ApiService.fetchData: Received undefined value',
-                timestamp: expect.any(Date),
+                // Assert
+                expect(result.type).toBe('StringError');
+                expect(result.message).toBe('Simple error message');
+                expect(result.message).not.toContain('. ');
             });
-        });
-    });
 
-    describe('isNetworkError', () => {
-        it('returns true for Failed to fetch error', () => {
-            // Arrange
-            const error = new Error('Failed to fetch');
+            it('handles backend error with empty segments', () => {
+                // Arrange
+                const error = 'Error::multiple::colons::with::empty::segments';
 
-            // Act
-            const result = isNetworkError(error);
+                // Act
+                const result = parseError(error);
 
-            // Assert
-            expect(result).toBe(true);
-        });
+                // Assert
+                expect(result.type).toBe('StringError');
+                expect(result.message).toContain('Error');
+                expect(result.message).toContain('multiple');
+                expect(result.message).toContain('colons');
+                expect(result.message).toContain('with');
+                expect(result.message).toContain('empty');
+                expect(result.message).toContain('segments');
+                // Should not contain empty lines
+                expect(result.message).not.toMatch(/\n\n/);
+            });
 
-        it('returns true for Network request failed error', () => {
-            // Arrange
-            const error = 'Network request failed';
+            it('handles backend error with whitespace', () => {
+                // Arrange
+                const error = '  Error  :  multiple  :  parts  :  with  :  spaces  ';
 
-            // Act
-            const result = isNetworkError(error);
+                // Act
+                const result = parseError(error);
 
-            // Assert
-            expect(result).toBe(true);
-        });
+                // Assert
+                expect(result.type).toBe('StringError');
+                expect(result.message).toContain('Error');
+                expect(result.message).toContain('multiple');
+                expect(result.message).toContain('parts');
+                expect(result.message).toContain('with');
+                expect(result.message).toContain('spaces');
+                // Should be properly trimmed
+                expect(result.message).not.toMatch(/^\s/);
+                expect(result.message).not.toMatch(/\s$/);
+            });
 
-        it('returns true for net::ERR_CONNECTION error', () => {
-            // Arrange
-            const error = { message: 'net::ERR_CONNECTION_REFUSED' };
+            it('handles Error object with no message', () => {
+                // Arrange
+                const error = new Error('');
 
-            // Act
-            const result = isNetworkError(error);
+                // Act
+                const result = parseError(error);
 
-            // Assert
-            expect(result).toBe(true);
-        });
+                // Assert
+                expect(result.type).toBe('Error');
+                expect(result.message).toBe('No error message available');
+            });
 
-        it('returns true for Timeout error', () => {
-            // Arrange
-            const error = new Error('Timeout: Request took too long');
+            it('handles object with message property but no name', () => {
+                // Arrange
+                const error = { message: 'Backend error: service unavailable: retry later' };
 
-            // Act
-            const result = isNetworkError(error);
+                // Act
+                const result = parseError(error);
 
-            // Assert
-            expect(result).toBe(true);
-        });
-
-        it('returns true for ECONNABORTED error', () => {
-            // Arrange
-            const error = { message: 'ECONNABORTED: Connection aborted' };
-
-            // Act
-            const result = isNetworkError(error);
-
-            // Assert
-            expect(result).toBe(true);
-        });
-
-        it('returns true for ECONNREFUSED error', () => {
-            // Arrange
-            const error = 'ECONNREFUSED';
-
-            // Act
-            const result = isNetworkError(error);
-
-            // Assert
-            expect(result).toBe(true);
-        });
-
-        it('returns true for ENOTFOUND error', () => {
-            // Arrange
-            const error = { message: 'ENOTFOUND: DNS lookup failed' };
-
-            // Act
-            const result = isNetworkError(error);
-
-            // Assert
-            expect(result).toBe(true);
-        });
-
-        it('returns false for non-network error', () => {
-            // Arrange
-            const error = new Error('Invalid input data');
-
-            // Act
-            const result = isNetworkError(error);
-
-            // Assert
-            expect(result).toBe(false);
-        });
-
-        it('returns false for null error', () => {
-            // Arrange
-            const error = null;
-
-            // Act
-            const result = isNetworkError(error);
-
-            // Assert
-            expect(result).toBe(false);
-        });
-
-        it('returns false for undefined error', () => {
-            // Arrange
-            const error = undefined;
-
-            // Act
-            const result = isNetworkError(error);
-
-            // Assert
-            expect(result).toBe(false);
-        });
-
-        it('returns false for generic error', () => {
-            // Arrange
-            const error = 'Something went wrong';
-
-            // Act
-            const result = isNetworkError(error);
-
-            // Assert
-            expect(result).toBe(false);
+                // Assert
+                expect(result.type).toBe('ObjectError');
+                expect(result.message).toContain('Backend error');
+                expect(result.message).toContain('service unavailable');
+                expect(result.message).toContain('retry later');
+                expect(result.message).toContain('. ');
+            });
         });
     });
 });

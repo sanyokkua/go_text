@@ -5,6 +5,7 @@ import { useAppDispatch } from '../../../../../logic/store';
 import { enqueueNotification } from '../../../../../logic/store/notifications';
 import { resetSettingsToDefault } from '../../../../../logic/store/settings';
 import { setAppBusy } from '../../../../../logic/store/ui';
+import { parseError } from '../../../../../logic/utils/error_utils';
 import { SPACING } from '../../../../styles/constants';
 
 const logger = getLogger('FactoryResetTab');
@@ -24,9 +25,10 @@ const FactoryResetTab: React.FC = () => {
             await dispatch(resetSettingsToDefault()).unwrap();
             logger.logInfo('Factory reset completed successfully - all settings restored to factory defaults');
             dispatch(enqueueNotification({ message: 'All settings have been reset to factory defaults', severity: 'success' }));
-        } catch (error) {
-            logger.logError(`Factory reset failed: ${error}`);
-            dispatch(enqueueNotification({ message: `Failed to reset settings: ${error}`, severity: 'error' }));
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logError(`Factory reset failed: ${err.message}`);
+            dispatch(enqueueNotification({ message: `Failed to reset settings: ${err.message}`, severity: 'error' }));
         } finally {
             dispatch(setAppBusy(false));
             setConfirmationOpen(false);

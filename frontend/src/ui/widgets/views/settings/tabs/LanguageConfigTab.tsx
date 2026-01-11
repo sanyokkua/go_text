@@ -5,6 +5,7 @@ import { useAppDispatch } from '../../../../../logic/store';
 import { enqueueNotification } from '../../../../../logic/store/notifications';
 import { addLanguage, removeLanguage, setDefaultInputLanguage, setDefaultOutputLanguage } from '../../../../../logic/store/settings';
 import { setAppBusy } from '../../../../../logic/store/ui';
+import { parseError } from '../../../../../logic/utils/error_utils';
 import { SPACING } from '../../../../styles/constants';
 import LanguageList from './components/LanguageList';
 
@@ -35,9 +36,10 @@ const LanguageConfigTab: React.FC<LanguageConfigTabProps> = ({ settings }) => {
             } else {
                 logger.logWarning(`Language already exists: ${language}`);
             }
-        } catch (error) {
-            logger.logError(`Failed to add language ${language}: ${error}`);
-            dispatch(enqueueNotification({ message: `Failed to add language: ${error}`, severity: 'error' }));
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logError(`Failed to add language ${language}: ${err.message}`);
+            dispatch(enqueueNotification({ message: `Failed to add language: ${err.message}`, severity: 'error' }));
         } finally {
             dispatch(setAppBusy(false));
         }
@@ -55,9 +57,10 @@ const LanguageConfigTab: React.FC<LanguageConfigTabProps> = ({ settings }) => {
             } else {
                 logger.logWarning(`Cannot remove language that is set as default: ${language}`);
             }
-        } catch (error) {
-            logger.logError(`Failed to remove language ${language}: ${error}`);
-            dispatch(enqueueNotification({ message: `Failed to remove language: ${error}`, severity: 'error' }));
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logError(`Failed to remove language ${language}: ${err.message}`);
+            dispatch(enqueueNotification({ message: `Failed to remove language: ${err.message}`, severity: 'error' }));
         } finally {
             dispatch(setAppBusy(false));
         }
@@ -71,9 +74,10 @@ const LanguageConfigTab: React.FC<LanguageConfigTabProps> = ({ settings }) => {
             logger.logInfo(`Default input language updated to: ${language}`);
             setFormData((prev) => ({ ...prev, defaultInputLanguage: language }));
             dispatch(enqueueNotification({ message: 'Default input language updated successfully', severity: 'success' }));
-        } catch (error) {
-            logger.logError(`Failed to update default input language to ${language}: ${error}`);
-            dispatch(enqueueNotification({ message: `Failed to update default input language: ${error}`, severity: 'error' }));
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logError(`Failed to update default input language to ${language}: ${err.message}`);
+            dispatch(enqueueNotification({ message: `Failed to update default input language: ${err.message}`, severity: 'error' }));
         } finally {
             dispatch(setAppBusy(false));
         }
@@ -87,9 +91,10 @@ const LanguageConfigTab: React.FC<LanguageConfigTabProps> = ({ settings }) => {
             logger.logInfo(`Default output language updated to: ${language}`);
             setFormData((prev) => ({ ...prev, defaultOutputLanguage: language }));
             dispatch(enqueueNotification({ message: 'Default output language updated successfully', severity: 'success' }));
-        } catch (error) {
-            logger.logError(`Failed to update default output language to ${language}: ${error}`);
-            dispatch(enqueueNotification({ message: `Failed to update default output language: ${error}`, severity: 'error' }));
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logError(`Failed to update default output language to ${language}: ${err.message}`);
+            dispatch(enqueueNotification({ message: `Failed to update default output language: ${err.message}`, severity: 'error' }));
         } finally {
             dispatch(setAppBusy(false));
         }

@@ -1,6 +1,7 @@
 import { Box, Button, Paper, TextareaAutosize, Typography } from '@mui/material';
 import React from 'react';
 import { getLogger } from '../../../../../logic/adapter';
+import { parseError } from '../../../../../logic/utils/error_utils';
 
 const logger = getLogger('TextPanel');
 
@@ -69,8 +70,9 @@ const TextPanel: React.FC<TextPanelProps> = ({
                         }
 
                         logger.logDebug(`Scrolled to top successfully, scrollTop: ${textareaRef.current.scrollTop}`);
-                    } catch (error) {
-                        logger.logError(`Failed to scroll to top: ${error}`);
+                    } catch (error: unknown) {
+                        const err = parseError(error);
+                        logger.logError(`Failed to scroll to top: ${err.message}`);
                     }
                 }
             };

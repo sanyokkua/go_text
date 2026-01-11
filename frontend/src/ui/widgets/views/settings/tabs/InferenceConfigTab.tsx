@@ -5,6 +5,7 @@ import { useAppDispatch } from '../../../../../logic/store';
 import { enqueueNotification } from '../../../../../logic/store/notifications';
 import { updateInferenceBaseConfig } from '../../../../../logic/store/settings';
 import { setAppBusy } from '../../../../../logic/store/ui';
+import { parseError } from '../../../../../logic/utils/error_utils';
 import { SPACING } from '../../../../styles/constants';
 
 const logger = getLogger('InferenceConfigTab');
@@ -35,9 +36,10 @@ const InferenceConfigTab: React.FC<InferenceConfigTabProps> = ({ settings }) => 
             await dispatch(updateInferenceBaseConfig(formData)).unwrap();
             logger.logInfo('Inference settings updated successfully');
             dispatch(enqueueNotification({ message: 'Inference settings updated successfully', severity: 'success' }));
-        } catch (error) {
-            logger.logError(`Failed to update inference settings: ${error}`);
-            dispatch(enqueueNotification({ message: `Failed to update inference settings: ${error}`, severity: 'error' }));
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logError(`Failed to update inference settings: ${err.message}`);
+            dispatch(enqueueNotification({ message: `Failed to update inference settings: ${err.message}`, severity: 'error' }));
         } finally {
             dispatch(setAppBusy(false));
         }

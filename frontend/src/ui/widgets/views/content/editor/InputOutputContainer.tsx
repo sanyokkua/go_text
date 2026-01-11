@@ -4,6 +4,7 @@ import { ClipboardServiceAdapter, getLogger } from '../../../../../logic/adapter
 import { selectInputContent, selectIsAppBusy, selectOutputContent, useAppDispatch, useAppSelector } from '../../../../../logic/store';
 import { clearInput, clearOutput, setInputContent, setOutputContent, useOutputAsInput } from '../../../../../logic/store/editor';
 import { enqueueNotification } from '../../../../../logic/store/notifications';
+import { parseError } from '../../../../../logic/utils/error_utils';
 import TextPanel from './TextPanel';
 
 const logger = getLogger('InputOutputContainer');
@@ -59,8 +60,9 @@ const InputOutputContainer: React.FC = () => {
             } else {
                 dispatch(enqueueNotification({ message: 'Clipboard is empty', severity: 'info' }));
             }
-        } catch (error) {
-            logger.logError(`Failed to paste from clipboard: ${error}`);
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logError(`Failed to paste from clipboard: ${err.message}`);
             dispatch(enqueueNotification({ message: 'Failed to paste from clipboard', severity: 'error' }));
         }
     };

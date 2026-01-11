@@ -1,6 +1,7 @@
 import { Box, Button, Skeleton, Tab, Tabs, Typography } from '@mui/material';
 import React from 'react';
 import { getLogger } from '../../../../../logic/adapter';
+import { parseError } from '../../../../../logic/utils/error_utils';
 import {
     selectActiveActionsTab,
     selectAllSettings,
@@ -94,9 +95,10 @@ const ActionsPanel: React.FC = () => {
             await dispatch(processPrompt(request)).unwrap();
 
             logger.logInfo('Prompt processed successfully');
-        } catch (error) {
-            logger.logError(`Failed to process prompt: ${error}`);
-            dispatch(enqueueNotification({ message: `Failed to process prompt: ${error}`, severity: 'error' }));
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logError(`Failed to process prompt: ${err.message}`);
+            dispatch(enqueueNotification({ message: `Failed to process prompt: ${err.message}`, severity: 'error' }));
         } finally {
             // Always reset the busy state and current task
             dispatch(setAppBusy(false));
