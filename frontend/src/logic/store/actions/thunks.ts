@@ -6,32 +6,6 @@ import { AppDispatch } from '../index';
 
 const logger = getLogger('ActionsThunks');
 
-// Thunk for getting completion response for a specific provider
-export const getCompletionResponseForProvider = createAsyncThunk<
-    string,
-    { providerConfig: ProviderConfig; chatCompletionRequest: ChatCompletionRequest },
-    { rejectValue: string }
->(
-    'actions/getCompletionResponseForProvider',
-    async (
-        { providerConfig, chatCompletionRequest }: { providerConfig: ProviderConfig; chatCompletionRequest: ChatCompletionRequest },
-        { rejectWithValue },
-    ) => {
-        try {
-            logger.logInfo(
-                `Attempting to get completion response for provider: ${providerConfig.providerName}, model: ${chatCompletionRequest.model}`,
-            );
-            const result = await ActionHandlerAdapter.getCompletionResponseForProvider(providerConfig, chatCompletionRequest);
-            logger.logInfo('Successfully retrieved completion response for provider');
-            return result;
-        } catch (error: unknown) {
-            const err = parseError(error);
-            logger.logError(`Failed to get completion response for provider: ${err.message}`);
-            return rejectWithValue(err.message);
-        }
-    },
-);
-
 // Thunk for getting a models list
 export const getModelsList = createAsyncThunk<Array<string>, void, { rejectValue: string }>(
     'actions/getModelsList',

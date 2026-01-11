@@ -1,8 +1,7 @@
 import { Box, Typography } from '@mui/material';
 import React, { useState } from 'react';
-import { getLogger, ProviderConfig, Settings } from '../../../../../logic/adapter';
+import { ActionHandlerAdapter, getLogger, ProviderConfig, Settings } from '../../../../../logic/adapter';
 import { useAppDispatch } from '../../../../../logic/store';
-import { getCompletionResponseForProvider } from '../../../../../logic/store/actions';
 import { enqueueNotification } from '../../../../../logic/store/notifications';
 import {
     createProviderConfig,
@@ -141,7 +140,7 @@ const ProviderManagementTab: React.FC<ProviderManagementTabProps> = ({ settings,
 
             const chatCompletionRequest = { model: modelId, messages: [{ role: 'user', content: 'Hello' }], stream: false };
 
-            const response = await dispatch(getCompletionResponseForProvider({ providerConfig, chatCompletionRequest })).unwrap();
+            const response = await ActionHandlerAdapter.getCompletionResponseForProvider(providerConfig, chatCompletionRequest);
             logger.logInfo(`Connection test successful: ${response && JSON.stringify(response)}`);
 
             dispatch(enqueueNotification({ message: 'Connection test successful!', severity: 'success' }));
