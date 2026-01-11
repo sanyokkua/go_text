@@ -18,12 +18,23 @@ const config = {
         }]
     },
     
+    // Ignore Wails-generated files
+    transformIgnorePatterns: [
+        '/node_modules/',
+        '/wailsjs/'
+    ],
+    
     // Test match patterns
     testMatch: ['**/__tests__/**/*.test.(ts|tsx|js|jsx)', '**/?(*.)+(spec|test).(ts|tsx|js|jsx)'],
     
     // Module name mapper for ESM imports
     moduleNameMapper: {
-        '^(.{1,2}/.*)\\.js$': '$1'
+        '^(.{1,2}/.*)\\.js$': '$1',
+        // Mock Wails-generated files to avoid ES module issues
+        '^../../../wailsjs/go/actions/ActionHandler$': '<rootDir>/__mocks__/wailsActionHandler.js',
+        '^../../../wailsjs/go/models$': '<rootDir>/__mocks__/wailsModels.js',
+        '^../../../wailsjs/go/settings/SettingsHandler$': '<rootDir>/__mocks__/wailsSettingsHandler.js',
+        '^../../../wailsjs/runtime$': '<rootDir>/__mocks__/wailsRuntime.js'
     },
     
     // Enable ESM support
