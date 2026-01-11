@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAppSelector } from '../../../logic/store';
+import { selectCurrentView, useAppSelector } from '../../../logic/store';
 import FlexContainer from '../../components/FlexContainer';
 import MainContentWidget from './content/MainContentWidget';
 import { SettingsView } from './settings';
@@ -9,7 +9,7 @@ import { SettingsView } from './settings';
  * Contains either the main content or settings view
  */
 const MainContent: React.FC = () => {
-    const view = useAppSelector((state) => state.ui.view);
+    const view = useAppSelector(selectCurrentView);
     const showSettings = view === 'settings';
 
     return (

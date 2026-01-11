@@ -1,6 +1,6 @@
 import { Box, Divider, Skeleton } from '@mui/material';
 import React from 'react';
-import { useAppDispatch, useAppSelector } from '../../../../logic/store';
+import { selectActiveSettingsTab, selectAllSettings, selectSettingsMetadata, useAppDispatch, useAppSelector } from '../../../../logic/store';
 import { setActiveSettingsTab } from '../../../../logic/store/ui';
 import SettingsTabs from './SettingsTabs';
 import CurrentProviderTab from './tabs/CurrentProviderTab';
@@ -38,9 +38,9 @@ import ProviderManagementTab from './tabs/ProviderManagementTab';
  */
 const SettingsView: React.FC = () => {
     const dispatch = useAppDispatch();
-    const activeTab = useAppSelector((state) => state.ui.activeSettingsTab);
-    const settings = useAppSelector((state) => state.settings.allSettings);
-    const metadata = useAppSelector((state) => state.settings.metadata);
+    const activeTab = useAppSelector(selectActiveSettingsTab);
+    const settings = useAppSelector(selectAllSettings);
+    const metadata = useAppSelector(selectSettingsMetadata);
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
         dispatch(setActiveSettingsTab(newValue));

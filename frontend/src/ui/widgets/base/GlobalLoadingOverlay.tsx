@@ -1,6 +1,6 @@
 import { Box, CircularProgress, Typography } from '@mui/material';
 import React from 'react';
-import { useAppSelector } from '../../../logic/store';
+import { selectCurrentView, selectIsAppBusy, useAppSelector } from '../../../logic/store';
 import { UI_HEIGHTS } from '../../styles/constants';
 
 /**
@@ -8,7 +8,9 @@ import { UI_HEIGHTS } from '../../styles/constants';
  * This component should be placed at the top level of the app layout
  */
 const GlobalLoadingOverlay: React.FC = () => {
-    const isAppBusy = useAppSelector((state) => state.ui.isAppBusy);
+    const isAppBusy = useAppSelector(selectIsAppBusy);
+    const settings = useAppSelector(selectCurrentView);
+    const isSettings = settings == 'settings';
 
     if (!isAppBusy) {
         return null;
@@ -21,7 +23,7 @@ const GlobalLoadingOverlay: React.FC = () => {
                 zIndex: (theme) => theme.zIndex.modal + 1,
                 top: UI_HEIGHTS.APP_BAR,
                 right: 0,
-                bottom: UI_HEIGHTS.STATUS_BAR,
+                bottom: isSettings ? 0 : UI_HEIGHTS.STATUS_BAR,
                 left: 0,
                 backdropFilter: 'blur(4px)',
                 display: 'flex',

@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { getLogger } from '../../adapter';
-import { MainView, UIState } from './types';
+import { UIState } from './types';
 
 const logger = getLogger('UISlice');
 
@@ -15,10 +15,6 @@ const uiSlice = createSlice({
             const newView = state.view === 'main' ? 'settings' : 'main';
             logger.logInfo(`Toggling view to: ${newView}`);
             state.view = newView;
-        },
-        setView: (state, action: PayloadAction<MainView>) => {
-            logger.logInfo(`Setting view to: ${action.payload}`);
-            state.view = action.payload;
         },
         setActiveSettingsTab: (state, action: PayloadAction<number>) => {
             logger.logDebug(`Setting active settings tab to: ${action.payload}`);

@@ -1,6 +1,6 @@
 import { Alert, Snackbar } from '@mui/material';
 import React from 'react';
-import { useAppDispatch, useAppSelector } from '../../../logic/store';
+import { selectNotificationsQueue, useAppDispatch, useAppSelector } from '../../../logic/store';
 import { removeNotification } from '../../../logic/store/notifications';
 
 /**
@@ -9,7 +9,7 @@ import { removeNotification } from '../../../logic/store/notifications';
  */
 const NotificationContainer: React.FC = () => {
     const dispatch = useAppDispatch();
-    const notifications = useAppSelector((state) => state.notifications.queue);
+    const notifications = useAppSelector(selectNotificationsQueue);
 
     const handleClose = (id: string) => {
         dispatch(removeNotification(id));

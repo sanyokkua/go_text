@@ -1,7 +1,15 @@
 import { Box, Button, Skeleton, Tab, Tabs } from '@mui/material';
 import React from 'react';
 import { getLogger } from '../../../../../logic/adapter';
-import { useAppDispatch, useAppSelector } from '../../../../../logic/store';
+import {
+    selectActiveActionsTab,
+    selectAllSettings,
+    selectInputContent,
+    selectIsAppBusy,
+    selectPromptGroups,
+    useAppDispatch,
+    useAppSelector,
+} from '../../../../../logic/store';
 import { processPrompt } from '../../../../../logic/store/actions';
 import { enqueueNotification } from '../../../../../logic/store/notifications';
 import { setActiveActionsTab, setAppBusy, setCurrentTask } from '../../../../../logic/store/ui';
@@ -29,11 +37,11 @@ const logger = getLogger('ActionsPanel');
  */
 const ActionsPanel: React.FC = () => {
     const dispatch = useAppDispatch();
-    const promptGroups = useAppSelector((state) => state.actions.promptGroups);
-    const activeTab = useAppSelector((state) => state.ui.activeActionsTab);
-    const isAppBusy = useAppSelector((state) => state.ui.isAppBusy);
-    const inputContent = useAppSelector((state) => state.editor.inputContent);
-    const settings = useAppSelector((state) => state.settings.allSettings);
+    const promptGroups = useAppSelector(selectPromptGroups);
+    const activeTab = useAppSelector(selectActiveActionsTab);
+    const isAppBusy = useAppSelector(selectIsAppBusy);
+    const inputContent = useAppSelector(selectInputContent);
+    const settings = useAppSelector(selectAllSettings);
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
         const newTabName = tabNames[newValue];

@@ -1,7 +1,7 @@
 import { Box } from '@mui/material';
 import React from 'react';
 import { getLogger } from '../../../../../logic/adapter';
-import { useAppDispatch, useAppSelector } from '../../../../../logic/store';
+import { selectInputContent, selectIsAppBusy, selectOutputContent, useAppDispatch, useAppSelector } from '../../../../../logic/store';
 import { getClipboardText, setClipboardText } from '../../../../../logic/store/clipboard';
 import { clearInput, clearOutput, setInputContent, setOutputContent, useOutputAsInput } from '../../../../../logic/store/editor';
 import { enqueueNotification } from '../../../../../logic/store/notifications';
@@ -39,9 +39,9 @@ const panelContainerStyle = {
  */
 const InputOutputContainer: React.FC = () => {
     const dispatch = useAppDispatch();
-    const inputContent = useAppSelector((state) => state.editor.inputContent);
-    const outputContent = useAppSelector((state) => state.editor.outputContent);
-    const isAppBusy = useAppSelector((state) => state.ui.isAppBusy);
+    const inputContent = useAppSelector(selectInputContent);
+    const outputContent = useAppSelector(selectOutputContent);
+    const isAppBusy = useAppSelector(selectIsAppBusy);
 
     // Input panel button handlers
     const handleInputClear = () => {

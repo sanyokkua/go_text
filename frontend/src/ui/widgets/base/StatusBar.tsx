@@ -1,12 +1,12 @@
 import { Paper, Typography } from '@mui/material';
 import React from 'react';
-import { useAppSelector } from '../../../logic/store';
+import { selectCurrentProvider, selectCurrentTask, selectModelConfig, useAppSelector } from '../../../logic/store';
 
 const StatusBar: React.FC = () => {
     // Get values from Redux store
-    const provider = useAppSelector((state) => state.settings.allSettings?.currentProviderConfig.providerName) || 'N/A';
-    const model = useAppSelector((state) => state.settings.allSettings?.modelConfig.name) || 'N/A';
-    const task = useAppSelector((state) => state.ui.currentTask);
+    const provider = useAppSelector(selectCurrentProvider)?.providerName || 'N/A';
+    const model = useAppSelector(selectModelConfig)?.name || 'N/A';
+    const task = useAppSelector(selectCurrentTask);
 
     return (
         <Paper

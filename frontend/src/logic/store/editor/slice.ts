@@ -24,11 +24,6 @@ const editorSlice = createSlice({
             state.inputContent = state.outputContent;
             state.outputContent = '';
         },
-        clearAll: (state) => {
-            logger.logInfo('Clearing all editor content');
-            state.inputContent = '';
-            state.outputContent = '';
-        },
         clearInput: (state) => {
             logger.logDebug('Clearing input content');
             state.inputContent = '';

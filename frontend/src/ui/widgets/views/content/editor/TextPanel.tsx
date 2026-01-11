@@ -59,7 +59,7 @@ const TextPanel: React.FC<TextPanelProps> = ({
             const scrollToTopWithFallback = () => {
                 if (textareaRef.current) {
                     try {
-                        // First try direct scrollTop
+                        // First, try direct scrollTop
                         textareaRef.current.scrollTop = 0;
 
                         // If that doesn't work, try scrolling to top of parent container

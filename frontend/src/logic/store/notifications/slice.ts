@@ -20,10 +20,6 @@ const notificationsSlice = createSlice({
             logger.logDebug(`Removing notification with id: ${action.payload}`);
             state.queue = state.queue.filter((notification) => notification.id !== action.payload);
         },
-        clearQueue: (state) => {
-            logger.logInfo(`Clearing notification queue (${state.queue.length} notifications)`);
-            state.queue = [];
-        },
     },
     extraReducers: () => {
         // No async thunks for notifications - all updates are synchronous

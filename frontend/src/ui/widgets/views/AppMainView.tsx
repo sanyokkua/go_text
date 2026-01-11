@@ -1,7 +1,7 @@
 import { Box } from '@mui/material';
 import React, { useEffect } from 'react';
 import { getLogger } from '../../../logic/adapter';
-import { useAppDispatch, useAppSelector } from '../../../logic/store';
+import { selectCurrentView, useAppDispatch, useAppSelector } from '../../../logic/store';
 import { getPromptGroups } from '../../../logic/store/actions';
 import { initializeSettingsState } from '../../../logic/store/settings';
 import { setActiveActionsTab } from '../../../logic/store/ui';
@@ -28,7 +28,7 @@ const logger = getLogger('AppMainView');
  */
 const AppMainView: React.FC = () => {
     const dispatch = useAppDispatch();
-    const view = useAppSelector((state) => state.ui.view);
+    const view = useAppSelector(selectCurrentView);
     const showSettings = view === 'settings';
 
     // Initialize settings and prompt groups on mount

@@ -4,7 +4,7 @@ import Autocomplete from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
 import React, { useEffect, useState } from 'react';
 import { getLogger, ModelConfig, Settings } from '../../../../../logic/adapter';
-import { useAppDispatch, useAppSelector } from '../../../../../logic/store';
+import { selectAvailableModels, useAppDispatch, useAppSelector } from '../../../../../logic/store';
 import { getModelsList } from '../../../../../logic/store/actions';
 import { enqueueNotification } from '../../../../../logic/store/notifications';
 import { updateModelConfig } from '../../../../../logic/store/settings';
@@ -23,7 +23,7 @@ interface ModelConfigTabProps {
  */
 const ModelConfigTab: React.FC<ModelConfigTabProps> = ({ settings }) => {
     const dispatch = useAppDispatch();
-    const availableModels = useAppSelector((state) => state.actions.availableModels);
+    const availableModels = useAppSelector(selectAvailableModels);
     const [formData, setFormData] = useState<ModelConfig>({ ...settings.modelConfig });
 
     const fetchModels = async () => {

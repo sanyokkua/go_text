@@ -1,4 +1,3 @@
-import React, { ChangeEvent, ReactNode, useEffect, useState } from 'react';
 import {
     Box,
     Button,
@@ -13,6 +12,7 @@ import {
     TextField,
     Typography,
 } from '@mui/material';
+import React, { ChangeEvent, ReactNode, useEffect, useState } from 'react';
 import { getLogger, ProviderConfig } from '../../../../../../logic/adapter';
 import { SPACING } from '../../../../../styles/constants';
 import HeadersEditor from './HeadersEditor';

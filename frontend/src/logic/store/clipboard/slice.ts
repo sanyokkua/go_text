@@ -16,11 +16,6 @@ const clipboardSlice = createSlice({
         clearError: (state) => {
             state.error = null;
         },
-        resetClipboardState: (state) => {
-            state.loading = false;
-            state.lastActionSuccess = null;
-            state.error = null;
-        },
     },
     extraReducers: (builder) => {
         builder

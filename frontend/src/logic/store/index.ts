@@ -21,6 +21,13 @@ import notificationsReducer from './notifications/slice';
 import settingsReducer from './settings/slice';
 import uiReducer from './ui/slice';
 
+// Export selectors from all store modules
+export * from './actions/selectors';
+export * from './editor/selectors';
+export * from './notifications/selectors';
+export * from './settings/selectors';
+export * from './ui/selectors';
+
 // Configure the Redux store
 
 export const store = configureStore({

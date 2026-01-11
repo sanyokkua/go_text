@@ -3,14 +3,14 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import { AppBar as MuiAppBar, Box, IconButton, Toolbar, Typography } from '@mui/material';
 import React from 'react';
 import { getLogger } from '../../../logic/adapter';
-import { useAppDispatch, useAppSelector } from '../../../logic/store';
+import { selectCurrentView, useAppDispatch, useAppSelector } from '../../../logic/store';
 import { toggleSettingsView } from '../../../logic/store/ui';
 
 const logger = getLogger('AppBar');
 
 const AppBar: React.FC = () => {
     const dispatch = useAppDispatch();
-    const view = useAppSelector((state) => state.ui.view);
+    const view = useAppSelector(selectCurrentView);
     const showSettings = view === 'settings';
     const title = 'Text Processor';
 
