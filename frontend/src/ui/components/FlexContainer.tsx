@@ -3,44 +3,28 @@ import React from 'react';
 
 /**
  * FlexContainer Props
- * Extends BoxProps with additional flex-specific properties
+ * Extends BoxProps with flex layout properties
  */
 interface FlexContainerProps extends BoxProps {
-    /**
-     * Flex direction - defaults to 'column'
-     */
     direction?: 'row' | 'column';
-
-    /**
-     * Whether to handle overflow by hiding it - defaults to true
-     */
     overflowHidden?: boolean;
-
-    /**
-     * Whether the container should grow to fill available space - defaults to false
-     */
     grow?: boolean;
-
-    /**
-     * Gap between flex items
-     */
     gap?: number | string;
 }
 
 /**
  * FlexContainer - A reusable flex container component
- * Handles common flex layout patterns with proper overflow management
  *
- * Features:
- * - Automatic minHeight/minWidth handling to prevent flex overflow issues
- * - Configurable direction (row/column)
- * - Overflow management
- * - Flex grow behavior
- * - Gap spacing
- * - Full Box component props support
+ * Solves common flex layout issues with automatic overflow handling.
+ * Key feature: Automatic minHeight/minWidth to prevent flex overflow problems.
+ *
+ * Use Cases:
+ * - Scrollable containers within flex layouts
+ * - Nested flex layouts with proper overflow handling
+ * - Responsive layouts requiring flex grow behavior
  */
 const FlexContainer: React.FC<FlexContainerProps> = ({ direction = 'column', overflowHidden = true, grow = false, gap, children, sx, ...props }) => {
-    // Base styles
+    // Base styles with automatic overflow handling
     const baseStyles: SxProps<Theme> = {
         display: 'flex',
         flexDirection: direction,

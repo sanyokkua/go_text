@@ -19,7 +19,15 @@ interface LanguageListProps {
 
 /**
  * Language List Component
- * For managing translation languages
+ *
+ * Manages translation languages with add/remove functionality.
+ * Handles language selection for default input/output languages.
+ *
+ * Key Features:
+ * - Add new languages with validation
+ * - Remove languages with safety checks (can't remove defaults)
+ * - Visual indication of default languages
+ * - Chip-based UI for easy language management
  */
 const LanguageList: React.FC<LanguageListProps> = ({
     languages,

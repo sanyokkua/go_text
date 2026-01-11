@@ -1,14 +1,14 @@
 /**
- * Settings Redux Thunks
+ * Settings Async Operations
  *
- * Async action creators for settings management using Redux Toolkit's createAsyncThunk.
- * Each thunk handles a specific settings operation with comprehensive error handling and logging.
+ * Async thunks for settings management using Redux Toolkit.
+ * Handles complex async workflows with comprehensive error handling.
  *
- * Design Pattern:
- * - Standardized structure with try/catch blocks
- * - Error parsing for consistent error messages
- * - Logging for debugging and monitoring
- * - Reject with value for error state management
+ * Key Features:
+ * - Standardized error handling with parseError utility
+ * - Detailed logging for debugging and monitoring
+ * - Reject with value pattern for consistent error state management
+ * - Parallel initialization for efficient app startup
  */
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import {
@@ -429,8 +429,11 @@ export const updateProviderConfig = createAsyncThunk<ProviderConfig, ProviderCon
 /**
  * Initializes the complete settings state
  *
- * Orchestrates loading of all settings data in parallel for efficient app startup.
+ * Orchestrates parallel loading of all settings data for efficient app startup.
  * This is the primary initialization thunk called when the app starts.
+ *
+ * Performance Note: Uses Promise.all for parallel execution to minimize startup time.
+ * Error Handling: If any individual settings load fails, the entire initialization fails.
  *
  * @rejects Error message if any settings load operation fails
  */

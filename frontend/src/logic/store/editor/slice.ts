@@ -1,10 +1,21 @@
+/**
+ * Editor State Management
+ *
+ * Manages text editor content and provides content manipulation actions.
+ * Handles input/output text states and provides utility functions for content reuse.
+ *
+ * Features:
+ * - Maintains separate input and output text states
+ * - Provides content reuse functionality (useOutputAsInput)
+ * - Includes content clearing utilities
+ * - Synchronous operations only
+ */
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { getLogger } from '../../adapter';
 import { EditorState } from './types';
 
 const logger = getLogger('EditorSlice');
 
-// Initial state
 const initialState: EditorState = { inputContent: '', outputContent: '' };
 
 const editorSlice = createSlice({
@@ -33,9 +44,7 @@ const editorSlice = createSlice({
             state.outputContent = '';
         },
     },
-    extraReducers: () => {
-        // No async thunks for editor - all updates are synchronous
-    },
+    extraReducers: () => {},
 });
 
 export const { setInputContent, setOutputContent, useOutputAsInput, clearInput, clearOutput } = editorSlice.actions;

@@ -32,7 +32,16 @@ interface ProviderFormProps {
 
 /**
  * Provider Form Component
- * Form for creating/editing provider configurations
+ *
+ * Complex form for creating and editing provider configurations.
+ * Handles validation, authentication options, and provider testing.
+ *
+ * Key Features:
+ * - Comprehensive form validation with error handling
+ * - Support for multiple authentication methods
+ * - Custom headers and models configuration
+ * - Connection testing functionality
+ * - Environment variable integration for secure token management
  */
 const ProviderForm: React.FC<ProviderFormProps> = ({
     provider,
@@ -197,7 +206,6 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
             )}
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: SPACING.STANDARD }}>
-                {/* Basic Info */}
                 <Typography variant="subtitle1" gutterBottom>
                     Basic Configuration
                 </Typography>
@@ -234,7 +242,6 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                     </FormControl>
                 </Box>
 
-                {/* URLs */}
                 <Typography variant="subtitle1" gutterBottom>
                     API Endpoints
                 </Typography>
@@ -287,7 +294,6 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                     />
                 </Box>
 
-                {/* Authentication */}
                 <Divider sx={{ my: SPACING.STANDARD }} />
                 <Typography variant="subtitle1" gutterBottom>
                     Authentication
@@ -344,7 +350,6 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                     />
                 )}
 
-                {/* Custom Headers */}
                 <Divider sx={{ my: SPACING.STANDARD }} />
                 <Typography variant="subtitle1" gutterBottom>
                     Custom Headers
@@ -362,7 +367,6 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
 
                 {formData.useCustomHeaders && <HeadersEditor headers={formData.headers} onChange={handleHeadersChange} />}
 
-                {/* Custom Models */}
                 <Divider sx={{ my: SPACING.STANDARD }} />
                 <Typography variant="subtitle1" gutterBottom>
                     Custom Models
@@ -406,7 +410,6 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                     </FormControl>
                 )}
 
-                {/* Test Section */}
                 <Divider sx={{ my: SPACING.STANDARD }} />
                 <Typography variant="subtitle1" gutterBottom>
                     Test Connection
@@ -452,7 +455,6 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                     </Box>
                 )}
 
-                {/* Actions */}
                 <Divider sx={{ my: SPACING.STANDARD }} />
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: SPACING.STANDARD }}>
                     <Button variant="outlined" onClick={onCancel}>

@@ -1,10 +1,21 @@
+/**
+ * Notifications State Management
+ *
+ * Handles user notification queue with automatic ID generation.
+ * Provides a simple but effective notification system for user feedback.
+ *
+ * Features:
+ * - Auto-generates unique notification IDs
+ * - Maintains notification queue for display
+ * - Supports different severity levels (success, error, info, warning)
+ * - Synchronous operations only - no async thunks needed
+ */
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { getLogger } from '../../adapter';
 import { Notification, NotificationsState } from './types';
 
 const logger = getLogger('NotificationsSlice');
 
-// Initial state
 const initialState: NotificationsState = { queue: [] };
 
 const notificationsSlice = createSlice({
@@ -21,9 +32,7 @@ const notificationsSlice = createSlice({
             state.queue = state.queue.filter((notification) => notification.id !== action.payload);
         },
     },
-    extraReducers: () => {
-        // No async thunks for notifications - all updates are synchronous
-    },
+    extraReducers: () => {},
 });
 
 export const { enqueueNotification, removeNotification } = notificationsSlice.actions;

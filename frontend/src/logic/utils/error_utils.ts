@@ -26,11 +26,20 @@ export interface ParsedErrorResult {
 
 /**
  * Parses unknown errors into structured error information
- * Handles all JavaScript types and provides detailed error information
+ *
+ * Handles all JavaScript types with comprehensive error type discrimination.
+ * Provides consistent error structure regardless of input type.
+ *
+ * Error Handling Strategy:
+ * - Null/Undefined: Creates specific error types for missing values
+ * - Error objects: Extracts name and message properties
+ * - String errors: Wraps in StringError type
+ * - Object errors: Attempts JSON serialization with fallback
+ * - Primitive types: Converts to string with type-specific error types
  *
  * @param error - The unknown error to parse
- * @param includeOriginal - Whether to include the original error in the result (default: false)
- * @returns ParsedErrorResult with structured error information
+ * @param includeOriginal - Whether to include the original error (default: false)
+ * @returns ParsedErrorResult with consistent error structure
  */
 export function parseError(error: unknown, includeOriginal: boolean = false): ParsedErrorResult {
     const timestamp = new Date();
@@ -122,6 +131,15 @@ export function createContextualError(context: string, error: unknown, additiona
 
 /**
  * Checks if an error is a network error
+ *
+ * Uses pattern matching to identify common network-related error messages.
+ * Helps distinguish between application errors and connectivity issues.
+ *
+ * Detection Patterns:
+ * - Browser fetch API errors
+ * - Node.js network error codes
+ * - Common timeout and connection errors
+ * - DNS resolution failures
  *
  * @param error - The error to check
  * @returns true if the error appears to be network-related

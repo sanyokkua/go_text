@@ -18,7 +18,15 @@ interface CurrentProviderTabProps {
 
 /**
  * Current Provider Tab Component
- * Tab for viewing and editing the current provider configuration
+ *
+ * Displays and manages the current provider configuration.
+ * Handles provider editing, testing, and connection validation.
+ *
+ * Key Features:
+ * - Shows detailed provider configuration information
+ * - Provides provider editing functionality
+ * - Includes model testing and inference testing capabilities
+ * - Manages provider-specific state during editing
  */
 const CurrentProviderTab: React.FC<CurrentProviderTabProps> = ({ settings, metadata }) => {
     const dispatch = useAppDispatch();

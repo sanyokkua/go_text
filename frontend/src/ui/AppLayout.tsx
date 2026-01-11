@@ -8,7 +8,15 @@ import AppMainView from './widgets/views/AppMainView';
 
 /**
  * App Layout - Root layout component
- * Wraps the entire application with theme and provides the main structure
+ *
+ * Wraps the entire application with Material-UI theme and provides the main structure.
+ * Handles theme provider setup and global component organization.
+ *
+ * Structure:
+ * - ThemeProvider (wraps entire app)
+ * - AppMainView (main content)
+ * - GlobalLoadingOverlay (busy indicators)
+ * - NotificationContainer (user notifications)
  */
 const AppLayout: React.FC = () => {
     return (

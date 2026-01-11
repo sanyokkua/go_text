@@ -1,13 +1,15 @@
 /**
- * Settings Redux Slice
+ * Settings State Management
  *
- * Manages the settings state and defines reducers for handling settings-related actions.
- * Implements a comprehensive state management pattern with:
- * - Initial state definition
- * - Synchronous reducers (clearError)
- * - Asynchronous thunk handling via extraReducers
- * - Optimized state updates (full replacements vs. patch updates)
- * - Comprehensive error handling
+ * Handles application settings state with optimized update strategies:
+ * - Full state replacement for initialization and major changes
+ * - Partial updates for specific configuration changes
+ * - Comprehensive handling of provider configurations, language settings, and metadata
+ *
+ * Key Features:
+ * - Maintains null safety for optional settings data
+ * - Handles complex provider configuration updates with array filtering
+ * - Manages relationships between current and available provider configs
  */
 import { createSlice } from '@reduxjs/toolkit';
 import { getLogger } from '../../adapter';
@@ -30,7 +32,6 @@ import { SettingsState } from './types';
 
 const logger = getLogger('SettingsSlice');
 
-// Initial state
 const initialState: SettingsState = { allSettings: null, metadata: null };
 
 const settingsSlice = createSlice({
@@ -39,8 +40,7 @@ const settingsSlice = createSlice({
     reducers: {},
     extraReducers: (builder) => {
         builder
-
-            // Full State Replacement (Used for Init, Reset, Create)
+            // Full state replacement operations
             .addCase(getSettings.fulfilled, (state, action) => {
                 logger.logInfo('Settings loaded successfully');
                 state.allSettings = action.payload;
@@ -49,11 +49,11 @@ const settingsSlice = createSlice({
                 state.allSettings = action.payload;
             })
             .addCase(createProviderConfig.fulfilled, (state, action) => {
-                // Assuming backend returns full settings
+                // Full settings replacement after provider creation
                 state.allSettings = action.payload;
             })
 
-            // Patch Updates (Efficient Partial Updates)
+            // Partial updates for specific configurations
             .addCase(updateModelConfig.fulfilled, (state, action) => {
                 if (state.allSettings) {
                     state.allSettings.modelConfig = action.payload;
@@ -67,13 +67,13 @@ const settingsSlice = createSlice({
             .addCase(updateProviderConfig.fulfilled, (state, action) => {
                 const updatedProvider = action.payload;
 
-                // Step A: Update provider in availableProviderConfigs array
+                // Update the provider in available configs and check if it's the current one
                 if (state.allSettings) {
                     state.allSettings.availableProviderConfigs = state.allSettings.availableProviderConfigs.map((provider) =>
                         provider.providerId === updatedProvider.providerId ? updatedProvider : provider,
                     );
 
-                    // Step B: Check if updated provider is the current one
+                    // Maintain consistency between available and current provider configs
                     if (updatedProvider.providerId === state.allSettings.currentProviderConfig.providerId) {
                         state.allSettings.currentProviderConfig = updatedProvider;
                     }
@@ -103,7 +103,7 @@ const settingsSlice = createSlice({
                 }
             })
 
-            // Language Defaults
+            // Language default updates
             .addCase(setDefaultInputLanguage.fulfilled, (state, action) => {
                 const language = action.meta.arg;
                 if (state.allSettings) {
@@ -117,7 +117,7 @@ const settingsSlice = createSlice({
                 }
             })
 
-            // Metadata
+            // Metadata loading
             .addCase(getAppSettingsMetadata.fulfilled, (state, action) => {
                 state.metadata = action.payload;
             });

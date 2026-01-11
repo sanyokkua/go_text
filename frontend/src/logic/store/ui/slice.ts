@@ -1,10 +1,16 @@
+/**
+ * UI State Management
+ *
+ * Manages user interface state including view navigation, tab selection,
+ * and global busy indicators. This slice handles synchronous UI state
+ * transitions that don't require async operations.
+ */
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { getLogger } from '../../adapter';
 import { UIState } from './types';
 
 const logger = getLogger('UISlice');
 
-// Initial state
 const initialState: UIState = { view: 'main', activeSettingsTab: 0, activeActionsTab: '', isAppBusy: false, currentTask: 'N/A' };
 
 const uiSlice = createSlice({
@@ -33,9 +39,7 @@ const uiSlice = createSlice({
             state.currentTask = action.payload;
         },
     },
-    extraReducers: () => {
-        // No async thunks for UI - all updates are synchronous
-    },
+    extraReducers: () => {},
 });
 
 export const { toggleSettingsView, setActiveSettingsTab, setActiveActionsTab, setAppBusy, setCurrentTask } = uiSlice.actions;

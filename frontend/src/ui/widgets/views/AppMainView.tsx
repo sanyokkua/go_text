@@ -15,16 +15,22 @@ const logger = getLogger('AppMainView');
 
 /**
  * App Main View - Root component that organizes the main layout
+ *
+ * Manages the core application structure and initialization.
+ * Handles the complex layout with fixed and flexible height components.
+ *
  * Structure:
- * - AppBar (top)
- * - MainContent (middle) - shows either the main content or settings
- * - StatusBar (bottom)
+ * - AppBar (top, fixed height)
+ * - MainContent (middle, flexible height)
+ * - StatusBar (bottom, fixed height, hidden in settings)
  *
  * Key Responsibilities:
- * - Application initialization (settings, prompt groups)
- * - Layout management with fixed and flexible height components
- * - Conditional rendering of status bar (hidden in settings view)
- * - State management for active actions tab
+ * - Parallel initialization of settings and prompt groups on mount
+ * - Layout management with proper height constraints
+ * - Conditional status bar rendering
+ * - Active actions tab state management
+ *
+ * Performance: Uses Promise.all for parallel initialization to minimize startup time.
  */
 const AppMainView: React.FC = () => {
     const dispatch = useAppDispatch();
