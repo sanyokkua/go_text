@@ -1,5 +1,4 @@
 import {
-    GetCompletionResponse,
     GetCompletionResponseForProvider,
     GetModelsList,
     GetModelsListForProvider,
@@ -17,7 +16,6 @@ import {
     GetInferenceBaseConfig,
     GetLanguageConfig,
     GetModelConfig,
-    GetProviderConfig,
     GetSettings,
     RemoveLanguage,
     ResetSettingsToDefault,
@@ -28,25 +26,9 @@ import {
     UpdateModelConfig,
     UpdateProviderConfig,
 } from '../../../wailsjs/go/settings/SettingsHandler';
-import {
-    ClipboardGetText,
-    ClipboardSetText,
-    EventsEmit,
-    EventsOff,
-    EventsOffAll,
-    EventsOn,
-    EventsOnce,
-    EventsOnMultiple,
-    LogDebug,
-    LogError,
-    LogFatal,
-    LogInfo,
-    LogPrint,
-    LogTrace,
-    LogWarning,
-} from '../../../wailsjs/runtime';
+import { ClipboardGetText, ClipboardSetText, LogDebug, LogError, LogFatal, LogInfo, LogPrint, LogTrace, LogWarning } from '../../../wailsjs/runtime';
 import { parseError } from '../utils/error_utils';
-import { IActionHandler, IClipboardService, IEventsService, ILoggerService, ISettingsHandler } from './interfaces';
+import { IActionHandler, IClipboardService, ILoggerService, ISettingsHandler } from './interfaces';
 import {
     AppSettingsMetadata,
     ChatCompletionRequest,
@@ -157,27 +139,6 @@ export class LoggerService implements ILoggerService {
  */
 export class ActionHandler implements IActionHandler {
     constructor(private readonly logger: ILoggerService) {}
-
-    /**
-     * Gets completion response from the current provider
-     *
-     * @param chatCompletionRequest - Complete request with a model, messages, and parameters
-     * @returns Generated completion text
-     * @throws Rejects with original error if operation fails
-     */
-    async getCompletionResponse(chatCompletionRequest: ChatCompletionRequest): Promise<string> {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated GetCompletionResponse with arguments: ${JSON.stringify(chatCompletionRequest)}`);
-            const wailsChatCompletionRequest = llms.ChatCompletionRequest.createFrom(chatCompletionRequest);
-            const result = await GetCompletionResponse(wailsChatCompletionRequest);
-            this.logger.logInfo(`Wails generated GetCompletionResponse completed successfully`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated GetCompletionResponse failed: ${err.message}`);
-            return Promise.reject(error);
-        }
-    }
 
     /**
      * Gets completion response from a specific provider
@@ -473,26 +434,6 @@ export class SettingsHandler implements ISettingsHandler {
     }
 
     /**
-     * Retrieves a specific provider configuration by ID
-     *
-     * @param providerId - ID of provider to retrieve
-     * @returns Requested provider configuration
-     * @throws Rejects with original error if operation fails
-     */
-    async getProviderConfig(providerId: string): Promise<ProviderConfig> {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated GetProviderConfig with providerId: ${providerId}`);
-            const result = await GetProviderConfig(providerId);
-            this.logger.logInfo(`Wails generated GetProviderConfig completed successfully for provider: ${result.providerName}`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated GetProviderConfig failed: ${err.message}`);
-            return Promise.reject(error);
-        }
-    }
-
-    /**
      * Retrieves complete application settings
      *
      * @returns Full settings object with all configurations
@@ -669,145 +610,6 @@ export class SettingsHandler implements ISettingsHandler {
         }
     }
 }
-/**
- * Events Service Implementation
- *
- * Concrete implementation of IEventsService that provides a pub/sub pattern for cross-component communication.
- * Wraps Wails-generated event system with error handling and logging.
- *
- * Key Features:
- * - Event emission with data payloads
- * - Single and multiple event listeners
- * - One-time event listeners
- * - Cleanup methods for event removal
- * - Automatic fallback for error cases
- */
-export class EventsService implements IEventsService {
-    constructor(private readonly logger: ILoggerService) {}
-
-    /**
-     * Emits an event with optional data payload
-     *
-     * @param eventName - Name of the event to emit
-     * @param data - Optional data payload to send with the event
-     */
-    eventsEmit(eventName: string, ...data: unknown[]): void {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated EventsEmit with event: ${eventName}`);
-            EventsEmit(eventName, ...data);
-            this.logger.logInfo(`Wails generated EventsEmit completed successfully`);
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated EventsEmit failed: ${err.message}`);
-        }
-    }
-
-    /**
-     * Removes event listeners for specific events
-     *
-     * @param eventName - Name of the event to remove listeners from
-     * @param additionalEventNames - Optional additional event names to remove
-     */
-    eventsOff(eventName: string, ...additionalEventNames: string[]): void {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated EventsOff with event: ${eventName}`);
-            EventsOff(eventName, ...additionalEventNames);
-            this.logger.logInfo(`Wails generated EventsOff completed successfully`);
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated EventsOff failed: ${err.message}`);
-        }
-    }
-
-    /**
-     * Removes all event listeners
-     *
-     * Clears all registered event listeners across all event types.
-     */
-    eventsOffAll(): void {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated EventsOffAll`);
-            EventsOffAll();
-            this.logger.logInfo(`Wails generated EventsOffAll completed successfully`);
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated EventsOffAll failed: ${err.message}`);
-        }
-    }
-
-    /**
-     * Registers a persistent event listener
-     *
-     * @param eventName - Name of the event to listen for
-     * @param callback - Callback function to execute when event is emitted
-     * @returns Cleanup function to remove the listener
-     */
-    eventsOn(eventName: string, callback: (...data: unknown[]) => void): () => void {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated EventsOn with event: ${eventName}`);
-            const result = EventsOn(eventName, callback);
-            this.logger.logInfo(`Wails generated EventsOn completed successfully`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated EventsOn failed: ${err.message}`);
-            return () => {};
-        }
-    }
-
-    /**
-     * Registers an event listener with limited executions
-     *
-     * @param eventName - Name of the event to listen for
-     * @param callback - Callback function to execute when event is emitted
-     * @param maxCallbacks - Maximum number of times the callback should execute
-     * @returns Cleanup function to remove the listener
-     */
-    eventsOnMultiple(eventName: string, callback: (...data: unknown[]) => void, maxCallbacks: number): () => void {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated EventsOnMultiple with event: ${eventName}, maxCallbacks: ${maxCallbacks}`);
-            const result = EventsOnMultiple(eventName, callback, maxCallbacks);
-            this.logger.logInfo(`Wails generated EventsOnMultiple completed successfully`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated EventsOnMultiple failed: ${err.message}`);
-            return () => {};
-        }
-    }
-
-    /**
-     * Registers a one-time event listener
-     *
-     * @param eventName - Name of the event to listen for
-     * @param callback - Callback function to execute when event is emitted
-     * @returns Cleanup function to remove the listener
-     */
-    eventsOnce(eventName: string, callback: (...data: unknown[]) => void): () => void {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated EventsOnce with event: ${eventName}`);
-            const result = EventsOnce(eventName, callback);
-            this.logger.logInfo(`Wails generated EventsOnce completed successfully`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated EventsOnce failed: ${err.message}`);
-            return () => {};
-        }
-    }
-}
-/**
- * Clipboard Service Implementation
- *
- * Concrete implementation of IClipboardService that provides system clipboard access.
- * Abstracts platform-specific clipboard operations with error handling and logging.
- *
- * Key Features:
- * - Async operations for non-blocking UI
- * - Error handling for permission issues
- * - Success/failure reporting for write operations
- * - Logging for debugging clipboard operations
- */
 export class ClipboardService implements IClipboardService {
     constructor(private readonly logger: ILoggerService) {}
 

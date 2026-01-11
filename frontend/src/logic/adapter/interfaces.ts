@@ -39,7 +39,6 @@ export interface ILoggerService {
  * and prompt processing. Acts as the bridge between frontend UI and backend LLM services.
  */
 export interface IActionHandler {
-    getCompletionResponse(chatCompletionRequest: ChatCompletionRequest): Promise<string>;
     getCompletionResponseForProvider(providerConfig: ProviderConfig, arg2: ChatCompletionRequest): Promise<string>;
     getModelsList(): Promise<Array<string>>;
     getModelsListForProvider(providerConfig: ProviderConfig): Promise<Array<string>>;
@@ -50,7 +49,7 @@ export interface IActionHandler {
 /**
  * Settings handler interface for application configuration management
  *
- * Provides comprehensive CRUD operations for all application settings including:
+ * Provides comprehensive CRUD operations for all application settings including
  * - Provider configurations (LLM service endpoints and authentication)
  * - Model configurations (temperature, model selection)
  * - Language configurations (supported languages, defaults)
@@ -68,7 +67,6 @@ export interface ISettingsHandler {
     getInferenceBaseConfig(): Promise<InferenceBaseConfig>;
     getLanguageConfig(): Promise<LanguageConfig>;
     getModelConfig(): Promise<ModelConfig>;
-    getProviderConfig(providerId: string): Promise<ProviderConfig>;
     getSettings(): Promise<Settings>;
     removeLanguage(language: string): Promise<Array<string>>;
     resetSettingsToDefault(): Promise<Settings>;
@@ -78,21 +76,6 @@ export interface ISettingsHandler {
     updateInferenceBaseConfig(inferenceBaseConfig: InferenceBaseConfig): Promise<InferenceBaseConfig>;
     updateModelConfig(modelConfig: ModelConfig): Promise<ModelConfig>;
     updateProviderConfig(providerConfig: ProviderConfig): Promise<ProviderConfig>;
-}
-
-/**
- * Event service interface for cross-component communication
- *
- * Provides pub/sub pattern for decoupled component communication.
- * Supports single, multiple, and one-time event listeners with cleanup methods.
- */
-export interface IEventsService {
-    eventsEmit(eventName: string, ...data: unknown[]): void;
-    eventsOn(eventName: string, callback: (...data: unknown[]) => void): () => void;
-    eventsOnMultiple(eventName: string, callback: (...data: unknown[]) => void, maxCallbacks: number): () => void;
-    eventsOnce(eventName: string, callback: (...data: unknown[]) => void): () => void;
-    eventsOff(eventName: string, ...additionalEventNames: string[]): void;
-    eventsOffAll(): void;
 }
 
 /**

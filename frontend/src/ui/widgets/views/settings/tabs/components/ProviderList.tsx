@@ -16,7 +16,7 @@ interface ProviderListProps {
 
 /**
  * Provider List Component
- * Displays list of available providers with actions
+ * Displays a list of available providers with actions
  */
 const ProviderList: React.FC<ProviderListProps> = ({ providers, currentProviderId, onEdit, onDelete, onSetAsCurrent, onCreateNew }) => {
     // Create logging wrappers for action handlers
