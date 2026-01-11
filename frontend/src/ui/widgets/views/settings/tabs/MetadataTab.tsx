@@ -1,9 +1,8 @@
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { Box, IconButton, Tooltip, Typography } from '@mui/material';
 import React from 'react';
-import { getLogger } from '../../../../../logic/adapter';
+import { ClipboardServiceAdapter, getLogger } from '../../../../../logic/adapter';
 import { useAppDispatch } from '../../../../../logic/store';
-import { setClipboardText } from '../../../../../logic/store/clipboard';
 import { enqueueNotification } from '../../../../../logic/store/notifications';
 import { SPACING } from '../../../../styles/constants';
 
@@ -52,7 +51,7 @@ const MetadataTab: React.FC<MetadataTabProps> = ({ metadata }) => {
     const handleCopy = async (text: string) => {
         try {
             logger.logDebug(`Attempting to copy path to clipboard: ${text}`);
-            const success = await dispatch(setClipboardText(text)).unwrap();
+            const success = await ClipboardServiceAdapter.setText(text);
             if (success) {
                 logger.logInfo('Path copied to clipboard successfully');
                 dispatch(enqueueNotification({ message: 'Path copied to clipboard', severity: 'success' }));

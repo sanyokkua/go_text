@@ -1,8 +1,7 @@
 import { Box } from '@mui/material';
 import React from 'react';
-import { getLogger } from '../../../../../logic/adapter';
+import { ClipboardServiceAdapter, getLogger } from '../../../../../logic/adapter';
 import { selectInputContent, selectIsAppBusy, selectOutputContent, useAppDispatch, useAppSelector } from '../../../../../logic/store';
-import { getClipboardText, setClipboardText } from '../../../../../logic/store/clipboard';
 import { clearInput, clearOutput, setInputContent, setOutputContent, useOutputAsInput } from '../../../../../logic/store/editor';
 import { enqueueNotification } from '../../../../../logic/store/notifications';
 import TextPanel from './TextPanel';
@@ -52,7 +51,7 @@ const InputOutputContainer: React.FC = () => {
     const handleInputPaste = async () => {
         try {
             logger.logInfo('Attempting to paste from clipboard');
-            const clipboardText = await dispatch(getClipboardText()).unwrap();
+            const clipboardText = await ClipboardServiceAdapter.getText();
 
             if (clipboardText) {
                 dispatch(setInputContent(clipboardText));
@@ -80,7 +79,7 @@ const InputOutputContainer: React.FC = () => {
             }
 
             logger.logInfo('Attempting to copy to clipboard');
-            const success = await dispatch(setClipboardText(outputContent)).unwrap();
+            const success = await ClipboardServiceAdapter.setText(outputContent);
 
             if (success) {
                 dispatch(enqueueNotification({ message: 'Copied to clipboard', severity: 'success' }));
