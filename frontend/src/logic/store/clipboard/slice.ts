@@ -62,5 +62,4 @@ const clipboardSlice = createSlice({
     },
 });
 
-export const { clearError, resetClipboardState } = clipboardSlice.actions;
 export default clipboardSlice.reducer;

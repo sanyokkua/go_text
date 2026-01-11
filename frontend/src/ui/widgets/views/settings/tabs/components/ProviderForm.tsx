@@ -61,14 +61,18 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
         customModels: [],
     });
 
-    const [selectedModel, setSelectedModel] = useState<string>('');
-
-    // Initialize form with provider data if editing
+    // Initialize a form with provider data if editing
     useEffect(() => {
         if (provider) {
-            setFormData({ ...provider });
+            setFormData({
+                ...provider,
+                // Ensure customModels is always an array to prevent rendering errors
+                customModels: provider.customModels || [],
+            });
         }
     }, [provider]);
+
+    const [selectedModel, setSelectedModel] = useState<string>('');
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -150,12 +154,15 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
         }
 
         logger.logInfo(`Submitting provider: ${formData.providerName}`);
-        // Generate new ID if creating new provider
-        if (!formData.providerId) {
-            formData.providerId = `prov-${Date.now()}`;
-            logger.logDebug(`Generated new provider ID: ${formData.providerId}`);
+
+        if (!provider) {
+            // If no provider prop was passed (new provider)
+            // For new providers, send empty providerId so the backend generates proper UUID
+            onSave({ ...formData, providerId: '' });
+        } else {
+            // For existing providers, keep the original ID
+            onSave(formData);
         }
-        onSave(formData);
     };
 
     const handleTestModels = () => {
@@ -177,9 +184,31 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
             <Typography variant="h6" gutterBottom>
                 {provider ? 'Edit Provider' : 'Create New Provider'}
             </Typography>
+            {!provider && (
+                <Box sx={{ mb: SPACING.STANDARD, p: SPACING.SMALL, backgroundColor: 'background.paper', borderRadius: '4px' }}>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                        <strong>Provider Configuration Guide:</strong> For detailed information on how provider settings work, please refer to:
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                        • Documentation: <code>docs/architecture/BackendSettingsHandler.md</code>
+                        <br />• Backend Code: <code>internal/settings</code> and related files
+                    </Typography>
+                </Box>
+            )}
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: SPACING.STANDARD }}>
                 {/* Basic Info */}
+                <Typography variant="subtitle1" gutterBottom>
+                    Basic Configuration
+                </Typography>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                    <strong>Provider Name:</strong> A unique display name for this provider configuration (e.g., &#34;My LM Studio&#34;, &#34;Ollama
+                    Local&#34;). This name is used throughout the application to identify this provider.
+                    <br />
+                    <strong>Provider Type:</strong> Select the type of provider. &#34;Ollama&#34; should only be used for Ollama servers as they have
+                    a different API structure. &#34;OpenAI Compatible&#34; works with most other providers that follow OpenAI&#39;s API format.
+                </Typography>
+
                 <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: SPACING.STANDARD }}>
                     <TextField
                         fullWidth
@@ -206,6 +235,20 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                 </Box>
 
                 {/* URLs */}
+                <Typography variant="subtitle1" gutterBottom>
+                    API Endpoints
+                </Typography>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                    <strong>Base URL:</strong> The main address of your provider API. Must start with http:// or https://. Can be a local address
+                    (e.g., http://localhost:11434) or include custom ports.
+                    <br />
+                    <strong>Models Endpoint:</strong> The API path used to retrieve available models (e.g., &#34;models&#34; or &#34;v1/models&#34;).
+                    If empty, model fetching will be disabled.
+                    <br />
+                    <strong>Completion Endpoint:</strong> The API path for text generation/inference (e.g., &#34;chat/completions&#34; or
+                    &#34;v1/chat/completions&#34;). This is required for AI functionality.
+                </Typography>
+
                 <TextField
                     fullWidth
                     label="Base URL"
@@ -248,6 +291,17 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                 <Divider sx={{ my: SPACING.STANDARD }} />
                 <Typography variant="subtitle1" gutterBottom>
                     Authentication
+                </Typography>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                    <strong>Important Security Note:</strong> If you enter an auth token directly, it will be stored in the configuration file as
+                    plain text. For better security, use the &#34;Use Auth Token from Environment Variable&#34; option.
+                    <br />
+                    <strong>Auth Type:</strong> Select the authentication method required by your provider (e.g., Bearer, API Key).
+                    <br />
+                    <strong>Auth Token:</strong> The secret token/key for authentication. This will be sent in the Authorization header.
+                    <br />
+                    <strong>Environment Variable:</strong> If enabled, the app will read the token from the specified environment variable name
+                    instead of storing it in the config.
                 </Typography>
 
                 <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: SPACING.STANDARD }}>
@@ -292,6 +346,15 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
 
                 {/* Custom Headers */}
                 <Divider sx={{ my: SPACING.STANDARD }} />
+                <Typography variant="subtitle1" gutterBottom>
+                    Custom Headers
+                </Typography>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                    <strong>Custom Headers:</strong> Enable this option to add custom HTTP headers to all requests. Custom headers will override any
+                    automatically generated headers (like Authorization). Use this for providers that require specific header formats or additional
+                    metadata.
+                </Typography>
+
                 <FormControlLabel
                     control={<Checkbox name="useCustomHeaders" checked={formData.useCustomHeaders} onChange={handleCheckboxChange} />}
                     label="Use Custom Headers"
@@ -301,6 +364,15 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
 
                 {/* Custom Models */}
                 <Divider sx={{ my: SPACING.STANDARD }} />
+                <Typography variant="subtitle1" gutterBottom>
+                    Custom Models
+                </Typography>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                    <strong>Custom Models:</strong> Enable this option to manually specify which models are available instead of fetching them from
+                    the provider&#39;s models endpoint. Enter one model name per line. When enabled, the app will always use this list and skip the
+                    models endpoint API call.
+                </Typography>
+
                 <FormControlLabel
                     control={<Checkbox name="useCustomModels" checked={formData.useCustomModels} onChange={handleCheckboxChange} />}
                     label="Use Custom Models"
@@ -313,8 +385,22 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                             fullWidth
                             multiline
                             rows={3}
-                            value={formData.customModels.join('\n')}
-                            onChange={(e) => handleCustomModelsChange(e.target.value.split('\n').filter(Boolean))}
+                            value={(formData.customModels || []).join('\n')}
+                            onChange={(e) => {
+                                // For better UX, don't filter during typing - preserve all lines including empty ones
+                                const rawLines = e.target.value.split('\n');
+                                // Keep all lines but trim whitespace
+                                const models = rawLines.map((line) => line.trim());
+                                handleCustomModelsChange(models);
+                            }}
+                            onBlur={(e) => {
+                                // When a field loses focus, clean up empty lines
+                                const rawLines = e.target.value.split('\n');
+                                const cleanedModels = rawLines.filter((line) => line.trim() !== '').map((line) => line.trim());
+                                if (JSON.stringify(cleanedModels) !== JSON.stringify(formData.customModels)) {
+                                    handleCustomModelsChange(cleanedModels);
+                                }
+                            }}
                             placeholder="Enter model names, one per line"
                         />
                     </FormControl>

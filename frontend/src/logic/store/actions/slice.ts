@@ -97,5 +97,4 @@ const actionsSlice = createSlice({
     },
 });
 
-export const { clearError } = actionsSlice.actions;
 export default actionsSlice.reducer;

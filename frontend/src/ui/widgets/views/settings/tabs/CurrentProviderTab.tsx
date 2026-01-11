@@ -2,10 +2,11 @@ import { Box, Button, Typography } from '@mui/material';
 import React from 'react';
 import { getLogger, ProviderConfig, Settings } from '../../../../../logic/adapter';
 import { useAppDispatch } from '../../../../../logic/store';
-import { getCompletionResponseForProvider, getModelsListForProvider } from '../../../../../logic/store/actions';
+import { getCompletionResponseForProvider } from '../../../../../logic/store/actions';
 import { enqueueNotification } from '../../../../../logic/store/notifications';
-import { getSettings, setAsCurrentProviderConfig, updateProviderConfig } from '../../../../../logic/store/settings';
+import { getSettings, updateProviderConfig } from '../../../../../logic/store/settings';
 import { setAppBusy } from '../../../../../logic/store/ui';
+import { testProviderModels } from '../../../../../logic/utils/provider_utils';
 import { SPACING } from '../../../../styles/constants';
 import ProviderForm from './components/ProviderForm';
 
@@ -61,41 +62,8 @@ const CurrentProviderTab: React.FC<CurrentProviderTabProps> = ({ settings, metad
         }
     };
 
-    const handleSetAsCurrent = async (providerId: string) => {
-        try {
-            logger.logDebug(`Setting provider as current: ${providerId}`);
-            dispatch(setAppBusy(true));
-            await dispatch(setAsCurrentProviderConfig(providerId)).unwrap();
-
-            // Refresh settings
-            logger.logDebug('Refreshing settings after setting current provider');
-            await dispatch(getSettings()).unwrap();
-
-            logger.logInfo('Current provider updated successfully');
-            dispatch(enqueueNotification({ message: 'Current provider updated successfully', severity: 'success' }));
-        } catch (error) {
-            logger.logError(`Failed to set current provider: ${error}`);
-            dispatch(enqueueNotification({ message: `Failed to set current provider: ${error}`, severity: 'error' }));
-        } finally {
-            dispatch(setAppBusy(false));
-        }
-    };
-
     const handleTestModels = async (providerConfig: ProviderConfig) => {
-        try {
-            logger.logDebug(`Testing models for provider: ${providerConfig.providerName}`);
-            dispatch(setAppBusy(true));
-            const models = await dispatch(getModelsListForProvider(providerConfig)).unwrap();
-            logger.logInfo(`Found ${models.length} models for provider: ${providerConfig.providerName}`);
-            setTestResults({ models, connectionSuccess: true });
-            dispatch(enqueueNotification({ message: `Found ${models.length} models for this provider`, severity: 'success' }));
-        } catch (error) {
-            logger.logError(`Failed to test models for provider ${providerConfig.providerName}: ${error}`);
-            dispatch(enqueueNotification({ message: `Failed to test models: ${error}`, severity: 'error' }));
-            setTestResults({ models: [], connectionSuccess: false });
-        } finally {
-            dispatch(setAppBusy(false));
-        }
+        await testProviderModels(dispatch, providerConfig, setTestResults);
     };
 
     const handleTestInference = async (providerConfig: ProviderConfig, modelId: string) => {
@@ -106,7 +74,7 @@ const CurrentProviderTab: React.FC<CurrentProviderTabProps> = ({ settings, metad
             const chatCompletionRequest = { model: modelId, messages: [{ role: 'user', content: 'Hello' }], stream: false };
 
             const response = await dispatch(getCompletionResponseForProvider({ providerConfig, chatCompletionRequest })).unwrap();
-            logger.logInfo('Connection test successful');
+            logger.logInfo(`Connection test successful: ${response && JSON.stringify(response)}`);
 
             dispatch(enqueueNotification({ message: 'Connection test successful!', severity: 'success' }));
         } catch (error) {

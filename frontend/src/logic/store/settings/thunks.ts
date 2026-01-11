@@ -229,29 +229,6 @@ export const getModelConfig = createAsyncThunk<ModelConfig, void, { rejectValue:
 );
 
 /**
- * Retrieves a specific provider configuration by ID
- *
- * @param providerId - ID of provider to retrieve
- * @returns Requested provider configuration
- * @rejects Error message if operation fails
- */
-export const getProviderConfig = createAsyncThunk<ProviderConfig, string, { rejectValue: string }>(
-    'settings/getProviderConfig',
-    async (providerId: string, { rejectWithValue }) => {
-        try {
-            logger.logInfo(`Attempting to get provider config: ${providerId}`);
-            const result = await SettingsHandlerAdapter.getProviderConfig(providerId);
-            logger.logInfo(`Successfully retrieved provider config: ${result.providerName}`);
-            return result;
-        } catch (error: unknown) {
-            const err = parseError(error);
-            logger.logError(`Failed to get provider config: ${err.message}`);
-            return rejectWithValue(err.message);
-        }
-    },
-);
-
-/**
  * Retrieves complete application settings
  *
  * @returns Full settings object with all configurations

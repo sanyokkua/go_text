@@ -42,6 +42,6 @@ const uiSlice = createSlice({
     },
 });
 
-export const { toggleSettingsView, setView, setActiveSettingsTab, setActiveActionsTab, setAppBusy, setCurrentTask } = uiSlice.actions;
+export const { toggleSettingsView, setActiveSettingsTab, setActiveActionsTab, setAppBusy, setCurrentTask } = uiSlice.actions;
 
 export default uiSlice.reducer;

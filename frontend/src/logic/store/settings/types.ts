@@ -2,7 +2,7 @@
  * Settings State Types
  *
  * Defines the Redux state structure for application settings management.
- * Follows a normalized pattern with single source of truth and status tracking.
+ * Follows a normalized pattern with a single source of truth and status tracking.
  */
 import { AppSettingsMetadata, Settings } from '../../adapter';
 
@@ -15,7 +15,7 @@ import { AppSettingsMetadata, Settings } from '../../adapter';
  * - Loading/saving status flags
  * - Error state for user feedback
  *
- * Design Pattern: Normalized state with full object cache
+ * Design Pattern: Normalized state with a full object cache
  */
 export interface SettingsState {
     // Full object cache (Single Source of Truth)

@@ -53,7 +53,7 @@ const FactoryResetTab: React.FC = () => {
                     </Typography>
 
                     {/* Description */}
-                    <Typography variant="body1" paragraph>
+                    <Typography variant="body1" component="p">
                         This operation will reset ALL settings to their original factory defaults. This includes:
                     </Typography>
 

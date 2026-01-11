@@ -17,15 +17,15 @@ const logger = getLogger('ActionsPanel');
  * Key Responsibilities:
  * - Managing prompt group navigation via tabs
  * - Handling action button clicks with proper state management
- * - Preventing actions when app is busy or input is empty
+ * - Preventing actions when the app is busy or input is empty
  * - Error handling and user notifications
  * - Loading state management
  *
  * Design Features:
  * - Horizontal scrolling for tabs when many prompt groups exist
  * - Vertical scrolling for action buttons with wrap layout
- * - Disabled state for all buttons when app is busy
- * - Automatic tab correction when active tab is invalid
+ * - Disabled state for all buttons when the app is busy
+ * - Automatic tab correction when the active tab is invalid
  */
 const ActionsPanel: React.FC = () => {
     const dispatch = useAppDispatch();

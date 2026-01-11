@@ -1,7 +1,7 @@
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { Box, Button, Chip, ChipProps, Divider, TextField, Typography } from '@mui/material';
-import React, { useState, MouseEvent } from 'react';
+import React, { MouseEvent, useState } from 'react';
 import { getLogger } from '../../../../../../logic/adapter';
 import { SPACING } from '../../../../../styles/constants';
 

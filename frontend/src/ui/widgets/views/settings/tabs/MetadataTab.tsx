@@ -57,7 +57,6 @@ const MetadataTab: React.FC<MetadataTabProps> = ({ metadata }) => {
                 logger.logInfo('Path copied to clipboard successfully');
                 dispatch(enqueueNotification({ message: 'Path copied to clipboard', severity: 'success' }));
             }
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
             logger.logError(`Failed to copy path to clipboard: ${error}`);
             dispatch(enqueueNotification({ message: 'Failed to copy path', severity: 'error' }));

@@ -23,7 +23,7 @@ export const getCompletionResponse = createAsyncThunk<string, ChatCompletionRequ
     },
 );
 
-// Thunk for getting completion response for specific provider
+// Thunk for getting completion response for a specific provider
 export const getCompletionResponseForProvider = createAsyncThunk<
     string,
     { providerConfig: ProviderConfig; chatCompletionRequest: ChatCompletionRequest },
@@ -49,7 +49,7 @@ export const getCompletionResponseForProvider = createAsyncThunk<
     },
 );
 
-// Thunk for getting models list
+// Thunk for getting a models list
 export const getModelsList = createAsyncThunk<Array<string>, void, { rejectValue: string }>(
     'actions/getModelsList',
     async (_, { rejectWithValue }) => {
@@ -66,7 +66,7 @@ export const getModelsList = createAsyncThunk<Array<string>, void, { rejectValue
     },
 );
 
-// Thunk for getting models list for specific provider
+// Thunk for getting a models list for a specific provider
 export const getModelsListForProvider = createAsyncThunk<Array<string>, ProviderConfig, { rejectValue: string }>(
     'actions/getModelsListForProvider',
     async (providerConfig: ProviderConfig, { rejectWithValue }) => {

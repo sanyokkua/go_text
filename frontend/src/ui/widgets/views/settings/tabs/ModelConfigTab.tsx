@@ -1,5 +1,7 @@
 import RefreshIcon from '@mui/icons-material/Refresh';
-import { Box, Button, Checkbox, FormControl, FormControlLabel, InputLabel, MenuItem, Select, Slider, TextField, Typography } from '@mui/material';
+import { AutocompleteRenderInputParams, Box, Button, Checkbox, FormControlLabel, Slider, Typography } from '@mui/material';
+import Autocomplete from '@mui/material/Autocomplete';
+import TextField from '@mui/material/TextField';
 import React, { useEffect, useState } from 'react';
 import { getLogger, ModelConfig, Settings } from '../../../../../logic/adapter';
 import { useAppDispatch, useAppSelector } from '../../../../../logic/store';
@@ -23,7 +25,6 @@ const ModelConfigTab: React.FC<ModelConfigTabProps> = ({ settings }) => {
     const dispatch = useAppDispatch();
     const availableModels = useAppSelector((state) => state.actions.availableModels);
     const [formData, setFormData] = useState<ModelConfig>({ ...settings.modelConfig });
-    const [filterText, setFilterText] = useState('');
 
     const fetchModels = async () => {
         try {
@@ -53,7 +54,7 @@ const ModelConfigTab: React.FC<ModelConfigTabProps> = ({ settings }) => {
         fetchModels();
     };
 
-    const handleChange = (e: any) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value, type } = e.target;
         if (name) {
             logger.logDebug(`Model config changed: ${name} = ${value}`);
@@ -61,7 +62,7 @@ const ModelConfigTab: React.FC<ModelConfigTabProps> = ({ settings }) => {
         }
     };
 
-    const handleSliderChange = (event: Event, newValue: number | number[]) => {
+    const handleSliderChange = (_: Event, newValue: number | number[]) => {
         if (typeof newValue === 'number') {
             logger.logDebug(`Temperature slider changed to: ${newValue}`);
             setFormData((prev) => ({ ...prev, temperature: newValue }));
@@ -83,9 +84,6 @@ const ModelConfigTab: React.FC<ModelConfigTabProps> = ({ settings }) => {
             dispatch(setAppBusy(false));
         }
     };
-
-    // Filter models based on filter text
-    const filteredModels = availableModels.filter((model) => model.toLowerCase().includes(filterText.toLowerCase()));
 
     return (
         <Box sx={{ padding: SPACING.SMALL, flex: 1 }}>
@@ -110,13 +108,27 @@ const ModelConfigTab: React.FC<ModelConfigTabProps> = ({ settings }) => {
 
             <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: SPACING.STANDARD }}>
                 <Box sx={{ display: 'flex', gap: SPACING.STANDARD, alignItems: 'center' }}>
-                    <TextField
+                    <Autocomplete
                         fullWidth
-                        label="Filter Models"
-                        value={filterText}
-                        onChange={(e) => setFilterText(e.target.value)}
-                        placeholder="Type to filter models..."
-                        size="small"
+                        multiple={false}
+                        options={availableModels}
+                        value={formData.name}
+                        onChange={(_, newValue: string | null) => {
+                            logger.logDebug(`Model selected: ${newValue}`);
+                            setFormData((prev) => ({ ...prev, name: newValue || '' }));
+                        }}
+                        filterOptions={(options, state) => {
+                            // Custom filter
+                            return options.filter((option) => option.toLowerCase().includes(state.inputValue.toLowerCase()));
+                        }}
+                        renderInput={(params: AutocompleteRenderInputParams) => {
+                            // @ts-expect-error it is a bug in typing of MUI library
+                            return <TextField {...params} label="Select Model" placeholder="Type to filter models..." size="small" />;
+                        }}
+                        disablePortal
+                        autoHighlight
+                        clearOnBlur
+                        handleHomeEndKeys
                     />
                     <Button
                         variant="outlined"
@@ -128,17 +140,6 @@ const ModelConfigTab: React.FC<ModelConfigTabProps> = ({ settings }) => {
                         Refresh Models
                     </Button>
                 </Box>
-
-                <FormControl fullWidth>
-                    <InputLabel>Model Name</InputLabel>
-                    <Select name="name" value={formData.name} size="small" onChange={handleChange} label="Model Name" required>
-                        {filteredModels.map((model) => (
-                            <MenuItem key={model} value={model}>
-                                {model}
-                            </MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
 
                 <FormControlLabel
                     control={<Checkbox name="useTemperature" checked={formData.useTemperature} onChange={handleChange} />}
@@ -156,9 +157,11 @@ const ModelConfigTab: React.FC<ModelConfigTabProps> = ({ settings }) => {
                             step={0.1}
                             valueLabelDisplay="auto"
                             marks={[
-                                { value: 0, label: '0' },
-                                { value: 1, label: '1' },
-                                { value: 2, label: '2' },
+                                { value: 0, label: '0.0' },
+                                { value: 0.5, label: '0.5' },
+                                { value: 1, label: '1.0' },
+                                { value: 1.5, label: '1.5' },
+                                { value: 2, label: '2.0' },
                             ]}
                         />
                         <Typography variant="caption" color="text.primary">

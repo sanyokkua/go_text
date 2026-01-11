@@ -161,7 +161,7 @@ export class ActionHandler implements IActionHandler {
     /**
      * Gets completion response from the current provider
      *
-     * @param chatCompletionRequest - Complete request with model, messages, and parameters
+     * @param chatCompletionRequest - Complete request with a model, messages, and parameters
      * @returns Generated completion text
      * @throws Rejects with original error if operation fails
      */
@@ -183,7 +183,7 @@ export class ActionHandler implements IActionHandler {
      * Gets completion response from a specific provider
      *
      * @param providerConfig - Provider configuration to use
-     * @param chatCompletionRequest - Complete request with model, messages, and parameters
+     * @param chatCompletionRequest - Complete request with a model, messages, and parameters
      * @returns Generated completion text
      * @throws Rejects with original error if operation fails
      */
@@ -205,7 +205,7 @@ export class ActionHandler implements IActionHandler {
     }
 
     /**
-     * Retrieves list of available models from current provider
+     * Retrieves a list of available models from current provider
      *
      * @returns Array of model names
      * @throws Rejects with original error if operation fails
@@ -224,7 +224,7 @@ export class ActionHandler implements IActionHandler {
     }
 
     /**
-     * Retrieves list of available models from specific provider
+     * Retrieves a list of available models from specific provider
      *
      * @param providerConfig - Provider configuration to query
      * @returns Array of model names
@@ -287,7 +287,7 @@ export class ActionHandler implements IActionHandler {
  * Settings Handler Service Implementation
  *
  * Concrete implementation of ISettingsHandler that manages all application configuration.
- * Bridges frontend UI with backend settings persistence and provides comprehensive CRUD operations.
+ * Bridges the frontend UI with backend settings persistence and provides comprehensive CRUD operations.
  *
  * Key Responsibilities:
  * - Converting frontend models to Wails-compatible formats
@@ -672,7 +672,7 @@ export class SettingsHandler implements ISettingsHandler {
 /**
  * Events Service Implementation
  *
- * Concrete implementation of IEventsService that provides pub/sub pattern for cross-component communication.
+ * Concrete implementation of IEventsService that provides a pub/sub pattern for cross-component communication.
  * Wraps Wails-generated event system with error handling and logging.
  *
  * Key Features:

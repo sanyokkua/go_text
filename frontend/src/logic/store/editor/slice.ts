@@ -43,6 +43,6 @@ const editorSlice = createSlice({
     },
 });
 
-export const { setInputContent, setOutputContent, useOutputAsInput, clearAll, clearInput, clearOutput } = editorSlice.actions;
+export const { setInputContent, setOutputContent, useOutputAsInput, clearInput, clearOutput } = editorSlice.actions;
 
 export default editorSlice.reducer;

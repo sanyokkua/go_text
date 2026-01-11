@@ -30,6 +30,6 @@ const notificationsSlice = createSlice({
     },
 });
 
-export const { enqueueNotification, removeNotification, clearQueue } = notificationsSlice.actions;
+export const { enqueueNotification, removeNotification } = notificationsSlice.actions;
 
 export default notificationsSlice.reducer;
