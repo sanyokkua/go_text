@@ -1,4 +1,4 @@
-import { Box, Button, Skeleton, Tab, Tabs } from '@mui/material';
+import { Box, Button, Skeleton, Tab, Tabs, Typography } from '@mui/material';
 import React from 'react';
 import { getLogger } from '../../../../../logic/adapter';
 import {
@@ -42,6 +42,24 @@ const ActionsPanel: React.FC = () => {
     const isAppBusy = useAppSelector(selectIsAppBusy);
     const inputContent = useAppSelector(selectInputContent);
     const settings = useAppSelector(selectAllSettings);
+
+    // Get all prompt groups and sort them by groupId for tab correction logic
+    const promptGroupsArray = promptGroups ? Object.values(promptGroups.promptGroups) : [];
+    const sortedPromptGroups = [...promptGroupsArray].sort((a, b) => a.groupId.localeCompare(b.groupId));
+    const tabNames = sortedPromptGroups.map((group) => group.groupId);
+
+    // Use useEffect to handle tab initialization and correction after render
+    React.useEffect(() => {
+        if (promptGroups && tabNames.length > 0) {
+            const currentTabIndex = tabNames.indexOf(activeTab);
+
+            // Initialize active tab if it's empty or invalid
+            if (!activeTab || currentTabIndex === -1) {
+                logger.logInfo(`Initializing active tab to first available tab: ${tabNames[0]}`);
+                dispatch(setActiveActionsTab(tabNames[0]));
+            }
+        }
+    }, [promptGroups, activeTab, tabNames, dispatch]);
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
         const newTabName = tabNames[newValue];
@@ -97,19 +115,18 @@ const ActionsPanel: React.FC = () => {
         );
     }
 
-    // Get all prompt groups and sort them by groupId
-    const promptGroupsArray = Object.values(promptGroups.promptGroups);
-    const sortedPromptGroups = [...promptGroupsArray].sort((a, b) => a.groupId.localeCompare(b.groupId));
-    const tabNames = sortedPromptGroups.map((group) => group.groupId);
-
-    // Ensure activeTab is set to the first tab if it's not found in tabNames
-    const currentTabIndex = tabNames.indexOf(activeTab);
-    if (currentTabIndex === -1 && tabNames.length > 0) {
-        // This can happen if the activeTab was set before promptGroups were loaded
-        // or if the activeTab is invalid
-        logger.logError(`Active tab '${activeTab}' not found in tabNames, defaulting to first tab`);
-        dispatch(setActiveActionsTab(tabNames[0]));
-        return null; // Re-render with the correct tab
+    // Safety check for empty tabNames
+    if (tabNames.length === 0) {
+        return (
+            <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', justifyContent: 'center', overflow: 'hidden' }}>
+                    <Skeleton animation="wave" />
+                </Box>
+                <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                    <Typography>No action groups available</Typography>
+                </Box>
+            </Box>
+        );
     }
 
     const tabs = (
@@ -118,7 +135,7 @@ const ActionsPanel: React.FC = () => {
             {/* Wrapper for the tabs to stretch the whole line */}
             <Box sx={{ width: '100%', overflowX: 'auto', overflowY: 'hidden' }}>
                 <Tabs
-                    value={tabNames.indexOf(activeTab)}
+                    value={Math.max(0, tabNames.indexOf(activeTab))}
                     onChange={handleTabChange}
                     aria-label="action groups tabs"
                     variant="scrollable"

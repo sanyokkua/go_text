@@ -23,9 +23,4 @@ export interface SettingsState {
 
     // Metadata is separate from the main Settings object
     metadata: AppSettingsMetadata | null;
-
-    // Status Flags
-    loading: boolean; // Initial load
-    saving: boolean; // Saving updates
-    error: string | null;
 }

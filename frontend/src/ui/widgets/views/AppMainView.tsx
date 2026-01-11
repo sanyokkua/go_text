@@ -17,7 +17,7 @@ const logger = getLogger('AppMainView');
  * App Main View - Root component that organizes the main layout
  * Structure:
  * - AppBar (top)
- * - MainContent (middle) - shows either main content or settings
+ * - MainContent (middle) - shows either the main content or settings
  * - StatusBar (bottom)
  *
  * Key Responsibilities:
