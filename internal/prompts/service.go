@@ -113,7 +113,7 @@ func (s *PromptService) SanitizeReasoningBlock(llmResponse string) (string, erro
 }
 
 func (p *PromptService) GetAppPrompts() *Prompts {
-	return &ApplicationPrompts
+	return &ApplicationPromptsV2
 }
 
 func (p *PromptService) GetSystemPromptByCategory(category string) (Prompt, error) {

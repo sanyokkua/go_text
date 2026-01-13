@@ -135,7 +135,7 @@ const ActionsPanel: React.FC = () => {
         /* Tab Navigation - Centered with horizontal scrolling */
         <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', justifyContent: 'center', overflow: 'hidden' }}>
             {/* Wrapper for the tabs to stretch the whole line */}
-            <Box sx={{ width: '100%', overflowX: 'auto', overflowY: 'hidden' }}>
+            <Box sx={{ width: '100%', overflowY: 'hidden' }}>
                 <Tabs
                     value={Math.max(0, tabNames.indexOf(activeTab))}
                     onChange={handleTabChange}
@@ -143,7 +143,6 @@ const ActionsPanel: React.FC = () => {
                     variant="scrollable"
                     scrollButtons="auto"
                     allowScrollButtonsMobile
-                    sx={{ '& .MuiTabs-flexContainer': { justifyContent: 'center' } }}
                 >
                     {sortedPromptGroups.map((group, index) => (
                         <Tab
