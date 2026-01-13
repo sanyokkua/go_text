@@ -1,7 +1,6 @@
-import { Box, Button, Skeleton, Tab, Tabs, Typography } from '@mui/material';
+import { Box, Button, Skeleton, Tab, Tabs, Tooltip, Typography } from '@mui/material';
 import React from 'react';
 import { getLogger } from '../../../../../logic/adapter';
-import { parseError } from '../../../../../logic/utils/error_utils';
 import {
     selectActiveActionsTab,
     selectAllSettings,
@@ -14,6 +13,7 @@ import {
 import { processPrompt } from '../../../../../logic/store/actions';
 import { enqueueNotification } from '../../../../../logic/store/notifications';
 import { setActiveActionsTab, setAppBusy, setCurrentTask } from '../../../../../logic/store/ui';
+import { parseError } from '../../../../../logic/utils/error_utils';
 
 const logger = getLogger('ActionsPanel');
 
@@ -167,16 +167,18 @@ const ActionsPanel: React.FC = () => {
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
                 {sortedPromptGroups.find((group) => group.groupId === activeTab)?.prompts &&
                     Object.entries(sortedPromptGroups.find((group) => group.groupId === activeTab)?.prompts || {}).map(([promptId, prompt]) => (
-                        <Button
-                            key={`action-${activeTab}-${promptId}`}
-                            variant="outlined"
-                            color="primary"
-                            onClick={() => handleActionClick(prompt.id, prompt.name)}
-                            disabled={isAppBusy}
-                            sx={{ borderRadius: '16px', border: '1px solid', minWidth: '150px', textTransform: 'uppercase' }}
-                        >
-                            {prompt.name}
-                        </Button>
+                        <Tooltip key={`tooltip-${activeTab}-${promptId}`} title={prompt.description} arrow>
+                            <Button
+                                key={`action-${activeTab}-${promptId}`}
+                                variant="outlined"
+                                color="primary"
+                                onClick={() => handleActionClick(prompt.id, prompt.name)}
+                                disabled={isAppBusy}
+                                sx={{ borderRadius: '16px', border: '1px solid', minWidth: '150px', textTransform: 'uppercase' }}
+                            >
+                                {prompt.name}
+                            </Button>
+                        </Tooltip>
                     ))}
             </Box>
         </Box>

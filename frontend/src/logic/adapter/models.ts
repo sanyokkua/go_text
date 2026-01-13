@@ -54,6 +54,7 @@ export interface Prompt {
     type: string;
     category: string;
     value: string;
+    description: string;
 }
 
 /**
