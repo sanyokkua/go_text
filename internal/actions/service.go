@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go_text/internal/llms"
 	"go_text/internal/prompts"
+	"go_text/internal/prompts/categories"
 	"go_text/internal/settings"
 	"slices"
 	"strings"
@@ -257,7 +258,7 @@ func (a *ActionService) processAction(action *prompts.PromptActionRequest) (stri
 	a.logger.Trace(fmt.Sprintf("[%s] Built user prompt - action_id=%s, prompt_length=%d", op, actionID, len(userPrompt)))
 
 	// 6. Check for same-language translation optimization
-	if promptDef.Category == prompts.PromptCategoryTranslation &&
+	if promptDef.Category == categories.PromptGroupTranslation &&
 		strings.EqualFold(action.InputLanguageID, action.OutputLanguageID) {
 		a.logger.Info(fmt.Sprintf("[%s] Skipping translation - same language (%s) - action_id=%s",
 			op, action.InputLanguageID, actionID))

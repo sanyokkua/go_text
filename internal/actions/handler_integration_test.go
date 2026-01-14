@@ -6,6 +6,7 @@ import (
 	"go_text/internal/file"
 	"go_text/internal/llms"
 	"go_text/internal/prompts"
+	"go_text/internal/prompts/categories"
 	"go_text/internal/settings"
 	"net/http"
 	"net/http/httptest"
@@ -623,11 +624,11 @@ func TestActionHandlerIntegration(t *testing.T) {
 
 		// Verify expected groups exist
 		expectedGroups := []string{
-			prompts.PromptCategoryTranslation,
-			prompts.PromptCategoryProofread,
-			prompts.PromptCategoryFormat,
-			prompts.PromptCategorySummary,
-			prompts.PromptCategoryTransforming,
+			categories.PromptGroupTranslation,
+			categories.PromptGroupProofreading,
+			categories.PromptGroupFormatting,
+			categories.PromptGroupSummarization,
+			categories.PromptGroupRewriting,
 		}
 
 		for _, groupName := range expectedGroups {
@@ -661,7 +662,7 @@ func TestActionHandlerIntegration(t *testing.T) {
 		require.NoError(t, err)
 
 		var proofreadPromptID string
-		if group, exists := allPrompts.PromptGroups[prompts.PromptCategoryProofread]; exists {
+		if group, exists := allPrompts.PromptGroups[categories.PromptGroupProofreading]; exists {
 			for id := range group.Prompts {
 				proofreadPromptID = id
 				break
@@ -711,7 +712,7 @@ func TestActionHandlerIntegration(t *testing.T) {
 		require.NoError(t, err)
 
 		var translationPromptID string
-		if group, exists := allPrompts.PromptGroups[prompts.PromptCategoryTranslation]; exists {
+		if group, exists := allPrompts.PromptGroups[categories.PromptGroupTranslation]; exists {
 			for id := range group.Prompts {
 				translationPromptID = id
 				break

@@ -22,6 +22,14 @@ const uiSlice = createSlice({
             logger.logInfo(`Toggling view to: ${newView}`);
             state.view = newView;
         },
+        toggleInfoView: (state) => {
+            if (state.view === 'settings') {
+                state.view = 'main';
+            } else {
+                state.view = state.view === 'main' ? 'info' : 'main';
+            }
+            logger.logInfo(`Toggling info view to: ${state.view}`);
+        },
         setActiveSettingsTab: (state, action: PayloadAction<number>) => {
             logger.logDebug(`Setting active settings tab to: ${action.payload}`);
             state.activeSettingsTab = action.payload;
@@ -42,6 +50,6 @@ const uiSlice = createSlice({
     extraReducers: () => {},
 });
 
-export const { toggleSettingsView, setActiveSettingsTab, setActiveActionsTab, setAppBusy, setCurrentTask } = uiSlice.actions;
+export const { toggleSettingsView, toggleInfoView, setActiveSettingsTab, setActiveActionsTab, setAppBusy, setCurrentTask } = uiSlice.actions;
 
 export default uiSlice.reducer;

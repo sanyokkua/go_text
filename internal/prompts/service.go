@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"go_text/internal/prompts/categories"
+
 	"github.com/wailsapp/wails/v2/pkg/logger"
 )
 
@@ -113,7 +115,7 @@ func (s *PromptService) SanitizeReasoningBlock(llmResponse string) (string, erro
 }
 
 func (p *PromptService) GetAppPrompts() *Prompts {
-	return &ApplicationPromptsV2
+	return &ApplicationPrompts
 }
 
 func (p *PromptService) GetSystemPromptByCategory(category string) (Prompt, error) {
@@ -202,7 +204,7 @@ func (p *PromptService) BuildPrompt(template, category string, action *PromptAct
 		op, category, action.ID,
 	))
 
-	if err := p.validateActionRequest(action, category == PromptCategoryTranslation); err != nil {
+	if err := p.validateActionRequest(action, category == categories.PromptGroupTranslation); err != nil {
 		p.logger.Error(fmt.Sprintf("%s: action validation failed: %v", op, err))
 		return "", fmt.Errorf("%s: %w", op, err)
 	}
@@ -211,7 +213,7 @@ func (p *PromptService) BuildPrompt(template, category string, action *PromptAct
 		TemplateParamText: action.InputText,
 	}
 
-	if category == PromptCategoryTranslation {
+	if category == categories.PromptGroupTranslation {
 		replacements[TemplateParamInputLanguage] = action.InputLanguageID
 		replacements[TemplateParamOutputLanguage] = action.OutputLanguageID
 	}

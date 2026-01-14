@@ -1,4 +1,4 @@
-export type MainView = 'main' | 'settings';
+export type MainView = 'main' | 'settings' | 'info';
 
 export interface UIState {
     view: MainView;

@@ -625,7 +625,7 @@ func TestSettingsHandlerIntegration(t *testing.T) {
 		assert.True(t, providerNames["LM Studio"])
 		assert.True(t, providerNames["Llama.cpp"])
 		assert.True(t, providerNames["OpenRouter.ai"])
-		assert.True(t, providerNames["OpenAI/"])
+		assert.True(t, providerNames["OpenAI"])
 	})
 
 	// Step 57: Verify current reset

@@ -2,6 +2,7 @@ import React from 'react';
 import { selectCurrentView, useAppSelector } from '../../../logic/store';
 import FlexContainer from '../../components/FlexContainer';
 import MainContentWidget from './content/MainContentWidget';
+import { InfoView } from './info';
 import { SettingsView } from './settings';
 
 /**
@@ -10,11 +11,10 @@ import { SettingsView } from './settings';
  */
 const MainContent: React.FC = () => {
     const view = useAppSelector(selectCurrentView);
-    const showSettings = view === 'settings';
 
     return (
         <FlexContainer grow overflowHidden>
-            {showSettings ? <SettingsView /> : <MainContentWidget />}
+            {view === 'settings' ? <SettingsView /> : view === 'info' ? <InfoView /> : <MainContentWidget />}
         </FlexContainer>
     );
 };

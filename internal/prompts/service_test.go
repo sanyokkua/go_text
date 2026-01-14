@@ -1,6 +1,7 @@
 package prompts
 
 import (
+	"go_text/internal/prompts/categories"
 	"strings"
 	"testing"
 )
@@ -46,6 +47,12 @@ func (m *MockLogger) Clear() {
 	m.DebugMessages = nil
 	m.ErrorMessages = nil
 }
+
+// Test variables for prompt templates
+const (
+	userProofreadingBase = "Proofreading: {{user_text}}"
+	userTranslatePlain   = "Translate from {{input_language}} to {{output_language}}: {{user_text}}"
+)
 
 // TestNewPromptService tests the NewPromptService constructor
 func TestNewPromptService(t *testing.T) {
@@ -379,11 +386,16 @@ func TestGetAppPrompts(t *testing.T) {
 
 		// Check that we have the expected prompt categories
 		expectedCategories := []string{
-			PromptCategoryProofread,
-			PromptCategoryFormat,
-			PromptCategorySummary,
-			PromptCategoryTranslation,
-			PromptCategoryTransforming,
+			categories.PromptGroupProofreading,
+			categories.PromptGroupRewriting,
+			categories.PromptGroupRewritingTone,
+			categories.PromptGroupRewritingStyle,
+			categories.PromptGroupFormatting,
+			categories.PromptGroupEverydayWork,
+			categories.PromptGroupDocumentStructuring,
+			categories.PromptGroupSummarization,
+			categories.PromptGroupTranslation,
+			categories.PromptGroupPromptEngineering,
 		}
 
 		for _, category := range expectedCategories {
@@ -404,34 +416,64 @@ func TestGetSystemPromptByCategory(t *testing.T) {
 		expectPromptID string
 	}{
 		{
-			name:           "Valid category - Proofread",
-			category:       PromptCategoryProofread,
+			name:           "Valid category - Proofreading",
+			category:       categories.PromptGroupProofreading,
 			expectError:    false,
-			expectPromptID: "systemProofread",
+			expectPromptID: "systemProofreadV2",
 		},
 		{
-			name:           "Valid category - Format",
-			category:       PromptCategoryFormat,
+			name:           "Valid category - Rewriting",
+			category:       categories.PromptGroupRewriting,
 			expectError:    false,
-			expectPromptID: "systemFormat",
+			expectPromptID: "systemRewritingV2",
 		},
 		{
-			name:           "Valid category - Summary",
-			category:       PromptCategorySummary,
+			name:           "Valid category - Tone",
+			category:       categories.PromptGroupRewritingTone,
 			expectError:    false,
-			expectPromptID: "systemSummary",
+			expectPromptID: "systemRewritingToneV2",
+		},
+		{
+			name:           "Valid category - Style",
+			category:       categories.PromptGroupRewritingStyle,
+			expectError:    false,
+			expectPromptID: "systemRewritingStyleV2",
+		},
+		{
+			name:           "Valid category - Formatting",
+			category:       categories.PromptGroupFormatting,
+			expectError:    false,
+			expectPromptID: "systemFormattingV2",
+		},
+		{
+			name:           "Valid category - Job",
+			category:       categories.PromptGroupEverydayWork,
+			expectError:    false,
+			expectPromptID: "systemEverydayWorkV2",
+		},
+		{
+			name:           "Valid category - Document Structuring",
+			category:       categories.PromptGroupDocumentStructuring,
+			expectError:    false,
+			expectPromptID: "systemDocumentStructuringV2",
+		},
+		{
+			name:           "Valid category - Summarization",
+			category:       categories.PromptGroupSummarization,
+			expectError:    false,
+			expectPromptID: "systemSummarizationV2",
 		},
 		{
 			name:           "Valid category - Translation",
-			category:       PromptCategoryTranslation,
+			category:       categories.PromptGroupTranslation,
 			expectError:    false,
-			expectPromptID: "systemTranslate",
+			expectPromptID: "systemTranslationV2",
 		},
 		{
-			name:           "Valid category - Transforming",
-			category:       PromptCategoryTransforming,
+			name:           "Valid category - Prompt Engineering",
+			category:       categories.PromptGroupPromptEngineering,
 			expectError:    false,
-			expectPromptID: "systemTransforming",
+			expectPromptID: "systemPromptEngineeringV2",
 		},
 		{
 			name:          "Empty category",
@@ -493,22 +535,22 @@ func TestGetUserPromptById(t *testing.T) {
 		expectPromptID string
 	}{
 		{
-			name:           "Valid prompt ID - proofread",
-			promptID:       "proofread",
+			name:           "Valid prompt ID - basicProofreading",
+			promptID:       "basicProofreading",
 			expectError:    false,
-			expectPromptID: "proofread",
+			expectPromptID: "basicProofreading",
 		},
 		{
-			name:           "Valid prompt ID - rewrite",
-			promptID:       "rewrite",
+			name:           "Valid prompt ID - conciseRewrite",
+			promptID:       "conciseRewrite",
 			expectError:    false,
-			expectPromptID: "rewrite",
+			expectPromptID: "conciseRewrite",
 		},
 		{
-			name:           "Valid prompt ID - formatFormalEmail",
-			promptID:       "formatFormalEmail",
+			name:           "Valid prompt ID - emailTemplate",
+			promptID:       "emailTemplate",
 			expectError:    false,
-			expectPromptID: "formatFormalEmail",
+			expectPromptID: "emailTemplate",
 		},
 		{
 			name:          "Empty prompt ID",
@@ -573,9 +615,9 @@ func TestGetPrompt(t *testing.T) {
 	}{
 		{
 			name:           "Valid prompt ID",
-			promptID:       "proofread",
+			promptID:       "basicProofreading",
 			expectError:    false,
-			expectPromptID: "proofread",
+			expectPromptID: "basicProofreading",
 			expectInfoLog:  true,
 			expectErrorLog: false,
 		},
@@ -646,7 +688,7 @@ func TestGetSystemPrompt(t *testing.T) {
 	}{
 		{
 			name:           "Valid category",
-			category:       PromptCategoryProofread,
+			category:       categories.PromptGroupProofreading,
 			expectError:    false,
 			expectInfoLog:  true,
 			expectErrorLog: false,
@@ -719,7 +761,7 @@ func TestBuildPrompt(t *testing.T) {
 		{
 			name:           "Valid proofreading prompt",
 			template:       userProofreadingBase,
-			category:       PromptCategoryProofread,
+			category:       categories.PromptGroupProofreading,
 			action:         &PromptActionRequest{ID: "proofread", InputText: "Test text"},
 			useMarkdown:    false,
 			expectError:    false,
@@ -729,7 +771,7 @@ func TestBuildPrompt(t *testing.T) {
 		{
 			name:           "Valid translation prompt",
 			template:       userTranslatePlain,
-			category:       PromptCategoryTranslation,
+			category:       categories.PromptGroupTranslation,
 			action:         &PromptActionRequest{ID: "translate", InputText: "Test text", InputLanguageID: "en", OutputLanguageID: "uk"},
 			useMarkdown:    false,
 			expectError:    false,
@@ -739,7 +781,7 @@ func TestBuildPrompt(t *testing.T) {
 		{
 			name:           "Valid translation prompt with markdown",
 			template:       userTranslatePlain,
-			category:       PromptCategoryTranslation,
+			category:       categories.PromptGroupTranslation,
 			action:         &PromptActionRequest{ID: "translate", InputText: "Test text", InputLanguageID: "en", OutputLanguageID: "uk"},
 			useMarkdown:    true,
 			expectError:    false,
@@ -749,7 +791,7 @@ func TestBuildPrompt(t *testing.T) {
 		{
 			name:           "Nil action request",
 			template:       userProofreadingBase,
-			category:       PromptCategoryProofread,
+			category:       categories.PromptGroupProofreading,
 			action:         nil,
 			useMarkdown:    false,
 			expectError:    true,
@@ -760,7 +802,7 @@ func TestBuildPrompt(t *testing.T) {
 		{
 			name:           "Empty action ID",
 			template:       userProofreadingBase,
-			category:       PromptCategoryProofread,
+			category:       categories.PromptGroupProofreading,
 			action:         &PromptActionRequest{ID: "", InputText: "Test text"},
 			useMarkdown:    false,
 			expectError:    true,
@@ -771,7 +813,7 @@ func TestBuildPrompt(t *testing.T) {
 		{
 			name:           "Empty input text",
 			template:       userProofreadingBase,
-			category:       PromptCategoryProofread,
+			category:       categories.PromptGroupProofreading,
 			action:         &PromptActionRequest{ID: "proofread", InputText: ""},
 			useMarkdown:    false,
 			expectError:    true,
@@ -782,7 +824,7 @@ func TestBuildPrompt(t *testing.T) {
 		{
 			name:           "Translation with missing input language",
 			template:       userTranslatePlain,
-			category:       PromptCategoryTranslation,
+			category:       categories.PromptGroupTranslation,
 			action:         &PromptActionRequest{ID: "translate", InputText: "Test text", InputLanguageID: "", OutputLanguageID: "uk"},
 			useMarkdown:    false,
 			expectError:    true,
@@ -793,7 +835,7 @@ func TestBuildPrompt(t *testing.T) {
 		{
 			name:           "Translation with missing output language",
 			template:       userTranslatePlain,
-			category:       PromptCategoryTranslation,
+			category:       categories.PromptGroupTranslation,
 			action:         &PromptActionRequest{ID: "translate", InputText: "Test text", InputLanguageID: "en", OutputLanguageID: ""},
 			useMarkdown:    false,
 			expectError:    true,
@@ -1007,28 +1049,28 @@ func TestPromptServiceInterface(t *testing.T) {
 			t.Error("GetAppPrompts returned nil")
 		}
 
-		_, err = service.GetSystemPromptByCategory(PromptCategoryProofread)
+		_, err = service.GetSystemPromptByCategory(categories.PromptGroupProofreading)
 		if err != nil {
 			t.Errorf("GetSystemPromptByCategory failed: %v", err)
 		}
 
-		_, err = service.GetUserPromptById("proofread")
+		_, err = service.GetUserPromptById("basicProofreading")
 		if err != nil {
 			t.Errorf("GetUserPromptById failed: %v", err)
 		}
 
-		_, err = service.GetPrompt("proofread")
+		_, err = service.GetPrompt("basicProofreading")
 		if err != nil {
 			t.Errorf("GetPrompt failed: %v", err)
 		}
 
-		_, err = service.GetSystemPrompt(PromptCategoryProofread)
+		_, err = service.GetSystemPrompt(categories.PromptGroupProofreading)
 		if err != nil {
 			t.Errorf("GetSystemPrompt failed: %v", err)
 		}
 
 		action := &PromptActionRequest{ID: "proofread", InputText: "test"}
-		_, err = service.BuildPrompt(userProofreadingBase, PromptCategoryProofread, action, false)
+		_, err = service.BuildPrompt(userProofreadingBase, categories.PromptGroupProofreading, action, false)
 		if err != nil {
 			t.Errorf("BuildPrompt failed: %v", err)
 		}

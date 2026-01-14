@@ -84,41 +84,51 @@ const HeadersEditor: React.FC<HeadersEditorProps> = ({ headers, onChange }) => {
                 Custom Headers
             </Typography>
 
-            <TableContainer component={Paper} elevation={0}>
+            <TableContainer component={Paper} elevation={2}>
                 <Table size="small">
-                    <TableHead>
+                    <TableHead sx={{ backgroundColor: 'secondary.dark' }}>
                         <TableRow>
-                            <TableCell width="40%">Header Name</TableCell>
-                            <TableCell width="50%">Header Value</TableCell>
-                            <TableCell width="10%" align="center">
+                            {/* Head Cells */}
+                            <TableCell width="40%" sx={{ color: 'secondary.contrastText', fontWeight: 'bold' }}>
+                                Header Name
+                            </TableCell>
+                            <TableCell width="50%" sx={{ color: 'secondary.contrastText', fontWeight: 'bold' }}>
+                                Header Value
+                            </TableCell>
+                            <TableCell width="10%" align="center" sx={{ color: 'secondary.contrastText', fontWeight: 'bold' }}>
                                 Actions
                             </TableCell>
                         </TableRow>
                     </TableHead>
-                    <TableBody>
+                    <TableBody sx={{ backgroundColor: 'secondary.light' }}>
                         {headerEntries.map((header, index) => (
-                            <TableRow key={index}>
-                                <TableCell>
+                            <TableRow key={index} sx={{ color: 'secondary.contrastText' }}>
+                                <TableCell sx={{ color: 'secondary.contrastText' }}>
                                     <TextField
                                         fullWidth
                                         size="small"
+                                        variant="standard"
+                                        color="secondary"
                                         value={header.key}
                                         onChange={(e) => handleHeaderChange(index, 'key', e.target.value)}
                                         placeholder="Header-Name"
+                                        sx={{ color: 'secondary.contrastText' }}
                                     />
                                 </TableCell>
-                                <TableCell>
+                                <TableCell sx={{ color: 'secondary.contrastText' }}>
                                     <TextField
                                         fullWidth
                                         size="small"
+                                        variant="standard"
+                                        color="secondary"
                                         value={header.value}
                                         onChange={(e) => handleHeaderChange(index, 'value', e.target.value)}
                                         placeholder="header-value"
                                     />
                                 </TableCell>
-                                <TableCell align="center">
+                                <TableCell align="center" sx={{ color: 'secondary.contrastText' }}>
                                     <IconButton size="small" onClick={() => handleRemoveHeader(index)} aria-label="remove header">
-                                        <DeleteIcon fontSize="small" />
+                                        <DeleteIcon fontSize="small" color="error" />
                                     </IconButton>
                                 </TableCell>
                             </TableRow>
