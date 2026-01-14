@@ -1,250 +1,329 @@
 # Text Processing Suite
 
+> A native desktop application for intelligent text transformation powered by Large Language Models.
+
+[![Go Version](https://img.shields.io/badge/Go-1.25%2B-blue)](https://go.dev/)
+[![Wails](https://img.shields.io/badge/Wails-v2.11.0-blue)](https://wails.io/)
+[![React](https://img.shields.io/badge/React-19.2-61DAFB)](https://react.dev/)
+
+---
+
 ## Overview
 
-Text Processing Suite is a native desktop application for text processing that uses Large Language Models (LLMs). It provides features for proofreading, style rewriting, formatting, translation, and summarization.
+**Text Processing Suite** is a professional-grade desktop application that harnesses the power of Large Language Models to intelligently edit and
+transform your text. Unlike simple text editors, it provides AI-powered operations like grammar correction, style adaptation, multi-language
+translation, document structuring, and summarization — all directly on your desktop.
 
-Unlike its [predecessor](https://github.com/sanyokkua/llmedit), which focused on local LLMs, this application is designed to work with any LLM provider that supports an OpenAI-compatible API. That includes local servers such as Ollama and LM Studio, as well as cloud services like OpenRouter.
+The application connects to **any OpenAI-compatible LLM provider**, giving you the freedom to choose between:
 
-The application uses Go for the backend and React for the frontend, and is packaged with the Wails framework to deliver a native desktop experience. This architecture aims for efficient performance and a smaller distribution footprint.
+- **Local privacy-first models**: Ollama, LM Studio, Llama.cpp
+- **Cloud services**: OpenAI, OpenRouter, or any custom OpenAI-compatible API
 
-![appUiExample](docs/screens/01.AppUIExample.png)
+Built with Go for efficient backend processing and React for a modern, responsive UI, the application delivers native performance with a small
+distribution footprint.
+
+![Application Screenshot](docs/screenshots/app-main-view.png)
+
+---
 
 ## Key Features
 
-* **Text Processing**
+### 📝 Proofreading & Grammar
 
-    * Proofreading and grammar correction.
-    * Style transformation (for example: formal, casual, friendly, direct).
-    * Text formatting for different contexts (emails, chat messages, social media posts, wiki markdown, etc.).
-* **Translation**
+- Basic and enhanced proofreading
+- Style consistency checking
+- Readability improvements
+- Tone adjustments for clarity
 
-    * Bidirectional translation between supported languages.
-    * Dictionary-style translations.
-* **Summarization**
+### ✍️ Advanced Rewriting
 
-    * Generate concise summaries of input text.
-    * Extract a list of key points.
-    * Generate relevant hashtags.
+**Tone Adaptation** - Rewrite text to match your desired tone:
 
-> **Note:** The list of supported languages in this app is chosen based on the languages most commonly supported by open-source LLMs. Translation quality depends on the selected model.
+- Friendly, Direct, Indirect
+- Professional, Enthusiastic, Neutral
+- Conflict-safe rewrites, Polite requests, Apology messages
 
-### Formatting Example
+**Style Transformation** - Adapt writing style for different contexts:
 
-![formattingExample](docs/screens/02.FormattingExample.png)
+- Formal, Semi-Formal, Casual
+- Academic, Technical, Journalistic
+- Creative, Marketing, SEO-Optimized
+- Simplified for non-native speakers or children
+
+### 📄 Formatting & Templates
+
+- Paragraph structuring and bullet conversion
+- Email, Report, Blog, and Resume templates
+- Social media post formatting
+- Headline and tagline generation
+
+### 💼 Everyday Work
+
+- Drafts for coworkers and management
+- Task and problem explanations
+- Professional communication templates
+
+### 📁 Document Structuring
+
+- Markdown conversion
+- User story and FAQ generation
+- Specification document generation
+- Meeting notes formatting
+- Proposal structuring
+
+### 📊 Summarization
+
+- Concise summaries and key points extraction
+- Hashtag generation
+- Simple explanations for complex topics
+
+### 🌍 Translation
+
+- Multi-language translation (16+ supported languages)
+- Dictionary-style translations with context
+- Example sentence generation
+
+### 🎨 Prompt Engineering
+
+- Improve prompts for text LLMs
+- Optimize prompts for image and video generation models
+- Prompt compression and expansion
+
+---
+
+## Screenshots
+
+### Main Application Interface
+
+![Main Interface](docs/screenshots/main-interface.png)
+
+### Multi-Provider Configuration
+
+![Provider Settings](docs/screenshots/provider-config.png)
+
+### Different Action Groups
+
+![Action Groups](docs/screenshots/action-groups.png)
 
 ### Translation Example
 
-![translationExample](docs/screens/03.TranslationExample.png)
+![Translation](docs/screenshots/translation-example.png)
 
-### Summary Example
+---
 
-![summaryExample](docs/screens/04.SummaryExample.png)
+## Installation
+
+### Download Pre-built Binaries
+
+Download the latest release for your platform from the [GitHub Releases Page](https://github.com/sanyokkua/go_text/releases).
+
+| Platform                  | File                                    |
+|---------------------------|-----------------------------------------|
+| **macOS** (Apple Silicon) | `TextProcessingSuite-macos-arm64.zip`   |
+| **Windows** (64-bit)      | `TextProcessingSuite-windows-amd64.exe` |
+| **Linux** (64-bit)        | `TextProcessingSuite-linux-amd64`       |
+
+#### macOS Installation Notes
+
+macOS may block unsigned applications. After downloading:
+
+1. Extract the `.zip` file
+2. Remove the quarantine flag:
+   ```bash
+   xattr -rd com.apple.quarantine TextProcessingSuite.app
+   ```
+3. If still blocked, go to **System Settings → Privacy & Security** and allow the app to run
+
+### Build from Source
+
+**Prerequisites:**
+
+- Go 1.25+
+- Node.js 20+
+- Wails CLI (`go install github.com/wailsapp/wails/v2/cmd/wails@latest`)
+
+**Steps:**
+
+```bash
+# Clone the repository
+git clone https://github.com/sanyokkua/go_text.git
+cd go_text
+
+# Install dependencies
+cd frontend && npm install && cd ..
+go get ./...
+
+# Run in development mode (hot reload)
+wails dev
+
+# Build production binary
+wails build
+```
+
+The executable will be in `build/bin/`.
+
+---
 
 ## Configuration
 
-The application's behavior is controlled via a settings file. Core settings determine how the application connects to an LLM provider.
+### Multi-Provider Support
 
-### Settings Structure
+The application supports **multiple provider configurations** that you can switch between. Each provider can have:
 
-The `Settings` struct defines the configurable parameters used by the application:
+- Custom base URL and endpoints
+- Authentication headers (API keys, Bearer tokens)
+- Environment variable support for secrets
+- Custom model lists
+- Provider-specific settings
 
-* `baseUrl` — The root URL of the LLM provider's API (for example, `http://localhost:11434` for Ollama or a cloud provider endpoint).
-* `modelsEndpoint` — The relative path used to fetch the list of available models (for example, `/v1/models`).
-* `completionEndpoint` — The relative path to send chat completion requests (for example, `/v1/chat/completions`).
-* `headers` — A map of key/value pairs for HTTP headers; used for authentication/authorization (for example, API keys).
-* `modelName` — The ID of the specific LLM to use for processing.
-* `temperature` — A value between 0 and 1 that controls the randomness of the model's output.
-* `defaultInputLanguage` / `defaultOutputLanguage` — Default languages used for translation tasks.
-* `languages` — A list of supported languages from which to choose default languages.
-* `useMarkdownForOutput` — A boolean flag that indicates whether the output should be formatted as Markdown. Treat this as a recommendation for the LLM; there is no guarantee the model will use Markdown — that depends on the chosen model.
+**Built-in Provider Templates:**
 
-Some parameters can be validated when changed. If the configured models are not available but were configured earlier, the app will indicate that those models cannot be used. With certain providers it can be tricky to set everything up properly, but in general the current approach works.
+- Ollama (local)
+- LM Studio (local)
+- Llama.cpp (local)
+- OpenRouter.ai (cloud)
+- OpenAI (cloud)
 
 ### Settings File Location
 
-The application follows platform-specific conventions for storing its configuration file:
+| Platform    | Path                                                              |
+|-------------|-------------------------------------------------------------------|
+| **macOS**   | `~/Library/Application Support/TextProcessingSuite/settings.json` |
+| **Linux**   | `~/.config/TextProcessingSuite/settings.json`                     |
+| **Windows** | `%APPDATA%\TextProcessingSuite\settings.json`                     |
 
-* **Unix/Linux (including macOS)**: Uses the `$XDG_CONFIG_HOME` environment variable if it is set and non-empty. If not set, it defaults to `$HOME/.config`. The settings file path is either `$XDG_CONFIG_HOME/GoTextProcessing/settings.json` or `$HOME/.config/GoTextProcessing/settings.json`.
-* **macOS (Darwin)**: If XDG directories are not used, it falls back to `$HOME/Library/Application Support/GoTextProcessing/settings.json`.
-* **Windows**: Uses the `%AppData%` environment variable, resulting in a path like `%AppData%\GoTextProcessing\settings.json`.
-* **Fallback**: If the preferred directory is inaccessible, the application will attempt to use the user's home directory (`$HOME` on Unix/macOS, `%USERPROFILE%` on Windows).
+### Configuration Options
 
-## Building Locally
+- **Provider Management**: Add, edit, delete, and switch between multiple LLM providers
+- **Model Selection**: Choose from available models or provide a custom list
+- **Inference Settings**: Configure timeout, retries, and output format (Markdown/Plain Text)
+- **Temperature Control**: Optional temperature setting with toggle
+- **Language Preferences**: Default input/output languages for translation
+- **Custom Languages**: Add/remove languages from the supported list
 
-### Prerequisites
+---
 
-* **Go**: Version 1.25.0 or higher.
-* **Node.js & npm**: Required for building the frontend.
-* **Wails CLI**: Version 2.10.2 or compatible. Install with:
+## Usage
 
-```shell
-go install github.com/wailsapp/wails/v2/cmd/wails@latest
-```
+1. **Select Provider**: Choose your LLM provider from the settings (Ollama, OpenAI, etc.)
+2. **Choose Action**: Browse 10 categories with 50+ actions
+3. **Enter Text**: Paste or type your text in the input area
+4. **Process**: Click the action button and wait for the LLM response
+5. **Review Output**: The transformed text appears in the output area
+6. **Copy or Further Edit**: Use the output or continue processing
 
-You also need Git to clone the repository. In short: install Git, Go, Node.js, and Wails to build the project.
+---
 
-### Build Steps
+## Technology Stack
 
-1. **Clone the repository**
+| Component             | Technology    | Version   |
+|-----------------------|---------------|-----------|
+| **Backend**           | Go            | 1.25.1    |
+| **Frontend**          | React         | 19.2.3    |
+| **State Management**  | Redux Toolkit | 2.11.2    |
+| **Desktop Framework** | Wails         | v2.11.0   |
+| **UI Library**        | Material-UI   | 7.3.6     |
+| **HTTP Client**       | Resty         | v3 (beta) |
+| **Build Tool**        | Vite          | 7.3.0     |
+| **Logging**           | zerolog       | 1.34.0    |
 
-```shell
-git clone https://github.com/sanyokkua/go_text.git
-```
-
-2. **Install frontend dependencies**
-
-Navigate into the frontend directory and install the required packages listed in `package.json`:
-
-```shell
-cd frontend
-npm install
-cd ..
-go get ./...
-```
-
-3. **Build the application**
-
-Run `wails build` from the project root. This process will:
-
-* Build the React frontend using Vite (`npm run build`).
-* Compile the Go backend.
-* Bundle everything into a native executable for your current platform.
-
-Commands you can use during development and for a release build:
-
-```shell
-cd frontend
-npm run build
-cd ..
-
-wails dev   # Build and run locally (development)
-wails build # Build a production executable for the current OS
-```
-
-4. The final executable will be placed in the project directory or a designated `build` folder.
-
-> Note: Windows and Linux builds were not tested. The binaries can be built, but the application work state is not verified.
+---
 
 ## Project Structure
 
 ```
-.
+go_text/
 ├── README.md
-├── app.go                  # Main Wails application setup
-├── build/                  # Build assets (icons, platform-specific configs)
-├── frontend/               # React frontend source code
-│   ├── src/                # React components, store, utilities
-│   ├── package.json        # Frontend dependencies and scripts
-│   └── ...                 # Other frontend config files (Vite, ESLint, etc.)
-├── go.mod                  # Go module dependencies
-├── go.sum                  # Go dependency checksums
-├── internal/               # Internal Go packages (backend logic, models)
-│   └── backend/            # Core application logic, API clients, settings management
-├── main.go                 # Application entry point
-└── wails.json              # Wails project configuration
+├── main.go                     # Application entry point
+├── wails.json                  # Wails configuration
+├── go.mod                      # Go dependencies
+├── internal/                   # Go backend packages
+│   ├── application/            # Dependency injection
+│   ├── actions/                # Text processing logic
+│   ├── settings/               # Configuration management
+│   ├── llms/                   # LLM provider integration
+│   ├── prompts/                # Prompt templates
+│   ├── file/                   # File utilities
+│   └── logging/                # Custom logger
+├── frontend/                   # React frontend
+│   ├── src/
+│   │   ├── logic/              # State management & adapters
+│   │   └── ui/                 # Components & views
+│   ├── wailsjs/                # Auto-generated Wails bindings
+│   └── package.json
+├── build/                      # Build configuration
+└── docs/                       # Documentation
+    ├── architecture/           # Technical architecture docs
+    └── guides/                 # Developer guides
 ```
-
-## Technology Stack
-
-* **Backend**: Go 1.25.0
-* **Frontend**: React 19, Vite, Redux Toolkit
-* **Framework**: Wails v2.10.2 (for creating the desktop application)
-* **HTTP Client**: `resty.dev/v3` (for making API requests to LLM providers)
-* **Testing**: `github.com/stretchr/testify`
-
-## Settings UI
-
-The application includes a graphical Settings panel (built with React) that lets users configure their LLM provider connection. The Settings UI allows users to:
-
-* Set the `baseUrl`, `modelsEndpoint`, and `completionEndpoint`.
-* Add, edit, and remove custom HTTP headers.
-* Test the connection to the Models and Completion endpoints.
-* Refresh and select from a list of available models (fetched from the provider).
-* Configure the model `temperature`.
-* Set default input and output languages for translation.
-* Toggle Markdown output formatting.
-* Save the configuration or reset it to default values (defaults are configured for a local Ollama instance).
-
-![settingsExample1](docs/screens/05.SettingsExample_1.png)
-![settingsExample2](docs/screens/05.SettingsExample_2.png)
-![settingsExample3](docs/screens/05.SettingsExample_3.png)
-![settingsExample4](docs/screens/05.SettingsExample_4.png)
-
-This UI communicates with the Go backend via Wails bindings to persist settings and validate the connection.
 
 ---
 
-## Installation on macOS from GitHub Releases
+## Provider Examples
 
-If you install the app from the [GitHub Releases Page](https://github.com/sanyokkua/go_text/releases), macOS may block the app because it is not signed by Apple. This is expected for unsigned binaries. You can verify the source by building from source or by reviewing this repository.
+### Ollama (Local)
 
-If you prefer to download a release rather than build locally, follow these steps:
-
-1. Download the archive from the releases page.
-   ![release1](docs/screens/06.Release_1.png)
-2. Extract the app (you will get `TextProcessingSuite.app`).
-   ![release2](docs/screens/06.Release_2.png)
-3. If you try to run the app, macOS may show an error or block launch.
-   ![release3](docs/screens/06.Release_3.png)
-4. Remove the quarantine flag via Terminal:
-
-```shell
-xattr -rd com.apple.quarantine TextProcessingSuite.app
+```json
+{
+    "baseUrl": "http://127.0.0.1:11434/",
+    "modelsEndpoint": "v1/models",
+    "completionEndpoint": "v1/chat/completions",
+    "authType": "none"
+}
 ```
 
-![release4](docs/screens/06.Release_4.png)
+### OpenAI (Cloud)
 
-5. Run the app. If macOS still blocks it, open **System Preferences → Security & Privacy → General** and allow the app to run.
+```json
+{
+    "baseUrl": "https://api.openai.com/",
+    "modelsEndpoint": "v1/models",
+    "completionEndpoint": "v1/chat/completions",
+    "authType": "bearer",
+    "authToken": "sk-...",
+    "useAuthTokenFromEnv": true,
+    "envVarTokenName": "OPENAI_API_KEY"
+}
+```
 
-## Some Providers Information (examples)
+### OpenRouter (Cloud)
 
-### Ollama
+```json
+{
+    "baseUrl": "https://openrouter.ai/api/",
+    "modelsEndpoint": "v1/models",
+    "completionEndpoint": "v1/chat/completions",
+    "authType": "bearer",
+    "useAuthTokenFromEnv": true,
+    "envVarTokenName": "OPENROUTER_API_KEY"
+}
+```
 
-[Ollama Local Provider](https://ollama.com/)
+---
 
-* **BaseUrl**: `http://localhost:11434` (default)
-* **modelsEndpoint**: `/v1/models` (default)
-* **completionEndpoint**: `/v1/chat/completions` (default)
-* **headers**: No headers required
+## Documentation
 
-### LM Studio
+- **[Architecture Documentation](docs/architecture/README.md)** - Comprehensive technical architecture
+- **[Developer Guide](docs/guides/DEVELOPER_GUIDE.md)** - How to contribute and extend
 
-[LM Studio Local Provider](https://lmstudio.ai/)
+---
 
-* **BaseUrl**: `http://localhost:1234` (enable the server option in LM Studio before use)
-* **modelsEndpoint**: `/v1/models` (default)
-* **completionEndpoint**: `/v1/chat/completions` (default)
-* **headers**: No headers required
+## Known Limitations
 
-### Open Router
+- **Request Timeout**: LLM requests have a configurable timeout (default: 60 seconds)
+- **Context Limits**: Large documents may exceed model context windows
+- **Response Time**: Complex operations may take several seconds depending on model and provider
+- **Model Dependency**: Translation quality and output format depend on the selected model's capabilities
 
-[Open Router Cloud Provider](https://openrouter.ai/)
+---
 
-* **BaseUrl**: `https://openrouter.ai/api` (you must acquire your API key before use)
-* **modelsEndpoint**: `/v1/models` (default)
-* **completionEndpoint**: `/v1/chat/completions` (default)
-* **headers**:
+## Acknowledgments
 
-    * `Authorization: Bearer <OPENROUTER_API_KEY>`
-    * For example: `Authorization: Bearer cFgvJbewhrifu2f234uf2huy312e`
+- Built with [Wails](https://wails.io/) - An amazing framework for building desktop apps using Go and Web technologies
+- LLM provider templates inspired by the OpenAI API specification
+- Predecessor project: [llmedit](https://github.com/sanyokkua/llmedit)
+- Some parts were generated by Mistral Vibe and Google Antigravity, really great tools
 
-> Open Router also provides "free" models that can be used with this application. For example, `openai/gpt-oss-120b` — which can sometimes produce results close to `gpt-5-nano`.
+---
 
-### Other providers
-
-Other providers may use different `modelsEndpoint`, `completionEndpoint`, or authentication headers. Check the provider's API specification and configure the appropriate endpoints. The only requirement is that the provider supports OpenAI-compatible requests and responses.
-
-## Request / Response Notes
-
-The app uses HTTP REST endpoints to perform inference with AI models. As a result, during such calls the app can become temporarily unresponsive — this is expected. Each request has a timeout of 1 minute. If the internet connection is poor or the model takes too long to respond, the app will stop processing the current task after one minute and you can try again.
-
-Different models have different context limits, so do not attempt to translate or proofread entire books or very large documents. Most everyday texts are handled fine, but very large inputs can fail.
-
-![LoadingExample](docs/screens/07.LoadingExample.png)
-
-## Notes
-
-This is the first version of the app. It was developed to solve the author’s everyday tasks but can be used by anyone. Core functionality is covered by tests, though not the entire application.
-
-The author is not a professional UX designer or dedicated frontend developer, so some inconsistencies and bugs are expected. Improvements are planned, but there is not enough time for full-time development at the moment.
+*Version 2.0 - Complete rewrite with multi-provider support, 10 prompt categories, and 50+ text processing actions.*
