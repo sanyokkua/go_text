@@ -1,162 +1,411 @@
+# ==============================================================================
+# Build and Release - Cross-Platform Wails Application
+# ==============================================================================
+# Builds for Linux, Windows, and macOS (ARM64 + Intel)
+# Supports both tag-based and manual releases
+# ==============================================================================
+
 name: Build and Release Wails App
 
+# ==============================================================================
+# TRIGGERS
+# ==============================================================================
+
 on:
+  # Automatic release on version tags (recommended)
   push:
-    branches:
-      - release/*  # Builds happen on release branches
+    tags:
+      - 'v*.*.*'
+      # Matches: v1.0.0, v2.1.3, v1.0.0-beta, etc.
+
+  # Manual trigger with options
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version number for the release (e.g., 1.0.0 - WITHOUT "v" prefix)'
+        description: 'Version number (e.g. 1.0.0, no v)'
         required: true
         type: string
+        # User enters: 1.0.0 (not v1.0.0)
+
+      create_release:
+        description: 'Create GitHub release'
+        type: boolean
+        default: true
+        # false = build only (no release)
+
+# ==============================================================================
+# BUILD JOB - Compiles for all platforms in parallel
+# ==============================================================================
 
 jobs:
   build:
     strategy:
       fail-fast: false
+      # Continue other builds even if one fails
+
       matrix:
         include:
+          # Linux (Ubuntu 24.04 with webkit2gtk-4.1)
           - platform: linux/amd64
-            os: ubuntu-latest
-            output_name: "TextProcessingSuite-linux-amd64"
+            os: ubuntu-24.04
+            output_name: TextProcessingSuite-linux-amd64
+            artifact_path: build/bin/TextProcessingSuite-linux-amd64
+            build_tags: webkit2_41
+            # webkit2_41 tag required for Ubuntu 24.04
+
+          # Windows (with WebView2)
           - platform: windows/amd64
             os: windows-latest
-            output_name: "TextProcessingSuite-windows-amd64.exe"
+            output_name: TextProcessingSuite-windows-amd64.exe
+            artifact_path: build/bin/TextProcessingSuite-windows-amd64.exe
+            build_tags: ""
+
+          # macOS Apple Silicon
           - platform: darwin/arm64
             os: macos-latest
-            output_name: "TextProcessingSuite-macos-arm64"
+            output_name: TextProcessingSuite-macos-arm64
+            artifact_path: build/bin/TextProcessingSuite.app
+            build_tags: ""
+
+          # macOS Intel
+          - platform: darwin/amd64
+            os: macos-latest
+            output_name: TextProcessingSuite-macos-amd64
+            artifact_path: build/bin/TextProcessingSuite.app
+            build_tags: ""
 
     runs-on: ${{ matrix.os }}
+    # Each platform builds on its native OS
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
+      # --------------------------------------------------
+      # Checkout repository
+      # --------------------------------------------------
+      - uses: actions/checkout@v4
+        # Downloads source code into runner
 
-      - name: Setup Go
-        uses: actions/setup-go@v5
+      # --------------------------------------------------
+      # Setup Go (backend language)
+      # --------------------------------------------------
+      - uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.25'
+          # Uses Go 1.25 (auto-updates to latest patch)
           cache: true
-          cache-dependency-path: go.sum
+          # Caches Go modules for faster builds
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      # --------------------------------------------------
+      # Setup Node.js (frontend build)
+      # --------------------------------------------------
+      - uses: actions/setup-node@v4
         with:
-          node-version: '22.x'
-          cache: 'npm'
+          node-version: '24.x'
+          # Node 24 = current LTS
+          cache: npm
+          # Caches npm packages
           cache-dependency-path: frontend/package-lock.json
+          # Cache key based on this file
 
-      - name: Install Linux Dependencies
+      # --------------------------------------------------
+      # Install Linux system dependencies
+      # --------------------------------------------------
+      - name: Install Linux dependencies
         if: runner.os == 'Linux'
+        # Only runs on Ubuntu
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libgtk-3-dev
-          sudo apt-get install -y libwebkit2gtk-4.1-dev
-          if [ ! -f /usr/lib/x86_64-linux-gnu/pkgconfig/webkit2gtk-4.0.pc ]; then
-            sudo ln -s /usr/lib/x86_64-linux-gnu/pkgconfig/webkit2gtk-4.1.pc /usr/lib/x86_64-linux-gnu/pkgconfig/webkit2gtk-4.0.pc
-          fi
+          # Update package lists
+          
+          sudo apt-get install -y \
+            build-essential \
+            libgtk-3-dev \
+            libwebkit2gtk-4.1-dev
+          # build-essential = gcc, g++, make
+          # libgtk-3-dev = GTK3 windowing
+          # libwebkit2gtk-4.1-dev = WebView engine for Ubuntu 24.04
 
-      - name: Fix WebView2 dependency (Windows)
-        if: matrix.platform == 'windows/amd64'
-        run: go get github.com/wailsapp/go-webview2@v1.0.21
-
-      - name: Install macOS Tools
-        if: runner.os == 'macOS'
-        run: brew install mitchellh/gon/gon
-
+      # --------------------------------------------------
+      # Install Wails CLI
+      # --------------------------------------------------
       - name: Install Wails CLI
-        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.10.2
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+        # Installs latest Wails to ~/go/bin/wails
 
-      - name: Install frontend dependencies
+      # --------------------------------------------------
+      # Install frontend dependencies
+      # --------------------------------------------------
+      - name: Install frontend deps
         working-directory: frontend
+        # Run commands in ./frontend/ directory
         run: npm ci
+        # Clean install from package-lock.json
+        # npm ci is faster and more reliable than npm install in CI
 
-      - name: Build Wails Application
-        run: wails build --platform ${{ matrix.platform }} -o "${{ matrix.output_name }}"
+      # --------------------------------------------------
+      # Build the application
+      # --------------------------------------------------
+      - name: Build Wails app
+        run: |
+          if [ -n "${{ matrix.build_tags }}" ]; then
+            # If build_tags is not empty (Linux)
+            wails build --platform ${{ matrix.platform }} \
+                        -tags "${{ matrix.build_tags }}" \
+                        -o "${{ matrix.output_name }}"
+            # Linux: wails build --platform linux/amd64 -tags "webkit2_41" -o TextProcessingSuite-linux-amd64
+          else
+            # If build_tags is empty (Windows/macOS)
+            wails build --platform ${{ matrix.platform }} \
+                        -o "${{ matrix.output_name }}"
+            # Windows: wails build --platform windows/amd64 -o TextProcessingSuite-windows-amd64.exe
+          fi
+        # Output goes to build/bin/[output_name]
 
-      - name: Set macOS executable permissions
-        if: runner.os == 'macOS'
-        run: chmod +x build/bin/*/Contents/MacOS/*
-
-      - name: Set Linux executable permissions
+      # --------------------------------------------------
+      # Set executable permissions (Linux)
+      # --------------------------------------------------
+      - name: Fix executable permissions (Linux)
         if: runner.os == 'Linux'
         run: chmod +x build/bin/*
+        # Makes the Linux binary executable
+        # Git doesn't always preserve execute bit
 
-      - name: Upload Build Artifact
+      # --------------------------------------------------
+      # Set executable permissions (macOS)
+      # --------------------------------------------------
+      - name: Fix executable permissions (macOS)
+        if: runner.os == 'macOS'
+        run: chmod +x build/bin/TextProcessingSuite.app/Contents/MacOS/*
+        # Makes the binary inside .app bundle executable
+        # Path: TextProcessingSuite.app/Contents/MacOS/TextProcessingSuite
+
+      # --------------------------------------------------
+      # Package macOS .app as .zip
+      # --------------------------------------------------
+      - name: Package macOS app
+        if: runner.os == 'macOS'
+        run: |
+          cd build/bin
+          ditto -c -k --keepParent TextProcessingSuite.app \
+            TextProcessingSuite-${{ matrix.platform }}.app.zip
+        # Creates: TextProcessingSuite-darwin-arm64.app.zip
+        # ditto preserves macOS metadata (better than zip)
+        # --keepParent keeps the .app folder structure
+
+      # --------------------------------------------------
+      # Upload build artifacts
+      # --------------------------------------------------
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.output_name }}
+          # Artifact names:
+          # - TextProcessingSuite-linux-amd64
+          # - TextProcessingSuite-windows-amd64.exe
+          # - TextProcessingSuite-macos-arm64
+          # - TextProcessingSuite-macos-amd64
+
           path: |
-            ${{ runner.os == 'macOS' && 'build/bin' || format('build/bin/{0}', matrix.output_name) }}
+            ${{ matrix.artifact_path }}
+            ${{ runner.os == 'macOS' && 'build/bin/*.app.zip' || '' }}
+          # Linux: uploads build/bin/TextProcessingSuite-linux-amd64
+          # Windows: uploads build/bin/TextProcessingSuite-windows-amd64.exe
+          # macOS: uploads BOTH .app bundle AND .zip file
+
+          retention-days: 7
+          # Auto-delete after 7 days to save storage
+
+  # ==============================================================================
+  # RELEASE JOB - Creates GitHub Release with build artifacts
+  # ==============================================================================
 
   create-release:
-    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version != '' }}
     needs: build
+    # Waits for all build jobs to complete
+    # Skipped if any build fails
+
     runs-on: ubuntu-latest
-    environment: release
+
+    # Only create release if:
+    # 1. Triggered by tag push, OR
+    # 2. Manual trigger with create_release=true
+    if: >
+      startsWith(github.ref, 'refs/tags/')
+      || (github.event_name == 'workflow_dispatch'
+          && fromJSON(github.event.inputs.create_release))
+    # fromJSON() properly parses boolean string
+
     permissions:
       contents: write
+      # Required to create releases and upload assets
+
     steps:
-      - name: Validate version format
+      # --------------------------------------------------
+      # Extract version information
+      # --------------------------------------------------
+      - name: Extract version
+        id: version
+        # Creates outputs: steps.version.outputs.version and .tag
         run: |
-          if ! [[ "${{ github.event.inputs.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
-            echo "::error::Version must be semantic (e.g., 1.0.0 or 1.0.0-beta)"
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            # Manual trigger
+            VERSION="${{ github.event.inputs.version }}"
+            # User entered: 1.0.0
+            TAG="v${VERSION}"
+            # We add 'v': v1.0.0
+          else
+            # Tag push
+            TAG="${{ github.ref_name }}"
+            # From git: v1.0.0
+            VERSION="${TAG#v}"
+            # Remove 'v': 1.0.0
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          # Makes version and tag available to later steps
+
+      # --------------------------------------------------
+      # Download all build artifacts
+      # --------------------------------------------------
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+        # Downloads everything to ./artifacts/
+        # Structure:
+        # artifacts/
+        #   TextProcessingSuite-linux-amd64/
+        #     TextProcessingSuite-linux-amd64
+        #   TextProcessingSuite-windows-amd64.exe/
+        #     TextProcessingSuite-windows-amd64.exe
+        #   TextProcessingSuite-macos-arm64/
+        #     TextProcessingSuite.app/
+        #     TextProcessingSuite-darwin-arm64.app.zip
+        #   TextProcessingSuite-macos-amd64/
+        #     TextProcessingSuite.app/
+        #     TextProcessingSuite-darwin-amd64.app.zip
+
+      # --------------------------------------------------
+      # Debug: Show artifact structure
+      # --------------------------------------------------
+      - name: Debug - List artifacts
+        run: |
+          echo "=== Downloaded artifacts ==="
+          find artifacts -type f -ls
+          echo "============================"
+        # Shows all files with paths and sizes
+        # Helpful for debugging
+
+      # --------------------------------------------------
+      # Prepare release assets with version in filename
+      # --------------------------------------------------
+      - name: Prepare release assets
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          mkdir -p release-assets
+          
+          # Linux binary
+          LINUX="artifacts/TextProcessingSuite-linux-amd64/TextProcessingSuite-linux-amd64"
+          if [ -f "$LINUX" ]; then
+            cp "$LINUX" "release-assets/TextProcessingSuite-${VERSION}-linux-amd64"
+            # Result: TextProcessingSuite-1.0.0-linux-amd64
+            echo "✅ Linux"
+          else
+            echo "❌ Linux not found"
             exit 1
           fi
-
-      - name: Verify release parameters
-        id: verify
-        run: |
-          echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-          echo "tag=v${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-          echo "Preparing release for version ${{ github.event.inputs.version }}"
-
-      - name: Download all build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: TextProcessingSuite-*
-          path: artifacts
-
-      - name: Prepare all artifacts
-        run: |
-          # Flatten Linux binary
-          if [ -d "artifacts/TextProcessingSuite-linux-amd64" ]; then
-            mv "artifacts/TextProcessingSuite-linux-amd64/TextProcessingSuite-linux-amd64" artifacts/tmp-linux
-            rmdir "artifacts/TextProcessingSuite-linux-amd64"
-            mv artifacts/tmp-linux "artifacts/TextProcessingSuite-linux-amd64"
+          
+          # Windows binary
+          WINDOWS="artifacts/TextProcessingSuite-windows-amd64.exe/TextProcessingSuite-windows-amd64.exe"
+          if [ -f "$WINDOWS" ]; then
+            cp "$WINDOWS" "release-assets/TextProcessingSuite-${VERSION}-windows-amd64.exe"
+            # Result: TextProcessingSuite-1.0.0-windows-amd64.exe
+            echo "✅ Windows"
+          else
+            echo "❌ Windows not found"
+            exit 1
           fi
-
-          # Flatten Windows binary
-          if [ -d "artifacts/TextProcessingSuite-windows-amd64.exe" ]; then
-            mv "artifacts/TextProcessingSuite-windows-amd64.exe/TextProcessingSuite-windows-amd64.exe" artifacts/tmp-windows
-            rmdir "artifacts/TextProcessingSuite-windows-amd64.exe"
-            mv artifacts/tmp-windows "artifacts/TextProcessingSuite-windows-amd64.exe"
+          
+          # macOS ARM64 zip
+          MACOS_ARM="artifacts/TextProcessingSuite-macos-arm64/TextProcessingSuite-darwin-arm64.app.zip"
+          if [ -f "$MACOS_ARM" ]; then
+            cp "$MACOS_ARM" "release-assets/TextProcessingSuite-${VERSION}-macos-arm64.app.zip"
+            # Result: TextProcessingSuite-1.0.0-macos-arm64.app.zip
+            echo "✅ macOS ARM64"
+          else
+            echo "❌ macOS ARM64 not found"
+            exit 1
           fi
+          
+          # macOS Intel zip
+          MACOS_AMD="artifacts/TextProcessingSuite-macos-amd64/TextProcessingSuite-darwin-amd64.app.zip"
+          if [ -f "$MACOS_AMD" ]; then
+            cp "$MACOS_AMD" "release-assets/TextProcessingSuite-${VERSION}-macos-amd64.app.zip"
+            # Result: TextProcessingSuite-1.0.0-macos-amd64.app.zip
+            echo "✅ macOS Intel"
+          else
+            echo "❌ macOS Intel not found"
+            exit 1
+          fi
+          
+          # Generate checksums
+          cd release-assets
+          sha256sum * > SHA256SUMS.txt
+          # Creates checksum file for verification
+          
+          echo ""
+          echo "=== Release assets ready ==="
+          ls -lh
+          cat SHA256SUMS.txt
+          echo "============================"
+        # exit 1 if any file is missing (fail the workflow)
+        # This ensures we don't create incomplete releases
 
-          # Zip macOS app bundle
-          for dir in artifacts/TextProcessingSuite-macos-*; do
-            if [ -d "$dir/TextProcessingSuite.app" ]; then
-              echo "Zipping macOS app: $dir"
-              find "$dir/TextProcessingSuite.app" -type f -not -perm -ugo+x -exec chmod a+x {} \; 2>/dev/null || true
-              cd "$dir"
-              zip -r -X "../$(basename $dir).zip" TextProcessingSuite.app
-              cd - >/dev/null
-            fi
-          done
-
+      # --------------------------------------------------
+      # Create GitHub Release
+      # --------------------------------------------------
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.verify.outputs.tag }}
-          name: Release ${{ steps.verify.outputs.version }}
-          draft: false
-          prerelease: false
-          files: |
-            artifacts/TextProcessingSuite-linux-amd64
-            artifacts/TextProcessingSuite-windows-amd64.exe
-            artifacts/TextProcessingSuite-macos-arm64.zip
+          tag_name: ${{ steps.version.outputs.tag }}
+          # Tag name: v1.0.0
+
+          name: Release ${{ steps.version.outputs.version }}
+          # Release title: Release 1.0.0
+
+          prerelease: ${{ contains(steps.version.outputs.version, '-') }}
+          # Auto-detect pre-release:
+          # 1.0.0 = release
+          # 1.0.0-beta = pre-release
+
+          generate_release_notes: true
+          # Auto-generate from commits since last tag
+
+          files: release-assets/*
+          # Uploads all files from release-assets/
+          # - TextProcessingSuite-1.0.0-linux-amd64
+          # - TextProcessingSuite-1.0.0-windows-amd64.exe
+          # - TextProcessingSuite-1.0.0-macos-arm64.app.zip
+          # - TextProcessingSuite-1.0.0-macos-amd64.app.zip
+          # - SHA256SUMS.txt
+
+# ==============================================================================
+# USAGE
+# ==============================================================================
+#
+# TAG-BASED RELEASE (recommended):
+#   git tag v1.0.0
+#   git push origin v1.0.0
+#   → Builds and releases automatically
+#
+# MANUAL RELEASE:
+#   Actions → Run workflow
+#   Version: 1.0.0
+#   Create release: ✓
+#   → Builds and releases
+#
+# TEST BUILD (no release):
+#   Actions → Run workflow
+#   Version: 1.0.0-test
+#   Create release: ✗
+#   → Builds only, artifacts available for 7 days
+#
+# ==============================================================================

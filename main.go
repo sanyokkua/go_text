@@ -1,12 +1,17 @@
 package main
 
 import (
+	"context"
 	"embed"
-	"go_text/internal"
+	"go_text/internal/application"
+	"go_text/internal/logging"
+	"time"
 
 	"github.com/wailsapp/wails/v2"
+	"github.com/wailsapp/wails/v2/pkg/logger"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"resty.dev/v3"
 )
 
 //go:embed all:frontend/dist
@@ -15,10 +20,18 @@ var assets embed.FS
 const MinimalWidth = 830
 const MinimalHeight = 550
 
+func NewRestyClient() *resty.Client {
+	return resty.New().
+		SetTimeout(2*time.Minute).
+		SetHeader("Content-Type", "application/json").
+		SetHeader("Accept", "application/json")
+}
+
 func main() {
-	// Create an instance of the app structure
-	app := NewApp()
-	apiContext := internal.NewApplicationContext()
+	// Create custom logger
+	loggerApi := logging.NewAppStructLogger()                              // Logger should be created to pass a link to it and later inject context
+	restyClient := NewRestyClient()                                        // To configure the REST client before all other objects are created
+	app := application.NewApplicationContextHolder(loggerApi, restyClient) // Main App Structure with all dependencies
 
 	// Create an application with options
 	err := wails.Run(&options.App{
@@ -30,10 +43,19 @@ func main() {
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
-		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
-		OnStartup:        app.startup,
+		Logger:             loggerApi,
+		LogLevel:           logger.DEBUG,
+		LogLevelProduction: logger.WARNING,
+		BackgroundColour:   &options.RGBA{R: 27, G: 38, B: 54, A: 1},
+		OnStartup: func(ctx context.Context) {
+			app.SetContext(ctx)
+			err := app.SettingsService.InitDefaultSettingsIfAbsent()
+			if err != nil {
+				return // Ignoring error
+			}
+		},
 		Bind: []interface{}{
-			app, apiContext.ActionApi, apiContext.SettingsApi, apiContext.StateApi,
+			app, app.ActionHandler, app.SettingsHandler,
 		},
 	})
 
