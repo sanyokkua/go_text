@@ -17,14 +17,17 @@
 
 ## Overview
 
-Text Processing Suite is a native desktop application built with **Wails v2** that combines a **Go backend** with a **React frontend**. The application processes text using Large Language Models (LLMs) through OpenAI-compatible APIs, supporting operations like proofreading, formatting, translation, summarization, and transforming.
+Text Processing Suite is a native desktop application built with **Wails v2** that combines a **Go backend** with a **React frontend**. The
+application processes text using Large Language Models (LLMs) through OpenAI-compatible APIs, supporting operations like proofreading, formatting,
+translation, summarization, and transforming.
 
 The application supports **5 main text processing categories**:
-  - **Proofreading**: Proofread, rewrite, and adjust tone (8 prompts)
-  - **Formatting**: Format text for different contexts like emails, chat, social media (7 prompts)
-  - **Translation**: Translate between languages with dictionary support (2 prompts)
-  - **Summarization**: Summarize, extract key points, generate hashtags, explain text (4 prompts)
-  - **Transforming**: Convert text into structured formats like user stories (1 prompt)
+
+- **Proofreading**: Proofread, rewrite, and adjust tone (8 prompts)
+- **Formatting**: Format text for different contexts like emails, chat, social media (7 prompts)
+- **Translation**: Translate between languages with dictionary support (2 prompts)
+- **Summarization**: Summarize, extract key points, generate hashtags, explain text (4 prompts)
+- **Transforming**: Convert text into structured formats like user stories (1 prompt)
 
 ### Key Characteristics
 
@@ -156,6 +159,7 @@ The backend is organized into **services** following a **separation of concerns*
 **Responsibility**: Manage access to prompt templates
 
 **Key Methods**:
+
 - `GetUserPromptsForCategory(category string)` - Returns all user prompts for a category
 - `GetPrompt(promptId string)` - Returns a specific prompt by ID
 - `GetSystemPrompt(category string)` - Returns the system prompt for a category
@@ -167,30 +171,32 @@ The backend is organized into **services** following a **separation of concerns*
 The application uses a sophisticated prompt management system:
 
 - **Categories**: 5 main categories
-  1. **Proofreading** - Proofread, rewrite, and adjust tone (formal, casual, friendly, direct, indirect)
-  2. **Formatting** - Format text for emails, chat messages, social media, wikis, documents
-  3. **Translation** - Translate between languages, create dictionary-style translations
-  4. **Summarization** - Summarize text, extract key points, generate hashtags, explain complex text
-  5. **Transforming** - Transform text into structured formats (e.g., user stories for development)
+    1. **Proofreading** - Proofread, rewrite, and adjust tone (formal, casual, friendly, direct, indirect)
+    2. **Formatting** - Format text for emails, chat messages, social media, wikis, documents
+    3. **Translation** - Translate between languages, create dictionary-style translations
+    4. **Summarization** - Summarize text, extract key points, generate hashtags, explain complex text
+    5. **Transforming** - Transform text into structured formats (e.g., user stories for development)
 - **Prompt Types**: System prompts (one per category) and User prompts (multiple per category)
 - **Storage**: All prompts defined as Go constants in `internal/backend/constants/private.go`
 - **Template System**: Placeholders like `{{user_text}}`, `{{user_format}}`, `{{input_language}}`, `{{output_language}}`
 - **Organization**:
-  - `systemPromptByCategory` map - maps categories to system prompts (5 entries)
-  - `userPrompts` map - maps prompt IDs to prompt definitions (22 prompts total)
-  - `userPromptsByCategory` map - maps categories to lists of user prompts
+    - `systemPromptByCategory` map - maps categories to system prompts (5 entries)
+    - `userPrompts` map - maps prompt IDs to prompt definitions (22 prompts total)
+    - `userPromptsByCategory` map - maps categories to lists of user prompts
 
 #### 2. **SettingsService** (`internal/backend/core/settings/`)
 
 **Responsibility**: Manage application settings (load, save, validate)
 
 **Key Methods**:
+
 - `GetCurrentSettings()` - Returns current settings from file
 - `SetSettings(settings)` - Saves settings to file
 - `GetDefaultSettings()` - Returns default settings
 - `GetModelName()`, `GetLanguages()`, etc.
 
 **Storage**: Platform-specific JSON file
+
 - macOS: `~/Library/Application Support/GoTextProcessing/settings.json`
 - Linux: `~/.config/GoTextProcessing/settings.json`
 - Windows: `%AppData%\GoTextProcessing\settings.json`
@@ -200,6 +206,7 @@ The application uses a sophisticated prompt management system:
 **Responsibility**: Communicate with LLM providers
 
 **Key Methods**:
+
 - `GetModelsList()` - Fetches available models from provider
 - `GetCompletionResponse(request)` - Sends completion request to LLM
 
@@ -210,6 +217,7 @@ The application uses a sophisticated prompt management system:
 **Responsibility**: Abstraction over HTTP requests to LLM APIs
 
 **Features**:
+
 - Configurable base URL, headers, timeouts
 - Retry logic
 - Request/response logging
@@ -219,6 +227,7 @@ The application uses a sophisticated prompt management system:
 **Responsibility**: Shared utility functions
 
 **Key Functions**:
+
 - `BuildPrompt()` - Replace template placeholders in prompts
 - `SanitizeReasoningBlock()` - Clean LLM responses
 - `IsSettingsValid()` - Validate settings structure
@@ -236,6 +245,7 @@ These are the **only** backend functions accessible from the frontend:
 **Method**: `ProcessAction(action AppActionObjWrapper) (string, error)`
 
 **Flow**:
+
 1. Validate action ID
 2. Fetch prompt definition and system prompt
 3. Load settings
@@ -249,6 +259,7 @@ These are the **only** backend functions accessible from the frontend:
 **Purpose**: Provide UI with available options
 
 **Methods**:
+
 - `GetProofreadingItems()` → List of proofreading prompts (8 items)
 - `GetFormattingItems()` → List of formatting prompts (7 items)
 - `GetTranslatingItems()` → List of translation prompts (2 items)
@@ -266,6 +277,7 @@ These are the **only** backend functions accessible from the frontend:
 **Purpose**: Manage settings from UI
 
 **Methods**:
+
 - `LoadSettings()` - Load current settings
 - `SaveSettings(settings)` - Save settings (with validation)
 - `ResetToDefaultSettings()` - Restore defaults
@@ -341,16 +353,16 @@ store/
 **Key State Slices**:
 
 1. **App Slice**: Manages application state
-   - Available prompts by category
-   - Available languages
-   - Available models
-   - Current selections
-   - Input/output text
+    - Available prompts by category
+    - Available languages
+    - Available models
+    - Current selections
+    - Input/output text
 
 2. **Settings Slice**: Manages settings state
-   - Current settings
-   - Validation status
-   - Loading states
+    - Current settings
+    - Validation status
+    - Loading states
 
 #### Component Structure (`frontend/src/widgets/`)
 
@@ -769,12 +781,12 @@ To add a new language, simply add it to this array.
 
 Prompts use the following placeholders that are replaced at runtime:
 
-| Placeholder | Replaced With | Used In |
-|-------------|---------------|---------|
-| `{{user_text}}` | User input text | All prompts |
-| `{{user_format}}` | Output format (PlainText or Markdown) | All prompts |
-| `{{input_language}}` | Input language name | Translation prompts |
-| `{{output_language}}` | Output language name | Translation prompts |
+| Placeholder           | Replaced With                         | Used In             |
+|-----------------------|---------------------------------------|---------------------|
+| `{{user_text}}`       | User input text                       | All prompts         |
+| `{{user_format}}`     | Output format (PlainText or Markdown) | All prompts         |
+| `{{input_language}}`  | Input language name                   | Translation prompts |
+| `{{output_language}}` | Output language name                  | Translation prompts |
 
 Replacement logic is in `internal/backend/core/utils/` (BuildPrompt function).
 
@@ -934,6 +946,7 @@ wails build -platform linux/amd64        # Linux 64-bit
 **Cause**: Incorrect base URL, endpoint, or headers
 
 **Solution**:
+
 - Verify the LLM provider is running
 - Use the "Test Connection" buttons in the Settings UI
 - Check headers for API key if required
@@ -948,7 +961,8 @@ wails build -platform linux/amd64        # Linux 64-bit
 
 ## Conclusion
 
-This architecture documentation provides a comprehensive guide to understanding and modifying the Text Processing Suite application. The key takeaways:
+This architecture documentation provides a comprehensive guide to understanding and modifying the Text Processing Suite application. The key
+takeaways:
 
 1. **Wails v2** bridges Go backend and React frontend
 2. **Prompts** are stored as constants in `private.go`
