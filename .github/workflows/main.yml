@@ -178,18 +178,6 @@ jobs:
         # Path: TextProcessingSuite.app/Contents/MacOS/TextProcessingSuite
 
       # --------------------------------------------------
-      # Package macOS .app as .zip
-      # --------------------------------------------------
-      - name: Package macOS app
-        if: runner.os == 'macOS'
-        run: |
-          cd build/bin
-          ditto -c -k --keepParent TextProcessingSuite.app TextProcessingSuite-${{ matrix.platform }}.app.zip
-        # Creates: TextProcessingSuite-darwin-arm64.app.zip
-        # ditto preserves macOS metadata (better than zip)
-        # --keepParent keeps the .app folder structure
-
-      # --------------------------------------------------
       # Upload build artifacts
       # --------------------------------------------------
       - name: Upload artifact
@@ -201,14 +189,11 @@ jobs:
           # - TextProcessingSuite-windows-amd64.exe
           # - TextProcessingSuite-macos-arm64
           # - TextProcessingSuite-macos-amd64
-
-          path: |
-            ${{ matrix.artifact_path }}
-            ${{ runner.os == 'macOS' && 'build/bin/*.app.zip' || '' }}
-          # Linux: uploads build/bin/TextProcessingSuite-linux-amd64
-          # Windows: uploads build/bin/TextProcessingSuite-windows-amd64.exe
-          # macOS: uploads BOTH .app bundle AND .zip file
-
+          path: ${{ matrix.artifact_path }}
+          # Uploads only the main artifact:
+          # - Linux: build/bin/TextProcessingSuite-linux-amd64
+          # - Windows: build/bin/TextProcessingSuite-windows-amd64.exe
+          # - macOS: build/bin/TextProcessingSuite.app (entire .app bundle)
           retention-days: 7
           # Auto-delete after 7 days
 
@@ -222,6 +207,7 @@ jobs:
     # Skipped if any build fails
 
     runs-on: ubuntu-latest
+    # Uses Ubuntu runner for release creation
 
     # Only create release if:
     # 1. Triggered by tag push, OR
@@ -276,10 +262,14 @@ jobs:
         #     TextProcessingSuite-windows-amd64.exe
         #   TextProcessingSuite-macos-arm64/
         #     TextProcessingSuite.app/
-        #     TextProcessingSuite-darwin-arm64.app.zip
+        #       Contents/MacOS/TextProcessingSuite
+        #       Contents/Info.plist
+        #       Contents/Resources/iconfile.icns
         #   TextProcessingSuite-macos-amd64/
         #     TextProcessingSuite.app/
-        #     TextProcessingSuite-darwin-amd64.app.zip
+        #       Contents/MacOS/TextProcessingSuite
+        #       Contents/Info.plist
+        #       Contents/Resources/iconfile.icns
 
       # --------------------------------------------------
       # Debug: Show artifact structure
@@ -290,7 +280,7 @@ jobs:
           find artifacts -type f -ls
           echo "============================"
         # Shows all files with paths and sizes
-        # Helpful for debugging
+        # Helpful for debugging if something goes wrong
 
       # --------------------------------------------------
       # Prepare release assets with version in filename
@@ -307,7 +297,7 @@ jobs:
             # Result: TextProcessingSuite-1.0.0-linux-amd64
             echo "✅ Linux"
           else
-            echo "❌ Linux not found"
+            echo "❌ Linux binary not found at: $LINUX"
             exit 1
           fi
           
@@ -318,29 +308,38 @@ jobs:
             # Result: TextProcessingSuite-1.0.0-windows-amd64.exe
             echo "✅ Windows"
           else
-            echo "❌ Windows not found"
+            echo "❌ Windows binary not found at: $WINDOWS"
             exit 1
           fi
           
-          # macOS ARM64 zip
-          MACOS_ARM="artifacts/TextProcessingSuite-macos-arm64/TextProcessingSuite-darwin-arm64.app.zip"
-          if [ -f "$MACOS_ARM" ]; then
-            cp "$MACOS_ARM" "release-assets/TextProcessingSuite-${VERSION}-macos-arm64.app.zip"
-            # Result: TextProcessingSuite-1.0.0-macos-arm64.app.zip
-            echo "✅ macOS ARM64"
+          # macOS ARM64 - zip the .app bundle
+          MACOS_ARM_APP="artifacts/TextProcessingSuite-macos-arm64/TextProcessingSuite.app"
+          if [ -d "$MACOS_ARM_APP" ]; then
+            cd artifacts/TextProcessingSuite-macos-arm64
+            # Use zip with flags that preserve as much as possible
+            # -r = recursive
+            # -y = preserve symlinks
+            # --compression-method store = no compression for executable
+            zip -r -y "../../release-assets/TextProcessingSuite-${VERSION}-macos-arm64.app.zip" TextProcessingSuite.app
+            cd ../..
+            echo "✅ macOS ARM64 app zipped"
+            # Note: While ditto is preferred on macOS for preserving all metadata,
+            # zip with -y flag preserves symlinks and most attributes needed for .app bundles
           else
-            echo "❌ macOS ARM64 not found"
+            echo "❌ macOS ARM64 app not found at: $MACOS_ARM_APP"
             exit 1
           fi
           
-          # macOS Intel zip
-          MACOS_AMD="artifacts/TextProcessingSuite-macos-amd64/TextProcessingSuite-darwin-amd64.app.zip"
-          if [ -f "$MACOS_AMD" ]; then
-            cp "$MACOS_AMD" "release-assets/TextProcessingSuite-${VERSION}-macos-amd64.app.zip"
-            # Result: TextProcessingSuite-1.0.0-macos-amd64.app.zip
-            echo "✅ macOS Intel"
+          # macOS Intel - zip the .app bundle
+          MACOS_AMD_APP="artifacts/TextProcessingSuite-macos-amd64/TextProcessingSuite.app"
+          if [ -d "$MACOS_AMD_APP" ]; then
+            cd artifacts/TextProcessingSuite-macos-amd64
+            # Use zip with flags that preserve as much as possible
+            zip -r -y "../../release-assets/TextProcessingSuite-${VERSION}-macos-amd64.app.zip" TextProcessingSuite.app
+            cd ../..
+            echo "✅ macOS Intel app zipped"
           else
-            echo "❌ macOS Intel not found"
+            echo "❌ macOS Intel app not found at: $MACOS_AMD_APP"
             exit 1
           fi
           
@@ -348,6 +347,7 @@ jobs:
           cd release-assets
           sha256sum * > SHA256SUMS.txt
           # Creates checksum file for verification
+          # Users can verify downloads weren't corrupted
           
           echo ""
           echo "=== Release assets ready ==="
