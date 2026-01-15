@@ -323,14 +323,16 @@ jobs:
             # Create the .app bundle with proper structure
             mkdir -p TextProcessingSuite.app
             mv Contents TextProcessingSuite.app/
-            # Now zip it with proper flags
+            # CRITICAL: Restore executable permissions that were set during build
+            chmod +x TextProcessingSuite.app/Contents/MacOS/*
+            # Now zip it with proper flags to preserve permissions
             # -r = recursive
             # -y = preserve symlinks
-            zip -r -y "../../release-assets/TextProcessingSuite-${VERSION}-macos-arm64.app.zip" TextProcessingSuite.app
+            # -X = preserve Unix file attributes (CRITICAL for executable permissions)
+            zip -r -y -X "../../release-assets/TextProcessingSuite-${VERSION}-macos-arm64.app.zip" TextProcessingSuite.app
             cd ../..
             echo "✅ macOS ARM64 app zipped"
-            # Note: We use zip instead of ditto because we're on Ubuntu
-            # zip with -y preserves symlinks and works well for .app bundles
+            # Note: The -X flag is essential for macOS apps to remain executable after unzipping
           else
             echo "❌ macOS ARM64 Contents not found at: $MACOS_ARM_DIR/Contents"
             exit 1
@@ -344,8 +346,11 @@ jobs:
             # Create the .app bundle with proper structure
             mkdir -p TextProcessingSuite.app
             mv Contents TextProcessingSuite.app/
-            # Now zip it with proper flags
-            zip -r -y "../../release-assets/TextProcessingSuite-${VERSION}-macos-amd64.app.zip" TextProcessingSuite.app
+            # CRITICAL: Restore executable permissions that were set during build
+            chmod +x TextProcessingSuite.app/Contents/MacOS/*
+            # Now zip it with proper flags to preserve permissions
+            # -r = recursive, -y = preserve symlinks, -X = preserve permissions
+            zip -r -y -X "../../release-assets/TextProcessingSuite-${VERSION}-macos-amd64.app.zip" TextProcessingSuite.app
             cd ../..
             echo "✅ macOS Intel app zipped"
           else
