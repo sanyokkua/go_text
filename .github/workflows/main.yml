@@ -142,22 +142,31 @@ jobs:
         # npm ci is faster and more reliable than npm install in CI
 
       # --------------------------------------------------
-      # Build the application
+      # Build the application (Linux - with tags)
       # --------------------------------------------------
-      - name: Build Wails app
+      - name: Build Wails app (Linux)
+        if: matrix.build_tags != ''
+        # Only runs when build_tags is not empty (Linux)
         run: |
-          if [ -n "${{ matrix.build_tags }}" ]; then
-            # If build_tags is not empty (Linux)
-            wails build --platform ${{ matrix.platform }} \
+          wails build \
+            --platform ${{ matrix.platform }} \
                         -tags "${{ matrix.build_tags }}" \
                         -o "${{ matrix.output_name }}"
             # Linux: wails build --platform linux/amd64 -tags "webkit2_41" -o TextProcessingSuite-linux-amd64
-          else
-            # If build_tags is empty (Windows/macOS)
-            wails build --platform ${{ matrix.platform }} \
+        # Output goes to build/bin/TextProcessingSuite-linux-amd64
+
+      # --------------------------------------------------
+      # Build the application (Windows/macOS - no tags)
+      # --------------------------------------------------
+      - name: Build Wails app (Windows/macOS)
+        if: matrix.build_tags == ''
+        # Only runs when build_tags is empty (Windows/macOS)
+        run: |
+          wails build \
+            --platform ${{ matrix.platform }} \
                         -o "${{ matrix.output_name }}"
             # Windows: wails build --platform windows/amd64 -o TextProcessingSuite-windows-amd64.exe
-          fi
+        # macOS: wails build --platform darwin/arm64 -o TextProcessingSuite-macos-arm64
         # Output goes to build/bin/[output_name]
 
       # --------------------------------------------------

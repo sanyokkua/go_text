@@ -1,10 +1,11 @@
 # Text Processing Suite
 
-> A native desktop application for intelligent text transformation powered by Large Language Models.
-
 [![Go Version](https://img.shields.io/badge/Go-1.25%2B-blue)](https://go.dev/)
 [![Wails](https://img.shields.io/badge/Wails-v2.11.0-blue)](https://wails.io/)
 [![React](https://img.shields.io/badge/React-19.2.3-61DAFB)](https://react.dev/)
+
+> A native desktop application for intelligent text transformation powered by Large Language Models.
+<img src="docs/appicon.png" alt="drawing" width="200"/>
 
 ---
 
