@@ -203,13 +203,14 @@ It is recommendedto check for updates periodically, especially when new features
 
 Download the latest release for your platform from the [GitHub Releases Page](https://github.com/sanyokkua/go_text/releases).
 
-| Platform                  | File                                    |
-|---------------------------|-----------------------------------------|
-| **macOS** (Apple Silicon) | `TextProcessingSuite-macos-arm64.zip`   |
-| **Windows** (64-bit)      | `TextProcessingSuite-windows-amd64.exe` |
-| **Linux** (64-bit)        | `TextProcessingSuite-linux-amd64`       |
+| Platform                  | File                                            |
+|---------------------------|-------------------------------------------------|
+| **macOS** (Apple Silicon) | `TextProcessingSuite-2.0.0-linux-amd64.zip`     |
+| **macOS** (Intel)         | `TextProcessingSuite-2.0.0-macos-amd64.app.zip` |
+| **Windows** (64-bit)      | `TextProcessingSuite-2.0.0-windows-amd64.exe`   |
+| **Linux** (64-bit)        | `TextProcessingSuite-2.0.0-linux-amd64`         |
 
-![Release Page](docs/v1_docs/screens/06.Release_1.png)
+![Release Page](docs/screenshots/ReleasePage_1.png)
 
 #### macOS Installation Notes
 
