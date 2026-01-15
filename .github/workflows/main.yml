@@ -143,7 +143,7 @@ jobs:
         if: matrix.build_tags != ''
         # Only runs when build_tags is not empty (Linux)
         run: wails build --platform ${{ matrix.platform }} -tags "${{ matrix.build_tags }}" -o "${{ matrix.output_name }}"
-          # Single-line command works on all shells
+        # Single-line command works on all shells
         # Linux: wails build --platform linux/amd64 -tags "webkit2_41" -o TextProcessingSuite-linux-amd64
         # Output goes to build/bin/TextProcessingSuite-linux-amd64
 
@@ -154,7 +154,7 @@ jobs:
         if: matrix.build_tags == ''
         # Only runs when build_tags is empty (Windows/macOS)
         run: wails build --platform ${{ matrix.platform }} -o "${{ matrix.output_name }}"
-          # Single-line command works on all shells
+        # Single-line command works on all shells
         # Windows: wails build --platform windows/amd64 -o TextProcessingSuite-windows-amd64.exe
         # macOS: wails build --platform darwin/arm64 -o TextProcessingSuite-macos-arm64
         # Output goes to build/bin/[output_name]
@@ -194,8 +194,11 @@ jobs:
           # - Linux: build/bin/TextProcessingSuite-linux-amd64
           # - Windows: build/bin/TextProcessingSuite-windows-amd64.exe
           # - macOS: build/bin/TextProcessingSuite.app (entire .app bundle)
+          # NOTE: For macOS, GitHub Actions flattens the structure:
+          #   Uploaded as: TextProcessingSuite.app/Contents/...
+          #   Downloaded as: Contents/... (top-level folder stripped)
           retention-days: 7
-          # Auto-delete after 7 days
+          # Auto-delete after 7 days to save storage
 
   # ==============================================================================
   # RELEASE JOB - Creates GitHub Release with build artifacts
@@ -254,22 +257,22 @@ jobs:
         with:
           path: artifacts
         # Downloads everything to ./artifacts/
-        # Structure:
+        # Structure after download (macOS gets flattened):
         # artifacts/
         #   TextProcessingSuite-linux-amd64/
         #     TextProcessingSuite-linux-amd64
         #   TextProcessingSuite-windows-amd64.exe/
         #     TextProcessingSuite-windows-amd64.exe
         #   TextProcessingSuite-macos-arm64/
-        #     TextProcessingSuite.app/
-        #       Contents/MacOS/TextProcessingSuite
-        #       Contents/Info.plist
-        #       Contents/Resources/iconfile.icns
+        #     Contents/
+        #       MacOS/TextProcessingSuite
+        #       Info.plist
+        #       Resources/iconfile.icns
         #   TextProcessingSuite-macos-amd64/
-        #     TextProcessingSuite.app/
-        #       Contents/MacOS/TextProcessingSuite
-        #       Contents/Info.plist
-        #       Contents/Resources/iconfile.icns
+        #     Contents/
+        #       MacOS/TextProcessingSuite
+        #       Info.plist
+        #       Resources/iconfile.icns
 
       # --------------------------------------------------
       # Debug: Show artifact structure
@@ -312,34 +315,41 @@ jobs:
             exit 1
           fi
           
-          # macOS ARM64 - zip the .app bundle
-          MACOS_ARM_APP="artifacts/TextProcessingSuite-macos-arm64/TextProcessingSuite.app"
-          if [ -d "$MACOS_ARM_APP" ]; then
-            cd artifacts/TextProcessingSuite-macos-arm64
-            # Use zip with flags that preserve as much as possible
+          # macOS ARM64 - recreate .app structure and zip
+          MACOS_ARM_DIR="artifacts/TextProcessingSuite-macos-arm64"
+          if [ -d "$MACOS_ARM_DIR/Contents" ]; then
+            # GitHub Actions flattened the .app bundle, we need to recreate it
+            cd "$MACOS_ARM_DIR"
+            # Create the .app bundle with proper structure
+            mkdir -p TextProcessingSuite.app
+            mv Contents TextProcessingSuite.app/
+            # Now zip it with proper flags
             # -r = recursive
             # -y = preserve symlinks
-            # --compression-method store = no compression for executable
             zip -r -y "../../release-assets/TextProcessingSuite-${VERSION}-macos-arm64.app.zip" TextProcessingSuite.app
             cd ../..
             echo "✅ macOS ARM64 app zipped"
-            # Note: While ditto is preferred on macOS for preserving all metadata,
-            # zip with -y flag preserves symlinks and most attributes needed for .app bundles
+            # Note: We use zip instead of ditto because we're on Ubuntu
+            # zip with -y preserves symlinks and works well for .app bundles
           else
-            echo "❌ macOS ARM64 app not found at: $MACOS_ARM_APP"
+            echo "❌ macOS ARM64 Contents not found at: $MACOS_ARM_DIR/Contents"
             exit 1
           fi
           
-          # macOS Intel - zip the .app bundle
-          MACOS_AMD_APP="artifacts/TextProcessingSuite-macos-amd64/TextProcessingSuite.app"
-          if [ -d "$MACOS_AMD_APP" ]; then
-            cd artifacts/TextProcessingSuite-macos-amd64
-            # Use zip with flags that preserve as much as possible
+          # macOS Intel - recreate .app structure and zip
+          MACOS_AMD_DIR="artifacts/TextProcessingSuite-macos-amd64"
+          if [ -d "$MACOS_AMD_DIR/Contents" ]; then
+            # GitHub Actions flattened the .app bundle, we need to recreate it
+            cd "$MACOS_AMD_DIR"
+            # Create the .app bundle with proper structure
+            mkdir -p TextProcessingSuite.app
+            mv Contents TextProcessingSuite.app/
+            # Now zip it with proper flags
             zip -r -y "../../release-assets/TextProcessingSuite-${VERSION}-macos-amd64.app.zip" TextProcessingSuite.app
             cd ../..
             echo "✅ macOS Intel app zipped"
           else
-            echo "❌ macOS Intel app not found at: $MACOS_AMD_APP"
+            echo "❌ macOS Intel Contents not found at: $MACOS_AMD_DIR/Contents"
             exit 1
           fi
           
