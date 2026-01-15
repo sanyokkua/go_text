@@ -279,11 +279,11 @@ The application supports **multiple provider configurations** that you can switc
 
 ### Settings File Location
 
-| Platform    | Path                                                              |
-|-------------|-------------------------------------------------------------------|
-| **macOS**   | `~/Library/Application Support/TextProcessingSuite/settings.json` |
-| **Linux**   | `~/.config/TextProcessingSuite/settings.json`                     |
-| **Windows** | `%APPDATA%\TextProcessingSuite\settings.json`                     |
+| Platform    | Path                                                                |
+|-------------|---------------------------------------------------------------------|
+| **macOS**   | `~/Library/Application Support/TextProcessingSuite/SettingsV2.json` |
+| **Linux**   | `~/.config/TextProcessingSuite/SettingsV2.json`                     |
+| **Windows** | `%APPDATA%\TextProcessingSuite\SettingsV2.json`                     |
 
 ### Configuration Options
 
