@@ -145,6 +145,10 @@ export interface ModelConfig {
     name: string;
     useTemperature: boolean;
     temperature: number;
+    // Context window settings
+    useContextWindow: boolean;
+    contextWindow: number;
+    useLegacyMaxTokens: boolean;
 }
 
 /**

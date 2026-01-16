@@ -8,9 +8,10 @@ import (
 	"testing"
 	"time"
 
+	"go_text/internal/settings"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go_text/internal/settings"
 	"resty.dev/v3"
 )
 

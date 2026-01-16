@@ -132,9 +132,12 @@ var DefaultSetting = Settings{
 		UseMarkdownForOutput: false,
 	},
 	ModelConfig: ModelConfig{
-		Name:           "",
-		UseTemperature: true,
-		Temperature:    0.5,
+		Name:               "",
+		UseTemperature:     true,
+		Temperature:        0.5,
+		UseContextWindow:   false,
+		ContextWindow:      4096,
+		UseLegacyMaxTokens: false,
 	},
 	LanguageConfig: LanguageConfig{
 		DefaultInputLanguage:  "English",
