@@ -28,6 +28,9 @@ type ChatCompletionRequest struct {
 	Options     *Options                   `json:"options,omitempty"` // Only used by Ollama
 	Stream      bool                       `json:"stream"`
 	N           int                        `json:"n,omitempty"`
+	// Token limit parameters - the user chooses which one to use
+	MaxTokens           *int `json:"max_tokens,omitempty"`            // Legacy parameter
+	MaxCompletionTokens *int `json:"max_completion_tokens,omitempty"` // Current recommended parameter
 }
 
 // Response

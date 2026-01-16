@@ -1,5 +1,5 @@
 import RefreshIcon from '@mui/icons-material/Refresh';
-import { AutocompleteRenderInputParams, Box, Button, Checkbox, FormControlLabel, Slider, Typography } from '@mui/material';
+import { AutocompleteRenderInputParams, Box, Button, Checkbox, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, Slider, Typography } from '@mui/material';
 import Autocomplete from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
 import React, { useEffect, useState } from 'react';
@@ -68,6 +68,13 @@ const ModelConfigTab: React.FC<ModelConfigTabProps> = ({ settings }) => {
         if (typeof newValue === 'number') {
             logger.logDebug(`Temperature slider changed to: ${newValue}`);
             setFormData((prev) => ({ ...prev, temperature: newValue }));
+        }
+    };
+
+    const handleContextWindowSliderChange = (_: Event, newValue: number | number[]) => {
+        if (typeof newValue === 'number') {
+            logger.logDebug(`Context window slider changed to: ${newValue}`);
+            setFormData((prev) => ({ ...prev, contextWindow: newValue }));
         }
     };
 
@@ -170,6 +177,64 @@ const ModelConfigTab: React.FC<ModelConfigTabProps> = ({ settings }) => {
                         <Typography variant="caption" color="text.primary">
                             Lower values make output more deterministic, higher values more creative
                         </Typography>
+                    </Box>
+                )}
+
+                <FormControlLabel
+                    control={<Checkbox name="useContextWindow" checked={formData.useContextWindow} onChange={handleChange} />}
+                    label="Use Context Window"
+                />
+
+                {formData.useContextWindow && (
+                    <Box sx={{ paddingX: SPACING.STANDARD }}>
+                        <Typography gutterBottom>Context Window: {formData.contextWindow} tokens</Typography>
+                        <Slider
+                            value={formData.contextWindow}
+                            onChange={handleContextWindowSliderChange}
+                            min={1024}
+                            max={200000}
+                            step={1024}
+                            valueLabelDisplay="auto"
+                            marks={[
+                                { value: 1024, label: '1K' },
+                                { value: 4096, label: '4K' },
+                                { value: 16384, label: '16K' },
+                                { value: 32768, label: '32K' },
+                                { value: 65536, label: '64K' },
+                                { value: 131072, label: '128K' },
+                                { value: 200000, label: '200K' },
+                            ]}
+                        />
+                        <Typography variant="caption" color="text.primary">
+                            Context window controls maximum token limit for LLM responses (1024-200000 tokens)
+                        </Typography>
+
+                        <FormControl component="fieldset" sx={{ mt: 2 }}>
+                            <FormLabel component="legend">Token Limit Parameter</FormLabel>
+                            <RadioGroup
+                                row
+                                name="useLegacyMaxTokens"
+                                value={formData.useLegacyMaxTokens ? 'legacy' : 'current'}
+                                onChange={(e) => {
+                                    const useLegacy = e.target.value === 'legacy';
+                                    setFormData((prev) => ({ ...prev, useLegacyMaxTokens: useLegacy }));
+                                }}
+                            >
+                                <FormControlLabel
+                                    value="current"
+                                    control={<Radio />}
+                                    label="max_completion_tokens (Recommended)"
+                                />
+                                <FormControlLabel
+                                    value="legacy"
+                                    control={<Radio />}
+                                    label="max_tokens (Legacy)"
+                                />
+                            </RadioGroup>
+                            <Typography variant="caption" color="text.secondary">
+                                Choose which parameter to use for controlling response length. max_completion_tokens is recommended for OpenAI.
+                            </Typography>
+                        </FormControl>
                     </Box>
                 )}
 

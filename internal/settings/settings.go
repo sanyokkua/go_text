@@ -53,6 +53,15 @@ type ModelConfig struct {
 	// 0.6 - 1.0	Balanced creativity and coherence
 	// 1.1 - 2.0	Random, diverse, creative
 	Temperature float64 `json:"temperature"`
+	// Context window settings
+	// Default is false, but if true - ContextWindow should be set
+	UseContextWindow bool `json:"useContextWindow"`
+	// Optional, but can be from 1024 to 200000 tokens
+	// Controls maximum token limit for LLM responses
+	ContextWindow int `json:"contextWindow"`
+	// User choice for which token limit parameter to use
+	// true = max_tokens (legacy), false = max_completion_tokens (current)
+	UseLegacyMaxTokens bool `json:"useLegacyMaxTokens"`
 }
 
 type LanguageConfig struct {

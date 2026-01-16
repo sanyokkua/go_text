@@ -49,6 +49,17 @@ func newChatCompletionRequest(cfg *settings.Settings, userPrompt, systemPrompt s
 		}
 	}
 
+	// Include a context window when enabled
+	if cfg.ModelConfig.UseContextWindow {
+		contextWindow := cfg.ModelConfig.ContextWindow
+		// User chooses which parameter to use
+		if cfg.ModelConfig.UseLegacyMaxTokens {
+			req.MaxTokens = &contextWindow
+		} else {
+			req.MaxCompletionTokens = &contextWindow
+		}
+	}
+
 	return req
 }
 
