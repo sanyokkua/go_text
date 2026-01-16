@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { ActionHandlerAdapter, getLogger, ProviderConfig, Settings } from '../../../../../logic/adapter';
 import { useAppDispatch } from '../../../../../logic/store';
 import { enqueueNotification } from '../../../../../logic/store/notifications';
-import { parseError } from '../../../../../logic/utils/error_utils';
 import {
     createProviderConfig,
     deleteProviderConfig,
@@ -12,6 +11,7 @@ import {
     updateProviderConfig,
 } from '../../../../../logic/store/settings';
 import { setAppBusy } from '../../../../../logic/store/ui';
+import { parseError } from '../../../../../logic/utils/error_utils';
 import { testProviderModels } from '../../../../../logic/utils/provider_utils';
 import { SPACING } from '../../../../styles/constants';
 import ProviderForm from './components/ProviderForm';

@@ -1,7 +1,7 @@
-import { Alert, Snackbar } from '@mui/material';
+import {Alert, Snackbar} from '@mui/material';
 import React from 'react';
-import { selectNotificationsQueue, useAppDispatch, useAppSelector } from '../../../logic/store';
-import { removeNotification } from '../../../logic/store/notifications';
+import {selectNotificationsQueue, useAppDispatch, useAppSelector} from '../../../logic/store';
+import {removeNotification} from '../../../logic/store/notifications';
 
 /**
  * Notification Container - Shows notifications from the Redux store

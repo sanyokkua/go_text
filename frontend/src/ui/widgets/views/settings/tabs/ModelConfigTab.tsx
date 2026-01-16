@@ -1,5 +1,17 @@
 import RefreshIcon from '@mui/icons-material/Refresh';
-import { AutocompleteRenderInputParams, Box, Button, Checkbox, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, Slider, Typography } from '@mui/material';
+import {
+    AutocompleteRenderInputParams,
+    Box,
+    Button,
+    Checkbox,
+    FormControl,
+    FormControlLabel,
+    FormLabel,
+    Radio,
+    RadioGroup,
+    Slider,
+    Typography,
+} from '@mui/material';
 import Autocomplete from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
 import React, { useEffect, useState } from 'react';
@@ -220,16 +232,8 @@ const ModelConfigTab: React.FC<ModelConfigTabProps> = ({ settings }) => {
                                     setFormData((prev) => ({ ...prev, useLegacyMaxTokens: useLegacy }));
                                 }}
                             >
-                                <FormControlLabel
-                                    value="current"
-                                    control={<Radio />}
-                                    label="max_completion_tokens (Recommended)"
-                                />
-                                <FormControlLabel
-                                    value="legacy"
-                                    control={<Radio />}
-                                    label="max_tokens (Legacy)"
-                                />
+                                <FormControlLabel value="current" control={<Radio />} label="max_completion_tokens (Recommended)" />
+                                <FormControlLabel value="legacy" control={<Radio />} label="max_tokens (Legacy)" />
                             </RadioGroup>
                             <Typography variant="caption" color="text.secondary">
                                 Choose which parameter to use for controlling response length. max_completion_tokens is recommended for OpenAI.
