@@ -2,6 +2,30 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Code Standards
+
+All code in this project must follow the rules defined in `docs/ai_agent_rules/`. These are automatically loaded:
+
+@docs/ai_agent_rules/CleanCodeRules.md
+@docs/ai_agent_rules/GoLoggingRules.md
+@docs/ai_agent_rules/GoUnitTestsRules.md
+@docs/ai_agent_rules/TypescriptCodingRules.md
+@docs/ai_agent_rules/TypescriptDocumentationRules.md
+@docs/ai_agent_rules/TypescriptReduxRules.md
+@docs/ai_agent_rules/TypescriptReactTestingRules.md
+@docs/ai_agent_rules/TypescriptUnitTestsRules.md
+
+**Agent routing:**
+
+| Files being changed | Use agent |
+|---|---|
+| `internal/**/*.go`, `main.go` (non-test) | `go-engineer` |
+| `internal/**/*_test.go`, any `*_test.go` | `go-tester` |
+| `frontend/src/**/*.ts`, `frontend/src/**/*.tsx` (non-test) | `ts-engineer` |
+| `frontend/src/**/*.test.ts`, `frontend/src/**/*.test.tsx` | `ts-tester` |
+| New feature design, system-level changes | `architect` |
+| Wails runtime, bindings, events, menus | load `wails-dev` skill |
+
 ## Project Overview
 
 **Text Processing Suite** is a native desktop application built with Go + React via [Wails v2](https://wails.io/). It provides AI-powered text transformation through multiple LLM providers (Ollama, LM Studio, OpenAI, OpenRouter, or any OpenAI-compatible API). Module name: `go_text`.
@@ -29,6 +53,8 @@ go test ./...                # Run all Go tests
 go test ./internal/...       # Run backend unit/integration tests
 go test -run TestName ./internal/actions/   # Run a specific test
 ```
+
+> **Wails reference:** When touching bindings, runtime events, menus, or platform options, load the `wails-dev` skill for complete API documentation.
 
 ## Architecture
 
