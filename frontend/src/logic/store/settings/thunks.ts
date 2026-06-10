@@ -12,6 +12,7 @@
  */
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import {
+    AppBehaviorConfig,
     AppSettingsMetadata,
     getLogger,
     InferenceBaseConfig,
@@ -421,6 +422,51 @@ export const updateProviderConfig = createAsyncThunk<ProviderConfig, ProviderCon
         } catch (error: unknown) {
             const err = parseError(error);
             logger.logError(`Failed to update provider config: ${err.message}`);
+            return rejectWithValue(err.message);
+        }
+    },
+);
+
+/**
+ * Retrieves the application behavior configuration
+ *
+ * @returns App behavior configuration with task logging settings
+ * @rejects Error message if operation fails
+ */
+export const getAppBehaviorConfig = createAsyncThunk<AppBehaviorConfig, void, { rejectValue: string }>(
+    'settings/getAppBehaviorConfig',
+    async (_, { rejectWithValue }) => {
+        try {
+            logger.logInfo('Attempting to get app behavior config');
+            const result = await SettingsHandlerAdapter.getAppBehaviorConfig();
+            logger.logInfo('Successfully retrieved app behavior config');
+            return result;
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logError(`Failed to get app behavior config: ${err.message}`);
+            return rejectWithValue(err.message);
+        }
+    },
+);
+
+/**
+ * Updates the application behavior configuration
+ *
+ * @param config - App behavior configuration to update
+ * @returns Updated app behavior configuration
+ * @rejects Error message if operation fails
+ */
+export const updateAppBehaviorConfig = createAsyncThunk<AppBehaviorConfig, AppBehaviorConfig, { rejectValue: string }>(
+    'settings/updateAppBehaviorConfig',
+    async (config: AppBehaviorConfig, { rejectWithValue }) => {
+        try {
+            logger.logInfo('Attempting to update app behavior config');
+            const result = await SettingsHandlerAdapter.updateAppBehaviorConfig(config);
+            logger.logInfo('Successfully updated app behavior config');
+            return result;
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logError(`Failed to update app behavior config: ${err.message}`);
             return rejectWithValue(err.message);
         }
     },

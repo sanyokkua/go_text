@@ -21,6 +21,7 @@ const SettingsTabs: React.FC<SettingsTabsProps> = ({ activeTab, onChange }) => {
                 <Tab wrapped label="Inference Config" />
                 <Tab wrapped label="Language Config" />
                 <Tab wrapped label="Factory Reset" />
+                <Tab wrapped label="App Behavior" />
             </Tabs>
         </Box>
     );

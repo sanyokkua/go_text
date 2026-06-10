@@ -17,6 +17,7 @@ import {
     addLanguage,
     createProviderConfig,
     deleteProviderConfig,
+    getAppBehaviorConfig,
     getAppSettingsMetadata,
     getSettings,
     removeLanguage,
@@ -24,6 +25,7 @@ import {
     setAsCurrentProviderConfig,
     setDefaultInputLanguage,
     setDefaultOutputLanguage,
+    updateAppBehaviorConfig,
     updateInferenceBaseConfig,
     updateModelConfig,
     updateProviderConfig,
@@ -120,6 +122,18 @@ const settingsSlice = createSlice({
             // Metadata loading
             .addCase(getAppSettingsMetadata.fulfilled, (state, action) => {
                 state.metadata = action.payload;
+            })
+
+            // App behavior config updates
+            .addCase(getAppBehaviorConfig.fulfilled, (state, action) => {
+                if (state.allSettings) {
+                    state.allSettings.appBehaviorConfig = action.payload;
+                }
+            })
+            .addCase(updateAppBehaviorConfig.fulfilled, (state, action) => {
+                if (state.allSettings) {
+                    state.allSettings.appBehaviorConfig = action.payload;
+                }
             });
     },
 });

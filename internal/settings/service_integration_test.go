@@ -71,6 +71,7 @@ func TestSettingsService_Constructor(t *testing.T) {
 
 // Test helper functions for creating test data
 func createTestSettingsService(t *testing.T) SettingsServiceAPI {
+	t.Helper()
 	logger := &TestLogger{}
 	fileUtils := file.NewFileUtilsService(logger)
 	repo := NewSettingsRepository(logger, fileUtils)
@@ -91,7 +92,7 @@ func TestSettingsService_GetAppSettingsMetadata(t *testing.T) {
 	assert.NotEmpty(t, metadata.SettingsFolder)
 	assert.NotEmpty(t, metadata.SettingsFile)
 	assert.Contains(t, metadata.SettingsFolder, "GoTextApp")
-	assert.Contains(t, metadata.SettingsFile, "settings_v2.json")
+	assert.Contains(t, metadata.SettingsFile, file.SettingsFileName)
 }
 
 func TestSettingsService_ResetSettingsToDefault(t *testing.T) {
@@ -661,4 +662,81 @@ func TestSettingsService_SetAsCurrentProviderConfig(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "provider not found with ID")
+}
+
+func TestSettingsService_GetAppBehaviorConfig(t *testing.T) {
+	service := createTestSettingsService(t)
+
+	_, err := service.ResetSettingsToDefault()
+	require.NoError(t, err)
+
+	config, err := service.GetAppBehaviorConfig()
+
+	assert.NoError(t, err)
+	assert.NotNil(t, config)
+	assert.False(t, config.EnableTaskLogging)
+	assert.Equal(t, "", config.LogDirectory)
+}
+
+func TestSettingsService_UpdateAppBehaviorConfig(t *testing.T) {
+	service := createTestSettingsService(t)
+
+	// Restore clean defaults after this test so it doesn't pollute the shared settings file.
+	t.Cleanup(func() {
+		_, _ = service.UpdateAppBehaviorConfig(&AppBehaviorConfig{EnableTaskLogging: false, LogDirectory: ""})
+	})
+
+	t.Run("nil_config", func(t *testing.T) {
+		_, err := service.UpdateAppBehaviorConfig(nil)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "cannot be nil")
+	})
+
+	t.Run("relative_path", func(t *testing.T) {
+		_, err := service.UpdateAppBehaviorConfig(&AppBehaviorConfig{LogDirectory: "relative/path"})
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "must be an absolute path")
+	})
+
+	t.Run("empty_dir_logging_disabled", func(t *testing.T) {
+		result, err := service.UpdateAppBehaviorConfig(&AppBehaviorConfig{EnableTaskLogging: false, LogDirectory: ""})
+
+		assert.NoError(t, err)
+		assert.NotNil(t, result)
+		assert.False(t, result.EnableTaskLogging)
+		assert.Equal(t, "", result.LogDirectory)
+	})
+
+	t.Run("absolute_path_logging_enabled", func(t *testing.T) {
+		result, err := service.UpdateAppBehaviorConfig(&AppBehaviorConfig{EnableTaskLogging: true, LogDirectory: "/tmp/go_text_test_logs"})
+
+		assert.NoError(t, err)
+		assert.NotNil(t, result)
+		assert.True(t, result.EnableTaskLogging)
+		assert.Equal(t, "/tmp/go_text_test_logs", result.LogDirectory)
+	})
+
+	t.Run("persisted", func(t *testing.T) {
+		config, err := service.GetAppBehaviorConfig()
+
+		assert.NoError(t, err)
+		assert.NotNil(t, config)
+		assert.True(t, config.EnableTaskLogging)
+		assert.Equal(t, "/tmp/go_text_test_logs", config.LogDirectory)
+	})
+
+	t.Run("toggle_logging_off", func(t *testing.T) {
+		result, err := service.UpdateAppBehaviorConfig(&AppBehaviorConfig{EnableTaskLogging: false, LogDirectory: "/tmp/go_text_test_logs"})
+
+		assert.NoError(t, err)
+		assert.NotNil(t, result)
+		assert.False(t, result.EnableTaskLogging)
+	})
+}
+
+func TestSettingsService_DefaultAppBehaviorConfig(t *testing.T) {
+	assert.False(t, DefaultSetting.AppBehaviorConfig.EnableTaskLogging)
+	assert.Equal(t, "", DefaultSetting.AppBehaviorConfig.LogDirectory)
 }

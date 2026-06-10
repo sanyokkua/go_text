@@ -5,6 +5,7 @@
  * These interfaces abstract the Wails-generated Go backend bindings.
  */
 import {
+    AppBehaviorConfig,
     AppSettingsMetadata,
     ChatCompletionRequest,
     InferenceBaseConfig,
@@ -76,6 +77,8 @@ export interface ISettingsHandler {
     updateInferenceBaseConfig(inferenceBaseConfig: InferenceBaseConfig): Promise<InferenceBaseConfig>;
     updateModelConfig(modelConfig: ModelConfig): Promise<ModelConfig>;
     updateProviderConfig(providerConfig: ProviderConfig): Promise<ProviderConfig>;
+    getAppBehaviorConfig(): Promise<AppBehaviorConfig>;
+    updateAppBehaviorConfig(config: AppBehaviorConfig): Promise<AppBehaviorConfig>;
 }
 
 /**

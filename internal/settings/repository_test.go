@@ -63,7 +63,7 @@ func getAppConfigDir(tmpDir string) string {
 
 // getSettingsFilePath gets the expected settings file path
 func getSettingsFilePath(tmpDir string) string {
-	return filepath.Join(getAppConfigDir(tmpDir), "settings_v2.json")
+	return filepath.Join(getAppConfigDir(tmpDir), file.SettingsFileName)
 }
 
 // createTestRepo creates a test repository with a real file utils service

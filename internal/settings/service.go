@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -205,6 +206,8 @@ type SettingsServiceAPI interface {
 	SetDefaultOutputLanguage(language string) error
 	AddLanguage(language string) ([]string, error)
 	RemoveLanguage(language string) ([]string, error)
+	GetAppBehaviorConfig() (*AppBehaviorConfig, error)
+	UpdateAppBehaviorConfig(cfg *AppBehaviorConfig) (*AppBehaviorConfig, error)
 }
 
 type SettingsService struct {
@@ -292,16 +295,35 @@ func (s *SettingsService) GetAppSettingsMetadata() (*AppSettingsMetadata, error)
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
+	logsFolder := s.resolveLogsFolderForMetadata(op)
+
 	metadata := &AppSettingsMetadata{
 		AuthTypes:      AuthTypes[:],
 		ProviderTypes:  ProviderTypes[:],
 		SettingsFolder: folderPath,
 		SettingsFile:   filePath,
+		LogsFolder:     logsFolder,
 	}
 
 	duration := time.Since(startTime)
 	s.logger.Info(fmt.Sprintf("%s: successfully retrieved metadata in %v", op, duration))
 	return metadata, nil
+}
+
+func (s *SettingsService) resolveLogsFolderForMetadata(callerOp string) string {
+	settings, err := s.getSettingsWithValidation()
+	if err != nil {
+		s.logger.Warning(fmt.Sprintf("%s: could not load settings for logs folder resolution, using default: %v", callerOp, err))
+		return ""
+	}
+
+	logsFolder, err := s.fileUtils.ResolveAppLogsFolderPath(settings.AppBehaviorConfig.LogDirectory)
+	if err != nil {
+		s.logger.Warning(fmt.Sprintf("%s: could not resolve logs folder path, omitting from metadata: %v", callerOp, err))
+		return ""
+	}
+
+	return logsFolder
 }
 
 func (s *SettingsService) GetSettings() (*Settings, error) {
@@ -751,6 +773,54 @@ func (s *SettingsService) AddLanguage(language string) ([]string, error) {
 	duration := time.Since(startTime)
 	s.logger.Info(fmt.Sprintf("%s: successfully added language %q in %v", op, language, duration))
 	return settings.LanguageConfig.Languages, nil
+}
+
+func (s *SettingsService) GetAppBehaviorConfig() (*AppBehaviorConfig, error) {
+	const op = "SettingsService.GetAppBehaviorConfig"
+	s.logger.Debug(fmt.Sprintf("%s: retrieving app behavior configuration", op))
+
+	config, err := s.settingsRepo.GetAppBehaviorConfig()
+	if err != nil {
+		s.logger.Error(fmt.Sprintf("%s: failed to get app behavior config: %v", op, err))
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	if config == nil {
+		s.logger.Error(fmt.Sprintf("%s: app behavior config is nil", op))
+		return nil, fmt.Errorf("%s: app behavior config is nil", op)
+	}
+
+	return config, nil
+}
+
+func (s *SettingsService) UpdateAppBehaviorConfig(cfg *AppBehaviorConfig) (*AppBehaviorConfig, error) {
+	const op = "SettingsService.UpdateAppBehaviorConfig"
+	startTime := time.Now()
+	s.logger.Info(fmt.Sprintf("%s: updating app behavior configuration", op))
+
+	if cfg == nil {
+		s.logger.Error(fmt.Sprintf("%s: app behavior config cannot be nil", op))
+		return nil, fmt.Errorf("%s: app behavior config cannot be nil", op)
+	}
+
+	if cfg.LogDirectory != "" && !filepath.IsAbs(cfg.LogDirectory) {
+		s.logger.Error(fmt.Sprintf("%s: log directory must be an absolute path: %s", op, cfg.LogDirectory))
+		return nil, fmt.Errorf("%s: log directory must be an absolute path", op)
+	}
+
+	settings, err := s.getSettingsWithValidation()
+	if err != nil {
+		return nil, err
+	}
+
+	settings.AppBehaviorConfig = *cfg
+
+	if err := s.saveSettings(settings); err != nil {
+		return nil, err
+	}
+
+	duration := time.Since(startTime)
+	s.logger.Info(fmt.Sprintf("%s: successfully updated app behavior config in %v", op, duration))
+	return cfg, nil
 }
 
 func (s *SettingsService) RemoveLanguage(language string) ([]string, error) {

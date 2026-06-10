@@ -21,6 +21,7 @@ type SettingsRepositoryAPI interface {
 	GetInferenceBaseConfig() (*InferenceBaseConfig, error)
 	GetModelConfig() (*ModelConfig, error)
 	GetLanguageConfig() (*LanguageConfig, error)
+	GetAppBehaviorConfig() (*AppBehaviorConfig, error)
 }
 
 // SettingsRepository handles the persistence of application settings
@@ -263,4 +264,16 @@ func (s *SettingsRepository) GetLanguageConfig() (*LanguageConfig, error) {
 
 	s.logger.Debug(fmt.Sprintf("%s: returning language config", op))
 	return &settings.LanguageConfig, nil
+}
+
+// GetAppBehaviorConfig returns application behavior configuration
+func (s *SettingsRepository) GetAppBehaviorConfig() (*AppBehaviorConfig, error) {
+	const op = "SettingsRepository.GetAppBehaviorConfig"
+	settings, err := s.getSettingsAndValidateNotNil(op)
+	if err != nil {
+		return nil, err
+	}
+
+	s.logger.Debug(fmt.Sprintf("%s: returning app behavior config", op))
+	return &settings.AppBehaviorConfig, nil
 }

@@ -8,6 +8,7 @@ import (
 	"go_text/internal/prompts"
 	"go_text/internal/prompts/categories"
 	"go_text/internal/settings"
+	"go_text/internal/tasklog"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -20,6 +21,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"resty.dev/v3"
 )
+
+type noopTaskLogService struct{}
+
+func (n *noopTaskLogService) LogTaskExecution(_ tasklog.TaskLogEntry) error {
+	return nil
+}
 
 // TestLogger is a simple logger for testing that implements the logger.Logger interface
 type TestLogger struct{}
@@ -132,7 +139,7 @@ func TestActionHandlerIntegration(t *testing.T) {
 	llmService := llms.NewLLMApiService(logger, restyClient, settingsService)
 
 	// Create action service and handler
-	actionService := NewActionService(logger, promptService, llmService, settingsService)
+	actionService := NewActionService(logger, promptService, llmService, settingsService, &noopTaskLogService{})
 	handler := NewActionHandler(logger, actionService)
 
 	// Shared state across tests

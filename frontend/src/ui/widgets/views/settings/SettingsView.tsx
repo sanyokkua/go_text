@@ -3,6 +3,7 @@ import React from 'react';
 import { selectActiveSettingsTab, selectAllSettings, selectSettingsMetadata, useAppDispatch, useAppSelector } from '../../../../logic/store';
 import { setActiveSettingsTab } from '../../../../logic/store/ui';
 import SettingsTabs from './SettingsTabs';
+import AppBehaviorTab from './tabs/AppBehaviorTab';
 import CurrentProviderTab from './tabs/CurrentProviderTab';
 import FactoryResetTab from './tabs/FactoryResetTab';
 import InferenceConfigTab from './tabs/InferenceConfigTab';
@@ -35,6 +36,7 @@ import ProviderManagementTab from './tabs/ProviderManagementTab';
  * 4 - Inference Configuration (timeout, retries, formatting)
  * 5 - Language Configuration (supported languages and defaults)
  * 6 - Factory Reset (reset to default settings)
+ * 7 - App Behavior (task logging configuration)
  */
 const SettingsView: React.FC = () => {
     const dispatch = useAppDispatch();
@@ -82,6 +84,10 @@ const SettingsView: React.FC = () => {
         }
         case 6: {
             activeTabView = <FactoryResetTab />;
+            break;
+        }
+        case 7: {
+            activeTabView = <AppBehaviorTab settings={settings} metadata={metadata} />;
             break;
         }
         default: {

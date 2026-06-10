@@ -6,6 +6,7 @@ import (
 	"go_text/internal/prompts"
 	"go_text/internal/prompts/categories"
 	"go_text/internal/settings"
+	"go_text/internal/tasklog"
 	"slices"
 	"strings"
 	"time"
@@ -77,9 +78,16 @@ type ActionService struct {
 	promptService   prompts.PromptServiceAPI
 	llmService      llms.LLMServiceAPI
 	settingsService settings.SettingsServiceAPI
+	taskLogService  tasklog.TaskLogServiceAPI
 }
 
-func NewActionService(logger logger.Logger, promptService prompts.PromptServiceAPI, llmService llms.LLMServiceAPI, settingsService settings.SettingsServiceAPI) ActionServiceAPI {
+func NewActionService(
+	logger logger.Logger,
+	promptService prompts.PromptServiceAPI,
+	llmService llms.LLMServiceAPI,
+	settingsService settings.SettingsServiceAPI,
+	taskLogService tasklog.TaskLogServiceAPI,
+) ActionServiceAPI {
 	const op = "ActionService.NewActionService"
 
 	if logger == nil {
@@ -94,6 +102,9 @@ func NewActionService(logger logger.Logger, promptService prompts.PromptServiceA
 	if settingsService == nil {
 		panic(fmt.Sprintf("%s: settings service cannot be nil", op))
 	}
+	if taskLogService == nil {
+		panic(fmt.Sprintf("%s: task log service cannot be nil", op))
+	}
 
 	logger.Info(fmt.Sprintf("[%s] Initializing action service", op))
 	return &ActionService{
@@ -101,6 +112,7 @@ func NewActionService(logger logger.Logger, promptService prompts.PromptServiceA
 		promptService:   promptService,
 		llmService:      llmService,
 		settingsService: settingsService,
+		taskLogService:  taskLogService,
 	}
 }
 
@@ -305,6 +317,24 @@ func (a *ActionService) processAction(action *prompts.PromptActionRequest) (stri
 	if strings.TrimSpace(result) == "" {
 		a.logger.Warning(fmt.Sprintf("[%s] Sanitized result is empty - action_id=%s", op, actionID))
 	}
+
+	_ = a.taskLogService.LogTaskExecution(tasklog.TaskLogEntry{
+		SchemaVersion:  1,
+		Timestamp:      time.Now().UTC().Format(time.RFC3339),
+		ActionID:       promptDef.ID,
+		ActionName:     promptDef.Name,
+		Category:       promptDef.Category,
+		InputText:      action.InputText,
+		OutputText:     result,
+		SystemPrompt:   sysPrompt,
+		UserPrompt:     userPrompt,
+		ProviderName:   cfg.CurrentProviderConfig.ProviderName,
+		ProviderType:   string(cfg.CurrentProviderConfig.ProviderType),
+		Model:          cfg.ModelConfig.Name,
+		DurationMs:     time.Since(startTime).Milliseconds(),
+		InputLanguage:  action.InputLanguageID,
+		OutputLanguage: action.OutputLanguageID,
+	})
 
 	totalDuration := time.Since(startTime)
 	a.logger.Info(fmt.Sprintf("[%s] Action completed successfully - action_id=%s, category=%s, total_duration_ms=%d, result_length=%d",
