@@ -1,7 +1,7 @@
 # ==============================================================================
 # Build and Release - Cross-Platform Wails Application
 # ==============================================================================
-# Builds for Linux, Windows, and macOS (ARM64 + Intel)
+# Builds for Linux, Windows, and macOS (ARM64)
 # Supports both tag-based and manual releases
 # ==============================================================================
 
@@ -67,13 +67,6 @@ jobs:
             artifact_path: build/bin/TextProcessingSuite.app
             build_tags: ""
 
-          # macOS Intel
-          - platform: darwin/amd64
-            os: macos-latest
-            output_name: TextProcessingSuite-macos-amd64
-            artifact_path: build/bin/TextProcessingSuite.app
-            build_tags: ""
-
     runs-on: ${{ matrix.os }}
     # Each platform builds on its native OS
 
@@ -81,13 +74,13 @@ jobs:
       # --------------------------------------------------
       # Checkout repository
       # --------------------------------------------------
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         # Downloads source code into runner
 
       # --------------------------------------------------
       # Setup Go (backend language)
       # --------------------------------------------------
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: '1.25'
           # Uses Go 1.25 (auto-updates to latest patch)
@@ -97,7 +90,7 @@ jobs:
       # --------------------------------------------------
       # Setup Node.js (frontend build)
       # --------------------------------------------------
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '24.x'
           # Node 24 = current LTS
@@ -181,14 +174,13 @@ jobs:
       # Upload build artifacts
       # --------------------------------------------------
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.output_name }}
           # Artifact names:
           # - TextProcessingSuite-linux-amd64
           # - TextProcessingSuite-windows-amd64.exe
           # - TextProcessingSuite-macos-arm64
-          # - TextProcessingSuite-macos-amd64
           path: ${{ matrix.artifact_path }}
           # Uploads only the main artifact:
           # - Linux: build/bin/TextProcessingSuite-linux-amd64
@@ -253,7 +245,7 @@ jobs:
       # --------------------------------------------------
       # Download all build artifacts
       # --------------------------------------------------
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v6
         with:
           path: artifacts
         # Downloads everything to ./artifacts/
@@ -264,11 +256,6 @@ jobs:
         #   TextProcessingSuite-windows-amd64.exe/
         #     TextProcessingSuite-windows-amd64.exe
         #   TextProcessingSuite-macos-arm64/
-        #     Contents/
-        #       MacOS/TextProcessingSuite
-        #       Info.plist
-        #       Resources/iconfile.icns
-        #   TextProcessingSuite-macos-amd64/
         #     Contents/
         #       MacOS/TextProcessingSuite
         #       Info.plist
@@ -338,26 +325,6 @@ jobs:
             exit 1
           fi
           
-          # macOS Intel - recreate .app structure and zip
-          MACOS_AMD_DIR="artifacts/TextProcessingSuite-macos-amd64"
-          if [ -d "$MACOS_AMD_DIR/Contents" ]; then
-            # GitHub Actions flattened the .app bundle, we need to recreate it
-            cd "$MACOS_AMD_DIR"
-            # Create the .app bundle with proper structure
-            mkdir -p TextProcessingSuite.app
-            mv Contents TextProcessingSuite.app/
-            # CRITICAL: Restore executable permissions that were set during build
-            chmod +x TextProcessingSuite.app/Contents/MacOS/*
-            # Now zip it with proper flags to preserve permissions
-            # -r = recursive, -y = preserve symlinks, -X = preserve permissions
-            zip -r -y -X "../../release-assets/TextProcessingSuite-${VERSION}-macos-amd64.app.zip" TextProcessingSuite.app
-            cd ../..
-            echo "✅ macOS Intel app zipped"
-          else
-            echo "❌ macOS Intel Contents not found at: $MACOS_AMD_DIR/Contents"
-            exit 1
-          fi
-          
           # Generate checksums
           cd release-assets
           sha256sum * > SHA256SUMS.txt
@@ -376,7 +343,7 @@ jobs:
       # Create GitHub Release
       # --------------------------------------------------
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           # Tag name: v1.0.0
@@ -397,7 +364,6 @@ jobs:
           # - TextProcessingSuite-1.0.0-linux-amd64
           # - TextProcessingSuite-1.0.0-windows-amd64.exe
           # - TextProcessingSuite-1.0.0-macos-arm64.app.zip
-          # - TextProcessingSuite-1.0.0-macos-amd64.app.zip
           # - SHA256SUMS.txt
 
 # ==============================================================================
