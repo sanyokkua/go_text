@@ -181,7 +181,8 @@ func (s *SettingsRepository) SaveSettings(settings *Settings) (*Settings, error)
 		return nil, fmt.Errorf("%s: could not write to file '%s': %w", op, settingsPath, err)
 	}
 
-	s.currentSettings = settings
+	settingsCopy := *settings
+	s.currentSettings = &settingsCopy
 	duration := time.Since(startTime)
 	s.logger.Info(fmt.Sprintf("%s: successfully saved settings in %v", op, duration))
 	return s.currentSettings, nil

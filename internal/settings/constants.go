@@ -149,4 +149,5 @@ var DefaultSetting = Settings{
 		DefaultOutputLanguage: "Ukrainian",
 		Languages:             Languages[:],
 	},
+	AppBehaviorConfig: DefaultAppBehaviorConfig,
 }

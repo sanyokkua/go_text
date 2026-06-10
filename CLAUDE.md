@@ -79,6 +79,8 @@ Repository  (settings/repository.go → JSON file on disk)
 - `internal/prompts/` — 60+ prompt definitions compiled into the binary; categories live in `internal/prompts/categories/`
 - `internal/application/` — `ApplicationContextHolder` (DI root, wired in `main.go`)
 - `internal/logging/` — zerolog wrapper bridged to Wails logger
+- `internal/tasklog/` — `TaskLogService`: appends JSONL task-execution records to daily log files; controlled by `AppBehaviorConfig`
+- `internal/file/` — `FileUtilsService`: OS-specific path resolution for settings and logs directories
 
 ### Frontend (React/TypeScript, `frontend/src/`)
 

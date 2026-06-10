@@ -808,6 +808,101 @@ func TestGetModelConfig(t *testing.T) {
 	}
 }
 
+func TestGetAppBehaviorConfig(t *testing.T) {
+	tests := []struct {
+		name           string
+		setupEnv       func(t *testing.T, tmpDir string)
+		validateResult func(t *testing.T, config *AppBehaviorConfig, err error)
+	}{
+		{
+			name: "success",
+			setupEnv: func(t *testing.T, tmpDir string) {
+				appConfigDir := getAppConfigDir(tmpDir)
+				err := os.MkdirAll(appConfigDir, 0700)
+				require.NoError(t, err)
+
+				settingsPath := getSettingsFilePath(tmpDir)
+				testSettings := Settings{
+					AvailableProviderConfigs: []ProviderConfig{},
+					CurrentProviderConfig:    ProviderConfig{},
+					AppBehaviorConfig: AppBehaviorConfig{
+						EnableTaskLogging: true,
+						LogDirectory:      "/tmp/test-logs",
+					},
+				}
+				data, err := json.MarshalIndent(testSettings, "", "  ")
+				require.NoError(t, err)
+
+				err = os.WriteFile(settingsPath, data, 0600)
+				require.NoError(t, err)
+			},
+			validateResult: func(t *testing.T, config *AppBehaviorConfig, err error) {
+				assert.NoError(t, err)
+				assert.NotNil(t, config)
+				assert.True(t, config.EnableTaskLogging)
+				assert.Equal(t, "/tmp/test-logs", config.LogDirectory)
+			},
+		},
+		{
+			name: "defaults_when_not_set",
+			setupEnv: func(t *testing.T, tmpDir string) {
+				appConfigDir := getAppConfigDir(tmpDir)
+				err := os.MkdirAll(appConfigDir, 0700)
+				require.NoError(t, err)
+
+				settingsPath := getSettingsFilePath(tmpDir)
+				testSettings := Settings{
+					AvailableProviderConfigs: []ProviderConfig{},
+					CurrentProviderConfig:    ProviderConfig{},
+				}
+				data, err := json.MarshalIndent(testSettings, "", "  ")
+				require.NoError(t, err)
+
+				err = os.WriteFile(settingsPath, data, 0600)
+				require.NoError(t, err)
+			},
+			validateResult: func(t *testing.T, config *AppBehaviorConfig, err error) {
+				assert.NoError(t, err)
+				assert.NotNil(t, config)
+				assert.False(t, config.EnableTaskLogging)
+				assert.Equal(t, "", config.LogDirectory)
+			},
+		},
+		{
+			name: "load_settings_error",
+			setupEnv: func(t *testing.T, tmpDir string) {
+				os.Unsetenv("HOME")
+				os.Unsetenv("XDG_CONFIG_HOME")
+				os.Unsetenv("APPDATA")
+				os.Unsetenv("LOCALAPPDATA")
+			},
+			validateResult: func(t *testing.T, config *AppBehaviorConfig, err error) {
+				assert.Error(t, err)
+				assert.Nil(t, config)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpDir, cleanup := setupTestEnv(t)
+			defer cleanup()
+
+			if tt.setupEnv != nil {
+				tt.setupEnv(t, tmpDir)
+			}
+
+			repo := createTestRepo(t)
+
+			config, err := repo.GetAppBehaviorConfig()
+
+			if tt.validateResult != nil {
+				tt.validateResult(t, config, err)
+			}
+		})
+	}
+}
+
 func TestGetLanguageConfig(t *testing.T) {
 	tests := []struct {
 		name           string
