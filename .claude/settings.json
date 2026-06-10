@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git *)",
+      "Bash(go fmt *)",
+      "Bash(go vet *)",
+      "Bash(gofmt *)",
+      "Bash(go test *)",
+      "Bash(go build *)",
+      "Bash(wails *)",
+      "Bash(npm run *)",
+      "Bash(npx prettier *)",
+      "Bash(npx eslint *)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=\"$CLAUDE_TOOL_INPUT_FILE_PATH\"; case \"$FILE\" in *.go) gofmt -w \"$FILE\" && go vet ./... 2>/dev/null || true ;; *.ts|*.tsx) npx prettier --write \"$FILE\" 2>/dev/null || true ;; esac"
+          }
+        ]
+      }
+    ]
+  }
+}

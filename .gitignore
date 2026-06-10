@@ -9,3 +9,5 @@ frontend/wailsjs
 .DS_Store
 .vscode/*
 .continue/*
+.tmp/*
+.claude/settings.local.json

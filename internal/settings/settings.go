@@ -73,6 +73,11 @@ type LanguageConfig struct {
 	DefaultOutputLanguage string `json:"defaultOutputLanguage"`
 }
 
+type AppBehaviorConfig struct {
+	EnableTaskLogging bool   `json:"enableTaskLogging"`
+	LogDirectory      string `json:"logDirectory"` // "" = use OS default
+}
+
 // Settings - main struct that Will be saved to Hard Drive
 type Settings struct {
 	AvailableProviderConfigs []ProviderConfig    `json:"availableProviderConfigs"`
@@ -80,6 +85,7 @@ type Settings struct {
 	InferenceBaseConfig      InferenceBaseConfig `json:"inferenceBaseConfig"`
 	ModelConfig              ModelConfig         `json:"modelConfig"`
 	LanguageConfig           LanguageConfig      `json:"languageConfig"`
+	AppBehaviorConfig        AppBehaviorConfig   `json:"appBehaviorConfig"`
 }
 
 // AppSettingsMetadata - Will be passed to the frontend, kind of wrapper with additional fields used by UI
@@ -88,4 +94,5 @@ type AppSettingsMetadata struct {
 	ProviderTypes  []ProviderType `json:"providerTypes"`
 	SettingsFolder string         `json:"settingsFolder"`
 	SettingsFile   string         `json:"settingsFile"`
+	LogsFolder     string         `json:"logsFolder"` // resolved absolute path shown in UI
 }

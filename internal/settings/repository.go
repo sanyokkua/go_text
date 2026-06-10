@@ -21,6 +21,7 @@ type SettingsRepositoryAPI interface {
 	GetInferenceBaseConfig() (*InferenceBaseConfig, error)
 	GetModelConfig() (*ModelConfig, error)
 	GetLanguageConfig() (*LanguageConfig, error)
+	GetAppBehaviorConfig() (*AppBehaviorConfig, error)
 }
 
 // SettingsRepository handles the persistence of application settings
@@ -180,7 +181,8 @@ func (s *SettingsRepository) SaveSettings(settings *Settings) (*Settings, error)
 		return nil, fmt.Errorf("%s: could not write to file '%s': %w", op, settingsPath, err)
 	}
 
-	s.currentSettings = settings
+	settingsCopy := *settings
+	s.currentSettings = &settingsCopy
 	duration := time.Since(startTime)
 	s.logger.Info(fmt.Sprintf("%s: successfully saved settings in %v", op, duration))
 	return s.currentSettings, nil
@@ -263,4 +265,16 @@ func (s *SettingsRepository) GetLanguageConfig() (*LanguageConfig, error) {
 
 	s.logger.Debug(fmt.Sprintf("%s: returning language config", op))
 	return &settings.LanguageConfig, nil
+}
+
+// GetAppBehaviorConfig returns application behavior configuration
+func (s *SettingsRepository) GetAppBehaviorConfig() (*AppBehaviorConfig, error) {
+	const op = "SettingsRepository.GetAppBehaviorConfig"
+	settings, err := s.getSettingsAndValidateNotNil(op)
+	if err != nil {
+		return nil, err
+	}
+
+	s.logger.Debug(fmt.Sprintf("%s: returning app behavior config", op))
+	return &settings.AppBehaviorConfig, nil
 }

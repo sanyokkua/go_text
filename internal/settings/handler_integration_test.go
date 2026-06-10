@@ -670,4 +670,48 @@ func TestSettingsHandlerIntegration(t *testing.T) {
 		assert.Contains(t, config.Languages, "Spanish")
 		assert.NotContains(t, config.Languages, "Japanese", "Japanese should not be in default languages")
 	})
+
+	// Step 61: Get default app behavior config
+	t.Run("Step_61_GetDefaultAppBehaviorConfig", func(t *testing.T) {
+		config, err := handler.GetAppBehaviorConfig()
+		require.NoError(t, err)
+
+		assert.False(t, config.EnableTaskLogging, "EnableTaskLogging should default to false")
+		assert.Equal(t, "", config.LogDirectory, "LogDirectory should default to empty string")
+	})
+
+	// Step 62: Update app behavior config
+	t.Run("Step_62_UpdateAppBehaviorConfig", func(t *testing.T) {
+		newConfig := AppBehaviorConfig{
+			EnableTaskLogging: true,
+			LogDirectory:      tmpDir,
+		}
+
+		updated, err := handler.UpdateAppBehaviorConfig(newConfig)
+		require.NoError(t, err)
+
+		assert.True(t, updated.EnableTaskLogging)
+		assert.Equal(t, tmpDir, updated.LogDirectory)
+	})
+
+	// Step 63: Verify app behavior config persisted
+	t.Run("Step_63_VerifyAppBehaviorConfigPersisted", func(t *testing.T) {
+		config, err := handler.GetAppBehaviorConfig()
+		require.NoError(t, err)
+
+		assert.True(t, config.EnableTaskLogging)
+		assert.Equal(t, tmpDir, config.LogDirectory)
+	})
+
+	// Step 64: Verify app behavior config reset
+	t.Run("Step_64_VerifyAppBehaviorConfigReset", func(t *testing.T) {
+		_, err := handler.ResetSettingsToDefault()
+		require.NoError(t, err)
+
+		config, err := handler.GetAppBehaviorConfig()
+		require.NoError(t, err)
+
+		assert.False(t, config.EnableTaskLogging, "EnableTaskLogging should be false after reset")
+		assert.Equal(t, "", config.LogDirectory, "LogDirectory should be empty after reset")
+	})
 }

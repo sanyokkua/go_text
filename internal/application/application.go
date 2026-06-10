@@ -2,12 +2,12 @@ package application
 
 import (
 	"context"
+	"go_text/internal/actions"
 	"go_text/internal/file"
 	"go_text/internal/llms"
 	"go_text/internal/prompts"
 	"go_text/internal/settings"
-
-	"go_text/internal/actions"
+	"go_text/internal/tasklog"
 
 	"github.com/wailsapp/wails/v2/pkg/logger"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -29,9 +29,10 @@ func NewApplicationContextHolder(logger logger.Logger, restyClient *resty.Client
 	settingsService := settings.NewSettingsService(logger, settingsRepo, fileUtilsService)
 	settingsHandler := settings.NewSettingsHandler(logger, settingsService)
 
+	taskLogService := tasklog.NewTaskLogService(logger, settingsService, fileUtilsService)
 	promptService := prompts.NewPromptService(logger)
 	llmService := llms.NewLLMApiService(logger, restyClient, settingsService)
-	actionService := actions.NewActionService(logger, promptService, llmService, settingsService)
+	actionService := actions.NewActionService(logger, promptService, llmService, settingsService, taskLogService)
 	actionHandler := actions.NewActionHandler(logger, actionService)
 
 	return &ApplicationContextHolder{

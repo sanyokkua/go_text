@@ -11,6 +11,7 @@ import {
     CreateProviderConfig,
     DeleteProviderConfig,
     GetAllProviderConfigs,
+    GetAppBehaviorConfig,
     GetAppSettingsMetadata,
     GetCurrentProviderConfig,
     GetInferenceBaseConfig,
@@ -22,6 +23,7 @@ import {
     SetAsCurrentProviderConfig,
     SetDefaultInputLanguage,
     SetDefaultOutputLanguage,
+    UpdateAppBehaviorConfig,
     UpdateInferenceBaseConfig,
     UpdateModelConfig,
     UpdateProviderConfig,
@@ -30,6 +32,7 @@ import { ClipboardGetText, ClipboardSetText, LogDebug, LogError, LogFatal, LogIn
 import { parseError } from '../utils/error_utils';
 import { IActionHandler, IClipboardService, ILoggerService, ISettingsHandler } from './interfaces';
 import {
+    AppBehaviorConfig,
     AppSettingsMetadata,
     ChatCompletionRequest,
     InferenceBaseConfig,
@@ -606,6 +609,46 @@ export class SettingsHandler implements ISettingsHandler {
         } catch (error) {
             const err = parseError(error);
             this.logger.logError(`Wails generated UpdateProviderConfig failed: ${err.message}`);
+            return Promise.reject(error);
+        }
+    }
+
+    /**
+     * Retrieves the application behavior configuration
+     *
+     * @returns App behavior configuration with task logging settings
+     * @throws Rejects with original error if operation fails
+     */
+    async getAppBehaviorConfig(): Promise<AppBehaviorConfig> {
+        try {
+            this.logger.logInfo(`Attempt to call Wails generated GetAppBehaviorConfig`);
+            const result = await GetAppBehaviorConfig();
+            this.logger.logInfo(`Wails generated GetAppBehaviorConfig completed successfully`);
+            return result;
+        } catch (error) {
+            const err = parseError(error);
+            this.logger.logError(`Wails generated GetAppBehaviorConfig failed: ${err.message}`);
+            return Promise.reject(error);
+        }
+    }
+
+    /**
+     * Updates the application behavior configuration
+     *
+     * @param config - App behavior configuration to update
+     * @returns Updated app behavior configuration
+     * @throws Rejects with original error if operation fails
+     */
+    async updateAppBehaviorConfig(config: AppBehaviorConfig): Promise<AppBehaviorConfig> {
+        try {
+            this.logger.logInfo(`Attempt to call Wails generated UpdateAppBehaviorConfig`);
+            const wailsConfig = settings.AppBehaviorConfig.createFrom(config);
+            const result = await UpdateAppBehaviorConfig(wailsConfig);
+            this.logger.logInfo(`Wails generated UpdateAppBehaviorConfig completed successfully`);
+            return result;
+        } catch (error) {
+            const err = parseError(error);
+            this.logger.logError(`Wails generated UpdateAppBehaviorConfig failed: ${err.message}`);
             return Promise.reject(error);
         }
     }

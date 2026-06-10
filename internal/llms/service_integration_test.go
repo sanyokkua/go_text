@@ -131,6 +131,14 @@ func (m *MockSettingsService) RemoveLanguage(language string) ([]string, error) 
 	return []string{}, nil
 }
 
+func (m *MockSettingsService) GetAppBehaviorConfig() (*settings.AppBehaviorConfig, error) {
+	return &settings.AppBehaviorConfig{}, nil
+}
+
+func (m *MockSettingsService) UpdateAppBehaviorConfig(cfg *settings.AppBehaviorConfig) (*settings.AppBehaviorConfig, error) {
+	return cfg, nil
+}
+
 // MockServerBehavior controls the mock HTTP server responses
 type MockServerBehavior struct {
 	StatusCode         int

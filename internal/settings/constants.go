@@ -123,6 +123,11 @@ var OpenAIConfig = ProviderConfig{
 	CustomModels:    nil,
 }
 
+var DefaultAppBehaviorConfig = AppBehaviorConfig{
+	EnableTaskLogging: false,
+	LogDirectory:      "",
+}
+
 var DefaultSetting = Settings{
 	AvailableProviderConfigs: []ProviderConfig{OllamaConfig, LMStudioConfig, LlamaCppConfig, OpenrouterConfig, OpenAIConfig},
 	CurrentProviderConfig:    OllamaConfig,
@@ -144,4 +149,5 @@ var DefaultSetting = Settings{
 		DefaultOutputLanguage: "Ukrainian",
 		Languages:             Languages[:],
 	},
+	AppBehaviorConfig: DefaultAppBehaviorConfig,
 }

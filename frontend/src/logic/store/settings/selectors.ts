@@ -8,3 +8,4 @@ export const selectSettingsMetadata = (state: RootState) => state.settings.metad
 // Derived selectors for specific settings parts
 export const selectCurrentProvider = (state: RootState) => state.settings.allSettings?.currentProviderConfig || null;
 export const selectModelConfig = (state: RootState) => state.settings.allSettings?.modelConfig || null;
+export const selectAppBehaviorConfig = (state: RootState) => state.settings.allSettings?.appBehaviorConfig ?? null;

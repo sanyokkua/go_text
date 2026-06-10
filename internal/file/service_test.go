@@ -395,3 +395,194 @@ func TestGetAppSettingsFilePath(t *testing.T) {
 		})
 	}
 }
+
+func TestFileUtilsService_ResolveAppLogsFolderPath(t *testing.T) {
+	tests := []struct {
+		name           string
+		customDir      string
+		setupEnv       func(tmpDir string)
+		validateResult func(t *testing.T, result string, err error, tmpDir string)
+	}{
+		{
+			name:      "custom_dir_returned_verbatim",
+			customDir: "/tmp/my-logs",
+			setupEnv:  func(tmpDir string) {},
+			validateResult: func(t *testing.T, result string, err error, tmpDir string) {
+				assert.NoError(t, err)
+				assert.Equal(t, "/tmp/my-logs", result)
+			},
+		},
+		{
+			name: "custom_dir_does_not_create_directory",
+			setupEnv: func(tmpDir string) {},
+			validateResult: func(t *testing.T, result string, err error, tmpDir string) {
+				assert.NoError(t, err)
+				_, statErr := os.Stat(result)
+				assert.True(t, os.IsNotExist(statErr))
+			},
+		},
+		{
+			name:      "default_uses_os_config_dir",
+			customDir: "",
+			setupEnv:  func(tmpDir string) {},
+			validateResult: func(t *testing.T, result string, err error, tmpDir string) {
+				assert.NoError(t, err)
+				expectedPath := filepath.Join(getAppConfigDir(tmpDir), LogsDirName)
+				assert.Equal(t, expectedPath, result)
+
+				// Verify no directory was created
+				_, statErr := os.Stat(result)
+				assert.True(t, os.IsNotExist(statErr))
+			},
+		},
+		{
+			name:      "complete_failure",
+			customDir: "",
+			setupEnv: func(tmpDir string) {
+				// Clear all environment variables to force complete failure
+				os.Unsetenv("HOME")
+				os.Unsetenv("XDG_CONFIG_HOME")
+				os.Unsetenv("APPDATA")
+				os.Unsetenv("LOCALAPPDATA")
+			},
+			validateResult: func(t *testing.T, result string, err error, tmpDir string) {
+				assert.Error(t, err)
+				assert.Empty(t, result)
+				assert.Contains(t, err.Error(), "failed to determine logs directory")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpDir, cleanup := setupTestEnv(t)
+			defer cleanup()
+
+			if tt.setupEnv != nil {
+				tt.setupEnv(tmpDir)
+			}
+
+			// Resolve customDir relative to tmpDir for the "does not create" case
+			customDir := tt.customDir
+			if tt.name == "custom_dir_does_not_create_directory" {
+				customDir = filepath.Join(tmpDir, "nonexistent-99999")
+			}
+
+			logger := &TestLogger{}
+			service := NewFileUtilsService(logger)
+
+			result, err := service.ResolveAppLogsFolderPath(customDir)
+
+			if tt.validateResult != nil {
+				tt.validateResult(t, result, err, tmpDir)
+			}
+		})
+	}
+}
+
+func TestFileUtilsService_EnsureAppLogsFolderExists(t *testing.T) {
+	tests := []struct {
+		name           string
+		setupEnv       func(t *testing.T, tmpDir string) string
+		validateResult func(t *testing.T, result string, err error, tmpDir string)
+	}{
+		{
+			name: "creates_custom_directory",
+			setupEnv: func(t *testing.T, tmpDir string) string {
+				return filepath.Join(tmpDir, "custom-logs")
+			},
+			validateResult: func(t *testing.T, result string, err error, tmpDir string) {
+				assert.NoError(t, err)
+				assert.Equal(t, filepath.Join(tmpDir, "custom-logs"), result)
+
+				info, statErr := os.Stat(result)
+				assert.NoError(t, statErr)
+				assert.True(t, info.IsDir())
+				assert.Equal(t, os.FileMode(0700), info.Mode().Perm())
+			},
+		},
+		{
+			name: "creates_default_directory",
+			setupEnv: func(t *testing.T, tmpDir string) string {
+				return ""
+			},
+			validateResult: func(t *testing.T, result string, err error, tmpDir string) {
+				assert.NoError(t, err)
+				expectedPath := filepath.Join(getAppConfigDir(tmpDir), LogsDirName)
+				assert.Equal(t, expectedPath, result)
+
+				info, statErr := os.Stat(result)
+				assert.NoError(t, statErr)
+				assert.True(t, info.IsDir())
+			},
+		},
+		{
+			name: "idempotent_second_call",
+			setupEnv: func(t *testing.T, tmpDir string) string {
+				return filepath.Join(tmpDir, "logs2")
+			},
+			validateResult: func(t *testing.T, result string, err error, tmpDir string) {
+				assert.NoError(t, err)
+
+				// Call again; must also succeed
+				logger := &TestLogger{}
+				service := NewFileUtilsService(logger)
+				result2, err2 := service.EnsureAppLogsFolderExists(filepath.Join(tmpDir, "logs2"))
+				assert.NoError(t, err2)
+				assert.Equal(t, result, result2)
+			},
+		},
+		{
+			name: "fails_when_regular_file_blocks_path",
+			setupEnv: func(t *testing.T, tmpDir string) string {
+				// Place a regular file at "blockfile"; use "blockfile/logs" as target
+				blockFile := filepath.Join(tmpDir, "blockfile")
+				err := os.WriteFile(blockFile, []byte("block"), 0600)
+				require.NoError(t, err)
+				return filepath.Join(tmpDir, "blockfile", "logs")
+			},
+			validateResult: func(t *testing.T, result string, err error, tmpDir string) {
+				assert.Error(t, err)
+				assert.Empty(t, result)
+				assert.Contains(t, err.Error(), "failed to create logs directory")
+			},
+		},
+		{
+			name: "fails_on_path_resolution_error",
+			setupEnv: func(t *testing.T, tmpDir string) string {
+				// Clear all environment variables to force resolution failure
+				os.Unsetenv("HOME")
+				os.Unsetenv("XDG_CONFIG_HOME")
+				os.Unsetenv("APPDATA")
+				os.Unsetenv("LOCALAPPDATA")
+				return ""
+			},
+			validateResult: func(t *testing.T, result string, err error, tmpDir string) {
+				assert.Error(t, err)
+				assert.Empty(t, result)
+				assert.Contains(t, err.Error(), "failed to resolve logs folder path")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpDir, cleanup := setupTestEnv(t)
+			defer cleanup()
+
+			var customDir string
+			if tt.setupEnv != nil {
+				customDir = tt.setupEnv(t, tmpDir)
+			}
+
+			logger := &TestLogger{}
+			service := NewFileUtilsService(logger)
+
+			result, err := service.EnsureAppLogsFolderExists(customDir)
+
+			if tt.validateResult != nil {
+				tt.validateResult(t, result, err, tmpDir)
+			}
+		})
+	}
+}

@@ -12,6 +12,8 @@ import (
 type FileUtilsServiceAPI interface {
 	GetAppSettingsFolderPath() (string, error)
 	GetAppSettingsFilePath() (string, error)
+	ResolveAppLogsFolderPath(customDir string) (string, error)
+	EnsureAppLogsFolderExists(customDir string) (string, error)
 }
 
 type FileUtilsService struct {
@@ -83,4 +85,53 @@ func (s *FileUtilsService) GetAppSettingsFilePath() (string, error) {
 	s.logger.Debug(fmt.Sprintf("%s: successfully retrieved settings file path in %v", op, duration))
 
 	return settingsPath, nil
+}
+
+// ResolveAppLogsFolderPath resolves the logs folder path without creating any directories.
+// If customDir is non-empty it is returned as-is; otherwise the OS default is used.
+func (s *FileUtilsService) ResolveAppLogsFolderPath(customDir string) (string, error) {
+	const op = "FileUtilsService.ResolveAppLogsFolderPath"
+	s.logger.Debug(fmt.Sprintf("%s: resolving application logs folder path", op))
+
+	if customDir != "" {
+		s.logger.Trace(fmt.Sprintf("%s: using custom log directory: %s", op, customDir))
+		return customDir, nil
+	}
+
+	configDir, err := os.UserConfigDir()
+	if err != nil {
+		s.logger.Trace(fmt.Sprintf("%s: failed to get user config directory: %v, falling back to home directory", op, err))
+
+		configDir, err = os.UserHomeDir()
+		if err != nil {
+			s.logger.Error(fmt.Sprintf("%s: failed to get user home directory: %v", op, err))
+			return "", fmt.Errorf("%s: failed to determine logs directory: %w", op, err)
+		}
+	}
+
+	logsPath := filepath.Join(configDir, AppName, LogsDirName)
+	s.logger.Trace(fmt.Sprintf("%s: resolved logs folder path: %s", op, logsPath))
+	return logsPath, nil
+}
+
+// EnsureAppLogsFolderExists resolves the logs folder path and creates it if it does not exist.
+func (s *FileUtilsService) EnsureAppLogsFolderExists(customDir string) (string, error) {
+	const op = "FileUtilsService.EnsureAppLogsFolderExists"
+	startTime := time.Now()
+	s.logger.Info(fmt.Sprintf("%s: ensuring application logs folder exists", op))
+
+	logsPath, err := s.ResolveAppLogsFolderPath(customDir)
+	if err != nil {
+		s.logger.Error(fmt.Sprintf("%s: failed to resolve logs folder path: %v", op, err))
+		return "", fmt.Errorf("%s: failed to resolve logs folder path: %w", op, err)
+	}
+
+	if err := os.MkdirAll(logsPath, 0700); err != nil {
+		s.logger.Error(fmt.Sprintf("%s: failed to create logs directory '%s': %v", op, logsPath, err))
+		return "", fmt.Errorf("%s: failed to create logs directory: %w", op, err)
+	}
+
+	duration := time.Since(startTime)
+	s.logger.Info(fmt.Sprintf("%s: successfully ensured logs folder exists in %v", op, duration))
+	return logsPath, nil
 }

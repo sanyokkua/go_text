@@ -27,6 +27,8 @@ type SettingsHandlerAPI interface {
 	SetDefaultOutputLanguage(language string) error
 	AddLanguage(language string) ([]string, error)
 	RemoveLanguage(language string) ([]string, error)
+	GetAppBehaviorConfig() (AppBehaviorConfig, error)
+	UpdateAppBehaviorConfig(cfg AppBehaviorConfig) (AppBehaviorConfig, error)
 }
 
 type SettingsHandler struct {
@@ -418,4 +420,43 @@ func (s *SettingsHandler) RemoveLanguage(language string) ([]string, error) {
 	duration := time.Since(startTime)
 	s.logger.Info(fmt.Sprintf("%s: successfully removed language %q in %v, remaining languages: %d", op, language, duration, len(languages)))
 	return languages, nil
+}
+
+func (s *SettingsHandler) GetAppBehaviorConfig() (AppBehaviorConfig, error) {
+	const op = "SettingsHandler.GetAppBehaviorConfig"
+	s.logger.Debug(fmt.Sprintf("%s: retrieving app behavior configuration", op))
+
+	config, err := s.settingsService.GetAppBehaviorConfig()
+	if err != nil {
+		s.logger.Error(fmt.Sprintf("%s: failed to get app behavior config: %v", op, err))
+		return AppBehaviorConfig{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	if config == nil {
+		s.logger.Error(fmt.Sprintf("%s: app behavior config is nil", op))
+		return AppBehaviorConfig{}, fmt.Errorf("%s: app behavior config is nil", op)
+	}
+
+	return *config, nil
+}
+
+func (s *SettingsHandler) UpdateAppBehaviorConfig(cfg AppBehaviorConfig) (AppBehaviorConfig, error) {
+	const op = "SettingsHandler.UpdateAppBehaviorConfig"
+	startTime := time.Now()
+	s.logger.Info(fmt.Sprintf("%s: updating app behavior configuration", op))
+
+	result, err := s.settingsService.UpdateAppBehaviorConfig(&cfg)
+	if err != nil {
+		s.logger.Error(fmt.Sprintf("%s: failed to update app behavior config: %v", op, err))
+		return AppBehaviorConfig{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	if result == nil {
+		s.logger.Error(fmt.Sprintf("%s: updated app behavior config is nil", op))
+		return AppBehaviorConfig{}, fmt.Errorf("%s: updated app behavior config is nil", op)
+	}
+
+	duration := time.Since(startTime)
+	s.logger.Info(fmt.Sprintf("%s: successfully updated app behavior config in %v", op, duration))
+	return *result, nil
 }

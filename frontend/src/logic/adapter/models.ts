@@ -94,6 +94,17 @@ export interface Prompts {
 }
 
 /**
+ * Application behavior configuration for task logging
+ *
+ * Controls whether completed tasks are written to log files and where those files are stored.
+ * An empty logDirectory means the backend uses the OS-appropriate default path.
+ */
+export interface AppBehaviorConfig {
+    enableTaskLogging: boolean;
+    logDirectory: string;
+}
+
+/**
  * Application settings metadata
  *
  * Provides information about the settings system including:
@@ -106,6 +117,7 @@ export interface AppSettingsMetadata {
     providerTypes: string[];
     settingsFolder: string;
     settingsFile: string;
+    logsFolder: string;
 }
 
 /**
@@ -194,4 +206,5 @@ export interface Settings {
     inferenceBaseConfig: InferenceBaseConfig;
     modelConfig: ModelConfig;
     languageConfig: LanguageConfig;
+    appBehaviorConfig: AppBehaviorConfig;
 }
