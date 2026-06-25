@@ -1,0 +1,465 @@
+# GoText v3 — AI-Agent Implementation Plan
+
+This plan decomposes the entire v3 implementation into independently executable tasks optimized for AI
+agents. Each task is one implementation story: it fits a clean context window, contains its own context,
+and lists explicit acceptance criteria. Execute tasks using the lifecycle in `15-ai-agent-execution-template.md`.
+
+**Conventions:** complexity ∈ {S, M, L}. Source paths are repo-root-relative. Cross-references point to
+the specification documents `01`–`16`. Follow the coding standards in `docs/ai_agent_rules/` and the Wails
+binding rule (bound methods take no `context.Context` param; store ctx from `OnStartup`; run
+`wails generate module` after Go signature changes). **Every task ends by running the verification
+pipeline** in `13-testing-specification.md` §11 (build → unit/`-race` → codegen sync → live-Chromium UI
+gates → CI guards → clean tree); the harness that makes this runnable is built once in **T00** below and
+is a prerequisite for all other tasks.
+
+**Phase overview & dependency graph**
+```
+P-1 Bootstrap:        T00 (verification & test harness) → everything
+P0 Foundation:        (T00) → T01 → T02 → T03 → T04 → T05
+P1 Persistence:       (T03) → T06 → T07
+P2 Providers:         (T04,T06) → T08 → T09 → T10
+P3 Prompts & Stacks:  (T06) → T11 → T12 → T13 → T14 → T15
+P4 History:           (T07,T13) → T16
+P5 FE Foundation:     (T01) → T17, T18 ; (T04) → T19, T20 ; (T17,T18) → T31 (markdown)
+P6 FE Views:          (T18,T19,T20,T31) → T21 → T22 → T23 → T24 → T25 → T26
+P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
+```
+
+**Result of the Specification Implementation is 3.0.0 version of the app**
+
+---
+
+## PHASE -1 — Verification & Test Harness Bootstrap
+
+### T00 · Verification & test harness bootstrap
+- **Dependencies:** none (do this **first**) · **Complexity:** M
+- **Goal:** Stand up the complete testing + verification infrastructure so that, from the very first
+  feature task, every change can be unit-tested, UI-tested, and run through the gated pipeline in
+  `13-testing-specification.md` §11. After T00, "how do I verify a change?" has one answer for every
+  subsequent task.
+- **Scope:**
+  - **Test deps:** add `@testing-library/react`, `@testing-library/user-event`, `@testing-library/jest-dom`,
+    `jest-axe`, and `playwright` (+ install the Chromium browser) to `frontend/package.json`; confirm Go
+    test deps (`github.com/stretchr/testify`, `govulncheck`, `sqlc`, `goose`).
+  - **Two run targets (§1.5 of `13-testing-specification.md`):** (A) the **frontend-only Vite dev server**
+    (`npm run dev`) with a dev-only **browser bridge mock** at `frontend/src/dev/bridge-mock/` that
+    implements every `08-api-contracts.md` bound-method signature + the `EventsOn`/emit API and can be
+    switched per scenario (success / each `WireError` / partial chain / `chain:progress` stream); and
+    (B) the **backend-connected** `wails dev` server (live bridge, real Go). The mock is injected only in
+    dev/test builds and never shipped.
+  - **Verification scripts** under `frontend/scripts/`: `verify-ui.mjs` (Playwright: every primary route ×
+    ≥3 widths × 2 themes; gates: no horizontal overflow, no console/page errors, sans-serif body font,
+    expected key element present; screenshot per combination to `frontend/.tmp/verify-screens/`) and
+    `smoke-tests.mjs` (scripted interaction flows incl. run a single action, build+run a stack, History
+    rail, add+verify provider, switch theme, open Prompt Inspector, **render Markdown in Preview**). Both
+    accept `BASE_URL` so they target A or B.
+  - **npm scripts:** `test`, `test:coverage`, `verify:ui` (responsive + smoke), `verify:smoke`, and a
+    top-level `verify` that chains format → lint/type-check → unit tests.
+  - **CI workflow:** a pipeline that runs the §11 gates headless — Go `-race` + coverage, FE Jest +
+    coverage, `sqlc generate --diff`, `wails doctor`, `govulncheck`, `npm audit`, the `@mui`/`@emotion`
+    absence guard, and the Playwright UI gates (Target A; Target B for bridge journeys).
+  - **Docs:** a short `docs/howto/verification.md` describing the two servers and the gated pipeline, and a
+    `run-verification` entry in the agent rules so every task can follow the same checklist.
+  - **Verify Current State:** You need to check current coverage, linting issues and everything related to the code quality aspects, to prevent issues with AI Agent that it doesn't fix issue because they are pre-existing and were "before changes made in the branch".
+- **Out of scope:** Writing the feature tests themselves (each feature task writes its own per
+  `13-testing-specification.md`); the exhaustive suites + final CI hardening land in **T29**, which builds
+  on this harness.
+- **Technical context:** See `13-testing-specification.md` §1.3–1.5, §4, §11. GoText is Wails + Vite +
+  React (desktop) — there is no service-worker/static-export step.
+- **Implementation steps:** (1) add deps + install Chromium; (2) wire `@testing-library` + `jest-axe` into
+  the Jest setup; (3) build the bridge mock + a dev-build switch; (4) write `verify-ui.mjs` /
+  `smoke-tests.mjs` with a `BASE_URL` and headless/CI flags; (5) add the npm scripts; (6) add the CI
+  workflow; (7) write `docs/howto/verification.md`.
+- **Acceptance criteria:** `npm test` runs RTL + `jest-axe`; `npm run dev` serves the UI with the mocked
+  bridge and `npm run verify:ui` exits clean against it; `wails dev` serves the live app and
+  `BASE_URL=…:34115 npm run verify:smoke` runs a real-bridge journey; CI runs all §11 gates; the
+  `@mui`/`@emotion` guard is present. A trivial sample unit test and a sample UI gate both pass, proving
+  the harness end-to-end.
+- **Testing requirements:** the harness verifies itself — one sample RTL test + one Playwright route gate
+  green against Target A, one smoke flow green against Target B.
+- **Edge cases:** Chromium missing in CI → install step; port already in use → configurable `BASE_URL`;
+  bridge mock drift from contracts → mock is generated/checked against `08-api-contracts.md` types.
+- **Documentation updates:** `docs/howto/verification.md`; `docs/ai_agent_rules/` (verification checklist);
+  `CLAUDE.md` (commands).
+- **References:** `13-testing-specification.md` (§1.3–1.5, §4, §11), `08-api-contracts.md`,
+  `12-ui-implementation.md`.
+
+---
+
+## PHASE 0 — Foundation
+
+### T01 · Dependency baseline & Material UI removal
+- **Dependencies:** T00 · **Complexity:** M
+- **Goal:** The project compiles with the new dependency set; Material UI and Emotion are fully removed.
+- **Scope:** Add Go deps (`modernc.org/sqlite`, `github.com/pressly/goose/v3`, `gopkg.in/natefinch/lumberjack.v2`; `github.com/google/uuid` already present). Add FE deps (`radix-ui`, `cmdk`, `react-markdown`, `remark-gfm`, `remark-math`, `rehype-katex`, `rehype-highlight`, `highlight.js`, `katex`, `mermaid`, a diff library, optional `lucide-react`). Remove `@mui/material`, `@mui/icons-material`, `@emotion/react`, `@emotion/styled`. Delete `frontend/src/ui/theme.ts` and remove `ThemeProvider`/`CssBaseline` usage. Replace MUI components/icons in existing views with placeholders or the new primitives as they are built (full view rebuilds happen in P6).
+- **Out of scope:** Building the new UI components (P5/P6); backend logic.
+- **Technical context:** See `12-ui-implementation.md` §MUI removal. MUI is used in `frontend/src/ui/theme.ts`, `frontend/src/ui/widgets/views/info/InfoView.tsx`, the `settings/` view tree, and `AppLayout`.
+- **Implementation steps:** (1) `grep -r "@mui\|@emotion" frontend/src` to inventory. (2) Add/remove deps in `go.mod` and `frontend/package.json`. (3) Remove the theme layer and global MUI providers. (4) Stub or remove MUI-dependent renders so the build passes. (5) Add a CI guard script that fails if `@mui`/`@emotion` reappear.
+- **Acceptance criteria:** `go build ./...` and `npm run build` succeed; no `@mui`/`@emotion` import remains; CI guard present and passing.
+- **Testing requirements:** Build passes; guard script unit-verified.
+- **Edge cases:** Residual `sx`/`styled` usages — convert or stub.
+- **Documentation updates:** Note dependency changes in `README.md`.
+- **References:** `12-ui-implementation.md`, `01-product-scope.md`.
+
+### T02 · `internal/apperr` package (typed errors + envelope mapper)
+- **Dependencies:** none · **Complexity:** M
+- **Goal:** A single typed-error package with the full error code set, constructors, the `WireError` shape, the concrete Result envelope types, and the `toWire` boundary mapper.
+- **Scope:** Implement `AppError`, `ErrorCode` constants, constructors, `WireError`, `toWire(log, err)`, and the concrete result envelope structs. Register `ErrorCode` via `EnumBind`.
+- **Out of scope:** Calling these from providers/chain (T05/T08/T13); FE consumption (T19).
+- **Technical context:** See `07-error-handling-logging.md` §A. Codes (15): validation, invalid_plan, busy, auth, missing_credential, provider_unreachable, timeout, rate_limited, model_not_found, upstream, empty_completion, context_window, step_failed, cancelled, internal. (`busy` = single-flight gate; non-retryable, no details.) Envelope types (the full set defined in `08-api-contracts.md` §2.2 and `07-error-handling-logging.md` §4): `WireError`, `VoidResult`, `StringResult`, `ModelsResult`, `CatalogResult`, `SettingsResult`, `ChainResultEnv`, `StacksResult`, `StackResult`, `HistoryListResult`, `HistoryEntryResult`, `PromptPreviewResult`, `MetadataResult`, `LoggingResult`, `VerifyResult`, and the settings-domain results (`ProviderResult`/`ProvidersResult`, `InferenceResult`, `ModelConfigResult`, `AppBehaviorResult`, `LanguageResult`/`LanguagesResult`). This list must match 08 exactly.
+- **Implementation steps:** create `internal/apperr/apperr.go`, `wire.go`, `results.go`; implement `Error()`/`Unwrap()`; constructors set Title/Message/Details/Retryable; `toWire` uses `errors.As`, logs the full chain, returns the clean shape (unclassified → `internal`).
+- **Acceptance criteria:** unit tests prove AppError→WireError mapping and unclassified→internal; `Details` never carries secrets; package has no import cycles.
+- **Testing requirements:** table tests per code; `toWire` mapping tests.
+- **Edge cases:** nil error; wrapped chains; typed-nil avoidance (return `error` interface, not `*AppError` concrete).
+- **Documentation updates:** none yet.
+- **References:** `07-error-handling-logging.md`, `08-api-contracts.md`.
+
+### T03 · `internal/db` (SQLite open, migrations, seed) + DB file path
+- **Dependencies:** T01 · **Complexity:** L
+- **Goal:** A `Database` that opens `modernc.org/sqlite` with the required pragmas, applies embedded goose migrations, and seeds defaults on a fresh DB.
+- **Scope:** `internal/db/db.go` (`Open`, `Close`, `seedIfEmpty`/`Seed`), `internal/db/migrations/0001_init.sql` (+ history table), `sqlc.yaml`, `internal/db/queries/*.sql`, generated `internal/db/store`. Add `GetAppDatabaseFilePath()` to `internal/file`.
+- **Out of scope:** Repository implementations (T06/T07).
+- **Technical context:** See `06-data-model-database.md`. Pragmas: WAL, foreign_keys=ON, busy_timeout=5000, synchronous=NORMAL, single writer conn. Migrations via `//go:embed` + `pressly/goose`. Tables: settings, providers, app_state, languages, stacks, stack_steps, history.
+- **Implementation steps:** write the schema migration; configure sqlc (schema=migrations, queries dir); `sqlc generate`; implement `Open` (dsn+pragmas → `goose.Up` → `seedIfEmpty`); `seedIfEmpty` inserts default providers/languages/settings in one transaction when `providers` is empty.
+- **Acceptance criteria:** fresh open creates `gotext.db`, migrates to latest, seeds defaults; `goose` Up/Down round-trips on a temp DB; `sqlc generate --diff` clean.
+- **Testing requirements:** integration test against in-memory/temp DB; migration round-trip.
+- **Edge cases:** corrupt/locked DB → typed `internal` storage error; reseed idempotency.
+- **Documentation updates:** `docs/architecture/05-build-and-configuration.md` (sqlc/goose workflow).
+- **References:** `06-data-model-database.md`, `03-architecture.md`.
+
+### T04 · Result envelope at the handler boundary
+- **Dependencies:** T02 · **Complexity:** M
+- **Goal:** Bound handlers return Result envelopes (no Go `error` return); a panic becomes an `internal` envelope or a global FE fallback.
+- **Scope:** Introduce the boundary pattern in existing handlers (`internal/actions/handler.go`, settings handler): wrap service calls, map errors via `toWire`, return the concrete envelope. Add a handler-level `recover`. Keep services returning `(T, error)` internally.
+- **Out of scope:** New handlers (added in their feature tasks); FE adapter (T19).
+- **Technical context:** See `07-error-handling-logging.md` §A and `08-api-contracts.md`.
+- **Implementation steps:** add `toWire` usage; convert one handler fully as the reference pattern; document the pattern inline.
+- **Acceptance criteria:** at least the existing action+settings handlers return envelopes; panic in a handler yields an `internal` envelope; `wails generate module` regenerates models.
+- **Testing requirements:** handler tests assert `res.error.code`.
+- **Edge cases:** partial results (envelope allows Data+Error both set).
+- **Documentation updates:** `CLAUDE.md` (envelope convention).
+- **References:** `07-error-handling-logging.md`, `08-api-contracts.md`.
+
+### T05 · Structured logging + crash resilience + lifecycle
+- **Dependencies:** T03 · **Complexity:** M
+- **Goal:** A configured logger instance (console + rotating file), `safego` recovery, fixed startup-error handling, and `OnShutdown`.
+- **Scope:** Rewrite `internal/logging` to a settings-driven zerolog instance with `lumberjack` rotation, structured fields, a `Timer` helper, redaction, and the Wails `logger.Logger` interface. Add `safego(fn)`. Fix `main.go` to handle the constructor/DB-open error (Fatal log + dialog) instead of silently returning. Add `OnShutdown` (cancel runs, flush logs, close DB).
+- **Out of scope:** History/tasklog changes (tasklog preserved); React error boundary (T19).
+- **Technical context:** See `07-error-handling-logging.md` §B/§C. Settings keys `log.fileEnabled/level/directory/maxSizeMB/maxBackups/maxAgeDays/compress`.
+- **Implementation steps:** build the logger from logging settings; multi-writer; level from settings; `safego` wraps goroutines; `main.go` error handling + `OnShutdown`.
+- **Acceptance criteria:** app logs to a rotating file when enabled; level is runtime-settable; secrets never logged; DB-open failure is fatal+surfaced, not silent; shutdown closes DB.
+- **Testing requirements:** logging redaction + level tests; safego recover test.
+- **Edge cases:** log dir unwritable → warn + console only.
+- **Documentation updates:** `docs/ai_agent_rules/GoLoggingRules.md`.
+- **References:** `07-error-handling-logging.md`, `03-architecture.md`.
+
+---
+
+## PHASE 1 — Persistence
+
+### T06 · SQLite settings repository + settings model evolution
+- **Dependencies:** T03 · **Complexity:** L
+- **Goal:** Settings are read/written from SQLite behind the existing `SettingsRepositoryAPI`; the provider config gains the v3 fields; inline token storage is removed.
+- **Scope:** Implement `SqliteSettingsRepository` (providers CRUD, current-provider pointer + repoint on delete, KV-group typed accessors for inference/model/app-behavior/logging/theme, languages, reset). Evolve the provider config struct: add `kind`, `authScheme`, `apiKeyEnvVar`, `apiVersion`, `selectedModel`, `completionPath`, `modelsPath`; remove inline `authToken`/`useAuthTokenFromEnv`/`envVarTokenName`. Implement the settings handler methods bound in `08-api-contracts.md`, including **`GetAppSettingsMetadata` (→ `MetadataResult`: app version, settings/DB/logs paths, `providerKinds`/`authSchemes` enums)** and **`GetLoggingConfig`/`UpdateLoggingConfig` (→ `LoggingResult`)** over the full `log.*` key set. Wire into the DI container; move seeding to `internal/db`; remove the JSON repository and `SettingsV2.json` usage.
+- **Out of scope:** Provider runtime layer (T08).
+- **Technical context:** See `06-data-model-database.md`, `04-providers-inference.md` §field contracts. `SettingsServiceAPI` surface stays the same.
+- **Implementation steps:** add queries; implement repo with domain⇄row mapping (headers/custom_models JSON); update `internal/application/application.go` to construct DB + repo; update `main.go` (remove `InitDefaultSettingsIfAbsent`, add DB lifecycle).
+- **Acceptance criteria:** settings CRUD works against SQLite; delete-current-provider repoints; factory reset wipes+reseeds; `GetAppSettingsMetadata` returns version/paths/enums (no secrets); `Get/UpdateLoggingConfig` round-trips the `log.*` keys; service/handlers unchanged externally; no secrets persisted.
+- **Testing requirements:** repo tests on temp DB; current-provider repoint; reset; metadata + logging-config round-trip (`13-testing-specification.md` §2.1.4).
+- **Edge cases:** unique-name conflict → `validation` error; empty DB seed.
+- **Documentation updates:** `docs/architecture/02-backend-architecture.md`.
+- **References:** `06-data-model-database.md`, `04-providers-inference.md`.
+
+### T07 · Stack & History repositories
+- **Dependencies:** T03 · **Complexity:** M
+- **Goal:** SQLite-backed `StackRepository` and `HistoryRepository`.
+- **Scope:** `internal/stacks` (SavedStack model + repo: List/Get/Create/Update/Delete/Duplicate; steps by position; cascade) and `internal/history` (HistoryEntry + repo: Add[insert+prune to maxEntries in one tx]/List/Get/Delete/Clear/Count).
+- **Out of scope:** Orchestrator integration (T13/T16); handlers (T14/T16).
+- **Technical context:** See `06-data-model-database.md`, `05-stacks-actions-engine.md`, `13`-history sections within `02-functional-requirements.md`.
+- **Implementation steps:** add queries; implement repos with JSON columns; prune query keeps newest N.
+- **Acceptance criteria:** stack create/update replaces steps transactionally; history Add prunes to max; clear/delete work.
+- **Testing requirements:** repo tests (ordering, prune to exactly N, cascade).
+- **Edge cases:** maxEntries lowered → prune on next add; duplicate name → validation.
+- **Documentation updates:** none.
+- **References:** `06-data-model-database.md`.
+
+---
+
+## PHASE 2 — Providers & Inference
+
+### T08 · Provider interface, profiles, factory, discovery
+- **Dependencies:** T04, T06 · **Complexity:** L
+- **Goal:** A `Provider` interface with one `OpenAICompatibleProvider` driven by per-kind profiles, a factory registry, and per-kind discovery strategies — replacing the inline LLM flow while keeping the `LLMServiceAPI` façade.
+- **Scope:** `Provider` (Chat, ListModels, Capabilities); `ProviderProfile` (URL/auth/discovery/body quirks) for kinds ollama, lmstudio, llamacpp, openai, azure; `ProviderFactory`; discovery strategies (standard `/v1/models`, deployment-style `{data:[]}`/bare-array with chat filtering, Ollama `/api/tags`, static list); token resolution from env var; typed errors at the source (T02).
+- **Out of scope:** Verification (T09); chain (T13).
+- **Technical context:** See `04-providers-inference.md`. Keep `internal/llms` façade; non-streaming; strip `<think>` for local; ignore `custom_content`.
+- **Implementation steps:** define interface + profiles; implement provider build from config+profile; discovery normalizers; map status/transport → apperr codes.
+- **Acceptance criteria:** all five kinds build correct URLs/auth/headers; discovery normalizes both shapes; httptest mocks pass for 200/401/404/429/5xx/timeout/empty.
+- **Testing requirements:** per-kind table tests; httptest integration.
+- **Edge cases:** missing credential; bare-array discovery; Ollama `/v1` requirement.
+- **Documentation updates:** `docs/architecture/02-backend-architecture.md`.
+- **References:** `04-providers-inference.md`, `07-error-handling-logging.md`.
+
+### T09 · Provider verification (connection / models / inference)
+- **Dependencies:** T08 · **Complexity:** M
+- **Goal:** Three diagnostic checks returning typed results with timings.
+- **Scope:** `TestConnection`, `TestModels`, `TestInference` service methods + handlers (envelope). Test inference sends a tiny throwaway completion to the selected model with a short per-check timeout; results are not recorded to history/tasklog. **Introduce the process-wide single-flight `InferenceGate`** (single-slot, non-blocking) in the DI container and have **`TestInference` acquire it** (TestConnection/TestModels do not — no completion); the **same gate instance is later injected into the chain orchestrator** (T13) so a run and a Test inference are mutually exclusive. If the gate is held, `TestInference` returns `busy` with no LLM call.
+- **Out of scope:** UI panel (T24); the orchestrator's use of the gate (T13).
+- **Technical context:** See `04-providers-inference.md` §5.6, `05-stacks-actions-engine.md` §4.5 (gate), `08-api-contracts.md` §6.
+- **Acceptance criteria:** each check returns ✓/✗ with a typed reason + duration; failures never block save; missing selected model prompts a typed validation result; **`TestInference` returns `busy` when an inference is already running and releases the gate when done**.
+- **Testing requirements:** httptest per check (success + each failure code); single-flight: `TestInference` while gate held → `busy`.
+- **Edge cases:** local provider no-auth skips credential step; gate released on failure/timeout.
+- **Documentation updates:** none.
+- **References:** `04-providers-inference.md`.
+
+### T10 · Capability-aware discovery & model listing
+- **Dependencies:** T08 · **Complexity:** S
+- **Goal:** Discovery surfaces optional `ModelCaps`; the model list is fetched live (never cached in DB).
+- **Scope:** `ModelInfo{ID,Label,Caps?}`; extract caps from rich catalogs (temperature support, context-window hint); `GetModels`/refresh handler.
+- **Out of scope:** UI pre-fill (T24).
+- **Technical context:** See `04-providers-inference.md` §discovery.
+- **Acceptance criteria:** rich catalogs yield Caps; plain catalogs yield nil Caps; results are not persisted.
+- **Testing requirements:** parse tests for rich + plain catalogs.
+- **Edge cases:** unreachable discovery → typed error; static fallback.
+- **References:** `04-providers-inference.md`.
+
+---
+
+## PHASE 3 — Prompts & Stacks Engine
+
+### T11 · Two-tier prompt library + action catalog
+- **Dependencies:** T06 · **Complexity:** L
+- **Goal:** Rewrite the prompt library to the two-tier model and expose the action catalog with metadata.
+- **Scope:** Implement the family system prompts and per-action directive fragments + `ActionMeta` for the exact action set in `09-prompts.md`; remove dropped composite actions; register in `internal/prompts/`. Implement `GetActionCatalog()` returning `[]ActionMeta`.
+- **Out of scope:** Composition/merge runtime (T12).
+- **Technical context:** See `09-prompts.md`, `05-stacks-actions-engine.md`. Each family system prompt encodes its guardrails and "output ONLY the processed text".
+- **Acceptance criteria:** catalog lists exactly the actions in `09-prompts.md` with correct family/sub-group/mergeable/terminal/requires; dropped composites absent; image/video builders are parameterized actions.
+- **Testing requirements:** catalog content test; metadata correctness.
+- **Edge cases:** translate requires languages; prompt-eng requires target model.
+- **Documentation updates:** `docs/architecture/02-backend-architecture.md` (prompt extension recipe).
+- **References:** `09-prompts.md`, `05-stacks-actions-engine.md`.
+
+### T12 · Planner + Composer + `runStep`
+- **Dependencies:** T11 · **Complexity:** L
+- **Goal:** Canonical ordering, exclusivity dedupe, caps, merge grouping, two-tier composition, and a reusable single-inference step.
+- **Scope:** `Planner` (order/dedupe/cap/merge-group → ChainPlan), `Composer` (per-group system+user with injected text/format/language), `runStep(ctx, ChatRequest)` extracted from `processAction`, shared `BuildPlanAndPrompts(req)`.
+- **Out of scope:** Orchestration loop (T13).
+- **Technical context:** See `05-stacks-actions-engine.md` §algorithms. Caps: ≤5 steps AND ≤3 inference groups.
+- **Acceptance criteria:** canonical order independent of input order; one-per-exclusivity enforced; cap violations rejected with `invalid_plan`; merge grouping matches spec; composition injects shared context once.
+- **Testing requirements:** planner/composer table tests; merge-grouping cases.
+- **Edge cases:** terminal pinning; single action = one group.
+- **References:** `05-stacks-actions-engine.md`.
+
+### T13 · Chain orchestrator + events + cancellation
+- **Dependencies:** T08, T12, T09 (shared `InferenceGate`) · **Complexity:** L
+- **Goal:** `ProcessPromptChain` runs groups sequentially, emits progress, supports cancel, returns partial+error.
+- **Scope:** `ChainOrchestrator.Run` (validate→plan→resolve provider once→per-group emit `chain:progress`→`runStep`→feed output→input→success/cancel/partial); run registry `map[runId]CancelFunc`; **process-wide single-flight `InferenceGate`** (single-slot, non-blocking `TryAcquire`/`Release`) acquired by `ProcessPromptChain` before planning and released on completion/cancel/panic, **shared with the provider-verification service** (T09) so a run and a Test inference can never run concurrently; `CancelChain(runId)`; `ProcessPromptChain` handler (ChainResultEnv). Per-step tasklog. Single action routes through the same path.
+- **Out of scope:** History recording (T16); FE (T21).
+- **Technical context:** See `05-stacks-actions-engine.md` §4.5 (gate), `08-api-contracts.md` §4.1, `02-functional-requirements.md` §4.1/V11.
+- **Acceptance criteria:** multi-step chain produces correct merged inferences; cancel stops after current group keeping partial; step failure returns completed output + failedIndex + typed error; provider/model/temperature fixed for the run; **a concurrent `ProcessPromptChain` (or a `TestInference`) while one is in progress returns `busy` immediately with no LLM call; the gate is released after done/cancel/panic so the next run proceeds**.
+- **Testing requirements:** integration (success, partial, cancel) with httptest; **single-flight: concurrent run → `busy`; run↔Test-inference mutual exclusion; gate released after end (`13-testing-specification.md` §3.2/§7.2 I6–I8).**
+- **Edge cases:** same-language translate no-op; context-window error; gate must not leak on panic.
+- **Documentation updates:** `docs/architecture/04-data-flow-and-communication.md`.
+- **References:** `05-stacks-actions-engine.md`.
+
+### T14 · Saved-stack handlers + starter stacks
+- **Dependencies:** T07, T13 · **Complexity:** M
+- **Goal:** Saved-stack CRUD over the bridge; starter stacks seeded.
+- **Scope:** Handlers List/Get/Create/Update/Delete/Duplicate (envelopes); seed the starter stacks documented in `09-prompts.md` §4 on a fresh DB (content/inventory per `06-data-model-database.md` §B.5.1).
+- **Out of scope:** Builder UI (T22).
+- **Technical context:** See `08-api-contracts.md`, `09-prompts.md` starter-stacks appendix.
+- **Acceptance criteria:** CRUD works; unknown action ids in a loaded stack are flagged; starter stacks present after seed and **every seeded starter stack is planner-valid** (≤ 5 steps, ≤ 3 inference groups, ≤ 1 action per exclusivity group, terminal action only last).
+- **Testing requirements:** handler tests; validation (unique name).
+- **References:** `05-stacks-actions-engine.md`, `09-prompts.md`.
+
+### T15 · `PreviewPrompt` (Prompt Inspector backend)
+- **Dependencies:** T12 · **Complexity:** M
+- **Goal:** Read-only composed-prompt preview (no LLM call) reusing the real planner/composer.
+- **Scope:** `PreviewPrompt(req)` handler returning `PromptPreviewResult` envelope via `BuildPlanAndPrompts`.
+- **Out of scope:** Inspector UI (T25).
+- **Technical context:** See the About·Info / Prompt Inspector sections of `10-ui-ux-specification.md` and the `PreviewPrompt`/`PromptPreviewResult` contract in `08-api-contracts.md`.
+- **Acceptance criteria:** preview matches what a run would send; placeholders shown; optional sample input injected into group 1; per-group params correct.
+- **Testing requirements:** preview parity with orchestrator composition.
+- **Edge cases:** translate requires languages; stack vs single.
+- **References:** `08-api-contracts.md`, `05-stacks-actions-engine.md`.
+
+---
+
+## PHASE 4 — History
+
+### T16 · History recording + handlers + retention
+- **Dependencies:** T07, T13 · **Complexity:** M
+- **Goal:** One history entry per run (when enabled), plus history handlers.
+- **Scope:** Orchestrator records a `HistoryEntry` on completion (success/partial/error) when `history.enabled`; handlers List/Get/Delete/Clear (envelopes); retention via `history.maxEntries`; recording errors are logged and swallowed.
+- **Out of scope:** History rail UI (T23).
+- **Technical context:** See `06-data-model-database.md` (history), `02-functional-requirements.md`.
+- **Acceptance criteria:** one entry per run with correct status/applied snapshot; disabled → no writes; prune to maxEntries; recording never breaks a run.
+- **Testing requirements:** integration (record on success/partial/error; disabled; prune).
+- **Edge cases:** large I/O stored whole; removed-action snapshot still readable.
+- **References:** `06-data-model-database.md`.
+
+---
+
+## PHASE 5 — Frontend Foundation
+
+### T17 · Design tokens, base CSS, theming
+- **Dependencies:** T01 · **Complexity:** M
+- **Goal:** Token stylesheet + base CSS + working Auto/Light/Dark theming.
+- **Scope:** `frontend/src/ui/styles/tokens.css` (full token set, `:root` + `.dark`), `base.css`; `theme` slice (`mode`,`effective`); init reads `ui.theme`, resolves via `matchMedia`, applies `.dark` on `document.documentElement` (before first paint); live-follow in Auto.
+- **Out of scope:** Appearance settings screen (T24 wires the control).
+- **Technical context:** See `12-ui-implementation.md`, `10-ui-ux-specification.md` (theming).
+- **Acceptance criteria:** theme switches instantly; Auto follows OS live; no flash; portals inherit theme.
+- **Testing requirements:** resolve/apply unit tests; light/dark snapshot.
+- **References:** `12-ui-implementation.md`.
+
+### T18 · Radix primitive wrappers + presentational components
+- **Dependencies:** T01 · **Complexity:** L
+- **Goal:** Reusable styled wrappers over Radix/cmdk and presentational components.
+- **Scope:** `ui/primitives/*` (Select, Dialog, AlertDialog, Segmented/ToggleGroup, Switch, Slider, RadioGroup, Tabs, DropdownMenu, Tooltip, Toast, ScrollArea, Combobox=cmdk+Popover, CommandPalette=cmdk+Dialog) + `*.module.css`; presentational `ui/components/*` (Button, IconButton, Chip, Badge, Card). (No `Checkbox` wrapper — every boolean uses `Switch`.)
+- **Out of scope:** App-specific custom components (T21–T25 build them).
+- **Technical context:** See `12-ui-implementation.md` §Radix integration + element map.
+- **Acceptance criteria:** each wrapper is controlled, token-styled, keyboard/a11y correct (Radix), functional styles present (overlay covers viewport; content sized).
+- **Testing requirements:** jest-axe on wrappers; controlled-value sync.
+- **References:** `12-ui-implementation.md`, `11-mockup-documentation.md`.
+
+### T19 · Adapter layer + error consumption + boundaries
+- **Dependencies:** T04 · **Complexity:** M
+- **Goal:** FE consumes the Result envelope uniformly; global error safety.
+- **Scope:** Rewrite `frontend/src/logic/adapter/` to return `Promise<XResult>`; `unwrap`/`tryUnwrap`; `notifyError(code→presentation)`; extend the notifications model (title/details); React error boundary at root; global `onerror`/`unhandledrejection` → `internal`; remove old colon-splitting error parser.
+- **Out of scope:** Per-view wiring (P6).
+- **Technical context:** See `07-error-handling-logging.md`, `08-api-contracts.md`.
+- **Acceptance criteria:** every adapter call returns an envelope; typed errors render correct copy; render errors show a recoverable fallback.
+- **Testing requirements:** unwrap success/error/partial; notifyError copy per code.
+- **References:** `07-error-handling-logging.md`.
+
+### T20 · Redux slices
+- **Dependencies:** T04 · **Complexity:** M
+- **Goal:** All state slices defined and wired to adapters/thunks.
+- **Scope:** slices: settings, editor, actions/catalog, stacks (builder+saved), run/progress, history, ui (viewMode/layout/sidebar/historyRail/theme), notifications, about. Expose a **global `ui.inferenceRunning` selector** (true while a chain run **or** a provider Test inference is active) used to disable every start trigger app-wide (single-flight; `02-functional-requirements.md` V11).
+- **Out of scope:** View components (P6).
+- **Technical context:** See `03-architecture.md` (frontend), `10-ui-ux-specification.md`.
+- **Acceptance criteria:** slices expose the state the views need; async thunks call adapters and handle envelopes; `ui.inferenceRunning` reflects both run and Test-inference activity.
+- **Testing requirements:** reducer unit tests.
+- **References:** `03-architecture.md`.
+
+---
+
+### T31 · Markdown rendering (`MarkdownView` + `MermaidBlock`)
+- **Dependencies:** T17, T18 · **Complexity:** M
+- **Goal:** One shared, token-themed, secure Markdown renderer used by every rendered surface.
+- **Scope:** `frontend/src/ui/components/MarkdownView.tsx` (react-markdown + `remark-gfm` + `remark-math` + `rehype-katex` + `rehype-highlight`; custom `code` renderer routes `mermaid` blocks to `MermaidBlock`, custom `a` renderer externalizes links via the desktop open-URL adapter; **no `rehype-raw`/raw HTML**); `MermaidBlock.tsx` (async render to themed SVG, loading/error states, `securityLevel:'strict'`, theme from the `.dark` root class); `frontend/src/ui/styles/markdown.css` (the `markdown-body` token-based stylesheet) + light/dark highlight.js themes (dark scoped under `.dark`) + KaTeX stylesheet. Memoize on source.
+- **Out of scope:** Wiring into views (T21 Output Preview, T25 About Guide consume it).
+- **Technical context:** See `16-markdown-rendering.md` (authoritative). Theme class lives on `document.documentElement` so portaled Markdown inherits it.
+- **Acceptance criteria:** GFM (tables/task-lists/strikethrough), highlighted code, math, and mermaid render and are token-themed in both light and dark; raw HTML and disallowed URL schemes are inert; links open in the OS browser; switching view modes does not re-parse unchanged output; a failed mermaid block does not break the page.
+- **Testing requirements:** RTL (each example in `16-markdown-rendering.md` §9; HTML inert; link externalized; mermaid loading→SVG and error); light/dark theme snapshot; covered by the Chromium UI smoke flow (`13-testing-specification.md` §4.1/§4.2).
+- **Edge cases:** Plain format → literal text (no parsing); very large output renders in one pass without freezing.
+- **Documentation updates:** none.
+- **References:** `16-markdown-rendering.md`, `10-ui-ux-specification.md`.
+
+---
+
+## PHASE 6 — Frontend Views
+
+### T21 · Editor view + view modes + Diff
+- **Dependencies:** T18, T19, T20, T31 · **Complexity:** L
+- **Goal:** The main screen: toolbar run-context, sidebar, two editors with per-pane buttons, run bar; Preview/Source/Diff.
+- **Scope:** Toolbar (provider/model+refresh/language popover/format/view/layout/⌘K/history/info/settings); collapsible Actions + My Stacks sidebar; `EditorPane` (input paste/clear, output copy/use-as-input/clear); run bar (single action) with run lifecycle + `chain:progress`; `DiffView`; **Output Preview via the shared `MarkdownView` (T31, `16-markdown-rendering.md`)** — Markdown format renders, Plain format shows literal text; Source shows raw text. **Run is disabled while `ui.inferenceRunning`** (global single-flight); on a `busy` envelope, surface the warning toast.
+- **Out of scope:** Stack builder (T22); history rail (T23).
+- **Technical context:** See `10-ui-ux-specification.md`, `11-mockup-documentation.md`.
+- **Acceptance criteria:** single action runs end-to-end; view modes switch; diff highlights changes; run shows progress + cancel; layout side/stacked; **Run is disabled while any inference is in progress**.
+- **Testing requirements:** RTL interaction tests; e2e single-action run.
+- **References:** `10-ui-ux-specification.md`, `11-mockup-documentation.md`.
+
+### T22 · Stack builder + Save dialog + Manage grid
+- **Dependencies:** T21 · **Complexity:** L
+- **Goal:** Build, run, save, and manage stacks.
+- **Scope:** `StackBuilderBar` (chips grouped by family, inference badges, live N/5·M-inferences, one-per-family greying, Cancel/Save…/Run); Save-stack dialog; My Stacks Manage grid (run/edit/duplicate/delete/new).
+- **Technical context:** See `05-stacks-actions-engine.md`, `11-mockup-documentation.md`.
+- **Acceptance criteria:** builder mirrors backend rules; save persists; manage grid CRUD works; run uses `ProcessPromptChain`; **the builder Run and each My Stacks card Run are disabled while `ui.inferenceRunning`** (global single-flight).
+- **Testing requirements:** RTL (build/cap/exclusivity); e2e build+run+save.
+- **References:** `05-stacks-actions-engine.md`.
+
+### T23 · History rail
+- **Dependencies:** T20, T16 · **Complexity:** M
+- **Goal:** Right rail listing past runs with restore/delete/clear.
+- **Scope:** `HistoryRail` (cards with status/inference chips + preview), restore (load editors + re-arm if valid), delete, clear (confirm), empty/disabled states.
+- **Technical context:** See `10-ui-ux-specification.md`, `06-data-model-database.md`.
+- **Acceptance criteria:** lists entries; restore populates editors; delete/clear work; toolbar toggle opens/closes.
+- **Testing requirements:** RTL; e2e restore.
+- **References:** `10-ui-ux-specification.md`.
+
+### T24 · Settings views (7 sections)
+- **Dependencies:** T18, T19, T20, T09, T10 · **Complexity:** L
+- **Goal:** All settings sections, including provider master-detail with verification, KV editor, and tag input.
+- **Scope:** Providers (kind, auth, env-var-key field, endpoints, api-version, deployment/selected-model picker, custom-headers `KvEditor`, custom-models `TagInput`, verification panel, set-current/delete/save); Model; Generation; Languages (default badges + row menu); Logging (task + diagnostic file + rotation + history); About & data (paths + factory reset); Appearance (theme).
+- **Technical context:** See `11-mockup-documentation.md` (settings screens), `10-ui-ux-specification.md`, `04-providers-inference.md`.
+- **Acceptance criteria:** every control persists to SQLite; verification runs; capability-aware pre-fill; theme/logging apply live; inline validation; **Test inference is disabled while `ui.inferenceRunning`** (shares the global run gate) and a `busy` envelope surfaces the warning toast.
+- **Testing requirements:** RTL per section; e2e add+verify provider; Test-inference-disabled-while-busy.
+- **References:** `11-mockup-documentation.md`, `04-providers-inference.md`.
+
+### T25 · About·Info window + Prompt Inspector + ⌘K palette
+- **Dependencies:** T18, T20, T15 · **Complexity:** M
+- **Goal:** Guide + Actions&Stacks catalog + Prompt Inspector; command palette.
+- **Scope:** About view (vertical tabs Guide / Actions&Stacks); the **Guide content is rendered with the shared `MarkdownView` (T31)**; catalog rows → Prompt Inspector **detail panel** (right side of the Actions&Stacks grid, per `10-ui-ux-specification.md`/`11-mockup-documentation.md` §9.4) rendering composed system+user prompts + params per inference group + flow (via `PreviewPrompt`, shown as raw monospace text, not Markdown); ⌘K command palette (cmdk in Dialog: ↵ run, ⇧↵ add to stack).
+- **Technical context:** See `10-ui-ux-specification.md`, `08-api-contracts.md`, `16-markdown-rendering.md`.
+- **Acceptance criteria:** Inspector shows accurate composed prompts; copy per block; ⌘K runs/adds actions; **the ⌘K run / add-and-run actions are disabled while `ui.inferenceRunning`** (global single-flight).
+- **Testing requirements:** RTL; e2e preview.
+- **References:** `10-ui-ux-specification.md`.
+
+### T26 · Notifications, confirms, tooltips
+- **Dependencies:** T18, T19 · **Complexity:** S
+- **Goal:** Toasts, destructive AlertDialog confirms, tooltips wired app-wide.
+- **Scope:** Toast viewport + typed error toasts (incl. the `busy` warning toast for a rejected concurrent run/Test-inference); AlertDialog for factory reset / delete provider / delete stack / clear history; tooltips on icon buttons.
+- **Acceptance criteria:** typed errors appear as toasts (including `busy`); destructive ops confirm; tooltips accessible.
+- **Testing requirements:** RTL; jest-axe.
+- **References:** `10-ui-ux-specification.md`, `07-error-handling-logging.md`.
+
+---
+
+## PHASE 7 — Cross-cutting & Completion
+
+### T27 · Bindings, events, cancellation end-to-end
+- **Dependencies:** all BE handlers + FE views · **Complexity:** M
+- **Goal:** Bindings regenerated; events and cancellation work end-to-end.
+- **Scope:** `main.go` Bind all handlers + `EnumBind` ErrorCode; `wails generate module`; FE subscribes to `chain:progress`/`chain:error`/`chain:done`; cancel wired.
+- **Acceptance criteria:** generated models match Go types; progress + cancel verified in a live run.
+- **Testing requirements:** e2e progress + cancel.
+- **References:** `08-api-contracts.md`, `03-architecture.md`.
+
+### T28 · Documentation & agent-rules rewrite
+- **Dependencies:** core features done · **Complexity:** M
+- **Goal:** Repo docs reflect v3.
+- **Scope:** Rewrite `docs/architecture/01–05`, `README.md`, `CLAUDE.md` (package map, routing), `docs/guides/DEVELOPER_GUIDE.md`; update `docs/ai_agent_rules/*` (logging structured; add error-envelope/sqlc/Radix rules); update `.claude/skills/wails-dev` notes (events/cancel/EnumBind/no-CGO SQLite) and the agent definitions.
+- **Acceptance criteria:** docs match the implemented architecture; commands accurate.
+- **References:** `03-architecture.md`, `12-ui-implementation.md`.
+
+### T29 · Test suites + CI guards
+- **Dependencies:** T00, features implemented · **Complexity:** L
+- **Goal:** The full test suites and CI gates from `13-testing-specification.md` exist and pass, completing
+  the harness stood up in **T00**. Every frontend view/component has both its unit (RTL) and UI
+  (Playwright) test per the §2.3 coverage matrix.
+- **Scope:** Go unit/integration (`-race`, httptest, in-memory SQLite, goose round-trip); FE Jest + React Testing Library + jest-axe for **every** slice/helper/component/view (§2.3 matrix); **headless-Chromium UI verification (Playwright responsive×themes gates + interaction smoke flows incl. Markdown rendering, run against Target A and the bridge-dependent journeys against Target B, `13-testing-specification.md` §1.5/§4.1–4.2/§11)**; CI guards (`@mui`/`@emotion` absent; `sqlc generate --diff`; `wails doctor`; `govulncheck`; `npm audit`); coverage floor enforced.
+- **Acceptance criteria:** suites pass; coverage targets met; the §2.3 matrix is fully populated (no view lacking a unit **or** a UI test); the §11 pipeline is green end-to-end; CI guards enforced.
+- **References:** `13-testing-specification.md` (§1.5, §2.3, §4, §11).
+
+### T30 · Final integration & acceptance pass
+- **Dependencies:** T00–T29 · **Complexity:** M
+- **Goal:** End-to-end acceptance of all major features against `13-testing-specification.md` acceptance criteria; cross-platform build verified.
+- **Scope:** Run all acceptance scenarios; verify `wails build` cross-compiles (pure-Go SQLite); fresh-install flow; factory reset; provider verification; chain partial/cancel; history; theming.
+- **Acceptance criteria:** every major-feature acceptance criterion in `13-testing-specification.md` passes; release build succeeds.
+- **References:** `13-testing-specification.md`, `01-product-scope.md`.
+
+---
+
+## Task index
+| Phase | Tasks |
+|---|---|
+| P-1 Bootstrap | T00 verification & test harness (two dev servers + Playwright + bridge mock + CI gates) |
+| P0 Foundation | T01 deps/MUI-removal · T02 apperr · T03 db · T04 envelope-boundary · T05 logging/resilience |
+| P1 Persistence | T06 settings repo · T07 stack+history repo |
+| P2 Providers | T08 provider/profiles/discovery · T09 verification · T10 capability discovery |
+| P3 Prompts/Stacks | T11 prompts+catalog · T12 planner/composer/runStep · T13 orchestrator/events/cancel · T14 stacks handlers+starters · T15 PreviewPrompt |
+| P4 History | T16 history recording+handlers |
+| P5 FE Foundation | T17 tokens/theming · T18 primitives · T19 adapter/errors · T20 slices · T31 markdown rendering (`MarkdownView`/`MermaidBlock`) |
+| P6 FE Views | T21 editor+diff (Output Preview = `MarkdownView`) · T22 stack builder+manage · T23 history rail · T24 settings · T25 about+inspector+⌘K (Guide = `MarkdownView`) · T26 toasts/confirms |
+| P7 Completion | T27 bindings/events · T28 docs · T29 tests/CI · T30 acceptance |
