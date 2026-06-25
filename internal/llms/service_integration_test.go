@@ -864,3 +864,38 @@ func TestLLMServiceAPI_GetCompletionResponseForProvider_MissingCredential_Whites
 	require.True(t, errors.As(err, &ae), "Error should be an *apperr.AppError")
 	assert.Equal(t, apperr.CodeMissingCredential, ae.Code, "Error code should be CodeMissingCredential")
 }
+
+// TestLLMServiceAPI_GetCompletionResponseForProvider_EnvVarUnset verifies that
+// GetCompletionResponseForProvider returns apperr.CodeMissingCredential when the
+// provider specifies a valid (non-empty) APIKeyEnvVar name, but the environment variable
+// is not actually set (or is set to empty string). This exercises the os.Getenv returns ""
+// branch in resolveConfig.
+func TestLLMServiceAPI_GetCompletionResponseForProvider_EnvVarUnset(t *testing.T) {
+	log := &TestLogger{}
+	settingsService := &MockSettingsService{}
+	restyClient := resty.New()
+	llmService := newTestService(log, restyClient, settingsService)
+
+	// Use a known non-existent environment variable name
+	provider := &settings.ProviderConfig{
+		Name:            "Bearer Provider Env Unset",
+		Kind:            "openai",
+		AuthScheme:      "bearer",
+		APIKeyEnvVar:    "GOTEXT_TEST_KEY_UNSET_XYZ", // Valid name, but env var is not set
+		UseCustomModels: false,
+	}
+
+	request := &ChatCompletionRequest{
+		Model: "model-1",
+		Messages: []CompletionRequestMessage{
+			{Role: "user", Content: "Hello."},
+		},
+	}
+
+	_, err := llmService.GetCompletionResponseForProvider(provider, request)
+
+	require.Error(t, err, "GetCompletionResponseForProvider should fail when env var is unset")
+	var ae *apperr.AppError
+	require.True(t, errors.As(err, &ae), "Error should be an *apperr.AppError")
+	assert.Equal(t, apperr.CodeMissingCredential, ae.Code, "Error code should be CodeMissingCredential")
+}
