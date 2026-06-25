@@ -108,7 +108,7 @@ func TestSeed_FactoryReset_RepopulatesDefaults(t *testing.T) {
 
 	ctx := context.Background()
 
-	// Manually delete all providers to simulate a wiped state
+	// Wipe all tables in FK-safe order to simulate a factory reset scenario.
 	_, err = database.DB.ExecContext(ctx, "DELETE FROM stack_steps")
 	require.NoError(t, err)
 	_, err = database.DB.ExecContext(ctx, "DELETE FROM stacks")
