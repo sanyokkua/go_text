@@ -12,6 +12,7 @@ import (
 type FileUtilsServiceAPI interface {
 	GetAppSettingsFolderPath() (string, error)
 	GetAppSettingsFilePath() (string, error)
+	GetAppDatabaseFilePath() (string, error)
 	ResolveAppLogsFolderPath(customDir string) (string, error)
 	EnsureAppLogsFolderExists(customDir string) (string, error)
 }
@@ -85,6 +86,22 @@ func (s *FileUtilsService) GetAppSettingsFilePath() (string, error) {
 	s.logger.Debug(fmt.Sprintf("%s: successfully retrieved settings file path in %v", op, duration))
 
 	return settingsPath, nil
+}
+
+func (s *FileUtilsService) GetAppDatabaseFilePath() (string, error) {
+	const op = "FileUtilsService.GetAppDatabaseFilePath"
+	s.logger.Debug(fmt.Sprintf("%s: retrieving application database file path", op))
+
+	appConfigDir, err := s.GetAppSettingsFolderPath()
+	if err != nil {
+		s.logger.Error(fmt.Sprintf("%s: failed to get application config directory: %v", op, err))
+		return "", fmt.Errorf("%s: failed to get config folder path: %w", op, err)
+	}
+
+	dbPath := filepath.Join(appConfigDir, DatabaseFileName)
+	s.logger.Trace(fmt.Sprintf("%s: database file path: %s", op, dbPath))
+
+	return dbPath, nil
 }
 
 // ResolveAppLogsFolderPath resolves the logs folder path without creating any directories.

@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -585,4 +586,20 @@ func TestFileUtilsService_EnsureAppLogsFolderExists(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestFileUtilsService_GetAppDatabaseFilePath(t *testing.T) {
+	t.Run("returns path ending with gotext.db under GoTextApp dir", func(t *testing.T) {
+		tmpDir, cleanup := setupTestEnv(t)
+		defer cleanup()
+
+		_ = tmpDir
+		svc := NewFileUtilsService(&TestLogger{})
+
+		path, err := svc.GetAppDatabaseFilePath()
+
+		require.NoError(t, err)
+		assert.True(t, strings.HasSuffix(path, "gotext.db"), "expected path to end with gotext.db, got: %s", path)
+		assert.Contains(t, path, "GoTextApp", "expected path to contain GoTextApp, got: %s", path)
+	})
 }
