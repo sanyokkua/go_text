@@ -6,11 +6,21 @@ const listeners = new Map<string, EventCallback[]>();
 export function EventsOn(eventName: string, callback: EventCallback): () => void {
     const existing = listeners.get(eventName) ?? [];
     listeners.set(eventName, [...existing, callback]);
-    return () => EventsOff(eventName);
+    return () => EventsOff(eventName, callback);
 }
 
-export function EventsOff(eventName: string): void {
-    listeners.delete(eventName);
+export function EventsOff(eventName: string, ...callbacks: EventCallback[]): void {
+    if (callbacks.length === 0) {
+        listeners.delete(eventName);
+        return;
+    }
+    const existing = listeners.get(eventName) ?? [];
+    const filtered = existing.filter(cb => !callbacks.includes(cb));
+    if (filtered.length === 0) {
+        listeners.delete(eventName);
+    } else {
+        listeners.set(eventName, filtered);
+    }
 }
 
 export function EventsOnce(eventName: string, callback: EventCallback): void {
