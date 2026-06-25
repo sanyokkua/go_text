@@ -1,6 +1,20 @@
 {
     "extends": "./tsconfig.json",
-    "compilerOptions": { "noEmit": true, "skipLibCheck": true, "types": ["jest", "node"] },
-    "include": ["src/**/*.test.ts", "src/**/*.spec.ts", "src/types/**/*.d.ts"],
-    "exclude": ["node_modules", "**/*.js", "src/logic", "src/ui"]
+    "compilerOptions": {
+        "noEmit": true,
+        "skipLibCheck": true,
+        "types": ["jest", "node", "@testing-library/jest-dom"],
+        "jsx": "react-jsx"
+    },
+    "include": [
+        "src/**/*.test.ts",
+        "src/**/*.test.tsx",
+        "src/**/*.spec.ts",
+        "src/**/*.spec.tsx",
+        "src/types/**/*.d.ts",
+        "src/dev/**/*.ts",
+        "src/dev/**/*.tsx",
+        "src/setupTests.ts"
+    ],
+    "exclude": ["node_modules", "**/*.js"]
 }
