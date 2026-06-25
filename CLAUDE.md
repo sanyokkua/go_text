@@ -136,3 +136,7 @@ Frontend uses Jest. Redux async thunks are testable without a real backend.
 - **Frontend logs + Redux state**: right-click app window → Inspect, use Redux DevTools extension
 - **Wails bindings missing**: run `wails generate module`
 - **Context missing error**: verify `app.SetContext(ctx)` in `OnStartup` in `main.go`
+
+## Temporary Files
+
+For the intermediate files, temporary files, plans and other documents and files that are needed only for short period of time and not part of the project - use ".tmp" folder to store them.
