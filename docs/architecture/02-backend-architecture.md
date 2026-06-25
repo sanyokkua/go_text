@@ -292,7 +292,7 @@ The service layer includes comprehensive validation:
 
 **Location**: `internal/llms/`
 
-**Purpose**: HTTP-based LLM provider integration supporting OpenAI-compatible APIs and Ollama.
+**Purpose**: HTTP-based LLM provider integration supporting OpenAI-compatible APIs and multiple provider kinds (Ollama, LM Studio, Llama.cpp, OpenAI, Azure).
 
 #### Architecture
 
@@ -371,6 +371,73 @@ The LLM service uses Resty with:
 - Support for Bearer tokens or API keys
 - Custom headers for provider-specific needs
 - Environment variable support for secrets
+
+---
+
+## Provider Layer (`internal/llms/`)
+
+### Overview
+
+The `internal/llms/` package implements the LLM provider abstraction. All
+backend LLM calls flow through this layer.
+
+### Key Types
+
+| Type | File | Role |
+|---|---|---|
+| `Provider` | `provider.go` | Single extension seam: `Chat`, `ListModels`, `Capabilities`, `Kind` |
+| `ProviderProfile` | `profile.go` | Per-kind static data: URL templates, auth scheme, discovery strategy, capabilities |
+| `ProviderFactory` | `factory.go` | Kind→builder registry; `Build(ResolvedProviderConfig)` constructs a Provider |
+| `ResolvedProviderConfig` | `factory.go` | Stored config + request-time secret (never persisted, never logged) |
+| `OpenAICompatibleProvider` | `openai_provider.go` | Concrete implementation for all five kinds, parameterised by ProviderProfile |
+| `DiscoveryStrategy` | `discovery.go` | `func(body []byte) ([]ModelInfo, error)` — per-kind model-list parser |
+
+### Data Flow
+
+```
+LLMService.GetCompletionResponseForProvider(provider, request)
+  → resolveConfig(provider)   // reads secret from os.Getenv — NEVER stored
+  → ProviderFactory.Build(resolved)
+  → OpenAICompatibleProvider.Chat(ctx, ChatRequest)
+      → buildCompletionURL()  // profile template + per-kind substitutions
+      → buildHeaders()        // none/bearer/apiKey from profile default or config override
+      → resty POST            // SetRetryCount(0); ctx carries deadline
+      → mapHTTPStatus / mapTransportError → typed apperr.*
+      → <think> stripping if Capabilities().StripThinkTags
+      → EmptyCompletion error if content == ""
+```
+
+### Provider Kinds
+
+| Kind | Auth | Models endpoint | Notes |
+|---|---|---|---|
+| `ollama` | none | `/api/tags` | StripThinkTags=true |
+| `lmstudio` | none | `/v1/models` | StripThinkTags=true |
+| `llamacpp` | none | `/v1/models` | StripThinkTags=true |
+| `openai` | bearer | `/v1/models` | |
+| `azure` | apiKey | `/openai/deployments` | DeploymentInURL; `?api-version=…` |
+
+### Error Classification
+
+All errors are typed `*apperr.AppError` — classified at the provider boundary:
+
+| Condition | Code |
+|---|---|
+| Transport error (deadline exceeded) | `CodeTimeout` |
+| Transport error (connection refused, dial) | `CodeProviderUnreachable` |
+| HTTP 401/403 | `CodeAuth` |
+| HTTP 404 | `CodeModelNotFound` |
+| HTTP 429 | `CodeRateLimited` (Retryable=true, retryAfter in Details) |
+| HTTP 5xx | `CodeUpstream` (Retryable=true) |
+| 2xx with empty/no content | `CodeEmptyCompletion` |
+| Missing env var (auth≠none) | `CodeMissingCredential` (from LLMService.resolveConfig) |
+
+### Security
+
+- `APIKeyEnvVar` stores the **variable name only** — never the secret value.
+- Secrets are resolved via `os.Getenv` at request time inside `resolveConfig`.
+- `ResolvedProviderConfig.Secret` is ephemeral; it is never logged (the provider
+  layer logs provider names and models only).
 
 ---
 
