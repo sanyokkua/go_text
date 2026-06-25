@@ -10,6 +10,7 @@ const config = {
         '**/__tests__/**/*.test.(ts|tsx|js|jsx)',
         '**/?(*.)+(spec|test).(ts|tsx|js|jsx)',
     ],
+    testPathIgnorePatterns: ['/node_modules/', '/e2e/'],
     moduleNameMapper: {
         '^(.{1,2}/.*)\\.js$': '$1',
         // v2 wailsjs mocks (preserved until v3 handlers regenerate bindings)
