@@ -1,4 +1,3 @@
-import { Box, Tab, Tabs } from '@mui/material';
 import React from 'react';
 
 interface SettingsTabsProps {
@@ -6,24 +5,21 @@ interface SettingsTabsProps {
     onChange: (event: React.SyntheticEvent, newValue: number) => void;
 }
 
-/**
- * Settings Tabs Component
- * Navigation tabs for different settings sections
- */
+const TAB_LABELS = ['Settings Info', 'Current Provider', 'Provider Management', 'Model Config', 'Inference Config', 'Language Config', 'Factory Reset', 'App Behavior'];
+
 const SettingsTabs: React.FC<SettingsTabsProps> = ({ activeTab, onChange }) => {
     return (
-        <Box sx={{ width: '100%' }}>
-            <Tabs value={activeTab} onChange={onChange} centered variant="fullWidth">
-                <Tab wrapped label="Settings Info" />
-                <Tab wrapped label="Current Provider" />
-                <Tab wrapped label="Provider Management" />
-                <Tab wrapped label="Model Config" />
-                <Tab wrapped label="Inference Config" />
-                <Tab wrapped label="Language Config" />
-                <Tab wrapped label="Factory Reset" />
-                <Tab wrapped label="App Behavior" />
-            </Tabs>
-        </Box>
+        <div style={{ width: '100%', display: 'flex', flexWrap: 'wrap', borderBottom: '1px solid var(--line)', marginBottom: 'var(--space-2)' }}>
+            {TAB_LABELS.map((label, index) => (
+                <button
+                    key={index}
+                    onClick={(e) => onChange(e, index)}
+                    style={{ padding: 'var(--space-2) var(--space-3)', border: 'none', borderBottom: index === activeTab ? '2px solid var(--teal)' : '2px solid transparent', background: 'none', cursor: 'pointer', color: index === activeTab ? 'var(--teal)' : 'var(--ink-2)', fontWeight: index === activeTab ? 700 : 400, fontSize: '0.85rem', whiteSpace: 'nowrap' }}
+                >
+                    {label}
+                </button>
+            ))}
+        </div>
     );
 };
 
