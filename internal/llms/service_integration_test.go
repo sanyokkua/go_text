@@ -2,12 +2,14 @@ package llms
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
 
+	"go_text/internal/apperr"
 	"go_text/internal/settings"
 
 	"github.com/stretchr/testify/assert"
@@ -62,13 +64,13 @@ func (m *MockSettingsService) GetCurrentProviderConfig() (*settings.ProviderConf
 	}
 	// Return a default provider for testing
 	return &settings.ProviderConfig{
-		Name:        "Test Provider",
-		Kind:               "openai",
-		BaseURL:             "http://localhost:11434/",
+		Name:            "Test Provider",
+		Kind:            "openai",
+		BaseURL:         "http://localhost:11434/",
 		ModelsPath:      "v1/models",
 		CompletionPath:  "v1/chat/completions",
-		AuthScheme:         "none",
-		UseCustomModels:    false,
+		AuthScheme:      "none",
+		UseCustomModels: false,
 	}, nil
 }
 
@@ -151,34 +153,37 @@ type MockServerBehavior struct {
 	DelayDuration      time.Duration
 }
 
+// isModelsPath reports whether path is a known model-discovery endpoint.
+func isModelsPath(path string) bool {
+	return path == "/api/tags" || path == "/v1/models"
+}
+
+// isCompletionPath reports whether path is a known chat-completion endpoint.
+func isCompletionPath(path string) bool {
+	return path == "/api/chat" || path == "/v1/chat/completions"
+}
+
+// writeMockResponse routes the request to the appropriate mock response body.
+func writeMockResponse(w http.ResponseWriter, r *http.Request, behavior *MockServerBehavior) {
+	if isModelsPath(r.URL.Path) && behavior.ModelsResponse != nil {
+		json.NewEncoder(w).Encode(behavior.ModelsResponse)
+		return
+	}
+	if isCompletionPath(r.URL.Path) && behavior.CompletionResponse != nil {
+		json.NewEncoder(w).Encode(behavior.CompletionResponse)
+	}
+}
+
 // createMockServer creates a mock HTTP server for testing
 func createMockServer(behavior *MockServerBehavior) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Apply delay if configured (for timeout tests)
 		if behavior.DelayDuration > 0 {
 			time.Sleep(behavior.DelayDuration)
 		}
-
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(behavior.StatusCode)
-
-		// Only write response body for successful requests
 		if behavior.StatusCode == http.StatusOK {
-			// Handle models endpoints (GET requests)
-			if r.URL.Path == "/api/tags" || r.URL.Path == "/v1/models" {
-				if behavior.ModelsResponse != nil {
-					json.NewEncoder(w).Encode(behavior.ModelsResponse)
-				}
-				return
-			}
-
-			// Handle completion endpoints (POST requests)
-			if r.URL.Path == "/api/chat" || r.URL.Path == "/v1/chat/completions" {
-				if behavior.CompletionResponse != nil {
-					json.NewEncoder(w).Encode(behavior.CompletionResponse)
-				}
-				return
-			}
+			writeMockResponse(w, r, behavior)
 		}
 	}))
 }
@@ -188,12 +193,18 @@ func stringPtr(s string) *string {
 	return &s
 }
 
+// newTestService creates a new LLMService with a ProviderFactory for tests.
+func newTestService(log *TestLogger, client *resty.Client, svc *MockSettingsService) LLMServiceAPI {
+	factory := NewProviderFactory(client)
+	return NewLLMApiService(log, factory, svc)
+}
+
 // TestLLMServiceAPI_GetModelsList tests the GetModelsList method
 func TestLLMServiceAPI_GetModelsList(t *testing.T) {
-	logger := &TestLogger{}
+	log := &TestLogger{}
 	settingsService := &MockSettingsService{}
 	restyClient := resty.New()
-	llmService := NewLLMApiService(logger, restyClient, settingsService)
+	llmService := newTestService(log, restyClient, settingsService)
 
 	// Create mock server with success behavior
 	mockBehavior := &MockServerBehavior{
@@ -216,13 +227,13 @@ func TestLLMServiceAPI_GetModelsList(t *testing.T) {
 
 	// Set the provider to use our mock server
 	settingsService.providerConfig = &settings.ProviderConfig{
-		Name:        "Test Provider",
-		Kind:               "openai",
-		BaseURL:             mockServer.URL + "/",
+		Name:            "Test Provider",
+		Kind:            "openai",
+		BaseURL:         mockServer.URL + "/",
 		ModelsPath:      "v1/models",
 		CompletionPath:  "v1/chat/completions",
-		AuthScheme:         "none",
-		UseCustomModels:    false,
+		AuthScheme:      "none",
+		UseCustomModels: false,
 	}
 
 	// Test happy path
@@ -235,30 +246,30 @@ func TestLLMServiceAPI_GetModelsList(t *testing.T) {
 		assert.Contains(t, models, "model-2", "Should contain model-2")
 	})
 
-	// Test with nil request (should not happen with mock, but test the method)
+	// Discovery failures now fall back silently to custom models (empty list when none configured).
 	t.Run("ErrorHandling", func(t *testing.T) {
-		// This tests the error handling in GetModelsListForProvider
 		badProvider := &settings.ProviderConfig{
-			Name:        "Bad Provider",
-			Kind:               "openai",
-			BaseURL:             "http://invalid-url-that-will-fail.com/",
+			Name:            "Bad Provider",
+			Kind:            "openai",
+			BaseURL:         "http://invalid-url-that-will-fail.com/",
 			ModelsPath:      "api/tags",
 			CompletionPath:  "api/chat",
-			AuthScheme:         "none",
-			UseCustomModels:    false,
+			AuthScheme:      "none",
+			UseCustomModels: false,
 		}
 
-		_, err := llmService.GetModelsListForProvider(badProvider)
-		assert.Error(t, err, "GetModelsListForProvider should fail with invalid URL")
+		models, err := llmService.GetModelsListForProvider(badProvider)
+		require.NoError(t, err, "Discovery failure should fall back silently, not return an error")
+		assert.Empty(t, models, "Fallback with no CustomModels should return empty list")
 	})
 }
 
 // TestLLMServiceAPI_GetCompletionResponse tests the GetCompletionResponse method
 func TestLLMServiceAPI_GetCompletionResponse(t *testing.T) {
-	logger := &TestLogger{}
+	log := &TestLogger{}
 	settingsService := &MockSettingsService{}
 	restyClient := resty.New()
-	llmService := NewLLMApiService(logger, restyClient, settingsService)
+	llmService := newTestService(log, restyClient, settingsService)
 
 	// Create mock server with success behavior
 	mockBehavior := &MockServerBehavior{
@@ -288,13 +299,13 @@ func TestLLMServiceAPI_GetCompletionResponse(t *testing.T) {
 
 	// Set the provider to use our mock server
 	settingsService.providerConfig = &settings.ProviderConfig{
-		Name:        "Test Provider",
-		Kind:               "openai",
-		BaseURL:             mockServer.URL + "/",
+		Name:            "Test Provider",
+		Kind:            "openai",
+		BaseURL:         mockServer.URL + "/",
 		ModelsPath:      "v1/models",
 		CompletionPath:  "v1/chat/completions",
-		AuthScheme:         "none",
-		UseCustomModels:    false,
+		AuthScheme:      "none",
+		UseCustomModels: false,
 	}
 
 	// Test happy path
@@ -326,10 +337,10 @@ func TestLLMServiceAPI_GetCompletionResponse(t *testing.T) {
 
 // TestLLMServiceAPI_GetModelsListForProvider tests the GetModelsListForProvider method
 func TestLLMServiceAPI_GetModelsListForProvider(t *testing.T) {
-	logger := &TestLogger{}
+	log := &TestLogger{}
 	settingsService := &MockSettingsService{}
 	restyClient := resty.New()
-	llmService := NewLLMApiService(logger, restyClient, settingsService)
+	llmService := newTestService(log, restyClient, settingsService)
 
 	// Create mock server with success behavior
 	mockBehavior := &MockServerBehavior{
@@ -347,14 +358,14 @@ func TestLLMServiceAPI_GetModelsListForProvider(t *testing.T) {
 	// Test with custom models
 	t.Run("CustomModels", func(t *testing.T) {
 		customModelsProvider := &settings.ProviderConfig{
-			Name:        "Custom Models Provider",
-			Kind:               "openai",
-			BaseURL:             mockServer.URL + "/",
+			Name:            "Custom Models Provider",
+			Kind:            "openai",
+			BaseURL:         mockServer.URL + "/",
 			ModelsPath:      "api/tags",
 			CompletionPath:  "api/chat",
-			AuthScheme:         "none",
-			UseCustomModels:    true,
-			CustomModels:       []string{"custom-model-1", "custom-model-2", "custom-model-3"},
+			AuthScheme:      "none",
+			UseCustomModels: true,
+			CustomModels:    []string{"custom-model-1", "custom-model-2", "custom-model-3"},
 		}
 
 		models, err := llmService.GetModelsListForProvider(customModelsProvider)
@@ -369,13 +380,13 @@ func TestLLMServiceAPI_GetModelsListForProvider(t *testing.T) {
 	// Test with API models
 	t.Run("APIModels", func(t *testing.T) {
 		apiModelsProvider := &settings.ProviderConfig{
-			Name:        "API Models Provider",
-			Kind:               "openai",
-			BaseURL:             mockServer.URL + "/",
+			Name:            "API Models Provider",
+			Kind:            "openai",
+			BaseURL:         mockServer.URL + "/",
 			ModelsPath:      "api/tags",
 			CompletionPath:  "api/chat",
-			AuthScheme:         "none",
-			UseCustomModels:    false,
+			AuthScheme:      "none",
+			UseCustomModels: false,
 		}
 
 		models, err := llmService.GetModelsListForProvider(apiModelsProvider)
@@ -393,29 +404,30 @@ func TestLLMServiceAPI_GetModelsListForProvider(t *testing.T) {
 		assert.Contains(t, err.Error(), "provider configuration cannot be nil", "Error should mention nil provider")
 	})
 
-	// Test with invalid URL
+	// Discovery failures fall back silently — invalid URL returns empty list, no error.
 	t.Run("InvalidURL", func(t *testing.T) {
 		badProvider := &settings.ProviderConfig{
-			Name:        "Bad Provider",
-			Kind:               "openai",
-			BaseURL:             "http://invalid-url-that-will-fail.com/",
+			Name:            "Bad Provider",
+			Kind:            "openai",
+			BaseURL:         "http://invalid-url-that-will-fail.com/",
 			ModelsPath:      "api/tags",
 			CompletionPath:  "api/chat",
-			AuthScheme:         "none",
-			UseCustomModels:    false,
+			AuthScheme:      "none",
+			UseCustomModels: false,
 		}
 
-		_, err := llmService.GetModelsListForProvider(badProvider)
-		assert.Error(t, err, "GetModelsListForProvider should fail with invalid URL")
+		models, err := llmService.GetModelsListForProvider(badProvider)
+		require.NoError(t, err, "Discovery failure should fall back silently, not return an error")
+		assert.Empty(t, models, "Fallback with no CustomModels should return empty list")
 	})
 }
 
 // TestLLMServiceAPI_GetCompletionResponseForProvider tests the GetCompletionResponseForProvider method
 func TestLLMServiceAPI_GetCompletionResponseForProvider(t *testing.T) {
-	logger := &TestLogger{}
+	log := &TestLogger{}
 	settingsService := &MockSettingsService{}
 	restyClient := resty.New()
-	llmService := NewLLMApiService(logger, restyClient, settingsService)
+	llmService := newTestService(log, restyClient, settingsService)
 
 	// Create mock server with success behavior
 	mockBehavior := &MockServerBehavior{
@@ -446,13 +458,13 @@ func TestLLMServiceAPI_GetCompletionResponseForProvider(t *testing.T) {
 	// Test happy path
 	t.Run("HappyPath", func(t *testing.T) {
 		provider := &settings.ProviderConfig{
-			Name:        "Test Provider",
-			Kind:               "openai",
-			BaseURL:             mockServer.URL + "/",
+			Name:            "Test Provider",
+			Kind:            "openai",
+			BaseURL:         mockServer.URL + "/",
 			ModelsPath:      "api/tags",
 			CompletionPath:  "api/chat",
-			AuthScheme:         "none",
-			UseCustomModels:    false,
+			AuthScheme:      "none",
+			UseCustomModels: false,
 		}
 
 		request := &ChatCompletionRequest{
@@ -482,13 +494,13 @@ func TestLLMServiceAPI_GetCompletionResponseForProvider(t *testing.T) {
 	// Test with nil request
 	t.Run("NilRequest", func(t *testing.T) {
 		provider := &settings.ProviderConfig{
-			Name:        "Test Provider",
-			Kind:               "openai",
-			BaseURL:             mockServer.URL + "/",
+			Name:            "Test Provider",
+			Kind:            "openai",
+			BaseURL:         mockServer.URL + "/",
 			ModelsPath:      "api/tags",
 			CompletionPath:  "api/chat",
-			AuthScheme:         "none",
-			UseCustomModels:    false,
+			AuthScheme:      "none",
+			UseCustomModels: false,
 		}
 
 		_, err := llmService.GetCompletionResponseForProvider(provider, nil)
@@ -496,7 +508,7 @@ func TestLLMServiceAPI_GetCompletionResponseForProvider(t *testing.T) {
 		assert.Contains(t, err.Error(), "completion request cannot be nil", "Error should mention nil request")
 	})
 
-	// Test with empty choices
+	// Empty choices now returns apperr.EmptyCompletion from the provider layer.
 	t.Run("EmptyChoices", func(t *testing.T) {
 		emptyChoicesBehavior := &MockServerBehavior{
 			StatusCode: http.StatusOK,
@@ -511,13 +523,13 @@ func TestLLMServiceAPI_GetCompletionResponseForProvider(t *testing.T) {
 		defer emptyChoicesServer.Close()
 
 		provider := &settings.ProviderConfig{
-			Name:        "Empty Choices Provider",
-			Kind:               "openai",
-			BaseURL:             emptyChoicesServer.URL + "/",
+			Name:            "Empty Choices Provider",
+			Kind:            "openai",
+			BaseURL:         emptyChoicesServer.URL + "/",
 			ModelsPath:      "api/tags",
 			CompletionPath:  "api/chat",
-			AuthScheme:         "none",
-			UseCustomModels:    false,
+			AuthScheme:      "none",
+			UseCustomModels: false,
 		}
 
 		request := &ChatCompletionRequest{
@@ -532,11 +544,13 @@ func TestLLMServiceAPI_GetCompletionResponseForProvider(t *testing.T) {
 		}
 
 		_, err := llmService.GetCompletionResponseForProvider(provider, request)
-		assert.Error(t, err, "GetCompletionResponseForProvider should fail with empty choices")
-		assert.Contains(t, err.Error(), "no choices returned", "Error should mention empty choices")
+		require.Error(t, err, "GetCompletionResponseForProvider should fail with empty choices")
+		var ae *apperr.AppError
+		require.True(t, errors.As(err, &ae), "Error should be an *apperr.AppError")
+		assert.Equal(t, apperr.CodeEmptyCompletion, ae.Code, "Error code should be CodeEmptyCompletion")
 	})
 
-	// Test with empty content (should succeed but return empty string)
+	// Empty content now returns apperr.EmptyCompletion from the provider layer.
 	t.Run("EmptyContent", func(t *testing.T) {
 		emptyContentBehavior := &MockServerBehavior{
 			StatusCode: http.StatusOK,
@@ -560,13 +574,13 @@ func TestLLMServiceAPI_GetCompletionResponseForProvider(t *testing.T) {
 		defer emptyContentServer.Close()
 
 		provider := &settings.ProviderConfig{
-			Name:        "Empty Content Provider",
-			Kind:               "openai",
-			BaseURL:             emptyContentServer.URL + "/",
+			Name:            "Empty Content Provider",
+			Kind:            "openai",
+			BaseURL:         emptyContentServer.URL + "/",
 			ModelsPath:      "api/tags",
 			CompletionPath:  "api/chat",
-			AuthScheme:         "none",
-			UseCustomModels:    false,
+			AuthScheme:      "none",
+			UseCustomModels: false,
 		}
 
 		request := &ChatCompletionRequest{
@@ -580,19 +594,21 @@ func TestLLMServiceAPI_GetCompletionResponseForProvider(t *testing.T) {
 			Stream: false,
 		}
 
-		// This should succeed but return empty content (warning case)
-		response, err := llmService.GetCompletionResponseForProvider(provider, request)
-		require.NoError(t, err, "GetCompletionResponseForProvider should succeed with empty content")
-		assert.Empty(t, response, "Response should be empty")
+		// Empty content is now an error — the provider returns apperr.EmptyCompletion.
+		_, err := llmService.GetCompletionResponseForProvider(provider, request)
+		require.Error(t, err, "GetCompletionResponseForProvider should fail with empty content")
+		var ae *apperr.AppError
+		require.True(t, errors.As(err, &ae), "Error should be an *apperr.AppError")
+		assert.Equal(t, apperr.CodeEmptyCompletion, ae.Code, "Error code should be CodeEmptyCompletion")
 	})
 }
 
 // TestLLMServiceAPI_Authentication tests authentication functionality
 func TestLLMServiceAPI_Authentication(t *testing.T) {
-	logger := &TestLogger{}
+	log := &TestLogger{}
 	settingsService := &MockSettingsService{}
 	restyClient := resty.New()
-	llmService := NewLLMApiService(logger, restyClient, settingsService)
+	llmService := newTestService(log, restyClient, settingsService)
 
 	// Create mock server with success behavior
 	mockBehavior := &MockServerBehavior{
@@ -605,80 +621,6 @@ func TestLLMServiceAPI_Authentication(t *testing.T) {
 	}
 	mockServer := createMockServer(mockBehavior)
 	defer mockServer.Close()
-
-	// Test getAuthToken branches — v3: token always comes from env var named by APIKeyEnvVar
-	t.Run("GetAuthTokenBranches", func(t *testing.T) {
-		t.Run("NilProvider", func(t *testing.T) {
-			token := llmService.(*LLMService).getAuthToken(nil)
-			assert.Empty(t, token, "Token should be empty for nil provider")
-		})
-
-		t.Run("AuthSchemeNone", func(t *testing.T) {
-			provider := &settings.ProviderConfig{
-				Name:         "No Auth Provider",
-				Kind:         "openai",
-				AuthScheme:   "none",
-				APIKeyEnvVar: "SOME_ENV_VAR",
-			}
-			token := llmService.(*LLMService).getAuthToken(provider)
-			assert.Empty(t, token, "Token should be empty when AuthScheme is none")
-		})
-
-		t.Run("APIKeyEnvVarEmpty", func(t *testing.T) {
-			provider := &settings.ProviderConfig{
-				Name:         "No Env Var Provider",
-				Kind:         "openai",
-				AuthScheme:   "bearer",
-				APIKeyEnvVar: "",
-			}
-			token := llmService.(*LLMService).getAuthToken(provider)
-			assert.Empty(t, token, "Token should be empty when APIKeyEnvVar is empty")
-		})
-
-		t.Run("APIKeyEnvVarWhitespace", func(t *testing.T) {
-			provider := &settings.ProviderConfig{
-				Name:         "Whitespace Env Var Name Provider",
-				Kind:         "openai",
-				AuthScheme:   "bearer",
-				APIKeyEnvVar: "   ",
-			}
-			token := llmService.(*LLMService).getAuthToken(provider)
-			assert.Empty(t, token, "Token should be empty when APIKeyEnvVar is whitespace")
-		})
-
-		t.Run("EnvVarNotSet", func(t *testing.T) {
-			envVarName := "TEST_LLM_TOKEN_NOT_SET_V3"
-			oldValue := os.Getenv(envVarName)
-			os.Setenv(envVarName, "")
-			defer os.Setenv(envVarName, oldValue)
-
-			provider := &settings.ProviderConfig{
-				Name:         "Env Var Not Set Provider",
-				Kind:         "openai",
-				AuthScheme:   "bearer",
-				APIKeyEnvVar: envVarName,
-			}
-			token := llmService.(*LLMService).getAuthToken(provider)
-			assert.Empty(t, token, "Token should be empty when env var value is not set")
-		})
-
-		t.Run("EnvVarValidToken", func(t *testing.T) {
-			envVarName := "TEST_LLM_TOKEN_VALID_V3"
-			envTokenValue := "valid-env-token-123"
-			oldValue := os.Getenv(envVarName)
-			os.Setenv(envVarName, envTokenValue)
-			defer os.Setenv(envVarName, oldValue)
-
-			provider := &settings.ProviderConfig{
-				Name:         "Env Var Valid Provider",
-				Kind:         "openai",
-				AuthScheme:   "bearer",
-				APIKeyEnvVar: envVarName,
-			}
-			token := llmService.(*LLMService).getAuthToken(provider)
-			assert.Equal(t, envTokenValue, token, "Token should match env var value")
-		})
-	})
 
 	// Test Bearer Token Authentication via env var
 	t.Run("BearerToken", func(t *testing.T) {
@@ -769,7 +711,7 @@ func TestLLMServiceAPI_Authentication(t *testing.T) {
 		assert.Len(t, models, 1, "Should return 1 model")
 	})
 
-	// Test Custom Headers — v3: Headers map is always applied (no UseCustomHeaders toggle)
+	// Test Custom Headers — Headers map is always applied
 	t.Run("CustomHeaders", func(t *testing.T) {
 		customHeaderServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assert.Equal(t, "custom-value-1", r.Header.Get("X-Custom-Header-1"), "Custom header 1 should be present")
@@ -823,17 +765,18 @@ func TestLLMServiceAPI_Authentication(t *testing.T) {
 	})
 }
 
-// TestLLMServiceAPI_Timeout tests timeout functionality
+// TestLLMServiceAPI_Timeout tests timeout functionality.
+// Under the new facade, discovery timeouts fall back silently (no error returned).
 func TestLLMServiceAPI_Timeout(t *testing.T) {
-	logger := &TestLogger{}
+	log := &TestLogger{}
 	settingsService := &MockSettingsService{}
 	restyClient := resty.New()
-	llmService := NewLLMApiService(logger, restyClient, settingsService)
+	llmService := newTestService(log, restyClient, settingsService)
 
 	// Create a slow server that will timeout
 	slowBehavior := &MockServerBehavior{
 		StatusCode:    http.StatusOK,
-		DelayDuration: 5 * time.Second, // Longer than default timeout
+		DelayDuration: 5 * time.Second, // Longer than configured timeout
 		ModelsResponse: &ModelsListResponse{
 			Data: []ModelsResponse{
 				{ID: "slow-model", Name: stringPtr("Slow Model")},
@@ -850,16 +793,17 @@ func TestLLMServiceAPI_Timeout(t *testing.T) {
 	}
 
 	slowProvider := &settings.ProviderConfig{
-		Name:        "Slow Provider",
-		Kind:               "openai",
-		BaseURL:             slowServer.URL + "/",
+		Name:            "Slow Provider",
+		Kind:            "openai",
+		BaseURL:         slowServer.URL + "/",
 		ModelsPath:      "api/tags",
 		CompletionPath:  "api/chat",
-		AuthScheme:         "none",
-		UseCustomModels:    false,
+		AuthScheme:      "none",
+		UseCustomModels: false,
 	}
 
-	// This should timeout
-	_, err := llmService.GetModelsListForProvider(slowProvider)
-	assert.Error(t, err, "GetModelsListForProvider should timeout")
+	// Discovery timeout falls back silently — returns empty list, no error.
+	models, err := llmService.GetModelsListForProvider(slowProvider)
+	require.NoError(t, err, "Discovery timeout should fall back silently, not return an error")
+	assert.Empty(t, models, "Fallback with no CustomModels should return empty list")
 }
