@@ -28,6 +28,7 @@ func makeCfg(kind, baseURL, authScheme, apiKeyEnv, completionPath, modelsPath, m
 // --- URL building ---
 
 func TestBuildCompletionURL_OllamaDefault(t *testing.T) {
+	t.Parallel()
 	p := &OpenAICompatibleProvider{
 		cfg:     makeCfg("ollama", "", "", "", "", "", "", "", nil),
 		profile: ollamaProfile,
@@ -39,6 +40,7 @@ func TestBuildCompletionURL_OllamaDefault(t *testing.T) {
 }
 
 func TestBuildCompletionURL_CustomBaseURL(t *testing.T) {
+	t.Parallel()
 	p := &OpenAICompatibleProvider{
 		cfg:     makeCfg("ollama", "http://custom:9999/", "", "", "", "", "", "", nil),
 		profile: ollamaProfile,
@@ -50,6 +52,7 @@ func TestBuildCompletionURL_CustomBaseURL(t *testing.T) {
 }
 
 func TestBuildCompletionURL_AzureDeploymentInPath(t *testing.T) {
+	t.Parallel()
 	p := &OpenAICompatibleProvider{
 		cfg:     makeCfg("azure", "https://my-endpoint.openai.azure.com/", "", "", "", "", "gpt-4o", "", nil),
 		profile: azureProfile,
@@ -62,6 +65,7 @@ func TestBuildCompletionURL_AzureDeploymentInPath(t *testing.T) {
 }
 
 func TestBuildModelsURL_OllamaUsesApiTags(t *testing.T) {
+	t.Parallel()
 	p := &OpenAICompatibleProvider{
 		cfg:     makeCfg("ollama", "", "", "", "", "", "", "", nil),
 		profile: ollamaProfile,
@@ -73,6 +77,7 @@ func TestBuildModelsURL_OllamaUsesApiTags(t *testing.T) {
 }
 
 func TestBuildModelsURL_AzureWithAPIVersion(t *testing.T) {
+	t.Parallel()
 	p := &OpenAICompatibleProvider{
 		cfg:     makeCfg("azure", "https://ep.openai.azure.com/", "", "", "", "", "", "2024-02-01", nil),
 		profile: azureProfile,
@@ -85,6 +90,7 @@ func TestBuildModelsURL_AzureWithAPIVersion(t *testing.T) {
 }
 
 func TestBuildModelsURL_CustomModelsPath(t *testing.T) {
+	t.Parallel()
 	p := &OpenAICompatibleProvider{
 		cfg:     makeCfg("openai", "https://api.openai.com/", "", "", "", "v1/models/custom", "", "", nil),
 		profile: openAIProfile,
@@ -98,6 +104,7 @@ func TestBuildModelsURL_CustomModelsPath(t *testing.T) {
 // --- Auth headers ---
 
 func TestBuildHeaders_None(t *testing.T) {
+	t.Parallel()
 	cfg := makeCfg("ollama", "", "none", "", "", "", "", "", nil)
 	cfg.Secret = "should-be-ignored"
 	p := &OpenAICompatibleProvider{cfg: cfg, profile: ollamaProfile}
@@ -108,6 +115,7 @@ func TestBuildHeaders_None(t *testing.T) {
 }
 
 func TestBuildHeaders_Bearer(t *testing.T) {
+	t.Parallel()
 	cfg := makeCfg("openai", "", "bearer", "MY_KEY", "", "", "", "", nil)
 	cfg.Secret = "sk-secret"
 	p := &OpenAICompatibleProvider{cfg: cfg, profile: openAIProfile}
@@ -118,6 +126,7 @@ func TestBuildHeaders_Bearer(t *testing.T) {
 }
 
 func TestBuildHeaders_APIKey(t *testing.T) {
+	t.Parallel()
 	cfg := makeCfg("azure", "", "apiKey", "AZURE_KEY", "", "", "", "", nil)
 	cfg.Secret = "azure-secret"
 	p := &OpenAICompatibleProvider{cfg: cfg, profile: azureProfile}
@@ -128,6 +137,7 @@ func TestBuildHeaders_APIKey(t *testing.T) {
 }
 
 func TestBuildHeaders_CustomHeadersMerged(t *testing.T) {
+	t.Parallel()
 	cfg := makeCfg("openai", "", "bearer", "", "", "", "", "", map[string]string{"X-Custom": "value"})
 	cfg.Secret = "tok"
 	p := &OpenAICompatibleProvider{cfg: cfg, profile: openAIProfile}
@@ -141,6 +151,7 @@ func TestBuildHeaders_CustomHeadersMerged(t *testing.T) {
 }
 
 func TestBuildHeaders_DefaultAuthSchemeUsedWhenConfigEmpty(t *testing.T) {
+	t.Parallel()
 	// OpenAI profile default = bearer; config leaves AuthScheme empty
 	cfg := makeCfg("openai", "", "", "", "", "", "", "", nil)
 	cfg.Secret = "tok"
@@ -154,6 +165,7 @@ func TestBuildHeaders_DefaultAuthSchemeUsedWhenConfigEmpty(t *testing.T) {
 // --- Capabilities and Kind ---
 
 func TestCapabilities_OllamaStripsThinkTags(t *testing.T) {
+	t.Parallel()
 	p := &OpenAICompatibleProvider{profile: ollamaProfile}
 	if !p.Capabilities().StripThinkTags {
 		t.Error("want StripThinkTags=true for ollama")
@@ -161,6 +173,7 @@ func TestCapabilities_OllamaStripsThinkTags(t *testing.T) {
 }
 
 func TestCapabilities_OpenAIDoesNotStrip(t *testing.T) {
+	t.Parallel()
 	p := &OpenAICompatibleProvider{profile: openAIProfile}
 	if p.Capabilities().StripThinkTags {
 		t.Error("want StripThinkTags=false for openai")
@@ -168,6 +181,7 @@ func TestCapabilities_OpenAIDoesNotStrip(t *testing.T) {
 }
 
 func TestKind_ReturnsProfileKind(t *testing.T) {
+	t.Parallel()
 	p := &OpenAICompatibleProvider{profile: lmStudioProfile}
 	if p.Kind() != KindLMStudio {
 		t.Errorf("want KindLMStudio, got %q", p.Kind())

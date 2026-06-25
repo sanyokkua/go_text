@@ -10,6 +10,7 @@ import (
 // --- parseOllamaTags ---
 
 func TestParseOllamaTags_ValidResponse(t *testing.T) {
+	t.Parallel()
 	body := []byte(`{"models":[{"name":"llama3:8b"},{"name":"mistral:7b"}]}`)
 	got, err := parseOllamaTags(body)
 	if err != nil {
@@ -27,6 +28,7 @@ func TestParseOllamaTags_ValidResponse(t *testing.T) {
 }
 
 func TestParseOllamaTags_EmptyModels(t *testing.T) {
+	t.Parallel()
 	body := []byte(`{"models":[]}`)
 	got, err := parseOllamaTags(body)
 	if err != nil {
@@ -38,6 +40,7 @@ func TestParseOllamaTags_EmptyModels(t *testing.T) {
 }
 
 func TestParseOllamaTags_MalformedJSON(t *testing.T) {
+	t.Parallel()
 	_, err := parseOllamaTags([]byte(`not json`))
 	if err == nil {
 		t.Fatal("want error for malformed JSON, got nil")
@@ -45,6 +48,7 @@ func TestParseOllamaTags_MalformedJSON(t *testing.T) {
 }
 
 func TestParseOllamaTags_SkipsEmptyNames(t *testing.T) {
+	t.Parallel()
 	body := []byte(`{"models":[{"name":""},{"name":"llama3:8b"}]}`)
 	got, err := parseOllamaTags(body)
 	if err != nil {
@@ -58,6 +62,7 @@ func TestParseOllamaTags_SkipsEmptyNames(t *testing.T) {
 // --- parseStandardModels ---
 
 func TestParseStandardModels_WrappedForm(t *testing.T) {
+	t.Parallel()
 	body := []byte(`{"data":[{"id":"gpt-4o"},{"id":"gpt-3.5-turbo"}]}`)
 	got, err := parseStandardModels(body)
 	if err != nil {
@@ -72,6 +77,7 @@ func TestParseStandardModels_WrappedForm(t *testing.T) {
 }
 
 func TestParseStandardModels_BareArrayForm(t *testing.T) {
+	t.Parallel()
 	body := []byte(`[{"id":"model-a"},{"id":"model-b"}]`)
 	got, err := parseStandardModels(body)
 	if err != nil {
@@ -86,6 +92,7 @@ func TestParseStandardModels_BareArrayForm(t *testing.T) {
 }
 
 func TestParseStandardModels_EmptyData(t *testing.T) {
+	t.Parallel()
 	body := []byte(`{"data":[]}`)
 	got, err := parseStandardModels(body)
 	if err != nil {
@@ -97,6 +104,7 @@ func TestParseStandardModels_EmptyData(t *testing.T) {
 }
 
 func TestParseStandardModels_MalformedJSON(t *testing.T) {
+	t.Parallel()
 	_, err := parseStandardModels([]byte(`{broken`))
 	if err == nil {
 		t.Fatal("want error for malformed JSON, got nil")
@@ -104,6 +112,7 @@ func TestParseStandardModels_MalformedJSON(t *testing.T) {
 }
 
 func TestParseStandardModels_SkipsEmptyIDs(t *testing.T) {
+	t.Parallel()
 	body := []byte(`{"data":[{"id":""},{"id":"valid-model"}]}`)
 	got, err := parseStandardModels(body)
 	if err != nil {
@@ -117,6 +126,7 @@ func TestParseStandardModels_SkipsEmptyIDs(t *testing.T) {
 // --- parseAzureDeployments ---
 
 func TestParseAzureDeployments_WrappedRich(t *testing.T) {
+	t.Parallel()
 	trueVal := true
 	maxTok := 4096
 	body, _ := json.Marshal(map[string]interface{}{
@@ -156,6 +166,7 @@ func TestParseAzureDeployments_WrappedRich(t *testing.T) {
 }
 
 func TestParseAzureDeployments_FiltersNonChat(t *testing.T) {
+	t.Parallel()
 	body := []byte(`{"data":[
 		{"id":"embedding-model","capabilities":{"chat_completion":false}},
 		{"id":"chat-model","capabilities":{"chat_completion":true}}
@@ -170,6 +181,7 @@ func TestParseAzureDeployments_FiltersNonChat(t *testing.T) {
 }
 
 func TestParseAzureDeployments_NilCapabilitiesIncluded(t *testing.T) {
+	t.Parallel()
 	body := []byte(`[{"id":"unknown-model"}]`)
 	got, err := parseAzureDeployments(body)
 	if err != nil {
@@ -181,6 +193,7 @@ func TestParseAzureDeployments_NilCapabilitiesIncluded(t *testing.T) {
 }
 
 func TestParseAzureDeployments_MalformedJSON(t *testing.T) {
+	t.Parallel()
 	_, err := parseAzureDeployments([]byte(`{bad`))
 	if err == nil {
 		t.Fatal("want error for malformed JSON, got nil")
@@ -188,6 +201,7 @@ func TestParseAzureDeployments_MalformedJSON(t *testing.T) {
 }
 
 func TestParseAzureDeployments_BareArray(t *testing.T) {
+	t.Parallel()
 	body := []byte(`[{"id":"dep-a"},{"id":"dep-b"}]`)
 	got, err := parseAzureDeployments(body)
 	if err != nil {

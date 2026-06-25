@@ -50,6 +50,7 @@ func successChatBody(content string) []byte {
 // --- Chat: 200 success ---
 
 func TestOpenAICompatibleProvider_Chat_Success(t *testing.T) {
+	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(successChatBody("Hello from the model"))
@@ -69,6 +70,7 @@ func TestOpenAICompatibleProvider_Chat_Success(t *testing.T) {
 // --- Chat: think-tag stripping for ollama ---
 
 func TestOpenAICompatibleProvider_Chat_StripsThinkTags(t *testing.T) {
+	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(successChatBody("<think>reasoning</think>Final answer"))
@@ -86,6 +88,7 @@ func TestOpenAICompatibleProvider_Chat_StripsThinkTags(t *testing.T) {
 }
 
 func TestOpenAICompatibleProvider_Chat_DoesNotStripThinkTags_OpenAI(t *testing.T) {
+	t.Parallel()
 	raw := "<think>reasoning</think>Answer"
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -106,6 +109,7 @@ func TestOpenAICompatibleProvider_Chat_DoesNotStripThinkTags_OpenAI(t *testing.T
 // --- Chat: 401 → CodeAuth ---
 
 func TestOpenAICompatibleProvider_Chat_401_Auth(t *testing.T) {
+	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 	}))
@@ -125,6 +129,7 @@ func TestOpenAICompatibleProvider_Chat_401_Auth(t *testing.T) {
 // --- Chat: 403 → CodeAuth ---
 
 func TestOpenAICompatibleProvider_Chat_403_Auth(t *testing.T) {
+	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 	}))
@@ -141,6 +146,7 @@ func TestOpenAICompatibleProvider_Chat_403_Auth(t *testing.T) {
 // --- Chat: 404 → CodeModelNotFound ---
 
 func TestOpenAICompatibleProvider_Chat_404_ModelNotFound(t *testing.T) {
+	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	}))
@@ -157,6 +163,7 @@ func TestOpenAICompatibleProvider_Chat_404_ModelNotFound(t *testing.T) {
 // --- Chat: 429 → CodeRateLimited (with retryAfter) ---
 
 func TestOpenAICompatibleProvider_Chat_429_RateLimited(t *testing.T) {
+	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Retry-After", "30")
 		w.WriteHeader(http.StatusTooManyRequests)
@@ -180,6 +187,7 @@ func TestOpenAICompatibleProvider_Chat_429_RateLimited(t *testing.T) {
 // --- Chat: 500 → CodeUpstream ---
 
 func TestOpenAICompatibleProvider_Chat_500_Upstream(t *testing.T) {
+	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}))
@@ -196,6 +204,7 @@ func TestOpenAICompatibleProvider_Chat_500_Upstream(t *testing.T) {
 // --- Chat: 200 empty content → CodeEmptyCompletion ---
 
 func TestOpenAICompatibleProvider_Chat_EmptyContent(t *testing.T) {
+	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(successChatBody(""))
@@ -213,6 +222,7 @@ func TestOpenAICompatibleProvider_Chat_EmptyContent(t *testing.T) {
 // --- Chat: timeout → CodeTimeout ---
 
 func TestOpenAICompatibleProvider_Chat_Timeout(t *testing.T) {
+	t.Parallel()
 	// unblock is closed after the provider call returns so the handler goroutine
 	// can exit cleanly before srv.Close() waits for active connections.
 	unblock := make(chan struct{})
@@ -242,6 +252,7 @@ func TestOpenAICompatibleProvider_Chat_Timeout(t *testing.T) {
 // --- Chat: no choices → CodeEmptyCompletion ---
 
 func TestOpenAICompatibleProvider_Chat_NoChoices(t *testing.T) {
+	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		b, _ := json.Marshal(ChatCompletionResponse{Choices: []Choice{}})
@@ -260,6 +271,7 @@ func TestOpenAICompatibleProvider_Chat_NoChoices(t *testing.T) {
 // --- ListModels: ollama tags ---
 
 func TestOpenAICompatibleProvider_ListModels_OllamaTags(t *testing.T) {
+	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/tags" {
 			t.Errorf("unexpected path: %s", r.URL.Path)
@@ -285,6 +297,7 @@ func TestOpenAICompatibleProvider_ListModels_OllamaTags(t *testing.T) {
 // --- ListModels: standard {data:[]} ---
 
 func TestOpenAICompatibleProvider_ListModels_Standard(t *testing.T) {
+	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		b, _ := json.Marshal(ModelsListResponse{
@@ -307,6 +320,7 @@ func TestOpenAICompatibleProvider_ListModels_Standard(t *testing.T) {
 // --- ListModels: 401 → CodeAuth ---
 
 func TestOpenAICompatibleProvider_ListModels_401_Auth(t *testing.T) {
+	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 	}))
