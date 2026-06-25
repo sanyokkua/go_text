@@ -256,6 +256,24 @@ wails build
 
 The executable will be in `build/bin/`.
 
+### Dependency changes (v3)
+
+**Removed (frontend):**
+- `@mui/material`, `@mui/icons-material` — replaced by Radix Primitives
+- `@emotion/react`, `@emotion/styled` — replaced by CSS Modules + `tokens.css`
+- `@fontsource/roboto` — font family now declared via `--font` CSS token
+
+**Added (frontend):**
+- `radix-ui` — unstyled accessible UI primitives
+- `cmdk` — command palette / searchable lists
+- `react-markdown`, `remark-gfm`, `remark-math`, `rehype-katex`, `rehype-highlight`, `highlight.js`, `katex`, `mermaid` — Markdown rendering pipeline
+- `lucide-react` — icon set
+
+**Added (Go):**
+- `modernc.org/sqlite` — pure-Go SQLite driver (no C toolchain required)
+- `github.com/pressly/goose/v3` — database schema migrations
+- `gopkg.in/natefinch/lumberjack.v2` — rotating file logger
+
 ---
 
 ## Configuration
