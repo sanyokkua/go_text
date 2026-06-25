@@ -12,3 +12,4 @@ frontend/wailsjs
 .tmp/*
 **/.tmp/*
 .claude/settings.local.json
+docs/superpowers/*
