@@ -5,7 +5,6 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 	"time"
 
@@ -625,9 +624,7 @@ func TestLLMServiceAPI_Authentication(t *testing.T) {
 	// Test Bearer Token Authentication via env var
 	t.Run("BearerToken", func(t *testing.T) {
 		envVarName := "TEST_LLM_BEARER_V3"
-		oldValue := os.Getenv(envVarName)
-		os.Setenv(envVarName, "test-bearer-token-123")
-		defer os.Setenv(envVarName, oldValue)
+		t.Setenv(envVarName, "test-bearer-token-123")
 
 		bearerProvider := &settings.ProviderConfig{
 			Name:            "Bearer Provider",
@@ -649,9 +646,7 @@ func TestLLMServiceAPI_Authentication(t *testing.T) {
 	// Test API Key Authentication via env var
 	t.Run("APIKey", func(t *testing.T) {
 		envVarName := "TEST_LLM_APIKEY_V3"
-		oldValue := os.Getenv(envVarName)
-		os.Setenv(envVarName, "test-api-key-456")
-		defer os.Setenv(envVarName, oldValue)
+		t.Setenv(envVarName, "test-api-key-456")
 
 		apiKeyProvider := &settings.ProviderConfig{
 			Name:            "API Key Provider",
@@ -674,9 +669,7 @@ func TestLLMServiceAPI_Authentication(t *testing.T) {
 	t.Run("AuthTokenFromEnvVar", func(t *testing.T) {
 		envVarName := "TEST_LLM_AUTH_TOKEN_V3"
 		envTokenValue := "test-env-token-789"
-		oldValue := os.Getenv(envVarName)
-		os.Setenv(envVarName, envTokenValue)
-		defer os.Setenv(envVarName, oldValue)
+		t.Setenv(envVarName, envTokenValue)
 
 		envBearerProvider := &settings.ProviderConfig{
 			Name:            "Env Bearer Provider",
@@ -806,4 +799,68 @@ func TestLLMServiceAPI_Timeout(t *testing.T) {
 	models, err := llmService.GetModelsListForProvider(slowProvider)
 	require.NoError(t, err, "Discovery timeout should fall back silently, not return an error")
 	assert.Empty(t, models, "Fallback with no CustomModels should return empty list")
+}
+
+// TestLLMServiceAPI_GetCompletionResponseForProvider_MissingCredential verifies that
+// GetCompletionResponseForProvider returns apperr.CodeMissingCredential when the
+// provider requires auth (AuthScheme="bearer") but APIKeyEnvVar is empty.
+func TestLLMServiceAPI_GetCompletionResponseForProvider_MissingCredential(t *testing.T) {
+	log := &TestLogger{}
+	settingsService := &MockSettingsService{}
+	restyClient := resty.New()
+	llmService := newTestService(log, restyClient, settingsService)
+
+	provider := &settings.ProviderConfig{
+		Name:            "Bearer Provider No Key",
+		Kind:            "openai",
+		AuthScheme:      "bearer",
+		APIKeyEnvVar:    "", // empty — resolveConfig must return MissingCredential
+		UseCustomModels: false,
+	}
+
+	request := &ChatCompletionRequest{
+		Model: "model-1",
+		Messages: []CompletionRequestMessage{
+			{Role: "user", Content: "Hello."},
+		},
+	}
+
+	_, err := llmService.GetCompletionResponseForProvider(provider, request)
+
+	require.Error(t, err, "GetCompletionResponseForProvider should fail when APIKeyEnvVar is empty")
+	var ae *apperr.AppError
+	require.True(t, errors.As(err, &ae), "Error should be an *apperr.AppError")
+	assert.Equal(t, apperr.CodeMissingCredential, ae.Code, "Error code should be CodeMissingCredential")
+}
+
+// TestLLMServiceAPI_GetCompletionResponseForProvider_MissingCredential_WhitespaceEnvVar verifies that
+// GetCompletionResponseForProvider returns apperr.CodeMissingCredential when APIKeyEnvVar contains
+// only whitespace characters.
+func TestLLMServiceAPI_GetCompletionResponseForProvider_MissingCredential_WhitespaceEnvVar(t *testing.T) {
+	log := &TestLogger{}
+	settingsService := &MockSettingsService{}
+	restyClient := resty.New()
+	llmService := newTestService(log, restyClient, settingsService)
+
+	provider := &settings.ProviderConfig{
+		Name:            "Bearer Provider Whitespace Key",
+		Kind:            "openai",
+		AuthScheme:      "bearer",
+		APIKeyEnvVar:    "   ", // whitespace-only — TrimSpace guard fires
+		UseCustomModels: false,
+	}
+
+	request := &ChatCompletionRequest{
+		Model: "model-1",
+		Messages: []CompletionRequestMessage{
+			{Role: "user", Content: "Hello."},
+		},
+	}
+
+	_, err := llmService.GetCompletionResponseForProvider(provider, request)
+
+	require.Error(t, err, "GetCompletionResponseForProvider should fail when APIKeyEnvVar is whitespace-only")
+	var ae *apperr.AppError
+	require.True(t, errors.As(err, &ae), "Error should be an *apperr.AppError")
+	assert.Equal(t, apperr.CodeMissingCredential, ae.Code, "Error code should be CodeMissingCredential")
 }

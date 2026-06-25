@@ -244,5 +244,5 @@ func (l *LLMService) validateMaxRetries(retries int) int {
 	if retries < 0 || retries > 10 {
 		return defaultRetries
 	}
-	return defaultRetries
+	return retries
 }
