@@ -218,7 +218,11 @@ func ContextWindow(model string, limit int, cause error) *AppError {
 
 // StepFailed wraps a step's *AppError with chain context.
 // Retryable inherits from the inner error. stepIndex is 0-based; messages display 1-based.
+// inner must not be nil; passing nil returns an Internal error to prevent a nil-dereference panic.
 func StepFailed(index int, family string, inner *AppError) *AppError {
+	if inner == nil {
+		return Internal(fmt.Errorf("StepFailed called with nil inner error at step %d", index+1))
+	}
 	return &AppError{
 		Code:    CodeStepFailed,
 		Title:   fmt.Sprintf("Step %d failed", index+1),
