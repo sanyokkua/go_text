@@ -18,6 +18,7 @@ type CompletionRequestMessage struct {
 
 type Options struct {
 	Temperature float64 `json:"temperature,omitempty"`
+	NumCtx      *int    `json:"num_ctx,omitempty"` // ollama context window
 }
 
 // ChatCompletionRequest represents the structure for OpenAI-compatible API requests
