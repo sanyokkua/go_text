@@ -6,21 +6,24 @@ const listeners = new Map<string, EventCallback[]>();
 export function EventsOn(eventName: string, callback: EventCallback): () => void {
     const existing = listeners.get(eventName) ?? [];
     listeners.set(eventName, [...existing, callback]);
-    return () => EventsOff(eventName, callback);
+    return () => {
+        const current = listeners.get(eventName) ?? [];
+        const filtered = current.filter(cb => cb !== callback);
+        if (filtered.length === 0) {
+            listeners.delete(eventName);
+        } else {
+            listeners.set(eventName, filtered);
+        }
+    };
 }
 
-export function EventsOff(eventName: string, ...callbacks: EventCallback[]): void {
-    if (callbacks.length === 0) {
-        listeners.delete(eventName);
-        return;
-    }
-    const existing = listeners.get(eventName) ?? [];
-    const filtered = existing.filter(cb => !callbacks.includes(cb));
-    if (filtered.length === 0) {
-        listeners.delete(eventName);
-    } else {
-        listeners.set(eventName, filtered);
-    }
+export function EventsOff(eventName: string, ...additionalEventNames: string[]): void {
+    listeners.delete(eventName);
+    additionalEventNames.forEach(name => listeners.delete(name));
+}
+
+export function EventsOffAll(): void {
+    listeners.clear();
 }
 
 export function EventsOnce(eventName: string, callback: EventCallback): void {
@@ -28,6 +31,16 @@ export function EventsOnce(eventName: string, callback: EventCallback): void {
         callback(...data);
         unsub();
     });
+}
+
+export function EventsOnMultiple(eventName: string, callback: EventCallback, maxCallbacks: number): () => void {
+    let callCount = 0;
+    const unsub = EventsOn(eventName, (...data) => {
+        callback(...data);
+        callCount++;
+        if (callCount >= maxCallbacks) unsub();
+    });
+    return unsub;
 }
 
 export function EventsEmit(eventName: string, ...data: unknown[]): void {

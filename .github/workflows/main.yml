@@ -301,7 +301,7 @@ jobs:
   # ==============================================================================
 
   create-release:
-    needs: build
+    needs: [build, test]
     # Waits for all build jobs to complete
     # Skipped if any build fails
 
