@@ -272,6 +272,14 @@ func TestStepFailed(t *testing.T) {
 	}
 }
 
+func TestStepFailed_NilInner(t *testing.T) {
+	// Nil inner must not panic; the guard clause returns CodeInternal instead.
+	e := apperr.StepFailed(1, "rewrite", nil)
+	if e.Code != apperr.CodeInternal {
+		t.Errorf("nil inner should produce CodeInternal, got %q", e.Code)
+	}
+}
+
 func TestCancelled(t *testing.T) {
 	e := apperr.Cancelled(2)
 	if e.Code != apperr.CodeCancelled {
@@ -343,7 +351,8 @@ func TestToWire_NilError(t *testing.T) {
 }
 
 func TestToWire_WrappedAppError(t *testing.T) {
-	inner := apperr.Timeout("Provider", 60, nil)
+	// Use a non-nil cause to exercise the ae.cause != nil logging branch in ToWire.
+	inner := apperr.Timeout("Provider", 60, errors.New("upstream"))
 	wrapped := fmt.Errorf("service layer: %w", inner)
 	w := apperr.ToWire(zerolog.Nop(), wrapped)
 	if w.Code != apperr.CodeTimeout {
