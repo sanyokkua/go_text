@@ -193,6 +193,110 @@ jobs:
           # Auto-delete after 7 days to save storage
 
   # ==============================================================================
+  # TEST JOB — Runs all §11 verification gates (headless)
+  # ==============================================================================
+
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.25'
+          cache: true
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24.x'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Linux system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libgtk-3-dev libwebkit2gtk-4.1-dev
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      # ── Go gates ──────────────────────────────────────────────────────────────
+
+      - name: Go – format check
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "Unformatted Go files: $unformatted"
+            exit 1
+          fi
+
+      - name: Go – vet
+        run: go vet ./...
+
+      - name: Go – tests (race)
+        run: go test -race ./...
+
+      # ── Frontend gates ────────────────────────────────────────────────────────
+
+      - name: FE – format check
+        working-directory: frontend
+        run: npm run format:check
+
+      - name: FE – lint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: FE – type-check
+        working-directory: frontend
+        run: npx tsc --noEmit
+
+      - name: FE – unit tests with coverage
+        working-directory: frontend
+        run: npm run test:coverage
+
+      # ── Guard: no @mui/@emotion in v3 source ─────────────────────────────────
+
+      - name: FE – guard no @mui/@emotion
+        working-directory: frontend
+        run: |
+          if grep -r --include="*.ts" --include="*.tsx" "@mui\|@emotion" src/ --exclude-dir=ui; then
+            echo "ERROR: @mui or @emotion imports found in v3 source — remove before merging"
+            exit 1
+          fi
+          echo "Guard passed: no @mui/@emotion in v3 source (src/ui/ excluded — v2 code)"
+
+      # ── UI verification (Target A — Vite dev server, mocked bridge) ───────────
+
+      - name: FE – UI gates Target A
+        working-directory: frontend
+        run: npm run verify:ui
+        env:
+          CI: true
+
+      # ── Security checks ───────────────────────────────────────────────────────
+
+      - name: Go – install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: Go – vulnerability check
+        run: govulncheck ./...
+
+      - name: FE – npm audit
+        working-directory: frontend
+        run: npm audit --audit-level=high
+
+      # ── Pending gates (activated when feature tasks add these tools) ──────────
+      # sqlc generate --diff  → activated in T04 (SQLite/DB layer)
+      # wails generate module → activated in T01 (first Go handler change)
+      # wails doctor          → activated in T01
+
+  # ==============================================================================
   # RELEASE JOB - Creates GitHub Release with build artifacts
   # ==============================================================================
 

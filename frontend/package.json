@@ -9,7 +9,13 @@
         "preview": "vite preview",
         "test": "jest",
         "test:watch": "jest --watch",
-        "test:coverage": "jest --coverage"
+        "test:coverage": "jest --coverage",
+        "verify:ui": "playwright test e2e/verify-ui.spec.ts",
+        "verify:smoke": "playwright test e2e/smoke-tests.spec.ts",
+        "verify": "npm run format:check && npm run lint && npx tsc --noEmit && npm test && npm run verify:ui",
+        "format": "prettier --write \"src/**/*.{ts,tsx,css,scss}\" \"e2e/**/*.ts\"",
+        "format:check": "prettier --check \"src/**/*.{ts,tsx,css,scss}\" \"e2e/**/*.ts\"",
+        "lint": "eslint ."
     },
     "dependencies": {
         "@emotion/react": "^11.14.0",
