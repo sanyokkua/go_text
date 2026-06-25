@@ -92,7 +92,12 @@ func (s *TaskLogService) LogTaskExecution(entry TaskLogEntry) error {
 		return nil
 	}
 
-	logsDir, err := s.fileUtils.EnsureAppLogsFolderExists(cfg.LogDirectory)
+	logCfg, err := s.settingsService.GetLoggingConfig()
+	if err != nil {
+		s.logger.Warning(fmt.Sprintf("[%s] Failed to get logging config: %v", op, err))
+		return nil
+	}
+	logsDir, err := s.fileUtils.EnsureAppLogsFolderExists(logCfg.LogDirectory)
 	if err != nil {
 		s.logger.Warning(fmt.Sprintf("[%s] Failed to ensure logs folder exists: %v", op, err))
 		return nil

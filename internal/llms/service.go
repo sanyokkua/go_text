@@ -64,13 +64,13 @@ func (l *LLMService) GetModelsList() ([]string, error) {
 
 	models, err := l.GetModelsListForProvider(provider)
 	if err != nil {
-		l.logger.Error(fmt.Sprintf("[%s] Failed to retrieve models for provider %s: %v", op, provider.ProviderName, err))
+		l.logger.Error(fmt.Sprintf("[%s] Failed to retrieve models for provider %s: %v", op, provider.Name, err))
 		return nil, fmt.Errorf("%s: failed to retrieve models: %w", op, err)
 	}
 
 	duration := time.Since(startTime)
 	l.logger.Info(fmt.Sprintf("[%s] Successfully retrieved model list, duration_ms=%d, model_count=%d, provider=%s",
-		op, duration.Milliseconds(), len(models), provider.ProviderName))
+		op, duration.Milliseconds(), len(models), provider.Name))
 
 	return models, nil
 }
@@ -100,13 +100,13 @@ func (l *LLMService) GetCompletionResponse(request *ChatCompletionRequest) (stri
 
 	responseContent, err := l.GetCompletionResponseForProvider(provider, request)
 	if err != nil {
-		l.logger.Error(fmt.Sprintf("[%s] Completion request failed for provider %s: %v", op, provider.ProviderName, err))
+		l.logger.Error(fmt.Sprintf("[%s] Completion request failed for provider %s: %v", op, provider.Name, err))
 		return "", fmt.Errorf("%s: failed to retrieve response: %w", op, err)
 	}
 
 	duration := time.Since(startTime)
 	l.logger.Info(fmt.Sprintf("[%s] Successfully completed request, duration=%v, response_length=%d, provider=%s",
-		op, duration, len(responseContent), provider.ProviderName))
+		op, duration, len(responseContent), provider.Name))
 
 	return responseContent, nil
 }
@@ -121,25 +121,25 @@ func (l *LLMService) GetModelsListForProvider(provider *settings.ProviderConfig)
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	l.logger.Info(fmt.Sprintf("[%s] Starting model list retrieval for provider: %s", op, provider.ProviderName))
+	l.logger.Info(fmt.Sprintf("[%s] Starting model list retrieval for provider: %s", op, provider.Name))
 
 	if provider.UseCustomModels && provider.CustomModels != nil && len(provider.CustomModels) > 0 {
 		duration := time.Since(startTime)
 		l.logger.Info(fmt.Sprintf("[%s] Successfully retrieved model list, duration_ms=%d, model_count=%d, provider=%s",
-			op, duration.Milliseconds(), len(provider.CustomModels), provider.ProviderName))
+			op, duration.Milliseconds(), len(provider.CustomModels), provider.Name))
 
 		return provider.CustomModels, nil
 	}
 
 	parameters, err := l.buildRequestParameters(provider)
 	if err != nil {
-		l.logger.Error(fmt.Sprintf("[%s] Failed to build request parameters for provider %s: %v", op, provider.ProviderName, err))
+		l.logger.Error(fmt.Sprintf("[%s] Failed to build request parameters for provider %s: %v", op, provider.Name, err))
 		return nil, fmt.Errorf("%s: failed to build request parameters: %w", op, err)
 	}
 
 	response, err := l.modelListRequest(parameters)
 	if err != nil {
-		l.logger.Error(fmt.Sprintf("[%s] Model list request failed for provider %s: %v", op, provider.ProviderName, err))
+		l.logger.Error(fmt.Sprintf("[%s] Model list request failed for provider %s: %v", op, provider.Name, err))
 		return []string{}, fmt.Errorf("%s: failed to retrieve model list from provider: %w", op, err)
 	}
 
@@ -152,7 +152,7 @@ func (l *LLMService) GetModelsListForProvider(provider *settings.ProviderConfig)
 	modelIds := l.mapModelNames(response)
 	duration := time.Since(startTime)
 	l.logger.Info(fmt.Sprintf("[%s] Successfully retrieved model list, duration_ms=%d, model_count=%d, provider=%s",
-		op, duration.Milliseconds(), len(modelIds), provider.ProviderName))
+		op, duration.Milliseconds(), len(modelIds), provider.Name))
 
 	return modelIds, nil
 }
@@ -174,17 +174,17 @@ func (l *LLMService) GetCompletionResponseForProvider(provider *settings.Provide
 	}
 
 	l.logger.Info(fmt.Sprintf("[%s] Starting completion request for provider: %s, model: %s",
-		op, provider.ProviderName, request.Model))
+		op, provider.Name, request.Model))
 
 	parameters, err := l.buildRequestParameters(provider)
 	if err != nil {
-		l.logger.Error(fmt.Sprintf("[%s] Failed to build request parameters for provider %s: %v", op, provider.ProviderName, err))
+		l.logger.Error(fmt.Sprintf("[%s] Failed to build request parameters for provider %s: %v", op, provider.Name, err))
 		return "", fmt.Errorf("%s: failed to build request parameters: %w", op, err)
 	}
 
 	response, err := l.completionRequest(parameters, request)
 	if err != nil {
-		l.logger.Error(fmt.Sprintf("[%s] Completion request failed for provider %s: %v", op, provider.ProviderName, err))
+		l.logger.Error(fmt.Sprintf("[%s] Completion request failed for provider %s: %v", op, provider.Name, err))
 		return "", fmt.Errorf("%s: chat completion request failed: %w", op, err)
 	}
 
@@ -196,19 +196,19 @@ func (l *LLMService) GetCompletionResponseForProvider(provider *settings.Provide
 
 	if len(response.Choices) == 0 {
 		errorMsg := "no choices returned in the completion response"
-		l.logger.Error(fmt.Sprintf("[%s] %s, provider=%s, model=%s", op, errorMsg, provider.ProviderName, request.Model))
+		l.logger.Error(fmt.Sprintf("[%s] %s, provider=%s, model=%s", op, errorMsg, provider.Name, request.Model))
 		return "", fmt.Errorf("%s: invalid response: %s", op, errorMsg)
 	}
 
 	responseContent := response.Choices[0].Message.Content
 	if responseContent == "" {
 		l.logger.Warning(fmt.Sprintf("[%s] Received empty response content, provider=%s, model=%s",
-			op, provider.ProviderName, request.Model))
+			op, provider.Name, request.Model))
 	}
 
 	duration := time.Since(startTime)
 	l.logger.Info(fmt.Sprintf("[%s] Successfully completed request, duration=%v, response_length=%d, provider=%s, model=%s",
-		op, duration, len(responseContent), provider.ProviderName, request.Model))
+		op, duration, len(responseContent), provider.Name, request.Model))
 
 	return responseContent, nil
 }
@@ -234,15 +234,15 @@ func (l *LLMService) buildRequestParameters(provider *settings.ProviderConfig) (
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	modelsUrl, err := l.buildRequestURL(provider.BaseUrl, provider.ModelsEndpoint)
+	modelsUrl, err := l.buildRequestURL(provider.BaseURL, provider.ModelsPath)
 	if err != nil {
-		l.logger.Error(fmt.Sprintf("[%s] Failed to build models URL for provider %s: %v", op, provider.ProviderName, err))
+		l.logger.Error(fmt.Sprintf("[%s] Failed to build models URL for provider %s: %v", op, provider.Name, err))
 		return nil, fmt.Errorf("%s: failed to build models URL: %w", op, err)
 	}
 
-	completionEndpoint, err := l.buildRequestURL(provider.BaseUrl, provider.CompletionEndpoint)
+	completionEndpoint, err := l.buildRequestURL(provider.BaseURL, provider.CompletionPath)
 	if err != nil {
-		l.logger.Error(fmt.Sprintf("[%s] Failed to build completion URL for provider %s: %v", op, provider.ProviderName, err))
+		l.logger.Error(fmt.Sprintf("[%s] Failed to build completion URL for provider %s: %v", op, provider.Name, err))
 		return nil, fmt.Errorf("%s: failed to build completion URL: %w", op, err)
 	}
 
@@ -261,31 +261,27 @@ func (l *LLMService) buildRequestParameters(provider *settings.ProviderConfig) (
 	}, nil
 }
 
+// getAuthToken resolves the auth token from the environment.
+// Secrets are never stored — only the env-var NAME is in APIKeyEnvVar.
 func (l *LLMService) getAuthToken(provider *settings.ProviderConfig) string {
 	const op = "LLMService.getAuthToken"
 
-	if provider == nil || provider.AuthType == settings.AuthTypeNone {
+	if provider == nil || provider.AuthScheme == "none" {
 		return ""
 	}
 
-	if provider.UseAuthTokenFromEnv && strings.TrimSpace(provider.EnvVarTokenName) != "" {
-		token := os.Getenv(provider.EnvVarTokenName)
-		if token == "" {
-			l.logger.Warning(fmt.Sprintf("[%s] Environment variable %s is empty or not set for provider %s",
-				op, provider.EnvVarTokenName, provider.ProviderName))
-			// TODO: Add Warning Event Emit
-		}
-		return token
+	if strings.TrimSpace(provider.APIKeyEnvVar) == "" {
+		l.logger.Warning(fmt.Sprintf("[%s] No API key env var configured for provider %s with auth scheme %s",
+			op, provider.Name, provider.AuthScheme))
+		return ""
 	}
 
-	if !provider.UseAuthTokenFromEnv && strings.TrimSpace(provider.AuthToken) != "" {
-		return provider.AuthToken
+	token := os.Getenv(provider.APIKeyEnvVar)
+	if token == "" {
+		l.logger.Warning(fmt.Sprintf("[%s] Environment variable %s is empty or not set for provider %s",
+			op, provider.APIKeyEnvVar, provider.Name))
 	}
-
-	l.logger.Warning(fmt.Sprintf("[%s] No auth token found for provider %s with auth type %s",
-		op, provider.ProviderName, provider.AuthType))
-	// TODO: Add Warning Event Emit
-	return ""
+	return token
 }
 
 func (l *LLMService) buildRequestHeaders(provider *settings.ProviderConfig, authToken string) map[string]string {
@@ -296,28 +292,25 @@ func (l *LLMService) buildRequestHeaders(provider *settings.ProviderConfig, auth
 		return headers
 	}
 
-	if provider.AuthType == settings.AuthTypeBearer && strings.TrimSpace(authToken) != "" {
+	if provider.AuthScheme == "bearer" && strings.TrimSpace(authToken) != "" {
 		headers["Authorization"] = fmt.Sprintf("Bearer %s", authToken)
 	}
 
-	if provider.AuthType == settings.AuthTypeApiKey && strings.TrimSpace(authToken) != "" {
+	if provider.AuthScheme == "apiKey" && strings.TrimSpace(authToken) != "" {
 		headers["Api-Key"] = authToken
 	}
 
-	if provider.UseCustomHeaders && provider.Headers != nil {
-		for key, value := range provider.Headers {
-			if strings.TrimSpace(key) != "" && strings.TrimSpace(value) != "" {
-				if _, ok := headers[key]; ok == true {
-					// TODO: Add Warning Event Emit that header overrides other header
-					l.logger.Warning(fmt.Sprintf("[%s] Custom header %s overrides existing header value", op, key))
-				}
-				headers[key] = value
+	for key, value := range provider.Headers {
+		if strings.TrimSpace(key) != "" && strings.TrimSpace(value) != "" {
+			if _, exists := headers[key]; exists {
+				l.logger.Warning(fmt.Sprintf("[%s] Custom header %s overrides existing header value", op, key))
 			}
+			headers[key] = value
 		}
 	}
 
 	if len(headers) > 0 {
-		l.logger.Trace(fmt.Sprintf("[%s] Built headers for provider %s: %v", op, provider.ProviderName, headers))
+		l.logger.Trace(fmt.Sprintf("[%s] Built headers for provider %s: %v", op, provider.Name, headers))
 	}
 
 	return headers

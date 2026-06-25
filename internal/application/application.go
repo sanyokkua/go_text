@@ -3,7 +3,6 @@ package application
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"go_text/internal/actions"
 	"go_text/internal/db"
@@ -23,7 +22,7 @@ import (
 type ApplicationContextHolder struct {
 	ctx             context.Context
 	SettingsHandler *settings.SettingsHandler
-	SettingsService settings.SettingsServiceAPI
+	SettingsService *settings.SettingsService
 	ActionHandler   *actions.ActionHandler
 	RestyClient     *resty.Client
 	DB              *db.Database
@@ -36,8 +35,8 @@ type ApplicationContextHolder struct {
 // The bootstrap appLogger is console-only; Init() reconfigures it from DB settings.
 func NewApplicationContextHolder(appLogger *logging.Logger, restyClient *resty.Client) *ApplicationContextHolder {
 	fileUtilsService := file.NewFileUtilsService(appLogger)
-	settingsRepo := settings.NewSettingsRepository(appLogger, fileUtilsService)
-	settingsService := settings.NewSettingsService(appLogger, settingsRepo, fileUtilsService)
+	// settingsRepo is nil until Init() opens the DB and wires SqliteSettingsRepository.
+	settingsService := settings.NewSettingsService(appLogger, nil, fileUtilsService)
 	settingsHandler := settings.NewSettingsHandler(appLogger, zlog.Logger, settingsService)
 
 	taskLogService := tasklog.NewTaskLogService(appLogger, settingsService, fileUtilsService)
@@ -61,7 +60,8 @@ func (a *ApplicationContextHolder) SetContext(ctx context.Context) {
 	a.ctx = ctx
 }
 
-// Init opens the database and reconfigures the logger from the seeded log.* settings.
+// Init opens the database, wires the SQLite settings repository, and
+// reconfigures the logger from the seeded log.* settings.
 // Called from OnStartup after SetContext.
 func (a *ApplicationContextHolder) Init(ctx context.Context) error {
 	dbPath, err := a.fileService.GetAppDatabaseFilePath()
@@ -75,74 +75,42 @@ func (a *ApplicationContextHolder) Init(ctx context.Context) error {
 	}
 	a.DB = database
 
-	if err := a.SettingsService.InitDefaultSettingsIfAbsent(); err != nil {
-		a.appLogger.Warning(fmt.Sprintf("init default settings: %v", err))
-	}
+	// Wire SQLite-backed settings into the already-bound handler/service.
+	sqliteRepo := settings.NewSqliteSettingsRepository(database)
+	a.SettingsService.SetRepository(sqliteRepo)
+	a.SettingsHandler.Configure(a.appLogger, zlog.Logger, a.SettingsService)
 
-	cfg, err := a.readLoggingConfig(ctx)
+	// Read logging config via service (now SQLite-backed).
+	logCfg, err := a.SettingsService.GetLoggingConfig()
 	if err != nil {
-		a.appLogger.Warning(fmt.Sprintf("read logging config from DB: %v", err))
+		a.appLogger.Warning(fmt.Sprintf("read logging config: %v", err))
 		return nil
 	}
 
 	isDev := runtime.Environment(ctx).BuildType == "dev"
-	if err := a.appLogger.Reconfigure(cfg, isDev); err != nil {
+	lc := logging.Config{
+		FileEnabled: logCfg.LogFileEnabled,
+		Level:       logCfg.LogLevel,
+		MaxSizeMB:   logCfg.LogMaxSizeMB,
+		MaxBackups:  logCfg.LogMaxBackups,
+		MaxAgeDays:  logCfg.LogMaxAgeDays,
+		Compress:    logCfg.LogCompress,
+	}
+	if logCfg.LogFileEnabled && logCfg.LogDirectory == "" {
+		resolved, err := a.fileService.EnsureAppLogsFolderExists("")
+		if err != nil {
+			return fmt.Errorf("resolve logs dir: %w", err)
+		}
+		lc.Directory = resolved
+	} else {
+		lc.Directory = logCfg.LogDirectory
+	}
+
+	if err := a.appLogger.Reconfigure(lc, isDev); err != nil {
 		a.appLogger.Warning(fmt.Sprintf("reconfigure logger: %v", err))
 	}
 
 	return nil
-}
-
-// readLoggingConfig reads the seven log.* KV rows from the DB.
-func (a *ApplicationContextHolder) readLoggingConfig(ctx context.Context) (logging.Config, error) {
-	q := a.DB.Queries
-
-	fileEnabledRow, err := q.GetSetting(ctx, "log.fileEnabled")
-	if err != nil {
-		return logging.DefaultConfig(), fmt.Errorf("GetSetting log.fileEnabled: %w", err)
-	}
-	levelRow, _ := q.GetSetting(ctx, "log.level")
-	dirRow, _ := q.GetSetting(ctx, "log.directory")
-	maxSizeRow, _ := q.GetSetting(ctx, "log.maxSizeMB")
-	maxBackupsRow, _ := q.GetSetting(ctx, "log.maxBackups")
-	maxAgeRow, _ := q.GetSetting(ctx, "log.maxAgeDays")
-	compressRow, _ := q.GetSetting(ctx, "log.compress")
-
-	fileEnabled, _ := strconv.ParseBool(fileEnabledRow.Value)
-	compress, _ := strconv.ParseBool(compressRow.Value)
-	maxSize, _ := strconv.Atoi(maxSizeRow.Value)
-	if maxSize == 0 {
-		maxSize = 10
-	}
-	maxBackups, _ := strconv.Atoi(maxBackupsRow.Value)
-	if maxBackups == 0 {
-		maxBackups = 5
-	}
-	maxAge, _ := strconv.Atoi(maxAgeRow.Value)
-	if maxAge == 0 {
-		maxAge = 30
-	}
-
-	cfg := logging.Config{
-		FileEnabled: fileEnabled,
-		Level:       levelRow.Value,
-		MaxSizeMB:   maxSize,
-		MaxBackups:  maxBackups,
-		MaxAgeDays:  maxAge,
-		Compress:    compress,
-	}
-
-	if fileEnabled && dirRow.Value == "" {
-		resolved, err := a.fileService.EnsureAppLogsFolderExists("")
-		if err != nil {
-			return cfg, fmt.Errorf("resolve logs dir: %w", err)
-		}
-		cfg.Directory = resolved
-	} else {
-		cfg.Directory = dirRow.Value
-	}
-
-	return cfg, nil
 }
 
 // CancelAllRuns cancels any in-flight background goroutines.

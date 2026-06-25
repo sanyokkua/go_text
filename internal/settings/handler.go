@@ -9,8 +9,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/logger"
 )
 
-// SettingsHandlerAPI defines the contract for bound settings methods.
-// All methods return an apperr.*Result envelope — no separate error return.
+// SettingsHandlerAPI defines the Wails-bound settings method contract.
 type SettingsHandlerAPI interface {
 	GetAppSettingsMetadata() apperr.MetadataResult
 	GetSettings() apperr.SettingsResult
@@ -33,19 +32,20 @@ type SettingsHandlerAPI interface {
 	RemoveLanguage(language string) apperr.LanguagesResult
 	GetAppBehaviorConfig() apperr.AppBehaviorResult
 	UpdateAppBehaviorConfig(cfg apperr.AppBehaviorConfig) apperr.AppBehaviorResult
+	GetLoggingConfig() apperr.LoggingResult
+	UpdateLoggingConfig(cfg apperr.LoggingConfig) apperr.LoggingResult
 }
 
 // SettingsHandler is the Wails-bound handler for settings operations.
-// Each method follows the envelope pattern: named return + defer/recover for panic
-// safety, apperr.ToWire for service errors, and an apperr.*Result return type.
+// It is created before the database is open; Configure() must be called from
+// application.Init() before any bound method is dispatched.
 type SettingsHandler struct {
 	logger          logger.Logger
 	zlog            zerolog.Logger
 	settingsService SettingsServiceAPI
 }
 
-// NewSettingsHandler constructs a SettingsHandler. wailsLogger may be nil in
-// tests; zlog is used only by apperr.ToWire.
+// NewSettingsHandler constructs a SettingsHandler shell.
 func NewSettingsHandler(wailsLogger logger.Logger, zlog zerolog.Logger, settingsService SettingsServiceAPI) *SettingsHandler {
 	return &SettingsHandler{
 		logger:          wailsLogger,
@@ -54,105 +54,59 @@ func NewSettingsHandler(wailsLogger logger.Logger, zlog zerolog.Logger, settings
 	}
 }
 
-// ─── V2 → V3 type adapters ────────────────────────────────────────────────
-// These convert the v2 settings.* types (returned by the JSON-backed service)
-// to the v3 apperr.* wire types. Fields that exist only in v3 are zero-valued
-// here; T06 replaces the service implementation and these adapters entirely.
-
-func toWireProviderConfig(v ProviderConfig) apperr.ProviderConfig {
-	return apperr.ProviderConfig{
-		ID:              v.ProviderID,
-		Name:            v.ProviderName,
-		Kind:            string(v.ProviderType),
-		BaseURL:         v.BaseUrl,
-		AuthScheme:      string(v.AuthType),
-		APIKeyEnvVar:    v.EnvVarTokenName, // env-var NAME only — never the secret value
-		APIVersion:      "",                 // v3 field; T06 adds
-		SelectedModel:   "",                 // v3 field; T06 adds
-		CompletionPath:  v.CompletionEndpoint,
-		ModelsPath:      v.ModelsEndpoint,
-		UseCustomModels: v.UseCustomModels,
-		Headers:         v.Headers,
-		CustomModels:    v.CustomModels,
-		CreatedAt:       0, // v3 field; T06 adds
-		UpdatedAt:       0, // v3 field; T06 adds
-	}
+// Configure wires the fully-initialised service into the already-bound handler.
+// Called from application.Init() after the database is open.
+func (h *SettingsHandler) Configure(wailsLogger logger.Logger, zlog zerolog.Logger, service SettingsServiceAPI) {
+	h.logger = wailsLogger
+	h.zlog = zlog
+	h.settingsService = service
 }
 
-func fromWireProviderConfig(v apperr.ProviderConfig) ProviderConfig {
-	return ProviderConfig{
-		ProviderID:          v.ID,
-		ProviderName:        v.Name,
-		ProviderType:        ProviderType(v.Kind),
-		BaseUrl:             v.BaseURL,
-		CompletionEndpoint:  v.CompletionPath,
-		ModelsEndpoint:      v.ModelsPath,
-		AuthType:            AuthType(v.AuthScheme),
-		AuthToken:           "",                   // never accepted from the wire
-		UseAuthTokenFromEnv: v.APIKeyEnvVar != "",
-		EnvVarTokenName:     v.APIKeyEnvVar,
-		UseCustomHeaders:    len(v.Headers) > 0,
-		Headers:             v.Headers,
-		UseCustomModels:     v.UseCustomModels,
-		CustomModels:        v.CustomModels,
-	}
-}
+// ── Type adapters ──────────────────────────────────────────────────────────
+// Internal settings.* types match apperr.* wire types field-for-field,
+// so conversions are direct Go type conversions.
 
-func toWireAppBehaviorConfig(v AppBehaviorConfig) apperr.AppBehaviorConfig {
-	return apperr.AppBehaviorConfig{
-		EnableTaskLogging: v.EnableTaskLogging,
-		HistoryEnabled:    false, // v3 field; T06 adds
-		HistoryMaxEntries: 0,     // v3 field; T06 adds
-	}
+func toWireProvider(v ProviderConfig) apperr.ProviderConfig     { return apperr.ProviderConfig(v) }
+func fromWireProvider(v apperr.ProviderConfig) ProviderConfig   { return ProviderConfig(v) }
+func toWireInference(v InferenceBaseConfig) apperr.InferenceBaseConfig {
+	return apperr.InferenceBaseConfig(v)
 }
-
-func fromWireAppBehaviorConfig(v apperr.AppBehaviorConfig) AppBehaviorConfig {
-	return AppBehaviorConfig{
-		EnableTaskLogging: v.EnableTaskLogging,
-		LogDirectory:      "", // v3 uses LoggingConfig for this; T06 removes field
-	}
+func fromWireInference(v apperr.InferenceBaseConfig) InferenceBaseConfig {
+	return InferenceBaseConfig(v)
+}
+func toWireModel(v ModelConfig) apperr.ModelConfig       { return apperr.ModelConfig(v) }
+func fromWireModel(v apperr.ModelConfig) ModelConfig     { return ModelConfig(v) }
+func toWireLanguage(v LanguageConfig) apperr.LanguageConfig { return apperr.LanguageConfig(v) }
+func toWireAppBehavior(v AppBehaviorConfig) apperr.AppBehaviorConfig {
+	return apperr.AppBehaviorConfig(v)
+}
+func fromWireAppBehavior(v apperr.AppBehaviorConfig) AppBehaviorConfig {
+	return AppBehaviorConfig(v)
+}
+func toWireLogging(v LoggingConfig) apperr.LoggingConfig   { return apperr.LoggingConfig(v) }
+func fromWireLogging(v apperr.LoggingConfig) LoggingConfig { return LoggingConfig(v) }
+func toWireMetadata(v AppSettingsMetadata) apperr.AppSettingsMetadata {
+	return apperr.AppSettingsMetadata(v)
 }
 
 func toWireSettings(v Settings) apperr.Settings {
 	providers := make([]apperr.ProviderConfig, len(v.AvailableProviderConfigs))
 	for i, p := range v.AvailableProviderConfigs {
-		providers[i] = toWireProviderConfig(p)
+		providers[i] = toWireProvider(p)
 	}
 	return apperr.Settings{
 		AvailableProviderConfigs: providers,
-		CurrentProviderConfig:    toWireProviderConfig(v.CurrentProviderConfig),
-		InferenceBaseConfig:      apperr.InferenceBaseConfig(v.InferenceBaseConfig),
-		ModelConfig:              apperr.ModelConfig(v.ModelConfig),
-		LanguageConfig:           apperr.LanguageConfig(v.LanguageConfig),
-		AppBehaviorConfig:        toWireAppBehaviorConfig(v.AppBehaviorConfig),
+		CurrentProviderConfig:    toWireProvider(v.CurrentProviderConfig),
+		InferenceBaseConfig:      toWireInference(v.InferenceBaseConfig),
+		ModelConfig:              toWireModel(v.ModelConfig),
+		LanguageConfig:           toWireLanguage(v.LanguageConfig),
+		AppBehaviorConfig:        toWireAppBehavior(v.AppBehaviorConfig),
 	}
 }
 
-func toWireAppSettingsMetadata(v AppSettingsMetadata) apperr.AppSettingsMetadata {
-	authSchemes := make([]string, len(v.AuthTypes))
-	for i, a := range v.AuthTypes {
-		authSchemes[i] = string(a)
-	}
-	providerKinds := make([]string, len(v.ProviderTypes))
-	for i, p := range v.ProviderTypes {
-		providerKinds[i] = string(p)
-	}
-	return apperr.AppSettingsMetadata{
-		AuthSchemes:    authSchemes,
-		ProviderKinds:  providerKinds,
-		SettingsFolder: v.SettingsFolder,
-		DatabaseFile:   v.SettingsFile, // v2 JSON path; T06 replaces with DB path
-		LogsFolder:     v.LogsFolder,
-		AppVersion:     "", // v3 field; T06 adds
-	}
-}
-
-// panicFmt is the format string used when converting a panic value to an error.
 const panicFmt = "panic: %v"
 
-// ─── Bound handler methods ────────────────────────────────────────────────
-// Envelope pattern: named return + defer/recover catches panics and converts
-// them to CodeInternal. Service errors go through apperr.ToWire.
+// ── Bound handler methods ──────────────────────────────────────────────────
 
 func (h *SettingsHandler) GetAppSettingsMetadata() (res apperr.MetadataResult) {
 	defer func() {
@@ -167,7 +121,7 @@ func (h *SettingsHandler) GetAppSettingsMetadata() (res apperr.MetadataResult) {
 		wire := apperr.ToWire(h.zlog, err)
 		return apperr.MetadataResult{Error: &wire}
 	}
-	m := toWireAppSettingsMetadata(*meta)
+	m := toWireMetadata(*meta)
 	return apperr.MetadataResult{Data: &m}
 }
 
@@ -179,13 +133,13 @@ func (h *SettingsHandler) GetSettings() (res apperr.SettingsResult) {
 			res = apperr.SettingsResult{Error: &wire}
 		}
 	}()
-	v2s, err := h.settingsService.GetSettings()
+	s, err := h.settingsService.GetSettings()
 	if err != nil {
 		wire := apperr.ToWire(h.zlog, err)
 		return apperr.SettingsResult{Error: &wire}
 	}
-	s := toWireSettings(*v2s)
-	return apperr.SettingsResult{Data: &s}
+	ws := toWireSettings(*s)
+	return apperr.SettingsResult{Data: &ws}
 }
 
 func (h *SettingsHandler) ResetSettingsToDefault() (res apperr.SettingsResult) {
@@ -196,13 +150,13 @@ func (h *SettingsHandler) ResetSettingsToDefault() (res apperr.SettingsResult) {
 			res = apperr.SettingsResult{Error: &wire}
 		}
 	}()
-	v2s, err := h.settingsService.ResetSettingsToDefault()
+	s, err := h.settingsService.ResetSettingsToDefault()
 	if err != nil {
 		wire := apperr.ToWire(h.zlog, err)
 		return apperr.SettingsResult{Error: &wire}
 	}
-	s := toWireSettings(*v2s)
-	return apperr.SettingsResult{Data: &s}
+	ws := toWireSettings(*s)
+	return apperr.SettingsResult{Data: &ws}
 }
 
 func (h *SettingsHandler) GetAllProviderConfigs() (res apperr.ProvidersResult) {
@@ -220,7 +174,7 @@ func (h *SettingsHandler) GetAllProviderConfigs() (res apperr.ProvidersResult) {
 	}
 	out := make([]apperr.ProviderConfig, len(cfgs))
 	for i, c := range cfgs {
-		out[i] = toWireProviderConfig(c)
+		out[i] = toWireProvider(c)
 	}
 	return apperr.ProvidersResult{Data: out}
 }
@@ -238,7 +192,7 @@ func (h *SettingsHandler) GetCurrentProviderConfig() (res apperr.ProviderResult)
 		wire := apperr.ToWire(h.zlog, err)
 		return apperr.ProviderResult{Error: &wire}
 	}
-	p := toWireProviderConfig(*cfg)
+	p := toWireProvider(*cfg)
 	return apperr.ProviderResult{Data: &p}
 }
 
@@ -255,7 +209,7 @@ func (h *SettingsHandler) GetProviderConfig(providerId string) (res apperr.Provi
 		wire := apperr.ToWire(h.zlog, err)
 		return apperr.ProviderResult{Error: &wire}
 	}
-	p := toWireProviderConfig(*cfg)
+	p := toWireProvider(*cfg)
 	return apperr.ProviderResult{Data: &p}
 }
 
@@ -267,13 +221,13 @@ func (h *SettingsHandler) CreateProviderConfig(cfg apperr.ProviderConfig) (res a
 			res = apperr.ProviderResult{Error: &wire}
 		}
 	}()
-	v2cfg := fromWireProviderConfig(cfg)
-	created, err := h.settingsService.CreateProviderConfig(&v2cfg)
+	v := fromWireProvider(cfg)
+	created, err := h.settingsService.CreateProviderConfig(&v)
 	if err != nil {
 		wire := apperr.ToWire(h.zlog, err)
 		return apperr.ProviderResult{Error: &wire}
 	}
-	p := toWireProviderConfig(*created)
+	p := toWireProvider(*created)
 	return apperr.ProviderResult{Data: &p}
 }
 
@@ -285,13 +239,13 @@ func (h *SettingsHandler) UpdateProviderConfig(cfg apperr.ProviderConfig) (res a
 			res = apperr.ProviderResult{Error: &wire}
 		}
 	}()
-	v2cfg := fromWireProviderConfig(cfg)
-	updated, err := h.settingsService.UpdateProviderConfig(&v2cfg)
+	v := fromWireProvider(cfg)
+	updated, err := h.settingsService.UpdateProviderConfig(&v)
 	if err != nil {
 		wire := apperr.ToWire(h.zlog, err)
 		return apperr.ProviderResult{Error: &wire}
 	}
-	p := toWireProviderConfig(*updated)
+	p := toWireProvider(*updated)
 	return apperr.ProviderResult{Data: &p}
 }
 
@@ -323,7 +277,7 @@ func (h *SettingsHandler) SetAsCurrentProviderConfig(providerId string) (res app
 		wire := apperr.ToWire(h.zlog, err)
 		return apperr.ProviderResult{Error: &wire}
 	}
-	p := toWireProviderConfig(*cfg)
+	p := toWireProvider(*cfg)
 	return apperr.ProviderResult{Data: &p}
 }
 
@@ -340,7 +294,7 @@ func (h *SettingsHandler) GetInferenceBaseConfig() (res apperr.InferenceResult) 
 		wire := apperr.ToWire(h.zlog, err)
 		return apperr.InferenceResult{Error: &wire}
 	}
-	ic := apperr.InferenceBaseConfig(*cfg)
+	ic := toWireInference(*cfg)
 	return apperr.InferenceResult{Data: &ic}
 }
 
@@ -352,13 +306,13 @@ func (h *SettingsHandler) UpdateInferenceBaseConfig(cfg apperr.InferenceBaseConf
 			res = apperr.InferenceResult{Error: &wire}
 		}
 	}()
-	v2cfg := InferenceBaseConfig(cfg)
-	updated, err := h.settingsService.UpdateInferenceBaseConfig(&v2cfg)
+	v := fromWireInference(cfg)
+	updated, err := h.settingsService.UpdateInferenceBaseConfig(&v)
 	if err != nil {
 		wire := apperr.ToWire(h.zlog, err)
 		return apperr.InferenceResult{Error: &wire}
 	}
-	ic := apperr.InferenceBaseConfig(*updated)
+	ic := toWireInference(*updated)
 	return apperr.InferenceResult{Data: &ic}
 }
 
@@ -375,7 +329,7 @@ func (h *SettingsHandler) GetModelConfig() (res apperr.ModelConfigResult) {
 		wire := apperr.ToWire(h.zlog, err)
 		return apperr.ModelConfigResult{Error: &wire}
 	}
-	mc := apperr.ModelConfig(*cfg)
+	mc := toWireModel(*cfg)
 	return apperr.ModelConfigResult{Data: &mc}
 }
 
@@ -387,13 +341,13 @@ func (h *SettingsHandler) UpdateModelConfig(cfg apperr.ModelConfig) (res apperr.
 			res = apperr.ModelConfigResult{Error: &wire}
 		}
 	}()
-	v2cfg := ModelConfig(cfg)
-	updated, err := h.settingsService.UpdateModelConfig(&v2cfg)
+	v := fromWireModel(cfg)
+	updated, err := h.settingsService.UpdateModelConfig(&v)
 	if err != nil {
 		wire := apperr.ToWire(h.zlog, err)
 		return apperr.ModelConfigResult{Error: &wire}
 	}
-	mc := apperr.ModelConfig(*updated)
+	mc := toWireModel(*updated)
 	return apperr.ModelConfigResult{Data: &mc}
 }
 
@@ -410,7 +364,7 @@ func (h *SettingsHandler) GetLanguageConfig() (res apperr.LanguageResult) {
 		wire := apperr.ToWire(h.zlog, err)
 		return apperr.LanguageResult{Error: &wire}
 	}
-	lc := apperr.LanguageConfig(*cfg)
+	lc := toWireLanguage(*cfg)
 	return apperr.LanguageResult{Data: &lc}
 }
 
@@ -489,7 +443,7 @@ func (h *SettingsHandler) GetAppBehaviorConfig() (res apperr.AppBehaviorResult) 
 		wire := apperr.ToWire(h.zlog, err)
 		return apperr.AppBehaviorResult{Error: &wire}
 	}
-	ab := toWireAppBehaviorConfig(*cfg)
+	ab := toWireAppBehavior(*cfg)
 	return apperr.AppBehaviorResult{Data: &ab}
 }
 
@@ -501,12 +455,47 @@ func (h *SettingsHandler) UpdateAppBehaviorConfig(cfg apperr.AppBehaviorConfig) 
 			res = apperr.AppBehaviorResult{Error: &wire}
 		}
 	}()
-	v2cfg := fromWireAppBehaviorConfig(cfg)
-	updated, err := h.settingsService.UpdateAppBehaviorConfig(&v2cfg)
+	v := fromWireAppBehavior(cfg)
+	updated, err := h.settingsService.UpdateAppBehaviorConfig(&v)
 	if err != nil {
 		wire := apperr.ToWire(h.zlog, err)
 		return apperr.AppBehaviorResult{Error: &wire}
 	}
-	ab := toWireAppBehaviorConfig(*updated)
+	ab := toWireAppBehavior(*updated)
 	return apperr.AppBehaviorResult{Data: &ab}
+}
+
+func (h *SettingsHandler) GetLoggingConfig() (res apperr.LoggingResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(h.zlog, ae)
+			res = apperr.LoggingResult{Error: &wire}
+		}
+	}()
+	cfg, err := h.settingsService.GetLoggingConfig()
+	if err != nil {
+		wire := apperr.ToWire(h.zlog, err)
+		return apperr.LoggingResult{Error: &wire}
+	}
+	lc := toWireLogging(*cfg)
+	return apperr.LoggingResult{Data: &lc}
+}
+
+func (h *SettingsHandler) UpdateLoggingConfig(cfg apperr.LoggingConfig) (res apperr.LoggingResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(h.zlog, ae)
+			res = apperr.LoggingResult{Error: &wire}
+		}
+	}()
+	v := fromWireLogging(cfg)
+	updated, err := h.settingsService.UpdateLoggingConfig(&v)
+	if err != nil {
+		wire := apperr.ToWire(h.zlog, err)
+		return apperr.LoggingResult{Error: &wire}
+	}
+	lc := toWireLogging(*updated)
+	return apperr.LoggingResult{Data: &lc}
 }

@@ -4,32 +4,340 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"path/filepath"
 	"strings"
-	"time"
-
-	"github.com/google/uuid"
-	"github.com/wailsapp/wails/v2/pkg/logger"
 
 	"go_text/internal/file"
+
+	"github.com/wailsapp/wails/v2/pkg/logger"
 )
 
-// Helper methods for enum validation
+// ── Validation helpers ─────────────────────────────────────────────────────
 
-func (pt ProviderType) IsValid() bool {
-	switch pt {
-	case ProviderTypeOpenAICompatible, ProviderTypeOllama:
-		return true
+// ValidateBaseURL checks URL format, scheme, and trailing slash.
+func ValidateBaseURL(baseURL string) error {
+	if baseURL == "" {
+		return errors.New("base URL cannot be empty")
 	}
-	return false
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return fmt.Errorf("invalid base URL format: %w", err)
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return fmt.Errorf("invalid URL scheme %q, must be http or https", u.Scheme)
+	}
+	if !strings.HasSuffix(u.Path, "/") {
+		return errors.New("base URL must end with a trailing slash")
+	}
+	return nil
 }
 
-func (at AuthType) IsValid() bool {
-	switch at {
-	case AuthTypeNone, AuthTypeApiKey, AuthTypeBearer:
-		return true
+// ValidateProviderConfig validates v3 ProviderConfig fields.
+func ValidateProviderConfig(cfg *ProviderConfig) error {
+	if cfg == nil {
+		return errors.New("provider config is nil")
 	}
-	return false
+	if cfg.Name == "" {
+		return errors.New("provider name cannot be empty")
+	}
+	if !isValidKind(cfg.Kind) {
+		return fmt.Errorf("invalid provider kind %q", cfg.Kind)
+	}
+	if err := ValidateBaseURL(cfg.BaseURL); err != nil {
+		return fmt.Errorf("invalid base URL: %w", err)
+	}
+	if !isValidAuthScheme(cfg.AuthScheme) {
+		return fmt.Errorf("invalid auth scheme %q", cfg.AuthScheme)
+	}
+	if cfg.AuthScheme != "none" && cfg.APIKeyEnvVar == "" {
+		return fmt.Errorf("apiKeyEnvVar required for auth scheme %q", cfg.AuthScheme)
+	}
+	if cfg.UseCustomModels && len(cfg.CustomModels) == 0 {
+		return errors.New("customModels required when useCustomModels is true")
+	}
+	return nil
+}
+
+// ── Service interface ──────────────────────────────────────────────────────
+
+// SettingsServiceAPI is the contract consumed by the handler and tasklog.
+type SettingsServiceAPI interface {
+	GetAppSettingsMetadata() (*AppSettingsMetadata, error)
+	GetSettings() (*Settings, error)
+	ResetSettingsToDefault() (*Settings, error)
+	GetAllProviderConfigs() ([]ProviderConfig, error)
+	GetCurrentProviderConfig() (*ProviderConfig, error)
+	GetProviderConfig(providerId string) (*ProviderConfig, error)
+	CreateProviderConfig(cfg *ProviderConfig) (*ProviderConfig, error)
+	UpdateProviderConfig(cfg *ProviderConfig) (*ProviderConfig, error)
+	DeleteProviderConfig(providerId string) error
+	SetAsCurrentProviderConfig(providerId string) (*ProviderConfig, error)
+	GetInferenceBaseConfig() (*InferenceBaseConfig, error)
+	UpdateInferenceBaseConfig(cfg *InferenceBaseConfig) (*InferenceBaseConfig, error)
+	GetModelConfig() (*ModelConfig, error)
+	UpdateModelConfig(cfg *ModelConfig) (*ModelConfig, error)
+	GetLanguageConfig() (*LanguageConfig, error)
+	SetDefaultInputLanguage(language string) error
+	SetDefaultOutputLanguage(language string) error
+	AddLanguage(language string) ([]string, error)
+	RemoveLanguage(language string) ([]string, error)
+	GetAppBehaviorConfig() (*AppBehaviorConfig, error)
+	UpdateAppBehaviorConfig(cfg *AppBehaviorConfig) (*AppBehaviorConfig, error)
+	GetLoggingConfig() (*LoggingConfig, error)
+	UpdateLoggingConfig(cfg *LoggingConfig) (*LoggingConfig, error)
+}
+
+// ── Service implementation ─────────────────────────────────────────────────
+
+type SettingsService struct {
+	logger       logger.Logger
+	settingsRepo SettingsRepositoryAPI
+	fileUtils    file.FileUtilsServiceAPI
+}
+
+// NewSettingsService constructs the settings service.
+// settingsRepo may be nil at construction time (DI is completed in Init).
+func NewSettingsService(log logger.Logger, settingsRepo SettingsRepositoryAPI, fileUtils file.FileUtilsServiceAPI) *SettingsService {
+	if log == nil {
+		panic("SettingsService: logger cannot be nil")
+	}
+	if fileUtils == nil {
+		panic("SettingsService: fileUtils cannot be nil")
+	}
+	return &SettingsService{
+		logger:       log,
+		settingsRepo: settingsRepo,
+		fileUtils:    fileUtils,
+	}
+}
+
+// SetRepository replaces the repository. Called from application.Init() after DB open.
+func (s *SettingsService) SetRepository(repo SettingsRepositoryAPI) {
+	s.settingsRepo = repo
+}
+
+func (s *SettingsService) GetAppSettingsMetadata() (*AppSettingsMetadata, error) {
+	const op = "SettingsService.GetAppSettingsMetadata"
+	s.logger.Info(fmt.Sprintf("%s: retrieving application settings metadata", op))
+
+	folderPath, err := s.fileUtils.GetAppSettingsFolderPath()
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	dbPath, err := s.fileUtils.GetAppDatabaseFilePath()
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	var logDir string
+	if logCfg, err := s.settingsRepo.GetLoggingConfig(); err == nil && logCfg != nil {
+		logDir = logCfg.LogDirectory
+	}
+	logsFolder, err := s.fileUtils.ResolveAppLogsFolderPath(logDir)
+	if err != nil {
+		s.logger.Warning(fmt.Sprintf("%s: could not resolve logs folder: %v", op, err))
+		logsFolder = ""
+	}
+
+	return &AppSettingsMetadata{
+		AuthSchemes:    AuthSchemes,
+		ProviderKinds:  ProviderKinds,
+		SettingsFolder: folderPath,
+		DatabaseFile:   dbPath,
+		LogsFolder:     logsFolder,
+		AppVersion:     AppVersion,
+	}, nil
+}
+
+func (s *SettingsService) GetSettings() (*Settings, error) {
+	const op = "SettingsService.GetSettings"
+
+	providers, err := s.settingsRepo.ListProviders()
+	if err != nil {
+		return nil, fmt.Errorf("%s: list providers: %w", op, err)
+	}
+	current, err := s.settingsRepo.GetCurrentProvider()
+	if err != nil {
+		return nil, fmt.Errorf("%s: current provider: %w", op, err)
+	}
+	inferCfg, err := s.settingsRepo.GetInferenceConfig()
+	if err != nil {
+		return nil, fmt.Errorf("%s: inference config: %w", op, err)
+	}
+	modelCfg, err := s.settingsRepo.GetModelConfig()
+	if err != nil {
+		return nil, fmt.Errorf("%s: model config: %w", op, err)
+	}
+	langCfg, err := s.settingsRepo.GetLanguageConfig()
+	if err != nil {
+		return nil, fmt.Errorf("%s: language config: %w", op, err)
+	}
+	appCfg, err := s.settingsRepo.GetAppBehaviorConfig()
+	if err != nil {
+		return nil, fmt.Errorf("%s: app behavior config: %w", op, err)
+	}
+
+	var currentProvider ProviderConfig
+	if current != nil {
+		currentProvider = *current
+	}
+	return &Settings{
+		AvailableProviderConfigs: providers,
+		CurrentProviderConfig:    currentProvider,
+		InferenceBaseConfig:      *inferCfg,
+		ModelConfig:              *modelCfg,
+		LanguageConfig:           *langCfg,
+		AppBehaviorConfig:        *appCfg,
+	}, nil
+}
+
+func (s *SettingsService) ResetSettingsToDefault() (*Settings, error) {
+	const op = "SettingsService.ResetSettingsToDefault"
+	s.logger.Info(fmt.Sprintf("%s: resetting settings to default", op))
+	if err := s.settingsRepo.ResetToDefaults(); err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return s.GetSettings()
+}
+
+func (s *SettingsService) GetAllProviderConfigs() ([]ProviderConfig, error) {
+	return s.settingsRepo.ListProviders()
+}
+
+func (s *SettingsService) GetCurrentProviderConfig() (*ProviderConfig, error) {
+	const op = "SettingsService.GetCurrentProviderConfig"
+	p, err := s.settingsRepo.GetCurrentProvider()
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	if p == nil {
+		return nil, fmt.Errorf("%s: no current provider configured", op)
+	}
+	return p, nil
+}
+
+func (s *SettingsService) GetProviderConfig(providerId string) (*ProviderConfig, error) {
+	const op = "SettingsService.GetProviderConfig"
+	if providerId == "" {
+		return nil, fmt.Errorf("%s: provider ID cannot be empty", op)
+	}
+	return s.settingsRepo.GetProvider(providerId)
+}
+
+func (s *SettingsService) CreateProviderConfig(cfg *ProviderConfig) (*ProviderConfig, error) {
+	const op = "SettingsService.CreateProviderConfig"
+	s.logger.Info(fmt.Sprintf("%s: creating provider %q", op, cfg.Name))
+	if err := ValidateProviderConfig(cfg); err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return s.settingsRepo.CreateProvider(cfg)
+}
+
+func (s *SettingsService) UpdateProviderConfig(cfg *ProviderConfig) (*ProviderConfig, error) {
+	const op = "SettingsService.UpdateProviderConfig"
+	s.logger.Info(fmt.Sprintf("%s: updating provider %s", op, cfg.ID))
+	if cfg.ID == "" {
+		return nil, fmt.Errorf("%s: provider ID cannot be empty", op)
+	}
+	if err := ValidateProviderConfig(cfg); err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return s.settingsRepo.UpdateProvider(cfg)
+}
+
+func (s *SettingsService) DeleteProviderConfig(providerId string) error {
+	const op = "SettingsService.DeleteProviderConfig"
+	s.logger.Info(fmt.Sprintf("%s: deleting provider %s", op, providerId))
+	if providerId == "" {
+		return fmt.Errorf("%s: provider ID cannot be empty", op)
+	}
+	return s.settingsRepo.DeleteProvider(providerId)
+}
+
+func (s *SettingsService) SetAsCurrentProviderConfig(providerId string) (*ProviderConfig, error) {
+	const op = "SettingsService.SetAsCurrentProviderConfig"
+	if providerId == "" {
+		return nil, fmt.Errorf("%s: provider ID cannot be empty", op)
+	}
+	p, err := s.settingsRepo.GetProvider(providerId)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	if err := s.settingsRepo.SetCurrentProvider(providerId); err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return p, nil
+}
+
+func (s *SettingsService) GetInferenceBaseConfig() (*InferenceBaseConfig, error) {
+	return s.settingsRepo.GetInferenceConfig()
+}
+
+func (s *SettingsService) UpdateInferenceBaseConfig(cfg *InferenceBaseConfig) (*InferenceBaseConfig, error) {
+	const op = "SettingsService.UpdateInferenceBaseConfig"
+	if cfg.Timeout < 1 || cfg.Timeout > 600 {
+		return nil, fmt.Errorf("%s: timeout must be 1–600 seconds", op)
+	}
+	if cfg.MaxRetries < 0 || cfg.MaxRetries > 10 {
+		return nil, fmt.Errorf("%s: maxRetries must be 0–10", op)
+	}
+	if err := s.settingsRepo.UpdateInferenceConfig(cfg); err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return cfg, nil
+}
+
+func (s *SettingsService) GetModelConfig() (*ModelConfig, error) {
+	return s.settingsRepo.GetModelConfig()
+}
+
+func (s *SettingsService) UpdateModelConfig(cfg *ModelConfig) (*ModelConfig, error) {
+	const op = "SettingsService.UpdateModelConfig"
+	if cfg.UseTemperature && (cfg.Temperature < 0 || cfg.Temperature > 2) {
+		return nil, fmt.Errorf("%s: temperature must be 0–2 when enabled", op)
+	}
+	if cfg.UseContextWindow && (cfg.ContextWindow < 1024 || cfg.ContextWindow > 200000) {
+		return nil, fmt.Errorf("%s: contextWindow must be 1024–200000 when enabled", op)
+	}
+	if err := s.settingsRepo.UpdateModelConfig(cfg); err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return cfg, nil
+}
+
+func (s *SettingsService) GetLanguageConfig() (*LanguageConfig, error) {
+	return s.settingsRepo.GetLanguageConfig()
+}
+
+func (s *SettingsService) SetDefaultInputLanguage(language string) error {
+	const op = "SettingsService.SetDefaultInputLanguage"
+	language = strings.TrimSpace(language)
+	if language == "" {
+		return fmt.Errorf("%s: language cannot be empty", op)
+	}
+	langCfg, err := s.settingsRepo.GetLanguageConfig()
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	if !containsIgnoreCase(langCfg.Languages, language) {
+		return fmt.Errorf("%s: language %q not in supported languages", op, language)
+	}
+	return s.settingsRepo.SetDefaultInputLanguage(language)
+}
+
+func (s *SettingsService) SetDefaultOutputLanguage(language string) error {
+	const op = "SettingsService.SetDefaultOutputLanguage"
+	language = strings.TrimSpace(language)
+	if language == "" {
+		return fmt.Errorf("%s: language cannot be empty", op)
+	}
+	langCfg, err := s.settingsRepo.GetLanguageConfig()
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	if !containsIgnoreCase(langCfg.Languages, language) {
+		return fmt.Errorf("%s: language %q not in supported languages", op, language)
+	}
+	return s.settingsRepo.SetDefaultOutputLanguage(language)
 }
 
 func containsIgnoreCase(list []string, item string) bool {
@@ -42,835 +350,80 @@ func containsIgnoreCase(list []string, item string) bool {
 	return false
 }
 
-// ValidateBaseURL checks URL format, scheme, and trailing slash
-func ValidateBaseURL(baseURL string) error {
-	if baseURL == "" {
-		return errors.New("base URL cannot be empty")
-	}
-
-	u, err := url.Parse(baseURL)
-	if err != nil {
-		return fmt.Errorf("invalid base URL format: %w", err)
-	}
-
-	if u.Scheme != "http" && u.Scheme != "https" {
-		return fmt.Errorf("invalid URL scheme %q, must be http or https", u.Scheme)
-	}
-
-	if !strings.HasSuffix(u.Path, "/") {
-		return errors.New("base URL must end with a trailing slash")
-	}
-
-	return nil
-}
-
-// ValidateEndpoint checks relative path format
-func ValidateEndpoint(endpoint string) error {
-	if endpoint == "" {
-		return nil
-	}
-	if strings.HasPrefix(endpoint, "/") {
-		return errors.New("endpoint must not start with a forward slash")
-	}
-	return nil
-}
-
-// ValidateProviderConfig validates all ProviderConfig fields and relationships
-func ValidateProviderConfig(cfg *ProviderConfig) error {
-	if cfg == nil {
-		return errors.New("provider config is nil")
-	}
-
-	if cfg.ProviderName == "" {
-		return errors.New("provider name cannot be empty")
-	}
-
-	if !cfg.ProviderType.IsValid() {
-		return fmt.Errorf("invalid provider type %q", cfg.ProviderType)
-	}
-
-	if err := ValidateBaseURL(cfg.BaseUrl); err != nil {
-		return fmt.Errorf("invalid base URL: %w", err)
-	}
-
-	if cfg.CompletionEndpoint == "" {
-		return errors.New("completion endpoint cannot be empty")
-	}
-
-	if err := ValidateEndpoint(cfg.CompletionEndpoint); err != nil {
-		return fmt.Errorf("invalid completion endpoint: %w", err)
-	}
-
-	if !cfg.AuthType.IsValid() {
-		return fmt.Errorf("invalid auth type %q", cfg.AuthType)
-	}
-
-	// Conditional validations
-	if !cfg.UseCustomModels {
-		if cfg.ModelsEndpoint == "" {
-			return errors.New("models endpoint required when not using custom models")
-		}
-		if err := ValidateEndpoint(cfg.ModelsEndpoint); err != nil {
-			return fmt.Errorf("invalid models endpoint: %w", err)
-		}
-	}
-
-	if cfg.UseAuthTokenFromEnv {
-		if cfg.EnvVarTokenName == "" {
-			return errors.New("environment variable name required when loading token from environment")
-		}
-	} else if cfg.AuthType != AuthTypeNone && cfg.AuthToken == "" {
-		return fmt.Errorf("auth token required for auth type %q", cfg.AuthType)
-	}
-
-	if cfg.UseCustomModels && len(cfg.CustomModels) == 0 {
-		return errors.New("custom models required when using custom models")
-	}
-
-	return nil
-}
-
-// ValidateSettings performs holistic validation of the entire configuration
-func ValidateSettings(s Settings) error {
-	// Provider configs
-	providerNames := make(map[string]bool)
-	for _, cfg := range s.AvailableProviderConfigs {
-		if err := ValidateProviderConfig(&cfg); err != nil {
-			return fmt.Errorf("invalid provider %q: %w", cfg.ProviderName, err)
-		}
-		if providerNames[cfg.ProviderName] {
-			return fmt.Errorf("duplicate provider name: %s", cfg.ProviderName)
-		}
-		providerNames[cfg.ProviderName] = true
-	}
-
-	// Current provider must exist in available providers
-	currentProviderName := s.CurrentProviderConfig.ProviderName
-	if currentProviderName == "" {
-		return errors.New("current provider name cannot be empty")
-	}
-	if !providerNames[currentProviderName] {
-		return fmt.Errorf("current provider %q not found in available providers", currentProviderName)
-	}
-
-	if err := ValidateProviderConfig(&s.CurrentProviderConfig); err != nil {
-		return fmt.Errorf("invalid current provider: %w", err)
-	}
-
-	// Base inference config
-	if s.InferenceBaseConfig.Timeout < 0 {
-		return errors.New("timeout must be non-negative")
-	}
-	if s.InferenceBaseConfig.MaxRetries < 0 {
-		return errors.New("max retries must be non-negative")
-	}
-
-	// Model config
-	// Model name can be empty (user may not have selected a model yet)
-	if s.ModelConfig.UseTemperature && (s.ModelConfig.Temperature < 0 || s.ModelConfig.Temperature > 2) {
-		return errors.New("temperature must be between 0 and 2 when enabled")
-	}
-
-	// Language config
-	if len(s.LanguageConfig.Languages) == 0 {
-		return errors.New("languages list cannot be empty")
-	}
-	if !containsIgnoreCase(s.LanguageConfig.Languages, s.LanguageConfig.DefaultInputLanguage) {
-		return errors.New("default input language not in supported languages list")
-	}
-	if !containsIgnoreCase(s.LanguageConfig.Languages, s.LanguageConfig.DefaultOutputLanguage) {
-		return errors.New("default output language not in supported languages list")
-	}
-
-	return nil
-}
-
-type SettingsServiceAPI interface {
-	InitDefaultSettingsIfAbsent() error
-	GetAppSettingsMetadata() (*AppSettingsMetadata, error)
-	GetSettings() (*Settings, error)
-	ResetSettingsToDefault() (*Settings, error)
-	GetAllProviderConfigs() ([]ProviderConfig, error)
-	GetCurrentProviderConfig() (*ProviderConfig, error)
-	GetProviderConfig(providerId string) (*ProviderConfig, error)
-	CreateProviderConfig(cfg *ProviderConfig) (*ProviderConfig, error)
-	UpdateProviderConfig(cfg *ProviderConfig) (*ProviderConfig, error)
-	DeleteProviderConfig(providerId string) error
-	SetAsCurrentProviderConfig(providerId string) (*ProviderConfig, error)
-	GetInferenceBaseConfig() (*InferenceBaseConfig, error)
-	GetModelConfig() (*ModelConfig, error)
-	UpdateInferenceBaseConfig(cfg *InferenceBaseConfig) (*InferenceBaseConfig, error)
-	UpdateModelConfig(cfg *ModelConfig) (*ModelConfig, error)
-	GetLanguageConfig() (*LanguageConfig, error)
-	SetDefaultInputLanguage(language string) error
-	SetDefaultOutputLanguage(language string) error
-	AddLanguage(language string) ([]string, error)
-	RemoveLanguage(language string) ([]string, error)
-	GetAppBehaviorConfig() (*AppBehaviorConfig, error)
-	UpdateAppBehaviorConfig(cfg *AppBehaviorConfig) (*AppBehaviorConfig, error)
-}
-
-type SettingsService struct {
-	logger       logger.Logger
-	settingsRepo SettingsRepositoryAPI
-	fileUtils    file.FileUtilsServiceAPI
-}
-
-func NewSettingsService(logger logger.Logger, settingsRepo SettingsRepositoryAPI, fileUtils file.FileUtilsServiceAPI) SettingsServiceAPI {
-	if logger == nil {
-		panic("logger cannot be nil")
-	}
-	if settingsRepo == nil {
-		panic("settingsRepo cannot be nil")
-	}
-	if fileUtils == nil {
-		panic("fileUtils cannot be nil")
-	}
-
-	return &SettingsService{
-		logger:       logger,
-		settingsRepo: settingsRepo,
-		fileUtils:    fileUtils,
-	}
-}
-
-// saveSettings safely saves settings with validation
-func (s *SettingsService) saveSettings(settings *Settings) error {
-	const op = "SettingsService.saveSettings"
-
-	if settings == nil {
-		s.logger.Error(fmt.Sprintf("%s: cannot save nil settings", op))
-		return fmt.Errorf("%s: cannot save nil settings", op)
-	}
-
-	if err := ValidateSettings(*settings); err != nil {
-		s.logger.Error(fmt.Sprintf("%s: validation failed: %v", op, err))
-		return fmt.Errorf("%s: settings validation failed: %w", op, err)
-	}
-
-	if _, err := s.settingsRepo.SaveSettings(settings); err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to save settings: %v", op, err))
-		return fmt.Errorf("%s: %w", op, err)
-	}
-
-	return nil
-}
-
-// getSettingsWithValidation retrieves settings and validates they exist
-func (s *SettingsService) getSettingsWithValidation() (*Settings, error) {
-	const op = "SettingsService.getSettingsWithValidation"
-
-	settings, err := s.settingsRepo.GetSettings()
-	if err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to get settings: %v", op, err))
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-
-	if settings == nil {
-		s.logger.Error(fmt.Sprintf("%s: settings are nil", op))
-		return nil, fmt.Errorf("%s: settings are nil", op)
-	}
-
-	return settings, nil
-}
-
-func (s *SettingsService) InitDefaultSettingsIfAbsent() error {
-	return s.settingsRepo.InitDefaultSettingsIfAbsent()
-}
-
-func (s *SettingsService) GetAppSettingsMetadata() (*AppSettingsMetadata, error) {
-	const op = "SettingsService.GetAppSettingsMetadata"
-	startTime := time.Now()
-	s.logger.Info(fmt.Sprintf("%s: retrieving application settings metadata", op))
-
-	folderPath, err := s.fileUtils.GetAppSettingsFolderPath()
-	if err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to get settings folder path: %v", op, err))
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-
-	filePath, err := s.fileUtils.GetAppSettingsFilePath()
-	if err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to get settings file path: %v", op, err))
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-
-	logsFolder := s.resolveLogsFolderForMetadata(op)
-
-	metadata := &AppSettingsMetadata{
-		AuthTypes:      AuthTypes[:],
-		ProviderTypes:  ProviderTypes[:],
-		SettingsFolder: folderPath,
-		SettingsFile:   filePath,
-		LogsFolder:     logsFolder,
-	}
-
-	duration := time.Since(startTime)
-	s.logger.Info(fmt.Sprintf("%s: successfully retrieved metadata in %v", op, duration))
-	return metadata, nil
-}
-
-func (s *SettingsService) resolveLogsFolderForMetadata(callerOp string) string {
-	settings, err := s.getSettingsWithValidation()
-	if err != nil {
-		s.logger.Warning(fmt.Sprintf("%s: could not load settings for logs folder resolution, using default: %v", callerOp, err))
-		return ""
-	}
-
-	logsFolder, err := s.fileUtils.ResolveAppLogsFolderPath(settings.AppBehaviorConfig.LogDirectory)
-	if err != nil {
-		s.logger.Warning(fmt.Sprintf("%s: could not resolve logs folder path, omitting from metadata: %v", callerOp, err))
-		return ""
-	}
-
-	return logsFolder
-}
-
-func (s *SettingsService) GetSettings() (*Settings, error) {
-	const op = "SettingsService.GetSettings"
-	s.logger.Debug(fmt.Sprintf("%s: retrieving current settings", op))
-	return s.settingsRepo.GetSettings()
-}
-
-func (s *SettingsService) ResetSettingsToDefault() (*Settings, error) {
-	const op = "SettingsService.ResetSettingsToDefault"
-	startTime := time.Now()
-	s.logger.Info(fmt.Sprintf("%s: resetting settings to default", op))
-
-	settings, err := s.settingsRepo.SaveSettings(&DefaultSetting)
-	if err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to save default settings: %v", op, err))
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-
-	duration := time.Since(startTime)
-	s.logger.Info(fmt.Sprintf("%s: successfully reset settings in %v", op, duration))
-	return settings, nil
-}
-
-func (s *SettingsService) GetAllProviderConfigs() ([]ProviderConfig, error) {
-	const op = "SettingsService.GetAllProviderConfigs"
-	s.logger.Debug(fmt.Sprintf("%s: retrieving all provider configurations", op))
-	return s.settingsRepo.GetAvailableProviderConfigs()
-}
-
-func (s *SettingsService) GetCurrentProviderConfig() (*ProviderConfig, error) {
-	const op = "SettingsService.GetCurrentProviderConfig"
-	s.logger.Debug(fmt.Sprintf("%s: retrieving current provider configuration", op))
-
-	config, err := s.settingsRepo.GetCurrentProviderConfig()
-	if err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to get current provider config: %v", op, err))
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-	if config == nil {
-		s.logger.Error(fmt.Sprintf("%s: current provider config is nil", op))
-		return nil, fmt.Errorf("%s: current provider config is nil", op)
-	}
-
-	return config, nil
-}
-
-func (s *SettingsService) GetProviderConfig(providerId string) (*ProviderConfig, error) {
-	const op = "SettingsService.GetProviderConfig"
-	s.logger.Debug(fmt.Sprintf("%s: retrieving provider config by ID: %s", op, providerId))
-
-	if providerId == "" {
-		s.logger.Error(fmt.Sprintf("%s: provider ID cannot be empty", op))
-		return nil, fmt.Errorf("%s: provider ID cannot be empty", op)
-	}
-
-	configs, err := s.settingsRepo.GetAvailableProviderConfigs()
-	if err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to get available provider configs: %v", op, err))
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-
-	for i, config := range configs {
-		if config.ProviderID == providerId {
-			return &configs[i], nil
-		}
-	}
-
-	s.logger.Warning(fmt.Sprintf("%s: provider not found with ID: %s", op, providerId))
-	return nil, fmt.Errorf("%s: provider not found with ID %s", op, providerId)
-}
-
-func (s *SettingsService) CreateProviderConfig(cfg *ProviderConfig) (*ProviderConfig, error) {
-	const op = "SettingsService.CreateProviderConfig"
-	startTime := time.Now()
-	s.logger.Info(fmt.Sprintf("%s: creating new provider configuration", op))
-
-	if err := ValidateProviderConfig(cfg); err != nil {
-		s.logger.Error(fmt.Sprintf("%s: validation failed: %v", op, err))
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-
-	settings, err := s.getSettingsWithValidation()
-	if err != nil {
-		return nil, err
-	}
-
-	// Check for duplicate provider name
-	for _, existing := range settings.AvailableProviderConfigs {
-		if existing.ProviderName == cfg.ProviderName {
-			s.logger.Error(fmt.Sprintf("%s: duplicate provider name: %s", op, cfg.ProviderName))
-			return nil, fmt.Errorf("%s: provider name %q already exists", op, cfg.ProviderName)
-		}
-	}
-
-	// Generate a new I D and set it
-	cfg.ProviderID = uuid.NewString()
-
-	// Add to settings
-	settings.AvailableProviderConfigs = append(settings.AvailableProviderConfigs, *cfg)
-
-	// Save and return
-	if err := s.saveSettings(settings); err != nil {
-		return nil, err
-	}
-
-	duration := time.Since(startTime)
-	s.logger.Info(fmt.Sprintf("%s: successfully created provider %q in %v", op, cfg.ProviderName, duration))
-	return cfg, nil
-}
-
-func (s *SettingsService) UpdateProviderConfig(cfg *ProviderConfig) (*ProviderConfig, error) {
-	const op = "SettingsService.UpdateProviderConfig"
-	startTime := time.Now()
-	s.logger.Info(fmt.Sprintf("%s: updating provider configuration: %s", op, cfg.ProviderID))
-
-	if cfg.ProviderID == "" {
-		s.logger.Error(fmt.Sprintf("%s: provider ID cannot be empty", op))
-		return nil, fmt.Errorf("%s: provider ID cannot be empty", op)
-	}
-
-	if err := ValidateProviderConfig(cfg); err != nil {
-		s.logger.Error(fmt.Sprintf("%s: validation failed: %v", op, err))
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-
-	settings, err := s.getSettingsWithValidation()
-	if err != nil {
-		return nil, err
-	}
-
-	// Find and update the provider
-	found := false
-	for i, existing := range settings.AvailableProviderConfigs {
-		if existing.ProviderID == cfg.ProviderID {
-			// Check for duplicate name with other providers
-			for _, other := range settings.AvailableProviderConfigs {
-				if other.ProviderID != cfg.ProviderID && other.ProviderName == cfg.ProviderName {
-					s.logger.Error(fmt.Sprintf("%s: duplicate provider name: %s", op, cfg.ProviderName))
-					return nil, fmt.Errorf("%s: provider name %q already exists", op, cfg.ProviderName)
-				}
-			}
-			settings.AvailableProviderConfigs[i] = *cfg
-			found = true
-			break
-		}
-	}
-
-	if !found {
-		s.logger.Error(fmt.Sprintf("%s: provider not found with ID: %s", op, cfg.ProviderID))
-		return nil, fmt.Errorf("%s: provider not found with ID %s", op, cfg.ProviderID)
-	}
-
-	// Update current provider if it matches
-	if settings.CurrentProviderConfig.ProviderID == cfg.ProviderID {
-		settings.CurrentProviderConfig = *cfg
-	}
-
-	if err := s.saveSettings(settings); err != nil {
-		return nil, err
-	}
-
-	duration := time.Since(startTime)
-	s.logger.Info(fmt.Sprintf("%s: successfully updated provider %q in %v", op, cfg.ProviderName, duration))
-	return cfg, nil
-}
-
-func (s *SettingsService) DeleteProviderConfig(providerId string) error {
-	const op = "SettingsService.DeleteProviderConfig"
-	startTime := time.Now()
-	s.logger.Info(fmt.Sprintf("%s: deleting provider configuration: %s", op, providerId))
-
-	if providerId == "" {
-		s.logger.Error(fmt.Sprintf("%s: provider ID cannot be empty", op))
-		return fmt.Errorf("%s: provider ID cannot be empty", op)
-	}
-
-	settings, err := s.getSettingsWithValidation()
-	if err != nil {
-		return err
-	}
-
-	// Check if this is the current provider
-	if settings.CurrentProviderConfig.ProviderID == providerId {
-		s.logger.Error(fmt.Sprintf("%s: cannot delete current provider: %s", op, providerId))
-		return fmt.Errorf("%s: cannot delete current provider %s", op, providerId)
-	}
-
-	// Find and remove the provider
-	found := false
-	newProviders := make([]ProviderConfig, 0, len(settings.AvailableProviderConfigs)-1)
-	for _, provider := range settings.AvailableProviderConfigs {
-		if provider.ProviderID == providerId {
-			found = true
-			continue
-		}
-		newProviders = append(newProviders, provider)
-	}
-
-	if !found {
-		s.logger.Warning(fmt.Sprintf("%s: provider not found with ID: %s", op, providerId))
-		return fmt.Errorf("%s: provider not found with ID %s", op, providerId)
-	}
-
-	settings.AvailableProviderConfigs = newProviders
-
-	if err := s.saveSettings(settings); err != nil {
-		return err
-	}
-
-	duration := time.Since(startTime)
-	s.logger.Info(fmt.Sprintf("%s: successfully deleted provider in %v", op, duration))
-	return nil
-}
-
-func (s *SettingsService) SetAsCurrentProviderConfig(providerId string) (*ProviderConfig, error) {
-	const op = "SettingsService.SetAsCurrentProviderConfig"
-	startTime := time.Now()
-	s.logger.Info(fmt.Sprintf("%s: setting current provider: %s", op, providerId))
-
-	if providerId == "" {
-		s.logger.Error(fmt.Sprintf("%s: provider ID cannot be empty", op))
-		return nil, fmt.Errorf("%s: provider ID cannot be empty", op)
-	}
-
-	provider, err := s.GetProviderConfig(providerId)
-	if err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to get provider config: %v", op, err))
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-
-	settings, err := s.getSettingsWithValidation()
-	if err != nil {
-		return nil, err
-	}
-
-	settings.CurrentProviderConfig = *provider
-
-	if err := s.saveSettings(settings); err != nil {
-		return nil, err
-	}
-
-	duration := time.Since(startTime)
-	s.logger.Info(fmt.Sprintf("%s: successfully set current provider %q in %v", op, provider.ProviderName, duration))
-	return provider, nil
-}
-
-func (s *SettingsService) GetInferenceBaseConfig() (*InferenceBaseConfig, error) {
-	const op = "SettingsService.GetInferenceBaseConfig"
-	s.logger.Debug(fmt.Sprintf("%s: retrieving inference base configuration", op))
-
-	config, err := s.settingsRepo.GetInferenceBaseConfig()
-	if err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to get inference config: %v", op, err))
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-	if config == nil {
-		s.logger.Error(fmt.Sprintf("%s: inference config is nil", op))
-		return nil, fmt.Errorf("%s: inference config is nil", op)
-	}
-
-	return config, nil
-}
-
-func (s *SettingsService) GetModelConfig() (*ModelConfig, error) {
-	const op = "SettingsService.GetModelConfig"
-	s.logger.Debug(fmt.Sprintf("%s: retrieving model configuration", op))
-
-	config, err := s.settingsRepo.GetModelConfig()
-	if err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to get model config: %v", op, err))
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-	if config == nil {
-		s.logger.Error(fmt.Sprintf("%s: model config is nil", op))
-		return nil, fmt.Errorf("%s: model config is nil", op)
-	}
-
-	return config, nil
-}
-
-func (s *SettingsService) UpdateInferenceBaseConfig(cfg *InferenceBaseConfig) (*InferenceBaseConfig, error) {
-	const op = "SettingsService.UpdateInferenceBaseConfig"
-	startTime := time.Now()
-	s.logger.Info(fmt.Sprintf("%s: updating inference base configuration", op))
-
-	if cfg.Timeout < 1 || cfg.Timeout > 600 {
-		s.logger.Error(fmt.Sprintf("%s: invalid timeout value: %d", op, cfg.Timeout))
-		return nil, fmt.Errorf("%s: timeout must be between 1 and 600 seconds", op)
-	}
-	if cfg.MaxRetries < 0 || cfg.MaxRetries > 10 {
-		s.logger.Error(fmt.Sprintf("%s: invalid max retries value: %d", op, cfg.MaxRetries))
-		return nil, fmt.Errorf("%s: max retries must be between 0 and 10", op)
-	}
-
-	settings, err := s.getSettingsWithValidation()
-	if err != nil {
-		return nil, err
-	}
-
-	settings.InferenceBaseConfig = *cfg
-
-	if err := s.saveSettings(settings); err != nil {
-		return nil, err
-	}
-
-	duration := time.Since(startTime)
-	s.logger.Info(fmt.Sprintf("%s: successfully updated inference config in %v", op, duration))
-	return cfg, nil
-}
-
-func (s *SettingsService) UpdateModelConfig(cfg *ModelConfig) (*ModelConfig, error) {
-	const op = "SettingsService.UpdateModelConfig"
-	startTime := time.Now()
-	s.logger.Info(fmt.Sprintf("%s: updating model configuration", op))
-
-	// Model name can be empty (user may not have selected a model yet)
-	if cfg.UseTemperature && (cfg.Temperature < 0 || cfg.Temperature > 2) {
-		s.logger.Error(fmt.Sprintf("%s: invalid temperature value: %f", op, cfg.Temperature))
-		return nil, fmt.Errorf("%s: temperature must be between 0 and 2 when enabled", op)
-	}
-
-	settings, err := s.getSettingsWithValidation()
-	if err != nil {
-		return nil, err
-	}
-
-	settings.ModelConfig = *cfg
-
-	if err := s.saveSettings(settings); err != nil {
-		return nil, err
-	}
-
-	duration := time.Since(startTime)
-	s.logger.Info(fmt.Sprintf("%s: successfully updated model config in %v", op, duration))
-	return cfg, nil
-}
-
-func (s *SettingsService) GetLanguageConfig() (*LanguageConfig, error) {
-	const op = "SettingsService.GetLanguageConfig"
-	s.logger.Debug(fmt.Sprintf("%s: retrieving language configuration", op))
-
-	config, err := s.settingsRepo.GetLanguageConfig()
-	if err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to get language config: %v", op, err))
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-	if config == nil {
-		s.logger.Error(fmt.Sprintf("%s: language config is nil", op))
-		return nil, fmt.Errorf("%s: language config is nil", op)
-	}
-
-	return config, nil
-}
-
-func (s *SettingsService) validateLanguage(language string, operation string) error {
-	language = strings.TrimSpace(language)
-	if language == "" {
-		s.logger.Error(fmt.Sprintf("%s: language cannot be empty", operation))
-		return fmt.Errorf("%s: language cannot be empty", operation)
-	}
-
-	settings, err := s.getSettingsWithValidation()
-	if err != nil {
-		return err
-	}
-
-	// Validate language exists in the supported list - CASE-INSENSITIVE
-	if !containsIgnoreCase(settings.LanguageConfig.Languages, language) {
-		s.logger.Error(fmt.Sprintf("%s: language %q not in supported languages", operation, language))
-		return fmt.Errorf("%s: language %q not in supported languages list", operation, language)
-	}
-
-	return nil
-}
-
-func (s *SettingsService) SetDefaultInputLanguage(language string) error {
-	const op = "SettingsService.SetDefaultInputLanguage"
-	s.logger.Info(fmt.Sprintf("%s: setting default input language: %s", op, language))
-
-	err := s.validateLanguage(language, op)
-	if err != nil {
-		return err
-	}
-
-	settings, err := s.getSettingsWithValidation()
-	if err != nil {
-		return err
-	}
-
-	settings.LanguageConfig.DefaultInputLanguage = language
-
-	return s.saveSettings(settings)
-}
-
-func (s *SettingsService) SetDefaultOutputLanguage(language string) error {
-	const op = "SettingsService.SetDefaultOutputLanguage"
-	s.logger.Info(fmt.Sprintf("%s: setting default output language: %s", op, language))
-
-	err := s.validateLanguage(language, op)
-	if err != nil {
-		return err
-	}
-
-	settings, err := s.getSettingsWithValidation()
-	if err != nil {
-		return err
-	}
-
-	settings.LanguageConfig.DefaultOutputLanguage = language
-
-	return s.saveSettings(settings)
-}
-
 func (s *SettingsService) AddLanguage(language string) ([]string, error) {
 	const op = "SettingsService.AddLanguage"
-	startTime := time.Now()
-	s.logger.Info(fmt.Sprintf("%s: adding language: %s", op, language))
-
 	language = strings.TrimSpace(language)
 	if language == "" {
-		s.logger.Error(fmt.Sprintf("%s: language cannot be empty", op))
 		return nil, fmt.Errorf("%s: language cannot be empty", op)
 	}
-
-	settings, err := s.getSettingsWithValidation()
-	if err != nil {
-		return nil, err
-	}
-
-	// Check if the language already exists
-	lowerLanguage := strings.ToLower(language)
-	for _, lang := range settings.LanguageConfig.Languages {
-		lower := strings.ToLower(lang)
-		if lower == lowerLanguage {
-			s.logger.Info(fmt.Sprintf("%s: language %q already exists, skipping", op, language))
-			return settings.LanguageConfig.Languages, nil
-		}
-	}
-
-	settings.LanguageConfig.Languages = append(settings.LanguageConfig.Languages, language)
-
-	if err := s.saveSettings(settings); err != nil {
-		return nil, err
-	}
-
-	duration := time.Since(startTime)
-	s.logger.Info(fmt.Sprintf("%s: successfully added language %q in %v", op, language, duration))
-	return settings.LanguageConfig.Languages, nil
-}
-
-func (s *SettingsService) GetAppBehaviorConfig() (*AppBehaviorConfig, error) {
-	const op = "SettingsService.GetAppBehaviorConfig"
-	s.logger.Debug(fmt.Sprintf("%s: retrieving app behavior configuration", op))
-
-	config, err := s.settingsRepo.GetAppBehaviorConfig()
-	if err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to get app behavior config: %v", op, err))
+	if err := s.settingsRepo.AddLanguage(language); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
-	if config == nil {
-		s.logger.Error(fmt.Sprintf("%s: app behavior config is nil", op))
-		return nil, fmt.Errorf("%s: app behavior config is nil", op)
-	}
-
-	return config, nil
-}
-
-func (s *SettingsService) UpdateAppBehaviorConfig(cfg *AppBehaviorConfig) (*AppBehaviorConfig, error) {
-	const op = "SettingsService.UpdateAppBehaviorConfig"
-	startTime := time.Now()
-	s.logger.Info(fmt.Sprintf("%s: updating app behavior configuration", op))
-
-	if cfg == nil {
-		s.logger.Error(fmt.Sprintf("%s: app behavior config cannot be nil", op))
-		return nil, fmt.Errorf("%s: app behavior config cannot be nil", op)
-	}
-
-	if cfg.LogDirectory != "" && !filepath.IsAbs(cfg.LogDirectory) {
-		s.logger.Error(fmt.Sprintf("%s: log directory must be an absolute path: %s", op, cfg.LogDirectory))
-		return nil, fmt.Errorf("%s: log directory must be an absolute path", op)
-	}
-
-	settings, err := s.getSettingsWithValidation()
+	cfg, err := s.settingsRepo.GetLanguageConfig()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
-
-	settings.AppBehaviorConfig = *cfg
-
-	if err := s.saveSettings(settings); err != nil {
-		return nil, err
-	}
-
-	duration := time.Since(startTime)
-	s.logger.Info(fmt.Sprintf("%s: successfully updated app behavior config in %v", op, duration))
-	return cfg, nil
+	return cfg.Languages, nil
 }
 
 func (s *SettingsService) RemoveLanguage(language string) ([]string, error) {
 	const op = "SettingsService.RemoveLanguage"
-	startTime := time.Now()
-	s.logger.Info(fmt.Sprintf("%s: removing language: %s", op, language))
-
 	language = strings.TrimSpace(language)
 	if language == "" {
-		s.logger.Error(fmt.Sprintf("%s: language cannot be empty", op))
 		return nil, fmt.Errorf("%s: language cannot be empty", op)
 	}
-
-	settings, err := s.getSettingsWithValidation()
+	langCfg, err := s.settingsRepo.GetLanguageConfig()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
-
-	// Check if a language exists and is not a default language
-	if strings.ToLower(language) == strings.ToLower(settings.LanguageConfig.DefaultInputLanguage) {
-		s.logger.Error(fmt.Sprintf("%s: cannot remove default input language: %s", op, language))
+	if strings.ToLower(language) == strings.ToLower(langCfg.DefaultInputLanguage) {
 		return nil, fmt.Errorf("%s: cannot remove default input language %q", op, language)
 	}
-	if strings.ToLower(language) == strings.ToLower(settings.LanguageConfig.DefaultOutputLanguage) {
-		s.logger.Error(fmt.Sprintf("%s: cannot remove default output language: %s", op, language))
+	if strings.ToLower(language) == strings.ToLower(langCfg.DefaultOutputLanguage) {
 		return nil, fmt.Errorf("%s: cannot remove default output language %q", op, language)
 	}
-
-	found := false
-	newLanguages := make([]string, 0, len(settings.LanguageConfig.Languages)-1)
-	for _, lang := range settings.LanguageConfig.Languages {
-		if strings.ToLower(lang) == strings.ToLower(language) {
-			found = true
-			continue
-		}
-		newLanguages = append(newLanguages, lang)
+	if err := s.settingsRepo.RemoveLanguage(language); err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
-
-	if !found {
-		s.logger.Warning(fmt.Sprintf("%s: language %q not found in supported languages", op, language))
-		return settings.LanguageConfig.Languages, nil
+	updated, err := s.settingsRepo.GetLanguageConfig()
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
+	return updated.Languages, nil
+}
 
-	settings.LanguageConfig.Languages = newLanguages
+func (s *SettingsService) GetAppBehaviorConfig() (*AppBehaviorConfig, error) {
+	return s.settingsRepo.GetAppBehaviorConfig()
+}
 
-	if err := s.saveSettings(settings); err != nil {
-		return nil, err
+func (s *SettingsService) UpdateAppBehaviorConfig(cfg *AppBehaviorConfig) (*AppBehaviorConfig, error) {
+	const op = "SettingsService.UpdateAppBehaviorConfig"
+	if cfg == nil {
+		return nil, fmt.Errorf("%s: config cannot be nil", op)
 	}
+	if cfg.HistoryMaxEntries < 10 {
+		cfg.HistoryMaxEntries = 10
+	}
+	if cfg.HistoryMaxEntries > 1000 {
+		cfg.HistoryMaxEntries = 1000
+	}
+	if err := s.settingsRepo.UpdateAppBehaviorConfig(cfg); err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return cfg, nil
+}
 
-	duration := time.Since(startTime)
-	s.logger.Info(fmt.Sprintf("%s: successfully removed language %q in %v", op, language, duration))
-	return settings.LanguageConfig.Languages, nil
+func (s *SettingsService) GetLoggingConfig() (*LoggingConfig, error) {
+	return s.settingsRepo.GetLoggingConfig()
+}
+
+func (s *SettingsService) UpdateLoggingConfig(cfg *LoggingConfig) (*LoggingConfig, error) {
+	const op = "SettingsService.UpdateLoggingConfig"
+	if cfg == nil {
+		return nil, fmt.Errorf("%s: config cannot be nil", op)
+	}
+	if err := s.settingsRepo.UpdateLoggingConfig(cfg); err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return cfg, nil
 }

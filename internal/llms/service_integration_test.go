@@ -32,8 +32,12 @@ type MockSettingsService struct {
 	providerConfig *settings.ProviderConfig
 }
 
-func (m *MockSettingsService) InitDefaultSettingsIfAbsent() error {
-	return nil
+func (m *MockSettingsService) GetLoggingConfig() (*settings.LoggingConfig, error) {
+	return &settings.LoggingConfig{}, nil
+}
+
+func (m *MockSettingsService) UpdateLoggingConfig(cfg *settings.LoggingConfig) (*settings.LoggingConfig, error) {
+	return cfg, nil
 }
 
 func (m *MockSettingsService) GetAppSettingsMetadata() (*settings.AppSettingsMetadata, error) {
@@ -58,12 +62,12 @@ func (m *MockSettingsService) GetCurrentProviderConfig() (*settings.ProviderConf
 	}
 	// Return a default provider for testing
 	return &settings.ProviderConfig{
-		ProviderName:       "Test Provider",
-		ProviderType:       settings.ProviderTypeOpenAICompatible,
-		BaseUrl:            "http://localhost:11434/",
-		ModelsEndpoint:     "v1/models",
-		CompletionEndpoint: "v1/chat/completions",
-		AuthType:           settings.AuthTypeNone,
+		Name:        "Test Provider",
+		Kind:               "openai",
+		BaseURL:             "http://localhost:11434/",
+		ModelsPath:      "v1/models",
+		CompletionPath:  "v1/chat/completions",
+		AuthScheme:         "none",
 		UseCustomModels:    false,
 	}, nil
 }
@@ -212,12 +216,12 @@ func TestLLMServiceAPI_GetModelsList(t *testing.T) {
 
 	// Set the provider to use our mock server
 	settingsService.providerConfig = &settings.ProviderConfig{
-		ProviderName:       "Test Provider",
-		ProviderType:       settings.ProviderTypeOpenAICompatible,
-		BaseUrl:            mockServer.URL + "/",
-		ModelsEndpoint:     "v1/models",
-		CompletionEndpoint: "v1/chat/completions",
-		AuthType:           settings.AuthTypeNone,
+		Name:        "Test Provider",
+		Kind:               "openai",
+		BaseURL:             mockServer.URL + "/",
+		ModelsPath:      "v1/models",
+		CompletionPath:  "v1/chat/completions",
+		AuthScheme:         "none",
 		UseCustomModels:    false,
 	}
 
@@ -235,12 +239,12 @@ func TestLLMServiceAPI_GetModelsList(t *testing.T) {
 	t.Run("ErrorHandling", func(t *testing.T) {
 		// This tests the error handling in GetModelsListForProvider
 		badProvider := &settings.ProviderConfig{
-			ProviderName:       "Bad Provider",
-			ProviderType:       settings.ProviderTypeOpenAICompatible,
-			BaseUrl:            "http://invalid-url-that-will-fail.com/",
-			ModelsEndpoint:     "api/tags",
-			CompletionEndpoint: "api/chat",
-			AuthType:           settings.AuthTypeNone,
+			Name:        "Bad Provider",
+			Kind:               "openai",
+			BaseURL:             "http://invalid-url-that-will-fail.com/",
+			ModelsPath:      "api/tags",
+			CompletionPath:  "api/chat",
+			AuthScheme:         "none",
 			UseCustomModels:    false,
 		}
 
@@ -284,12 +288,12 @@ func TestLLMServiceAPI_GetCompletionResponse(t *testing.T) {
 
 	// Set the provider to use our mock server
 	settingsService.providerConfig = &settings.ProviderConfig{
-		ProviderName:       "Test Provider",
-		ProviderType:       settings.ProviderTypeOpenAICompatible,
-		BaseUrl:            mockServer.URL + "/",
-		ModelsEndpoint:     "v1/models",
-		CompletionEndpoint: "v1/chat/completions",
-		AuthType:           settings.AuthTypeNone,
+		Name:        "Test Provider",
+		Kind:               "openai",
+		BaseURL:             mockServer.URL + "/",
+		ModelsPath:      "v1/models",
+		CompletionPath:  "v1/chat/completions",
+		AuthScheme:         "none",
 		UseCustomModels:    false,
 	}
 
@@ -343,12 +347,12 @@ func TestLLMServiceAPI_GetModelsListForProvider(t *testing.T) {
 	// Test with custom models
 	t.Run("CustomModels", func(t *testing.T) {
 		customModelsProvider := &settings.ProviderConfig{
-			ProviderName:       "Custom Models Provider",
-			ProviderType:       settings.ProviderTypeOpenAICompatible,
-			BaseUrl:            mockServer.URL + "/",
-			ModelsEndpoint:     "api/tags",
-			CompletionEndpoint: "api/chat",
-			AuthType:           settings.AuthTypeNone,
+			Name:        "Custom Models Provider",
+			Kind:               "openai",
+			BaseURL:             mockServer.URL + "/",
+			ModelsPath:      "api/tags",
+			CompletionPath:  "api/chat",
+			AuthScheme:         "none",
 			UseCustomModels:    true,
 			CustomModels:       []string{"custom-model-1", "custom-model-2", "custom-model-3"},
 		}
@@ -365,12 +369,12 @@ func TestLLMServiceAPI_GetModelsListForProvider(t *testing.T) {
 	// Test with API models
 	t.Run("APIModels", func(t *testing.T) {
 		apiModelsProvider := &settings.ProviderConfig{
-			ProviderName:       "API Models Provider",
-			ProviderType:       settings.ProviderTypeOpenAICompatible,
-			BaseUrl:            mockServer.URL + "/",
-			ModelsEndpoint:     "api/tags",
-			CompletionEndpoint: "api/chat",
-			AuthType:           settings.AuthTypeNone,
+			Name:        "API Models Provider",
+			Kind:               "openai",
+			BaseURL:             mockServer.URL + "/",
+			ModelsPath:      "api/tags",
+			CompletionPath:  "api/chat",
+			AuthScheme:         "none",
 			UseCustomModels:    false,
 		}
 
@@ -392,12 +396,12 @@ func TestLLMServiceAPI_GetModelsListForProvider(t *testing.T) {
 	// Test with invalid URL
 	t.Run("InvalidURL", func(t *testing.T) {
 		badProvider := &settings.ProviderConfig{
-			ProviderName:       "Bad Provider",
-			ProviderType:       settings.ProviderTypeOpenAICompatible,
-			BaseUrl:            "http://invalid-url-that-will-fail.com/",
-			ModelsEndpoint:     "api/tags",
-			CompletionEndpoint: "api/chat",
-			AuthType:           settings.AuthTypeNone,
+			Name:        "Bad Provider",
+			Kind:               "openai",
+			BaseURL:             "http://invalid-url-that-will-fail.com/",
+			ModelsPath:      "api/tags",
+			CompletionPath:  "api/chat",
+			AuthScheme:         "none",
 			UseCustomModels:    false,
 		}
 
@@ -442,12 +446,12 @@ func TestLLMServiceAPI_GetCompletionResponseForProvider(t *testing.T) {
 	// Test happy path
 	t.Run("HappyPath", func(t *testing.T) {
 		provider := &settings.ProviderConfig{
-			ProviderName:       "Test Provider",
-			ProviderType:       settings.ProviderTypeOpenAICompatible,
-			BaseUrl:            mockServer.URL + "/",
-			ModelsEndpoint:     "api/tags",
-			CompletionEndpoint: "api/chat",
-			AuthType:           settings.AuthTypeNone,
+			Name:        "Test Provider",
+			Kind:               "openai",
+			BaseURL:             mockServer.URL + "/",
+			ModelsPath:      "api/tags",
+			CompletionPath:  "api/chat",
+			AuthScheme:         "none",
 			UseCustomModels:    false,
 		}
 
@@ -478,12 +482,12 @@ func TestLLMServiceAPI_GetCompletionResponseForProvider(t *testing.T) {
 	// Test with nil request
 	t.Run("NilRequest", func(t *testing.T) {
 		provider := &settings.ProviderConfig{
-			ProviderName:       "Test Provider",
-			ProviderType:       settings.ProviderTypeOpenAICompatible,
-			BaseUrl:            mockServer.URL + "/",
-			ModelsEndpoint:     "api/tags",
-			CompletionEndpoint: "api/chat",
-			AuthType:           settings.AuthTypeNone,
+			Name:        "Test Provider",
+			Kind:               "openai",
+			BaseURL:             mockServer.URL + "/",
+			ModelsPath:      "api/tags",
+			CompletionPath:  "api/chat",
+			AuthScheme:         "none",
 			UseCustomModels:    false,
 		}
 
@@ -507,12 +511,12 @@ func TestLLMServiceAPI_GetCompletionResponseForProvider(t *testing.T) {
 		defer emptyChoicesServer.Close()
 
 		provider := &settings.ProviderConfig{
-			ProviderName:       "Empty Choices Provider",
-			ProviderType:       settings.ProviderTypeOpenAICompatible,
-			BaseUrl:            emptyChoicesServer.URL + "/",
-			ModelsEndpoint:     "api/tags",
-			CompletionEndpoint: "api/chat",
-			AuthType:           settings.AuthTypeNone,
+			Name:        "Empty Choices Provider",
+			Kind:               "openai",
+			BaseURL:             emptyChoicesServer.URL + "/",
+			ModelsPath:      "api/tags",
+			CompletionPath:  "api/chat",
+			AuthScheme:         "none",
 			UseCustomModels:    false,
 		}
 
@@ -556,12 +560,12 @@ func TestLLMServiceAPI_GetCompletionResponseForProvider(t *testing.T) {
 		defer emptyContentServer.Close()
 
 		provider := &settings.ProviderConfig{
-			ProviderName:       "Empty Content Provider",
-			ProviderType:       settings.ProviderTypeOpenAICompatible,
-			BaseUrl:            emptyContentServer.URL + "/",
-			ModelsEndpoint:     "api/tags",
-			CompletionEndpoint: "api/chat",
-			AuthType:           settings.AuthTypeNone,
+			Name:        "Empty Content Provider",
+			Kind:               "openai",
+			BaseURL:             emptyContentServer.URL + "/",
+			ModelsPath:      "api/tags",
+			CompletionPath:  "api/chat",
+			AuthScheme:         "none",
 			UseCustomModels:    false,
 		}
 
@@ -602,202 +606,96 @@ func TestLLMServiceAPI_Authentication(t *testing.T) {
 	mockServer := createMockServer(mockBehavior)
 	defer mockServer.Close()
 
-	// Test getAuthToken branches comprehensively
+	// Test getAuthToken branches — v3: token always comes from env var named by APIKeyEnvVar
 	t.Run("GetAuthTokenBranches", func(t *testing.T) {
-		// Branch 1: provider == nil || provider.AuthType == settings.AuthTypeNone
 		t.Run("NilProvider", func(t *testing.T) {
 			token := llmService.(*LLMService).getAuthToken(nil)
 			assert.Empty(t, token, "Token should be empty for nil provider")
 		})
 
-		t.Run("AuthTypeNone", func(t *testing.T) {
+		t.Run("AuthSchemeNone", func(t *testing.T) {
 			provider := &settings.ProviderConfig{
-				ProviderName:        "No Auth Provider",
-				ProviderType:        settings.ProviderTypeOpenAICompatible,
-				AuthType:            settings.AuthTypeNone,
-				UseAuthTokenFromEnv: true,
-				EnvVarTokenName:     "SOME_ENV_VAR",
+				Name:         "No Auth Provider",
+				Kind:         "openai",
+				AuthScheme:   "none",
+				APIKeyEnvVar: "SOME_ENV_VAR",
 			}
 			token := llmService.(*LLMService).getAuthToken(provider)
-			assert.Empty(t, token, "Token should be empty for AuthTypeNone")
+			assert.Empty(t, token, "Token should be empty when AuthScheme is none")
 		})
 
-		// Branch 2: provider.UseAuthTokenFromEnv && strings.TrimSpace(provider.EnvVarTokenName) != ""
+		t.Run("APIKeyEnvVarEmpty", func(t *testing.T) {
+			provider := &settings.ProviderConfig{
+				Name:         "No Env Var Provider",
+				Kind:         "openai",
+				AuthScheme:   "bearer",
+				APIKeyEnvVar: "",
+			}
+			token := llmService.(*LLMService).getAuthToken(provider)
+			assert.Empty(t, token, "Token should be empty when APIKeyEnvVar is empty")
+		})
+
+		t.Run("APIKeyEnvVarWhitespace", func(t *testing.T) {
+			provider := &settings.ProviderConfig{
+				Name:         "Whitespace Env Var Name Provider",
+				Kind:         "openai",
+				AuthScheme:   "bearer",
+				APIKeyEnvVar: "   ",
+			}
+			token := llmService.(*LLMService).getAuthToken(provider)
+			assert.Empty(t, token, "Token should be empty when APIKeyEnvVar is whitespace")
+		})
+
 		t.Run("EnvVarNotSet", func(t *testing.T) {
-			envVarName := "TEST_LLM_TOKEN_NOT_SET"
-
-			// Ensure the env var is not set
+			envVarName := "TEST_LLM_TOKEN_NOT_SET_V3"
 			oldValue := os.Getenv(envVarName)
 			os.Setenv(envVarName, "")
 			defer os.Setenv(envVarName, oldValue)
 
 			provider := &settings.ProviderConfig{
-				ProviderName:        "Env Var Not Set Provider",
-				ProviderType:        settings.ProviderTypeOpenAICompatible,
-				AuthType:            settings.AuthTypeBearer,
-				UseAuthTokenFromEnv: true,
-				EnvVarTokenName:     envVarName,
+				Name:         "Env Var Not Set Provider",
+				Kind:         "openai",
+				AuthScheme:   "bearer",
+				APIKeyEnvVar: envVarName,
 			}
-
 			token := llmService.(*LLMService).getAuthToken(provider)
-			assert.Empty(t, token, "Token should be empty when env var is not set")
-		})
-
-		t.Run("EnvVarEmptyString", func(t *testing.T) {
-			envVarName := "TEST_LLM_TOKEN_EMPTY"
-
-			// Set env var to empty string
-			oldValue := os.Getenv(envVarName)
-			os.Setenv(envVarName, "")
-			defer os.Setenv(envVarName, oldValue)
-
-			provider := &settings.ProviderConfig{
-				ProviderName:        "Env Var Empty Provider",
-				ProviderType:        settings.ProviderTypeOpenAICompatible,
-				AuthType:            settings.AuthTypeBearer,
-				UseAuthTokenFromEnv: true,
-				EnvVarTokenName:     envVarName,
-			}
-
-			token := llmService.(*LLMService).getAuthToken(provider)
-			assert.Empty(t, token, "Token should be empty when env var is empty string")
-		})
-
-		t.Run("EnvVarWhitespaceOnly", func(t *testing.T) {
-			envVarName := "TEST_LLM_TOKEN_WHITESPACE"
-
-			// Set env var to whitespace only
-			oldValue := os.Getenv(envVarName)
-			os.Setenv(envVarName, "   ")
-			defer os.Setenv(envVarName, oldValue)
-
-			provider := &settings.ProviderConfig{
-				ProviderName:        "Env Var Whitespace Provider",
-				ProviderType:        settings.ProviderTypeOpenAICompatible,
-				AuthType:            settings.AuthTypeBearer,
-				UseAuthTokenFromEnv: true,
-				EnvVarTokenName:     envVarName,
-			}
-
-			token := llmService.(*LLMService).getAuthToken(provider)
-			assert.Equal(t, "   ", token, "Token should contain whitespace when env var has whitespace")
+			assert.Empty(t, token, "Token should be empty when env var value is not set")
 		})
 
 		t.Run("EnvVarValidToken", func(t *testing.T) {
-			envVarName := "TEST_LLM_TOKEN_VALID"
+			envVarName := "TEST_LLM_TOKEN_VALID_V3"
 			envTokenValue := "valid-env-token-123"
-
-			// Set env var to valid token
 			oldValue := os.Getenv(envVarName)
 			os.Setenv(envVarName, envTokenValue)
 			defer os.Setenv(envVarName, oldValue)
 
 			provider := &settings.ProviderConfig{
-				ProviderName:        "Env Var Valid Provider",
-				ProviderType:        settings.ProviderTypeOpenAICompatible,
-				AuthType:            settings.AuthTypeBearer,
-				UseAuthTokenFromEnv: true,
-				EnvVarTokenName:     envVarName,
+				Name:         "Env Var Valid Provider",
+				Kind:         "openai",
+				AuthScheme:   "bearer",
+				APIKeyEnvVar: envVarName,
 			}
-
 			token := llmService.(*LLMService).getAuthToken(provider)
 			assert.Equal(t, envTokenValue, token, "Token should match env var value")
 		})
-
-		t.Run("EnvVarNameEmpty", func(t *testing.T) {
-			provider := &settings.ProviderConfig{
-				ProviderName:        "Empty Env Var Name Provider",
-				ProviderType:        settings.ProviderTypeOpenAICompatible,
-				AuthType:            settings.AuthTypeBearer,
-				UseAuthTokenFromEnv: true,
-				EnvVarTokenName:     "", // Empty env var name
-			}
-
-			token := llmService.(*LLMService).getAuthToken(provider)
-			assert.Empty(t, token, "Token should be empty when env var name is empty")
-		})
-
-		t.Run("EnvVarNameWhitespace", func(t *testing.T) {
-			provider := &settings.ProviderConfig{
-				ProviderName:        "Whitespace Env Var Name Provider",
-				ProviderType:        settings.ProviderTypeOpenAICompatible,
-				AuthType:            settings.AuthTypeBearer,
-				UseAuthTokenFromEnv: true,
-				EnvVarTokenName:     "   ", // Whitespace env var name
-			}
-
-			token := llmService.(*LLMService).getAuthToken(provider)
-			assert.Empty(t, token, "Token should be empty when env var name is whitespace")
-		})
-
-		// Branch 3: !provider.UseAuthTokenFromEnv && strings.TrimSpace(provider.AuthToken) != ""
-		t.Run("ProviderAuthTokenValid", func(t *testing.T) {
-			provider := &settings.ProviderConfig{
-				ProviderName:        "Provider Token Valid",
-				ProviderType:        settings.ProviderTypeOpenAICompatible,
-				AuthType:            settings.AuthTypeBearer,
-				UseAuthTokenFromEnv: false,
-				AuthToken:           "provider-token-456",
-			}
-
-			token := llmService.(*LLMService).getAuthToken(provider)
-			assert.Equal(t, "provider-token-456", token, "Token should match provider auth token")
-		})
-
-		t.Run("ProviderAuthTokenEmpty", func(t *testing.T) {
-			provider := &settings.ProviderConfig{
-				ProviderName:        "Provider Token Empty",
-				ProviderType:        settings.ProviderTypeOpenAICompatible,
-				AuthType:            settings.AuthTypeBearer,
-				UseAuthTokenFromEnv: false,
-				AuthToken:           "",
-			}
-
-			token := llmService.(*LLMService).getAuthToken(provider)
-			assert.Empty(t, token, "Token should be empty when provider auth token is empty")
-		})
-
-		t.Run("ProviderAuthTokenWhitespace", func(t *testing.T) {
-			provider := &settings.ProviderConfig{
-				ProviderName:        "Provider Token Whitespace",
-				ProviderType:        settings.ProviderTypeOpenAICompatible,
-				AuthType:            settings.AuthTypeBearer,
-				UseAuthTokenFromEnv: false,
-				AuthToken:           "   ",
-			}
-
-			token := llmService.(*LLMService).getAuthToken(provider)
-			assert.Empty(t, token, "Token should be empty when provider auth token is whitespace")
-		})
-
-		// Branch 4: No token found (fallback)
-		t.Run("NoTokenFound", func(t *testing.T) {
-			provider := &settings.ProviderConfig{
-				ProviderName:        "No Token Provider",
-				ProviderType:        settings.ProviderTypeOpenAICompatible,
-				AuthType:            settings.AuthTypeBearer,
-				UseAuthTokenFromEnv: false,
-				AuthToken:           "",
-				EnvVarTokenName:     "",
-			}
-
-			token := llmService.(*LLMService).getAuthToken(provider)
-			assert.Empty(t, token, "Token should be empty when no token is found")
-		})
 	})
 
-	// Test Bearer Token Authentication
+	// Test Bearer Token Authentication via env var
 	t.Run("BearerToken", func(t *testing.T) {
+		envVarName := "TEST_LLM_BEARER_V3"
+		oldValue := os.Getenv(envVarName)
+		os.Setenv(envVarName, "test-bearer-token-123")
+		defer os.Setenv(envVarName, oldValue)
+
 		bearerProvider := &settings.ProviderConfig{
-			ProviderName:        "Bearer Provider",
-			ProviderType:        settings.ProviderTypeOpenAICompatible,
-			BaseUrl:             mockServer.URL + "/",
-			ModelsEndpoint:      "api/tags",
-			CompletionEndpoint:  "api/chat",
-			AuthType:            settings.AuthTypeBearer,
-			AuthToken:           "test-bearer-token-123",
-			UseAuthTokenFromEnv: false,
-			UseCustomModels:     false,
+			Name:            "Bearer Provider",
+			Kind:            "openai",
+			BaseURL:         mockServer.URL + "/",
+			ModelsPath:      "api/tags",
+			CompletionPath:  "api/chat",
+			AuthScheme:      "bearer",
+			APIKeyEnvVar:    envVarName,
+			UseCustomModels: false,
 		}
 
 		models, err := llmService.GetModelsListForProvider(bearerProvider)
@@ -806,18 +704,22 @@ func TestLLMServiceAPI_Authentication(t *testing.T) {
 		assert.Len(t, models, 1, "Should return 1 model")
 	})
 
-	// Test API Key Authentication
+	// Test API Key Authentication via env var
 	t.Run("APIKey", func(t *testing.T) {
+		envVarName := "TEST_LLM_APIKEY_V3"
+		oldValue := os.Getenv(envVarName)
+		os.Setenv(envVarName, "test-api-key-456")
+		defer os.Setenv(envVarName, oldValue)
+
 		apiKeyProvider := &settings.ProviderConfig{
-			ProviderName:        "API Key Provider",
-			ProviderType:        settings.ProviderTypeOpenAICompatible,
-			BaseUrl:             mockServer.URL + "/",
-			ModelsEndpoint:      "api/tags",
-			CompletionEndpoint:  "api/chat",
-			AuthType:            settings.AuthTypeApiKey,
-			AuthToken:           "test-api-key-456",
-			UseAuthTokenFromEnv: false,
-			UseCustomModels:     false,
+			Name:            "API Key Provider",
+			Kind:            "openai",
+			BaseURL:         mockServer.URL + "/",
+			ModelsPath:      "api/tags",
+			CompletionPath:  "api/chat",
+			AuthScheme:      "apiKey",
+			APIKeyEnvVar:    envVarName,
+			UseCustomModels: false,
 		}
 
 		models, err := llmService.GetModelsListForProvider(apiKeyProvider)
@@ -828,26 +730,21 @@ func TestLLMServiceAPI_Authentication(t *testing.T) {
 
 	// Test Auth Token from Environment Variable
 	t.Run("AuthTokenFromEnvVar", func(t *testing.T) {
-		// Set environment variable
-		envVarName := "TEST_LLM_AUTH_TOKEN"
+		envVarName := "TEST_LLM_AUTH_TOKEN_V3"
 		envTokenValue := "test-env-token-789"
-
-		// Set env var
 		oldValue := os.Getenv(envVarName)
 		os.Setenv(envVarName, envTokenValue)
 		defer os.Setenv(envVarName, oldValue)
 
-		// Test bearer token from environment variable
 		envBearerProvider := &settings.ProviderConfig{
-			ProviderName:        "Env Bearer Provider",
-			ProviderType:        settings.ProviderTypeOpenAICompatible,
-			BaseUrl:             mockServer.URL + "/",
-			ModelsEndpoint:      "api/tags",
-			CompletionEndpoint:  "api/chat",
-			AuthType:            settings.AuthTypeBearer,
-			UseAuthTokenFromEnv: true,
-			EnvVarTokenName:     envVarName,
-			UseCustomModels:     false,
+			Name:            "Env Bearer Provider",
+			Kind:            "openai",
+			BaseURL:         mockServer.URL + "/",
+			ModelsPath:      "api/tags",
+			CompletionPath:  "api/chat",
+			AuthScheme:      "bearer",
+			APIKeyEnvVar:    envVarName,
+			UseCustomModels: false,
 		}
 
 		models, err := llmService.GetModelsListForProvider(envBearerProvider)
@@ -855,17 +752,15 @@ func TestLLMServiceAPI_Authentication(t *testing.T) {
 		assert.NotNil(t, models, "Models list should not be nil")
 		assert.Len(t, models, 1, "Should return 1 model")
 
-		// Test API key from environment variable
 		envApiKeyProvider := &settings.ProviderConfig{
-			ProviderName:        "Env API Key Provider",
-			ProviderType:        settings.ProviderTypeOpenAICompatible,
-			BaseUrl:             mockServer.URL + "/",
-			ModelsEndpoint:      "api/tags",
-			CompletionEndpoint:  "api/chat",
-			AuthType:            settings.AuthTypeApiKey,
-			UseAuthTokenFromEnv: true,
-			EnvVarTokenName:     envVarName,
-			UseCustomModels:     false,
+			Name:            "Env API Key Provider",
+			Kind:            "openai",
+			BaseURL:         mockServer.URL + "/",
+			ModelsPath:      "api/tags",
+			CompletionPath:  "api/chat",
+			AuthScheme:      "apiKey",
+			APIKeyEnvVar:    envVarName,
+			UseCustomModels: false,
 		}
 
 		models, err = llmService.GetModelsListForProvider(envApiKeyProvider)
@@ -874,39 +769,28 @@ func TestLLMServiceAPI_Authentication(t *testing.T) {
 		assert.Len(t, models, 1, "Should return 1 model")
 	})
 
-	// Test Custom Headers
+	// Test Custom Headers — v3: Headers map is always applied (no UseCustomHeaders toggle)
 	t.Run("CustomHeaders", func(t *testing.T) {
-		// Create a server that can verify custom headers
-		customHeaderBehavior := &MockServerBehavior{
-			StatusCode: http.StatusOK,
-			ModelsResponse: &ModelsListResponse{
+		customHeaderServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, "custom-value-1", r.Header.Get("X-Custom-Header-1"), "Custom header 1 should be present")
+			assert.Equal(t, "custom-value-2", r.Header.Get("X-Custom-Header-2"), "Custom header 2 should be present")
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(&ModelsListResponse{
 				Data: []ModelsResponse{
 					{ID: "custom-header-model", Name: stringPtr("Custom Header Model")},
 				},
-			},
-		}
-		customHeaderServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Verify custom headers are present
-			customHeader1 := r.Header.Get("X-Custom-Header-1")
-			customHeader2 := r.Header.Get("X-Custom-Header-2")
-
-			assert.Equal(t, "custom-value-1", customHeader1, "Custom header 1 should be present")
-			assert.Equal(t, "custom-value-2", customHeader2, "Custom header 2 should be present")
-
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(customHeaderBehavior.ModelsResponse)
+			})
 		}))
 		defer customHeaderServer.Close()
 
 		customHeadersProvider := &settings.ProviderConfig{
-			ProviderName:       "Custom Headers Provider",
-			ProviderType:       settings.ProviderTypeOpenAICompatible,
-			BaseUrl:            customHeaderServer.URL + "/",
-			ModelsEndpoint:     "api/tags",
-			CompletionEndpoint: "api/chat",
-			AuthType:           settings.AuthTypeNone,
-			UseCustomHeaders:   true,
+			Name:           "Custom Headers Provider",
+			Kind:           "openai",
+			BaseURL:        customHeaderServer.URL + "/",
+			ModelsPath:     "api/tags",
+			CompletionPath: "api/chat",
+			AuthScheme:     "none",
 			Headers: map[string]string{
 				"X-Custom-Header-1": "custom-value-1",
 				"X-Custom-Header-2": "custom-value-2",
@@ -920,16 +804,16 @@ func TestLLMServiceAPI_Authentication(t *testing.T) {
 		assert.Len(t, models, 1, "Should return 1 model")
 	})
 
-	// Test No Auth (AuthTypeNone)
+	// Test No Auth
 	t.Run("NoAuth", func(t *testing.T) {
 		noAuthProvider := &settings.ProviderConfig{
-			ProviderName:       "No Auth Provider",
-			ProviderType:       settings.ProviderTypeOpenAICompatible,
-			BaseUrl:            mockServer.URL + "/",
-			ModelsEndpoint:     "api/tags",
-			CompletionEndpoint: "api/chat",
-			AuthType:           settings.AuthTypeNone,
-			UseCustomModels:    false,
+			Name:            "No Auth Provider",
+			Kind:            "openai",
+			BaseURL:         mockServer.URL + "/",
+			ModelsPath:      "api/tags",
+			CompletionPath:  "api/chat",
+			AuthScheme:      "none",
+			UseCustomModels: false,
 		}
 
 		models, err := llmService.GetModelsListForProvider(noAuthProvider)
@@ -966,12 +850,12 @@ func TestLLMServiceAPI_Timeout(t *testing.T) {
 	}
 
 	slowProvider := &settings.ProviderConfig{
-		ProviderName:       "Slow Provider",
-		ProviderType:       settings.ProviderTypeOpenAICompatible,
-		BaseUrl:            slowServer.URL + "/",
-		ModelsEndpoint:     "api/tags",
-		CompletionEndpoint: "api/chat",
-		AuthType:           settings.AuthTypeNone,
+		Name:        "Slow Provider",
+		Kind:               "openai",
+		BaseURL:             slowServer.URL + "/",
+		ModelsPath:      "api/tags",
+		CompletionPath:  "api/chat",
+		AuthScheme:         "none",
 		UseCustomModels:    false,
 	}
 

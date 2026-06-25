@@ -28,7 +28,7 @@ func newChatCompletionRequest(cfg *settings.Settings, userPrompt, systemPrompt s
 	modelName := cfg.ModelConfig.Name
 	temperature := cfg.ModelConfig.Temperature
 	isTemperatureEnabled := cfg.ModelConfig.UseTemperature
-	isOllama := cfg.CurrentProviderConfig.ProviderType == settings.ProviderTypeOllama
+	isOllama := cfg.CurrentProviderConfig.Kind == "ollama"
 
 	req := llms.ChatCompletionRequest{
 		Model: modelName,
@@ -239,18 +239,18 @@ func (a *ActionService) processAction(action *prompts.PromptActionRequest) (stri
 	}
 
 	a.logger.Info(fmt.Sprintf("[%s] Loaded current settings - provider=%s, model=%s, category=%s",
-		op, cfg.CurrentProviderConfig.ProviderName, cfg.ModelConfig.Name, promptDef.Category))
+		op, cfg.CurrentProviderConfig.Name, cfg.ModelConfig.Name, promptDef.Category))
 
 	// Validate configuration
 	if err := a.validateProviderConfiguration(&cfg.CurrentProviderConfig); err != nil {
 		a.logger.Error(fmt.Sprintf("[%s] Provider configuration validation failed - provider=%s, error=%v",
-			op, cfg.CurrentProviderConfig.ProviderName, err))
+			op, cfg.CurrentProviderConfig.Name, err))
 		return "", fmt.Errorf("%s: %w", op, err)
 	}
 
 	// 4. Validate model availability
 	modelsList, err := a.llmService.GetModelsList()
-	providerName := cfg.CurrentProviderConfig.ProviderName
+	providerName := cfg.CurrentProviderConfig.Name
 	if err != nil {
 		a.logger.Error(fmt.Sprintf("[%s] Failed to get models list - provider=%s, error=%v", op, providerName, err))
 		return "", fmt.Errorf("%s: failed to load models for provider '%s': %w", op, providerName, err)
@@ -328,8 +328,8 @@ func (a *ActionService) processAction(action *prompts.PromptActionRequest) (stri
 		OutputText:     result,
 		SystemPrompt:   sysPrompt,
 		UserPrompt:     userPrompt,
-		ProviderName:   cfg.CurrentProviderConfig.ProviderName,
-		ProviderType:   string(cfg.CurrentProviderConfig.ProviderType),
+		ProviderName:   cfg.CurrentProviderConfig.Name,
+		ProviderType:   string(cfg.CurrentProviderConfig.Kind),
 		Model:          cfg.ModelConfig.Name,
 		DurationMs:     time.Since(startTime).Milliseconds(),
 		InputLanguage:  action.InputLanguageID,
@@ -348,12 +348,12 @@ func (a *ActionService) validateProviderConfiguration(provider *settings.Provide
 		return fmt.Errorf("provider configuration cannot be nil")
 	}
 
-	if strings.TrimSpace(provider.BaseUrl) == "" {
-		return fmt.Errorf("provider BaseURL is not configured properly for provider '%s'", provider.ProviderName)
+	if strings.TrimSpace(provider.BaseURL) == "" {
+		return fmt.Errorf("provider BaseURL is not configured properly for provider '%s'", provider.Name)
 	}
 
-	if strings.TrimSpace(provider.CompletionEndpoint) == "" {
-		return fmt.Errorf("provider completion endpoint is not configured properly for provider '%s'", provider.ProviderName)
+	if strings.TrimSpace(provider.CompletionPath) == "" {
+		return fmt.Errorf("provider completion endpoint is not configured properly for provider '%s'", provider.Name)
 	}
 
 	return nil

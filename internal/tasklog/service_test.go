@@ -28,47 +28,62 @@ func (l *testLogger) Error(msg string)   {}
 func (l *testLogger) Fatal(msg string)   {}
 
 // mockSettingsService stubs SettingsServiceAPI.
-// Only GetAppBehaviorConfig carries test-controlled values; all other
-// methods return zero values so the compiler is satisfied.
+// cfg controls GetAppBehaviorConfig; logCfg controls GetLoggingConfig.
+// All other methods return zero values so the compiler is satisfied.
 type mockSettingsService struct {
-	cfg    *settings.AppBehaviorConfig
-	cfgErr error
+	cfg       *settings.AppBehaviorConfig
+	cfgErr    error
+	logCfg    *settings.LoggingConfig
+	logCfgErr error
 }
 
 func (m *mockSettingsService) GetAppBehaviorConfig() (*settings.AppBehaviorConfig, error) {
 	return m.cfg, m.cfgErr
 }
 
-func (m *mockSettingsService) InitDefaultSettingsIfAbsent() error                              { return nil }
-func (m *mockSettingsService) GetAppSettingsMetadata() (*settings.AppSettingsMetadata, error)  { return nil, nil }
-func (m *mockSettingsService) GetSettings() (*settings.Settings, error)                        { return nil, nil }
-func (m *mockSettingsService) ResetSettingsToDefault() (*settings.Settings, error)             { return nil, nil }
-func (m *mockSettingsService) GetAllProviderConfigs() ([]settings.ProviderConfig, error)       { return nil, nil }
-func (m *mockSettingsService) GetCurrentProviderConfig() (*settings.ProviderConfig, error)     { return nil, nil }
-func (m *mockSettingsService) GetProviderConfig(_ string) (*settings.ProviderConfig, error)    { return nil, nil }
+func (m *mockSettingsService) GetLoggingConfig() (*settings.LoggingConfig, error) {
+	if m.logCfgErr != nil {
+		return nil, m.logCfgErr
+	}
+	if m.logCfg != nil {
+		return m.logCfg, nil
+	}
+	return &settings.LoggingConfig{}, nil
+}
+
+func (m *mockSettingsService) UpdateLoggingConfig(cfg *settings.LoggingConfig) (*settings.LoggingConfig, error) {
+	return cfg, nil
+}
+
+func (m *mockSettingsService) GetAppSettingsMetadata() (*settings.AppSettingsMetadata, error) { return nil, nil }
+func (m *mockSettingsService) GetSettings() (*settings.Settings, error)                       { return nil, nil }
+func (m *mockSettingsService) ResetSettingsToDefault() (*settings.Settings, error)            { return nil, nil }
+func (m *mockSettingsService) GetAllProviderConfigs() ([]settings.ProviderConfig, error)      { return nil, nil }
+func (m *mockSettingsService) GetCurrentProviderConfig() (*settings.ProviderConfig, error)    { return nil, nil }
+func (m *mockSettingsService) GetProviderConfig(_ string) (*settings.ProviderConfig, error)   { return nil, nil }
 func (m *mockSettingsService) CreateProviderConfig(_ *settings.ProviderConfig) (*settings.ProviderConfig, error) {
 	return nil, nil
 }
 func (m *mockSettingsService) UpdateProviderConfig(_ *settings.ProviderConfig) (*settings.ProviderConfig, error) {
 	return nil, nil
 }
-func (m *mockSettingsService) DeleteProviderConfig(_ string) error                              { return nil }
+func (m *mockSettingsService) DeleteProviderConfig(_ string) error                             { return nil }
 func (m *mockSettingsService) SetAsCurrentProviderConfig(_ string) (*settings.ProviderConfig, error) {
 	return nil, nil
 }
-func (m *mockSettingsService) GetInferenceBaseConfig() (*settings.InferenceBaseConfig, error)  { return nil, nil }
-func (m *mockSettingsService) GetModelConfig() (*settings.ModelConfig, error)                  { return nil, nil }
+func (m *mockSettingsService) GetInferenceBaseConfig() (*settings.InferenceBaseConfig, error) { return nil, nil }
+func (m *mockSettingsService) GetModelConfig() (*settings.ModelConfig, error)                 { return nil, nil }
 func (m *mockSettingsService) UpdateInferenceBaseConfig(_ *settings.InferenceBaseConfig) (*settings.InferenceBaseConfig, error) {
 	return nil, nil
 }
 func (m *mockSettingsService) UpdateModelConfig(_ *settings.ModelConfig) (*settings.ModelConfig, error) {
 	return nil, nil
 }
-func (m *mockSettingsService) GetLanguageConfig() (*settings.LanguageConfig, error)            { return nil, nil }
-func (m *mockSettingsService) SetDefaultInputLanguage(_ string) error                          { return nil }
-func (m *mockSettingsService) SetDefaultOutputLanguage(_ string) error                         { return nil }
-func (m *mockSettingsService) AddLanguage(_ string) ([]string, error)                          { return nil, nil }
-func (m *mockSettingsService) RemoveLanguage(_ string) ([]string, error)                       { return nil, nil }
+func (m *mockSettingsService) GetLanguageConfig() (*settings.LanguageConfig, error)           { return nil, nil }
+func (m *mockSettingsService) SetDefaultInputLanguage(_ string) error                         { return nil }
+func (m *mockSettingsService) SetDefaultOutputLanguage(_ string) error                        { return nil }
+func (m *mockSettingsService) AddLanguage(_ string) ([]string, error)                         { return nil, nil }
+func (m *mockSettingsService) RemoveLanguage(_ string) ([]string, error)                      { return nil, nil }
 func (m *mockSettingsService) UpdateAppBehaviorConfig(_ *settings.AppBehaviorConfig) (*settings.AppBehaviorConfig, error) {
 	return nil, nil
 }
@@ -262,11 +277,9 @@ func TestTaskLogService_LogTaskExecution(t *testing.T) {
 
 		// Arrange
 		mockSettings := &mockSettingsService{
-			cfg: &settings.AppBehaviorConfig{
-				EnableTaskLogging: true,
-				LogDirectory:      "/tmp/logs",
-			},
+			cfg:    &settings.AppBehaviorConfig{EnableTaskLogging: true},
 			cfgErr: nil,
+			logCfg: &settings.LoggingConfig{LogDirectory: "/tmp/logs"},
 		}
 		mockFile := &mockFileUtilsService{
 			ensureErr:  errors.New("disk full"),
@@ -328,11 +341,9 @@ func TestTaskLogService_LogTaskExecution(t *testing.T) {
 		defer os.RemoveAll(tmpDir)
 
 		mockSettings := &mockSettingsService{
-			cfg: &settings.AppBehaviorConfig{
-				EnableTaskLogging: true,
-				LogDirectory:      tmpDir,
-			},
+			cfg:    &settings.AppBehaviorConfig{EnableTaskLogging: true},
 			cfgErr: nil,
+			logCfg: &settings.LoggingConfig{LogDirectory: tmpDir},
 		}
 		mockFile := &mockFileUtilsService{
 			ensurePath: tmpDir,
@@ -376,11 +387,9 @@ func TestTaskLogService_LogTaskExecution(t *testing.T) {
 		defer os.RemoveAll(tmpDir)
 
 		mockSettings := &mockSettingsService{
-			cfg: &settings.AppBehaviorConfig{
-				EnableTaskLogging: true,
-				LogDirectory:      tmpDir,
-			},
+			cfg:    &settings.AppBehaviorConfig{EnableTaskLogging: true},
 			cfgErr: nil,
+			logCfg: &settings.LoggingConfig{LogDirectory: tmpDir},
 		}
 		mockFile := &mockFileUtilsService{
 			ensurePath: tmpDir,
@@ -418,11 +427,9 @@ func TestTaskLogService_LogTaskExecution(t *testing.T) {
 		defer os.RemoveAll(tmpDir)
 
 		mockSettings := &mockSettingsService{
-			cfg: &settings.AppBehaviorConfig{
-				EnableTaskLogging: true,
-				LogDirectory:      tmpDir,
-			},
+			cfg:    &settings.AppBehaviorConfig{EnableTaskLogging: true},
 			cfgErr: nil,
+			logCfg: &settings.LoggingConfig{LogDirectory: tmpDir},
 		}
 		mockFile := &mockFileUtilsService{
 			ensurePath: tmpDir,
