@@ -31,3 +31,23 @@ export function TestModels(_providerId: string): Promise<AnyResult> {
 export function TestInference(_providerId: string): Promise<AnyResult> {
     return Promise.resolve(ok({ ok: true, responseText: 'mock inference response' }));
 }
+
+export function GetCompletionResponseForProvider(_providerConfig: unknown, _request: unknown): Promise<AnyResult> {
+    return Promise.resolve(ok({ content: 'mock completion response' }));
+}
+
+export function GetModelsList(): Promise<AnyResult> {
+    return Promise.resolve(ok([]));
+}
+
+export function GetModelsListForProvider(_providerConfig: unknown): Promise<AnyResult> {
+    return Promise.resolve(ok([]));
+}
+
+export function GetPromptGroups(): Promise<AnyResult> {
+    return Promise.resolve(ok([]));
+}
+
+export function ProcessPrompt(_req: unknown): Promise<AnyResult> {
+    return Promise.resolve(ok({ result: '' }));
+}

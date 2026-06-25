@@ -40,6 +40,8 @@ export function LogInfo(_msg: string): void {}
 export function LogWarning(_msg: string): void {}
 export function LogError(_msg: string): void {}
 export function LogFatal(_msg: string): void {}
+export function LogTrace(_msg: string): void {}
+export function LogPrint(_msg: string): void {}
 
 // Window stubs
 export function WindowSetTitle(_title: string): void {}
@@ -68,3 +70,7 @@ export function Environment(): Promise<unknown> {
 export function Quit(): void {}
 export function Hide(): void {}
 export function Show(): void {}
+
+// Clipboard stubs
+export function ClipboardGetText(): Promise<string> { return Promise.resolve(''); }
+export function ClipboardSetText(_text: string): Promise<void> { return Promise.resolve(); }
