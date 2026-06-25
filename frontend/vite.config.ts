@@ -1,6 +1,30 @@
-import { defineConfig } from 'vite';
+import path from 'path';
 // @ts-ignore
 import react from '@vitejs/plugin-react';
+import { defineConfig, type Plugin } from 'vite';
 
-// https://vitejs.dev/config/
-export default defineConfig({ plugins: [react()] });
+function bridgeMockPlugin(): Plugin {
+    return {
+        name: 'vite-plugin-bridge-mock',
+        enforce: 'pre',
+        resolveId(id: string) {
+            // Redirect any wailsjs handler import to bridge mock
+            const handlerMatch = id.match(/wailsjs\/go\/(?:[^/]+)\/(\w+Handler)$/);
+            if (handlerMatch) {
+                return path.resolve(__dirname, `src/dev/bridge-mock/go/main/${handlerMatch[1]}.ts`);
+            }
+            // Redirect Wails runtime
+            if (id === '@wailsapp/runtime' || /wailsjs\/runtime$/.test(id)) {
+                return path.resolve(__dirname, 'src/dev/bridge-mock/runtime/index.ts');
+            }
+            return undefined;
+        },
+    };
+}
+
+// Active when running plain `npm run dev` (Wails sets WAILS_BUILD_MODE when it drives the build)
+const isMockMode = !process.env.WAILS_BUILD_MODE;
+
+export default defineConfig({
+    plugins: [react(), ...(isMockMode ? [bridgeMockPlugin()] : [])],
+});
