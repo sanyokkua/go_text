@@ -1,4 +1,3 @@
-import { Box } from '@mui/material';
 import React from 'react';
 import { ClipboardServiceAdapter, getLogger } from '../../../../../logic/adapter';
 import { selectInputContent, selectIsAppBusy, selectOutputContent, useAppDispatch, useAppSelector } from '../../../../../logic/store';
@@ -9,53 +8,22 @@ import TextPanel from './TextPanel';
 
 const logger = getLogger('InputOutputContainer');
 
-// Common style configurations
-const panelContainerStyle = {
-    width: '50%',
-    height: '100%',
-    display: 'flex',
-    flexDirection: 'column',
-    minWidth: 0, // Prevent flex item overflow
-};
+const panelStyle: React.CSSProperties = { width: '50%', height: '100%', display: 'flex', flexDirection: 'column', minWidth: 0 };
 
-/**
- * Input/Output Container - replaces the v1 InputOutputContainerWidget
- * Contains two side-by-side panels:
- * - Input panel (left) - 50% width, scrollable content
- * - Output panel (right) - 50% width, scrollable content
- *
- * Key Responsibilities:
- * - Managing input/output text content
- * - Providing clipboard integration (paste input, copy output)
- * - Handling text manipulation actions (clear, use as input)
- * - State management for editor content
- * - User notifications for clipboard operations
- *
- * Design Features:
- * - Equal 50/50 split layout
- * - Reusable TextPanel components for each side
- * - Disabled button states during processing
- * - Comprehensive error handling for clipboard operations
- */
 const InputOutputContainer: React.FC = () => {
     const dispatch = useAppDispatch();
     const inputContent = useAppSelector(selectInputContent);
     const outputContent = useAppSelector(selectOutputContent);
     const isAppBusy = useAppSelector(selectIsAppBusy);
 
-    // Input panel button handlers
-    const handleInputClear = () => {
-        dispatch(clearInput());
-        logger.logInfo('Input cleared');
-    };
+    const handleInputClear = () => { dispatch(clearInput()); logger.logInfo('Input cleared'); };
 
     const handleInputPaste = async () => {
         try {
             logger.logInfo('Attempting to paste from clipboard');
-            const clipboardText = await ClipboardServiceAdapter.getText();
-
-            if (clipboardText) {
-                dispatch(setInputContent(clipboardText));
+            const text = await ClipboardServiceAdapter.getText();
+            if (text) {
+                dispatch(setInputContent(text));
                 logger.logInfo('Pasted from clipboard successfully');
             } else {
                 dispatch(enqueueNotification({ message: 'Clipboard is empty', severity: 'info' }));
@@ -67,25 +35,15 @@ const InputOutputContainer: React.FC = () => {
         }
     };
 
-    // Output panel button handlers
-    const handleOutputClear = () => {
-        dispatch(clearOutput());
-        logger.logInfo('Output cleared');
-    };
+    const handleOutputClear = () => { dispatch(clearOutput()); logger.logInfo('Output cleared'); };
 
     const handleOutputCopy = async () => {
         try {
-            if (!outputContent) {
-                dispatch(enqueueNotification({ message: 'No content to copy', severity: 'info' }));
-                return;
-            }
-
+            if (!outputContent) { dispatch(enqueueNotification({ message: 'No content to copy', severity: 'info' })); return; }
             logger.logInfo('Attempting to copy to clipboard');
             const success = await ClipboardServiceAdapter.setText(outputContent);
-
             if (success) {
                 dispatch(enqueueNotification({ message: 'Copied to clipboard', severity: 'success' }));
-                logger.logInfo('Copied to clipboard successfully');
             } else {
                 dispatch(enqueueNotification({ message: 'Failed to copy to clipboard', severity: 'error' }));
             }
@@ -96,56 +54,40 @@ const InputOutputContainer: React.FC = () => {
     };
 
     const handleOutputUseAsInput = () => {
-        if (outputContent) {
-            dispatch(useOutputAsInput());
-            logger.logInfo('Output used as input');
-        }
+        if (outputContent) { dispatch(useOutputAsInput()); logger.logInfo('Output used as input'); }
     };
 
     return (
-        <Box sx={{ width: '100%', height: '100%', display: 'flex', gap: 2, overflow: 'hidden', padding: 1, minHeight: 0 }}>
-            {/* Input Panel - takes 50% width */}
-            <Box sx={panelContainerStyle}>
+        <div style={{ width: '100%', height: '100%', display: 'flex', gap: '16px', overflow: 'hidden', padding: '8px', minHeight: 0 }}>
+            <div style={panelStyle}>
                 <TextPanel
                     title="Input"
-                    headerColor="primary.main"
-                    headerTextColor="primary.contrastText"
                     content={inputContent}
-                    onContentChange={(value) => dispatch(setInputContent(value))}
+                    onContentChange={(v) => dispatch(setInputContent(v))}
                     placeholder="Enter text here..."
                     buttons={[
-                        { label: 'Clear', onClick: handleInputClear, buttonColor: 'error', variant: 'text', disabled: isAppBusy },
-                        { label: 'Paste', onClick: handleInputPaste, buttonColor: 'secondary', variant: 'text', disabled: isAppBusy },
+                        { label: 'Clear', onClick: handleInputClear, disabled: isAppBusy },
+                        { label: 'Paste', onClick: handleInputPaste, disabled: isAppBusy },
                     ]}
                     isProcessing={isAppBusy}
                 />
-            </Box>
-
-            {/* Output Panel - takes 50% width */}
-            <Box sx={panelContainerStyle}>
+            </div>
+            <div style={panelStyle}>
                 <TextPanel
                     title="Output"
-                    headerColor="primary.main"
-                    headerTextColor="primary.contrastText"
                     content={outputContent}
-                    onContentChange={(value) => dispatch(setOutputContent(value))}
+                    onContentChange={(v) => dispatch(setOutputContent(v))}
                     placeholder="Output will appear here..."
                     buttons={[
-                        { label: 'Clear', onClick: handleOutputClear, buttonColor: 'error', variant: 'text', disabled: isAppBusy },
-                        { label: 'Copy', onClick: handleOutputCopy, buttonColor: 'secondary', variant: 'text', disabled: isAppBusy },
-                        {
-                            label: 'Use as Input',
-                            onClick: handleOutputUseAsInput,
-                            buttonColor: 'secondary',
-                            variant: 'text',
-                            disabled: isAppBusy || !outputContent,
-                        },
+                        { label: 'Clear', onClick: handleOutputClear, disabled: isAppBusy },
+                        { label: 'Copy', onClick: handleOutputCopy, disabled: isAppBusy },
+                        { label: 'Use as Input', onClick: handleOutputUseAsInput, disabled: isAppBusy || !outputContent },
                     ]}
                     isProcessing={isAppBusy}
                     scrollToTop={true}
                 />
-            </Box>
-        </Box>
+            </div>
+        </div>
     );
 };
 
