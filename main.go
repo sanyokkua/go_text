@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"embed"
+	"go_text/internal/apperr"
 	"go_text/internal/application"
 	"go_text/internal/logging"
 	"time"
@@ -19,6 +20,27 @@ var assets embed.FS
 
 const MinimalWidth = 830
 const MinimalHeight = 550
+
+var allErrorCodes = []struct {
+	Value  apperr.ErrorCode
+	TSName string
+}{
+	{apperr.CodeValidation, "CodeValidation"},
+	{apperr.CodeInvalidPlan, "CodeInvalidPlan"},
+	{apperr.CodeBusy, "CodeBusy"},
+	{apperr.CodeAuth, "CodeAuth"},
+	{apperr.CodeMissingCredential, "CodeMissingCredential"},
+	{apperr.CodeProviderUnreachable, "CodeProviderUnreachable"},
+	{apperr.CodeTimeout, "CodeTimeout"},
+	{apperr.CodeRateLimited, "CodeRateLimited"},
+	{apperr.CodeModelNotFound, "CodeModelNotFound"},
+	{apperr.CodeUpstream, "CodeUpstream"},
+	{apperr.CodeEmptyCompletion, "CodeEmptyCompletion"},
+	{apperr.CodeContextWindow, "CodeContextWindow"},
+	{apperr.CodeStepFailed, "CodeStepFailed"},
+	{apperr.CodeCancelled, "CodeCancelled"},
+	{apperr.CodeInternal, "CodeInternal"},
+}
 
 func NewRestyClient() *resty.Client {
 	return resty.New().
@@ -56,6 +78,9 @@ func main() {
 		},
 		Bind: []interface{}{
 			app, app.ActionHandler, app.SettingsHandler,
+		},
+		EnumBind: []interface{}{
+			allErrorCodes,
 		},
 	})
 
