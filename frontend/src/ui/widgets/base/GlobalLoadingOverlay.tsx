@@ -1,26 +1,21 @@
-import { Box, CircularProgress, Typography } from '@mui/material';
 import React from 'react';
 import { selectCurrentView, selectIsAppBusy, useAppSelector } from '../../../logic/store';
 import { UI_HEIGHTS } from '../../styles/constants';
 
-/**
- * Global Loading Overlay - Shows a loading spinner when the app is busy
- * This component should be placed at the top level of the app layout
- */
 const GlobalLoadingOverlay: React.FC = () => {
     const isAppBusy = useAppSelector(selectIsAppBusy);
-    const settings = useAppSelector(selectCurrentView);
-    const isSettings = settings == 'settings';
+    const view = useAppSelector(selectCurrentView);
+    const isSettings = view === 'settings';
 
     if (!isAppBusy) {
         return null;
     }
 
     return (
-        <Box
-            sx={{
+        <div
+            style={{
                 position: 'fixed',
-                zIndex: (theme) => theme.zIndex.modal + 1,
+                zIndex: 201,
                 top: UI_HEIGHTS.APP_BAR,
                 right: 0,
                 bottom: isSettings ? 0 : UI_HEIGHTS.STATUS_BAR,
@@ -30,13 +25,22 @@ const GlobalLoadingOverlay: React.FC = () => {
                 flexDirection: 'column',
                 justifyContent: 'center',
                 alignItems: 'center',
+                background: 'rgba(0,0,0,0.1)',
             }}
         >
-            <CircularProgress size={60} thickness={4} color="primary" />
-            <Typography variant="h6" color="text.primary" sx={{ mt: 2 }}>
-                Processing...
-            </Typography>
-        </Box>
+            <div
+                style={{
+                    width: 48,
+                    height: 48,
+                    border: '4px solid var(--line)',
+                    borderTopColor: 'var(--teal)',
+                    borderRadius: '50%',
+                    animation: 'spin 0.8s linear infinite',
+                }}
+            />
+            <p style={{ marginTop: 'var(--space-3)', color: 'var(--ink)' }}>Processing…</p>
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
     );
 };
 

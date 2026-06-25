@@ -1,44 +1,51 @@
-import {Alert, Snackbar} from '@mui/material';
 import React from 'react';
-import {selectNotificationsQueue, useAppDispatch, useAppSelector} from '../../../logic/store';
-import {removeNotification} from '../../../logic/store/notifications';
+import { selectNotificationsQueue, useAppDispatch, useAppSelector } from '../../../logic/store';
+import { removeNotification } from '../../../logic/store/notifications';
 
-/**
- * Notification Container - Shows notifications from the Redux store
- * This component should be placed at the top level of the app layout
- */
+const colorMap: Record<string, string> = {
+    error: 'var(--err)',
+    warning: 'var(--warn)',
+    success: 'var(--ok)',
+    info: 'var(--teal)',
+};
+
 const NotificationContainer: React.FC = () => {
     const dispatch = useAppDispatch();
     const notifications = useAppSelector(selectNotificationsQueue);
+    const current = notifications[0];
 
-    const handleClose = (id: string) => {
-        dispatch(removeNotification(id));
-    };
-
-    // Only show the oldest notification (first in queue)
-    const currentNotification = notifications[0];
-
-    if (!currentNotification) {
+    if (!current) {
         return null;
     }
 
     return (
-        <Snackbar
-            open={true}
-            autoHideDuration={6000}
-            onClose={() => handleClose(currentNotification.id)}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            sx={{ zIndex: (theme) => theme.zIndex.snackbar }}
+        <div
+            role="alert"
+            style={{
+                position: 'fixed',
+                bottom: 'var(--space-4)',
+                right: 'var(--space-4)',
+                zIndex: 300,
+                background: colorMap[current.severity] ?? 'var(--teal)',
+                color: '#fff',
+                padding: 'var(--space-3) var(--space-4)',
+                borderRadius: 'var(--radius-md)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'var(--space-2)',
+                boxShadow: 'var(--shadow)',
+                maxWidth: 400,
+            }}
         >
-            <Alert
-                onClose={() => handleClose(currentNotification.id)}
-                severity={currentNotification.severity}
-                variant="filled"
-                sx={{ width: '100%' }}
+            <span style={{ flex: 1 }}>{current.message}</span>
+            <button
+                aria-label="dismiss"
+                onClick={() => dispatch(removeNotification(current.id))}
+                style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontWeight: 700 }}
             >
-                {currentNotification.message}
-            </Alert>
-        </Snackbar>
+                ✕
+            </button>
+        </div>
     );
 };
 
