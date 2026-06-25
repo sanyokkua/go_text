@@ -113,5 +113,9 @@ func (d *Database) migrate() error {
 	return nil
 }
 
+// Seed wipes and reseeds all default data in a single transaction.
+// Called by factory-reset handlers (T06+). Full implementation in Task 5.
+func (d *Database) Seed(ctx context.Context) error { return d.seedIfEmpty() }
+
 // seedIfEmpty is a temporary stub. Task 5 will replace this with real seeding logic.
 func (d *Database) seedIfEmpty() error { return nil }
