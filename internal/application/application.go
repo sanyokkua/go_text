@@ -41,7 +41,8 @@ func NewApplicationContextHolder(appLogger *logging.Logger, restyClient *resty.C
 
 	taskLogService := tasklog.NewTaskLogService(appLogger, settingsService, fileUtilsService)
 	promptService := prompts.NewPromptService(appLogger)
-	llmService := llms.NewLLMApiService(appLogger, restyClient, settingsService)
+	providerFactory := llms.NewProviderFactory(restyClient)
+	llmService := llms.NewLLMApiService(appLogger, providerFactory, settingsService)
 	actionService := actions.NewActionService(appLogger, promptService, llmService, settingsService, taskLogService)
 	actionHandler := actions.NewActionHandler(appLogger, zlog.Logger, actionService)
 
