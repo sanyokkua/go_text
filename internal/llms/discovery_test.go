@@ -129,14 +129,14 @@ func TestParseAzureDeployments_WrappedRich(t *testing.T) {
 	t.Parallel()
 	trueVal := true
 	maxTok := 4096
-	body, _ := json.Marshal(map[string]interface{}{
-		"data": []map[string]interface{}{
+	body, _ := json.Marshal(map[string]any{
+		"data": []map[string]any{
 			{
 				"id":           "gpt-4-deployment",
 				"display_name": "GPT-4",
 				"capabilities": map[string]bool{"chat_completion": true},
-				"features":     map[string]interface{}{"temperature": true},
-				"limits":       map[string]interface{}{"max_prompt_tokens": 4096},
+				"features":     map[string]any{"temperature": true},
+				"limits":       map[string]any{"max_prompt_tokens": 4096},
 			},
 		},
 	})
