@@ -2,461 +2,511 @@ package settings
 
 import (
 	"fmt"
-	"time"
 
+	"go_text/internal/apperr"
+
+	"github.com/rs/zerolog"
 	"github.com/wailsapp/wails/v2/pkg/logger"
 )
 
+// SettingsHandlerAPI defines the contract for bound settings methods.
+// All methods return an apperr.*Result envelope — no separate error return.
 type SettingsHandlerAPI interface {
-	GetAppSettingsMetadata() (AppSettingsMetadata, error)
-	GetSettings() (Settings, error)
-	ResetSettingsToDefault() (Settings, error)
-	GetAllProviderConfigs() ([]ProviderConfig, error)
-	GetCurrentProviderConfig() (ProviderConfig, error)
-	GetProviderConfig(providerId string) (ProviderConfig, error)
-	CreateProviderConfig(cfg ProviderConfig) (ProviderConfig, error)
-	UpdateProviderConfig(cfg ProviderConfig) (ProviderConfig, error)
-	DeleteProviderConfig(providerId string) error
-	SetAsCurrentProviderConfig(providerId string) (ProviderConfig, error)
-	GetInferenceBaseConfig() (InferenceBaseConfig, error)
-	UpdateInferenceBaseConfig(cfg InferenceBaseConfig) (InferenceBaseConfig, error)
-	GetModelConfig() (ModelConfig, error)
-	UpdateModelConfig(cfg ModelConfig) (ModelConfig, error)
-	GetLanguageConfig() (LanguageConfig, error)
-	SetDefaultInputLanguage(language string) error
-	SetDefaultOutputLanguage(language string) error
-	AddLanguage(language string) ([]string, error)
-	RemoveLanguage(language string) ([]string, error)
-	GetAppBehaviorConfig() (AppBehaviorConfig, error)
-	UpdateAppBehaviorConfig(cfg AppBehaviorConfig) (AppBehaviorConfig, error)
+	GetAppSettingsMetadata() apperr.MetadataResult
+	GetSettings() apperr.SettingsResult
+	ResetSettingsToDefault() apperr.SettingsResult
+	GetAllProviderConfigs() apperr.ProvidersResult
+	GetCurrentProviderConfig() apperr.ProviderResult
+	GetProviderConfig(providerId string) apperr.ProviderResult
+	CreateProviderConfig(cfg apperr.ProviderConfig) apperr.ProviderResult
+	UpdateProviderConfig(cfg apperr.ProviderConfig) apperr.ProviderResult
+	DeleteProviderConfig(providerId string) apperr.VoidResult
+	SetAsCurrentProviderConfig(providerId string) apperr.ProviderResult
+	GetInferenceBaseConfig() apperr.InferenceResult
+	UpdateInferenceBaseConfig(cfg apperr.InferenceBaseConfig) apperr.InferenceResult
+	GetModelConfig() apperr.ModelConfigResult
+	UpdateModelConfig(cfg apperr.ModelConfig) apperr.ModelConfigResult
+	GetLanguageConfig() apperr.LanguageResult
+	SetDefaultInputLanguage(language string) apperr.VoidResult
+	SetDefaultOutputLanguage(language string) apperr.VoidResult
+	AddLanguage(language string) apperr.LanguagesResult
+	RemoveLanguage(language string) apperr.LanguagesResult
+	GetAppBehaviorConfig() apperr.AppBehaviorResult
+	UpdateAppBehaviorConfig(cfg apperr.AppBehaviorConfig) apperr.AppBehaviorResult
 }
 
+// SettingsHandler is the Wails-bound handler for settings operations.
+// Each method follows the envelope pattern: named return + defer/recover for panic
+// safety, apperr.ToWire for service errors, and an apperr.*Result return type.
 type SettingsHandler struct {
 	logger          logger.Logger
+	zlog            zerolog.Logger
 	settingsService SettingsServiceAPI
 }
 
-func NewSettingsHandler(logger logger.Logger, settingsService SettingsServiceAPI) SettingsHandlerAPI {
-	if logger == nil {
-		panic("logger cannot be nil")
-	}
-	if settingsService == nil {
-		panic("settingsService cannot be nil")
-	}
-
+// NewSettingsHandler constructs a SettingsHandler. wailsLogger may be nil in
+// tests; zlog is used only by apperr.ToWire.
+func NewSettingsHandler(wailsLogger logger.Logger, zlog zerolog.Logger, settingsService SettingsServiceAPI) *SettingsHandler {
 	return &SettingsHandler{
-		logger:          logger,
+		logger:          wailsLogger,
+		zlog:            zlog,
 		settingsService: settingsService,
 	}
 }
 
-// GetAppSettingsMetadata will be used by UI once to get initial static data
-func (s *SettingsHandler) GetAppSettingsMetadata() (AppSettingsMetadata, error) {
-	const op = "SettingsHandler.GetAppSettingsMetadata"
-	startTime := time.Now()
-	s.logger.Debug(fmt.Sprintf("%s: retrieving application metadata", op))
+// ─── V2 → V3 type adapters ────────────────────────────────────────────────
+// These convert the v2 settings.* types (returned by the JSON-backed service)
+// to the v3 apperr.* wire types. Fields that exist only in v3 are zero-valued
+// here; T06 replaces the service implementation and these adapters entirely.
 
-	metadata, err := s.settingsService.GetAppSettingsMetadata()
+func toWireProviderConfig(v ProviderConfig) apperr.ProviderConfig {
+	return apperr.ProviderConfig{
+		ID:              v.ProviderID,
+		Name:            v.ProviderName,
+		Kind:            string(v.ProviderType),
+		BaseURL:         v.BaseUrl,
+		AuthScheme:      string(v.AuthType),
+		APIKeyEnvVar:    v.EnvVarTokenName, // env-var NAME only — never the secret value
+		APIVersion:      "",                 // v3 field; T06 adds
+		SelectedModel:   "",                 // v3 field; T06 adds
+		CompletionPath:  v.CompletionEndpoint,
+		ModelsPath:      v.ModelsEndpoint,
+		UseCustomModels: v.UseCustomModels,
+		Headers:         v.Headers,
+		CustomModels:    v.CustomModels,
+		CreatedAt:       0, // v3 field; T06 adds
+		UpdatedAt:       0, // v3 field; T06 adds
+	}
+}
+
+func fromWireProviderConfig(v apperr.ProviderConfig) ProviderConfig {
+	return ProviderConfig{
+		ProviderID:          v.ID,
+		ProviderName:        v.Name,
+		ProviderType:        ProviderType(v.Kind),
+		BaseUrl:             v.BaseURL,
+		CompletionEndpoint:  v.CompletionPath,
+		ModelsEndpoint:      v.ModelsPath,
+		AuthType:            AuthType(v.AuthScheme),
+		AuthToken:           "",                   // never accepted from the wire
+		UseAuthTokenFromEnv: v.APIKeyEnvVar != "",
+		EnvVarTokenName:     v.APIKeyEnvVar,
+		UseCustomHeaders:    len(v.Headers) > 0,
+		Headers:             v.Headers,
+		UseCustomModels:     v.UseCustomModels,
+		CustomModels:        v.CustomModels,
+	}
+}
+
+func toWireAppBehaviorConfig(v AppBehaviorConfig) apperr.AppBehaviorConfig {
+	return apperr.AppBehaviorConfig{
+		EnableTaskLogging: v.EnableTaskLogging,
+		HistoryEnabled:    false, // v3 field; T06 adds
+		HistoryMaxEntries: 0,     // v3 field; T06 adds
+	}
+}
+
+func fromWireAppBehaviorConfig(v apperr.AppBehaviorConfig) AppBehaviorConfig {
+	return AppBehaviorConfig{
+		EnableTaskLogging: v.EnableTaskLogging,
+		LogDirectory:      "", // v3 uses LoggingConfig for this; T06 removes field
+	}
+}
+
+func toWireSettings(v Settings) apperr.Settings {
+	providers := make([]apperr.ProviderConfig, len(v.AvailableProviderConfigs))
+	for i, p := range v.AvailableProviderConfigs {
+		providers[i] = toWireProviderConfig(p)
+	}
+	return apperr.Settings{
+		AvailableProviderConfigs: providers,
+		CurrentProviderConfig:    toWireProviderConfig(v.CurrentProviderConfig),
+		InferenceBaseConfig:      apperr.InferenceBaseConfig(v.InferenceBaseConfig),
+		ModelConfig:              apperr.ModelConfig(v.ModelConfig),
+		LanguageConfig:           apperr.LanguageConfig(v.LanguageConfig),
+		AppBehaviorConfig:        toWireAppBehaviorConfig(v.AppBehaviorConfig),
+	}
+}
+
+func toWireAppSettingsMetadata(v AppSettingsMetadata) apperr.AppSettingsMetadata {
+	authSchemes := make([]string, len(v.AuthTypes))
+	for i, a := range v.AuthTypes {
+		authSchemes[i] = string(a)
+	}
+	providerKinds := make([]string, len(v.ProviderTypes))
+	for i, p := range v.ProviderTypes {
+		providerKinds[i] = string(p)
+	}
+	return apperr.AppSettingsMetadata{
+		AuthSchemes:    authSchemes,
+		ProviderKinds:  providerKinds,
+		SettingsFolder: v.SettingsFolder,
+		DatabaseFile:   v.SettingsFile, // v2 JSON path; T06 replaces with DB path
+		LogsFolder:     v.LogsFolder,
+		AppVersion:     "", // v3 field; T06 adds
+	}
+}
+
+// panicFmt is the format string used when converting a panic value to an error.
+const panicFmt = "panic: %v"
+
+// ─── Bound handler methods ────────────────────────────────────────────────
+// Envelope pattern: named return + defer/recover catches panics and converts
+// them to CodeInternal. Service errors go through apperr.ToWire.
+
+func (h *SettingsHandler) GetAppSettingsMetadata() (res apperr.MetadataResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(h.zlog, ae)
+			res = apperr.MetadataResult{Error: &wire}
+		}
+	}()
+	meta, err := h.settingsService.GetAppSettingsMetadata()
 	if err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to get metadata: %v", op, err))
-		return AppSettingsMetadata{}, fmt.Errorf("%s: %w", op, err)
+		wire := apperr.ToWire(h.zlog, err)
+		return apperr.MetadataResult{Error: &wire}
 	}
-
-	if metadata == nil {
-		s.logger.Error(fmt.Sprintf("%s: metadata is nil", op))
-		return AppSettingsMetadata{}, fmt.Errorf("%s: metadata is nil", op)
-	}
-
-	duration := time.Since(startTime)
-	s.logger.Debug(fmt.Sprintf("%s: successfully retrieved metadata in %v", op, duration))
-	return *metadata, nil
+	m := toWireAppSettingsMetadata(*meta)
+	return apperr.MetadataResult{Data: &m}
 }
 
-// GetSettings will be used by the first load of settings and probably each time when the settings view is opened to load everything in one call
-func (s *SettingsHandler) GetSettings() (Settings, error) {
-	const op = "SettingsHandler.GetSettings"
-	startTime := time.Now()
-	s.logger.Debug(fmt.Sprintf("%s: loading all settings", op))
-
-	settings, err := s.settingsService.GetSettings()
+func (h *SettingsHandler) GetSettings() (res apperr.SettingsResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(h.zlog, ae)
+			res = apperr.SettingsResult{Error: &wire}
+		}
+	}()
+	v2s, err := h.settingsService.GetSettings()
 	if err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to get settings: %v", op, err))
-		return Settings{}, fmt.Errorf("%s: %w", op, err)
+		wire := apperr.ToWire(h.zlog, err)
+		return apperr.SettingsResult{Error: &wire}
 	}
-
-	if settings == nil {
-		s.logger.Error(fmt.Sprintf("%s: settings are nil", op))
-		return Settings{}, fmt.Errorf("%s: settings are nil", op)
-	}
-
-	duration := time.Since(startTime)
-	s.logger.Debug(fmt.Sprintf("%s: successfully loaded settings in %v", op, duration))
-	return *settings, nil
+	s := toWireSettings(*v2s)
+	return apperr.SettingsResult{Data: &s}
 }
 
-// ResetSettingsToDefault will be used when the user wants to reset everything to default
-func (s *SettingsHandler) ResetSettingsToDefault() (Settings, error) {
-	const op = "SettingsHandler.ResetSettingsToDefault"
-	startTime := time.Now()
-	s.logger.Info(fmt.Sprintf("%s: resetting all settings to default", op))
-
-	settings, err := s.settingsService.ResetSettingsToDefault()
+func (h *SettingsHandler) ResetSettingsToDefault() (res apperr.SettingsResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(h.zlog, ae)
+			res = apperr.SettingsResult{Error: &wire}
+		}
+	}()
+	v2s, err := h.settingsService.ResetSettingsToDefault()
 	if err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to reset settings: %v", op, err))
-		return Settings{}, fmt.Errorf("%s: %w", op, err)
+		wire := apperr.ToWire(h.zlog, err)
+		return apperr.SettingsResult{Error: &wire}
 	}
-
-	if settings == nil {
-		s.logger.Error(fmt.Sprintf("%s: reset settings are nil", op))
-		return Settings{}, fmt.Errorf("%s: reset settings are nil", op)
-	}
-
-	duration := time.Since(startTime)
-	s.logger.Info(fmt.Sprintf("%s: successfully reset settings in %v", op, duration))
-	return *settings, nil
+	s := toWireSettings(*v2s)
+	return apperr.SettingsResult{Data: &s}
 }
 
-func (s *SettingsHandler) GetAllProviderConfigs() ([]ProviderConfig, error) {
-	const op = "SettingsHandler.GetAllProviderConfigs"
-	s.logger.Debug(fmt.Sprintf("%s: retrieving all provider configurations", op))
-
-	configs, err := s.settingsService.GetAllProviderConfigs()
+func (h *SettingsHandler) GetAllProviderConfigs() (res apperr.ProvidersResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(h.zlog, ae)
+			res = apperr.ProvidersResult{Error: &wire}
+		}
+	}()
+	cfgs, err := h.settingsService.GetAllProviderConfigs()
 	if err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to get provider configs: %v", op, err))
-		return nil, fmt.Errorf("%s: %w", op, err)
+		wire := apperr.ToWire(h.zlog, err)
+		return apperr.ProvidersResult{Error: &wire}
 	}
-
-	s.logger.Debug(fmt.Sprintf("%s: found %d provider configurations", op, len(configs)))
-	return configs, nil
+	out := make([]apperr.ProviderConfig, len(cfgs))
+	for i, c := range cfgs {
+		out[i] = toWireProviderConfig(c)
+	}
+	return apperr.ProvidersResult{Data: out}
 }
 
-func (s *SettingsHandler) GetCurrentProviderConfig() (ProviderConfig, error) {
-	const op = "SettingsHandler.GetCurrentProviderConfig"
-	s.logger.Debug(fmt.Sprintf("%s: retrieving current provider configuration", op))
-
-	config, err := s.settingsService.GetCurrentProviderConfig()
+func (h *SettingsHandler) GetCurrentProviderConfig() (res apperr.ProviderResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(h.zlog, ae)
+			res = apperr.ProviderResult{Error: &wire}
+		}
+	}()
+	cfg, err := h.settingsService.GetCurrentProviderConfig()
 	if err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to get current provider config: %v", op, err))
-		return ProviderConfig{}, fmt.Errorf("%s: %w", op, err)
+		wire := apperr.ToWire(h.zlog, err)
+		return apperr.ProviderResult{Error: &wire}
 	}
-
-	if config == nil {
-		s.logger.Error(fmt.Sprintf("%s: current provider config is nil", op))
-		return ProviderConfig{}, fmt.Errorf("%s: current provider config is nil", op)
-	}
-
-	return *config, nil
+	p := toWireProviderConfig(*cfg)
+	return apperr.ProviderResult{Data: &p}
 }
 
-func (s *SettingsHandler) GetProviderConfig(providerId string) (ProviderConfig, error) {
-	const op = "SettingsHandler.GetProviderConfig"
-	s.logger.Debug(fmt.Sprintf("%s: retrieving provider config by ID: %s", op, providerId))
-
-	if providerId == "" {
-		s.logger.Error(fmt.Sprintf("%s: provider ID cannot be empty", op))
-		return ProviderConfig{}, fmt.Errorf("%s: provider ID cannot be empty", op)
-	}
-
-	config, err := s.settingsService.GetProviderConfig(providerId)
+func (h *SettingsHandler) GetProviderConfig(providerId string) (res apperr.ProviderResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(h.zlog, ae)
+			res = apperr.ProviderResult{Error: &wire}
+		}
+	}()
+	cfg, err := h.settingsService.GetProviderConfig(providerId)
 	if err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to get provider config: %v", op, err))
-		return ProviderConfig{}, fmt.Errorf("%s: %w", op, err)
+		wire := apperr.ToWire(h.zlog, err)
+		return apperr.ProviderResult{Error: &wire}
 	}
-
-	if config == nil {
-		s.logger.Error(fmt.Sprintf("%s: provider config is nil for ID: %s", op, providerId))
-		return ProviderConfig{}, fmt.Errorf("%s: provider config is nil", op)
-	}
-
-	return *config, nil
+	p := toWireProviderConfig(*cfg)
+	return apperr.ProviderResult{Data: &p}
 }
 
-func (s *SettingsHandler) CreateProviderConfig(cfg ProviderConfig) (ProviderConfig, error) {
-	const op = "SettingsHandler.CreateProviderConfig"
-	startTime := time.Now()
-	s.logger.Info(fmt.Sprintf("%s: creating new provider configuration", op))
-
-	// Convert to a pointer for service call, but return copy to UI
-	result, err := s.settingsService.CreateProviderConfig(&cfg)
+func (h *SettingsHandler) CreateProviderConfig(cfg apperr.ProviderConfig) (res apperr.ProviderResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(h.zlog, ae)
+			res = apperr.ProviderResult{Error: &wire}
+		}
+	}()
+	v2cfg := fromWireProviderConfig(cfg)
+	created, err := h.settingsService.CreateProviderConfig(&v2cfg)
 	if err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to create provider config: %v", op, err))
-		return ProviderConfig{}, fmt.Errorf("%s: %w", op, err)
+		wire := apperr.ToWire(h.zlog, err)
+		return apperr.ProviderResult{Error: &wire}
 	}
-
-	if result == nil {
-		s.logger.Error(fmt.Sprintf("%s: created provider config is nil", op))
-		return ProviderConfig{}, fmt.Errorf("%s: created provider config is nil", op)
-	}
-
-	duration := time.Since(startTime)
-	s.logger.Info(fmt.Sprintf("%s: successfully created provider %q in %v", op, result.ProviderName, duration))
-	return *result, nil
+	p := toWireProviderConfig(*created)
+	return apperr.ProviderResult{Data: &p}
 }
 
-func (s *SettingsHandler) UpdateProviderConfig(cfg ProviderConfig) (ProviderConfig, error) {
-	const op = "SettingsHandler.UpdateProviderConfig"
-	startTime := time.Now()
-	s.logger.Info(fmt.Sprintf("%s: updating provider configuration: %s", op, cfg.ProviderID))
-
-	if cfg.ProviderID == "" {
-		s.logger.Error(fmt.Sprintf("%s: provider ID cannot be empty", op))
-		return ProviderConfig{}, fmt.Errorf("%s: provider ID cannot be empty", op)
-	}
-
-	// Convert to a pointer for service call, but return copy to UI
-	result, err := s.settingsService.UpdateProviderConfig(&cfg)
+func (h *SettingsHandler) UpdateProviderConfig(cfg apperr.ProviderConfig) (res apperr.ProviderResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(h.zlog, ae)
+			res = apperr.ProviderResult{Error: &wire}
+		}
+	}()
+	v2cfg := fromWireProviderConfig(cfg)
+	updated, err := h.settingsService.UpdateProviderConfig(&v2cfg)
 	if err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to update provider config: %v", op, err))
-		return ProviderConfig{}, fmt.Errorf("%s: %w", op, err)
+		wire := apperr.ToWire(h.zlog, err)
+		return apperr.ProviderResult{Error: &wire}
 	}
-
-	if result == nil {
-		s.logger.Error(fmt.Sprintf("%s: updated provider config is nil", op))
-		return ProviderConfig{}, fmt.Errorf("%s: updated provider config is nil", op)
-	}
-
-	duration := time.Since(startTime)
-	s.logger.Info(fmt.Sprintf("%s: successfully updated provider %q in %v", op, result.ProviderName, duration))
-	return *result, nil
+	p := toWireProviderConfig(*updated)
+	return apperr.ProviderResult{Data: &p}
 }
 
-func (s *SettingsHandler) DeleteProviderConfig(providerId string) error {
-	const op = "SettingsHandler.DeleteProviderConfig"
-	startTime := time.Now()
-	s.logger.Info(fmt.Sprintf("%s: deleting provider configuration: %s", op, providerId))
-
-	if providerId == "" {
-		s.logger.Error(fmt.Sprintf("%s: provider ID cannot be empty", op))
-		return fmt.Errorf("%s: provider ID cannot be empty", op)
+func (h *SettingsHandler) DeleteProviderConfig(providerId string) (res apperr.VoidResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(h.zlog, ae)
+			res = apperr.VoidResult{Error: &wire}
+		}
+	}()
+	if err := h.settingsService.DeleteProviderConfig(providerId); err != nil {
+		wire := apperr.ToWire(h.zlog, err)
+		return apperr.VoidResult{Error: &wire}
 	}
-
-	if err := s.settingsService.DeleteProviderConfig(providerId); err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to delete provider config: %v", op, err))
-		return fmt.Errorf("%s: %w", op, err)
-	}
-
-	duration := time.Since(startTime)
-	s.logger.Info(fmt.Sprintf("%s: successfully deleted provider in %v", op, duration))
-	return nil
+	return apperr.VoidResult{}
 }
 
-func (s *SettingsHandler) SetAsCurrentProviderConfig(providerId string) (ProviderConfig, error) {
-	const op = "SettingsHandler.SetAsCurrentProviderConfig"
-	startTime := time.Now()
-	s.logger.Info(fmt.Sprintf("%s: setting current provider: %s", op, providerId))
-
-	if providerId == "" {
-		s.logger.Error(fmt.Sprintf("%s: provider ID cannot be empty", op))
-		return ProviderConfig{}, fmt.Errorf("%s: provider ID cannot be empty", op)
-	}
-
-	provider, err := s.settingsService.SetAsCurrentProviderConfig(providerId)
+func (h *SettingsHandler) SetAsCurrentProviderConfig(providerId string) (res apperr.ProviderResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(h.zlog, ae)
+			res = apperr.ProviderResult{Error: &wire}
+		}
+	}()
+	cfg, err := h.settingsService.SetAsCurrentProviderConfig(providerId)
 	if err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to set current provider: %v", op, err))
-		return ProviderConfig{}, fmt.Errorf("%s: %w", op, err)
+		wire := apperr.ToWire(h.zlog, err)
+		return apperr.ProviderResult{Error: &wire}
 	}
-
-	if provider == nil {
-		s.logger.Error(fmt.Sprintf("%s: provider config is nil after setting current", op))
-		return ProviderConfig{}, fmt.Errorf("%s: provider config is nil", op)
-	}
-
-	duration := time.Since(startTime)
-	s.logger.Info(fmt.Sprintf("%s: successfully set current provider %q in %v", op, provider.ProviderName, duration))
-	return *provider, nil
+	p := toWireProviderConfig(*cfg)
+	return apperr.ProviderResult{Data: &p}
 }
 
-func (s *SettingsHandler) GetInferenceBaseConfig() (InferenceBaseConfig, error) {
-	const op = "SettingsHandler.GetInferenceBaseConfig"
-	s.logger.Debug(fmt.Sprintf("%s: retrieving inference base configuration", op))
-
-	config, err := s.settingsService.GetInferenceBaseConfig()
+func (h *SettingsHandler) GetInferenceBaseConfig() (res apperr.InferenceResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(h.zlog, ae)
+			res = apperr.InferenceResult{Error: &wire}
+		}
+	}()
+	cfg, err := h.settingsService.GetInferenceBaseConfig()
 	if err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to get inference config: %v", op, err))
-		return InferenceBaseConfig{}, fmt.Errorf("%s: %w", op, err)
+		wire := apperr.ToWire(h.zlog, err)
+		return apperr.InferenceResult{Error: &wire}
 	}
-
-	if config == nil {
-		s.logger.Error(fmt.Sprintf("%s: inference config is nil", op))
-		return InferenceBaseConfig{}, fmt.Errorf("%s: inference config is nil", op)
-	}
-
-	return *config, nil
+	ic := apperr.InferenceBaseConfig(*cfg)
+	return apperr.InferenceResult{Data: &ic}
 }
 
-func (s *SettingsHandler) UpdateInferenceBaseConfig(cfg InferenceBaseConfig) (InferenceBaseConfig, error) {
-	const op = "SettingsHandler.UpdateInferenceBaseConfig"
-	startTime := time.Now()
-	s.logger.Info(fmt.Sprintf("%s: updating inference base configuration", op))
-
-	// Convert to a pointer for service call, but return copy to UI
-	result, err := s.settingsService.UpdateInferenceBaseConfig(&cfg)
+func (h *SettingsHandler) UpdateInferenceBaseConfig(cfg apperr.InferenceBaseConfig) (res apperr.InferenceResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(h.zlog, ae)
+			res = apperr.InferenceResult{Error: &wire}
+		}
+	}()
+	v2cfg := InferenceBaseConfig(cfg)
+	updated, err := h.settingsService.UpdateInferenceBaseConfig(&v2cfg)
 	if err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to update inference config: %v", op, err))
-		return InferenceBaseConfig{}, fmt.Errorf("%s: %w", op, err)
+		wire := apperr.ToWire(h.zlog, err)
+		return apperr.InferenceResult{Error: &wire}
 	}
-
-	if result == nil {
-		s.logger.Error(fmt.Sprintf("%s: updated inference config is nil", op))
-		return InferenceBaseConfig{}, fmt.Errorf("%s: updated inference config is nil", op)
-	}
-
-	duration := time.Since(startTime)
-	s.logger.Info(fmt.Sprintf("%s: successfully updated inference config in %v", op, duration))
-	return *result, nil
+	ic := apperr.InferenceBaseConfig(*updated)
+	return apperr.InferenceResult{Data: &ic}
 }
 
-func (s *SettingsHandler) GetModelConfig() (ModelConfig, error) {
-	const op = "SettingsHandler.GetModelConfig"
-	s.logger.Debug(fmt.Sprintf("%s: retrieving model configuration", op))
-
-	config, err := s.settingsService.GetModelConfig()
+func (h *SettingsHandler) GetModelConfig() (res apperr.ModelConfigResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(h.zlog, ae)
+			res = apperr.ModelConfigResult{Error: &wire}
+		}
+	}()
+	cfg, err := h.settingsService.GetModelConfig()
 	if err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to get model config: %v", op, err))
-		return ModelConfig{}, fmt.Errorf("%s: %w", op, err)
+		wire := apperr.ToWire(h.zlog, err)
+		return apperr.ModelConfigResult{Error: &wire}
 	}
-
-	if config == nil {
-		s.logger.Error(fmt.Sprintf("%s: model config is nil", op))
-		return ModelConfig{}, fmt.Errorf("%s: model config is nil", op)
-	}
-
-	return *config, nil
+	mc := apperr.ModelConfig(*cfg)
+	return apperr.ModelConfigResult{Data: &mc}
 }
 
-func (s *SettingsHandler) UpdateModelConfig(cfg ModelConfig) (ModelConfig, error) {
-	const op = "SettingsHandler.UpdateModelConfig"
-	startTime := time.Now()
-	s.logger.Info(fmt.Sprintf("%s: updating model configuration", op))
-
-	// Convert to a pointer for service call, but return copy to UI
-	result, err := s.settingsService.UpdateModelConfig(&cfg)
+func (h *SettingsHandler) UpdateModelConfig(cfg apperr.ModelConfig) (res apperr.ModelConfigResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(h.zlog, ae)
+			res = apperr.ModelConfigResult{Error: &wire}
+		}
+	}()
+	v2cfg := ModelConfig(cfg)
+	updated, err := h.settingsService.UpdateModelConfig(&v2cfg)
 	if err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to update model config: %v", op, err))
-		return ModelConfig{}, fmt.Errorf("%s: %w", op, err)
+		wire := apperr.ToWire(h.zlog, err)
+		return apperr.ModelConfigResult{Error: &wire}
 	}
-
-	if result == nil {
-		s.logger.Error(fmt.Sprintf("%s: updated model config is nil", op))
-		return ModelConfig{}, fmt.Errorf("%s: updated model config is nil", op)
-	}
-
-	duration := time.Since(startTime)
-	s.logger.Info(fmt.Sprintf("%s: successfully updated model config in %v", op, duration))
-	return *result, nil
+	mc := apperr.ModelConfig(*updated)
+	return apperr.ModelConfigResult{Data: &mc}
 }
 
-func (s *SettingsHandler) GetLanguageConfig() (LanguageConfig, error) {
-	const op = "SettingsHandler.GetLanguageConfig"
-	s.logger.Debug(fmt.Sprintf("%s: retrieving language configuration", op))
-
-	config, err := s.settingsService.GetLanguageConfig()
+func (h *SettingsHandler) GetLanguageConfig() (res apperr.LanguageResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(h.zlog, ae)
+			res = apperr.LanguageResult{Error: &wire}
+		}
+	}()
+	cfg, err := h.settingsService.GetLanguageConfig()
 	if err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to get language config: %v", op, err))
-		return LanguageConfig{}, fmt.Errorf("%s: %w", op, err)
+		wire := apperr.ToWire(h.zlog, err)
+		return apperr.LanguageResult{Error: &wire}
 	}
-
-	if config == nil {
-		s.logger.Error(fmt.Sprintf("%s: language config is nil", op))
-		return LanguageConfig{}, fmt.Errorf("%s: language config is nil", op)
-	}
-
-	return *config, nil
+	lc := apperr.LanguageConfig(*cfg)
+	return apperr.LanguageResult{Data: &lc}
 }
 
-func (s *SettingsHandler) SetDefaultInputLanguage(language string) error {
-	const op = "SettingsHandler.SetDefaultInputLanguage"
-	s.logger.Info(fmt.Sprintf("%s: setting default input language: %s", op, language))
-
-	if err := s.settingsService.SetDefaultInputLanguage(language); err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to set default input language: %v", op, err))
-		return fmt.Errorf("%s: %w", op, err)
+func (h *SettingsHandler) SetDefaultInputLanguage(language string) (res apperr.VoidResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(h.zlog, ae)
+			res = apperr.VoidResult{Error: &wire}
+		}
+	}()
+	if err := h.settingsService.SetDefaultInputLanguage(language); err != nil {
+		wire := apperr.ToWire(h.zlog, err)
+		return apperr.VoidResult{Error: &wire}
 	}
-
-	s.logger.Info(fmt.Sprintf("%s: successfully set default input language: %s", op, language))
-	return nil
+	return apperr.VoidResult{}
 }
 
-func (s *SettingsHandler) SetDefaultOutputLanguage(language string) error {
-	const op = "SettingsHandler.SetDefaultOutputLanguage"
-	s.logger.Info(fmt.Sprintf("%s: setting default output language: %s", op, language))
-
-	if err := s.settingsService.SetDefaultOutputLanguage(language); err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to set default output language: %v", op, err))
-		return fmt.Errorf("%s: %w", op, err)
+func (h *SettingsHandler) SetDefaultOutputLanguage(language string) (res apperr.VoidResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(h.zlog, ae)
+			res = apperr.VoidResult{Error: &wire}
+		}
+	}()
+	if err := h.settingsService.SetDefaultOutputLanguage(language); err != nil {
+		wire := apperr.ToWire(h.zlog, err)
+		return apperr.VoidResult{Error: &wire}
 	}
-
-	s.logger.Info(fmt.Sprintf("%s: successfully set default output language: %s", op, language))
-	return nil
+	return apperr.VoidResult{}
 }
 
-func (s *SettingsHandler) AddLanguage(language string) ([]string, error) {
-	const op = "SettingsHandler.AddLanguage"
-	startTime := time.Now()
-	s.logger.Info(fmt.Sprintf("%s: adding language: %s", op, language))
-
-	languages, err := s.settingsService.AddLanguage(language)
+func (h *SettingsHandler) AddLanguage(language string) (res apperr.LanguagesResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(h.zlog, ae)
+			res = apperr.LanguagesResult{Error: &wire}
+		}
+	}()
+	langs, err := h.settingsService.AddLanguage(language)
 	if err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to add language: %v", op, err))
-		return nil, fmt.Errorf("%s: %w", op, err)
+		wire := apperr.ToWire(h.zlog, err)
+		return apperr.LanguagesResult{Error: &wire}
 	}
-
-	duration := time.Since(startTime)
-	s.logger.Info(fmt.Sprintf("%s: successfully added language %q in %v, total languages: %d", op, language, duration, len(languages)))
-	return languages, nil
+	return apperr.LanguagesResult{Data: langs}
 }
 
-func (s *SettingsHandler) RemoveLanguage(language string) ([]string, error) {
-	const op = "SettingsHandler.RemoveLanguage"
-	startTime := time.Now()
-	s.logger.Info(fmt.Sprintf("%s: removing language: %s", op, language))
-
-	languages, err := s.settingsService.RemoveLanguage(language)
+func (h *SettingsHandler) RemoveLanguage(language string) (res apperr.LanguagesResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(h.zlog, ae)
+			res = apperr.LanguagesResult{Error: &wire}
+		}
+	}()
+	langs, err := h.settingsService.RemoveLanguage(language)
 	if err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to remove language: %v", op, err))
-		return nil, fmt.Errorf("%s: %w", op, err)
+		wire := apperr.ToWire(h.zlog, err)
+		return apperr.LanguagesResult{Error: &wire}
 	}
-
-	duration := time.Since(startTime)
-	s.logger.Info(fmt.Sprintf("%s: successfully removed language %q in %v, remaining languages: %d", op, language, duration, len(languages)))
-	return languages, nil
+	return apperr.LanguagesResult{Data: langs}
 }
 
-func (s *SettingsHandler) GetAppBehaviorConfig() (AppBehaviorConfig, error) {
-	const op = "SettingsHandler.GetAppBehaviorConfig"
-	s.logger.Debug(fmt.Sprintf("%s: retrieving app behavior configuration", op))
-
-	config, err := s.settingsService.GetAppBehaviorConfig()
+func (h *SettingsHandler) GetAppBehaviorConfig() (res apperr.AppBehaviorResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(h.zlog, ae)
+			res = apperr.AppBehaviorResult{Error: &wire}
+		}
+	}()
+	cfg, err := h.settingsService.GetAppBehaviorConfig()
 	if err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to get app behavior config: %v", op, err))
-		return AppBehaviorConfig{}, fmt.Errorf("%s: %w", op, err)
+		wire := apperr.ToWire(h.zlog, err)
+		return apperr.AppBehaviorResult{Error: &wire}
 	}
-
-	if config == nil {
-		s.logger.Error(fmt.Sprintf("%s: app behavior config is nil", op))
-		return AppBehaviorConfig{}, fmt.Errorf("%s: app behavior config is nil", op)
-	}
-
-	return *config, nil
+	ab := toWireAppBehaviorConfig(*cfg)
+	return apperr.AppBehaviorResult{Data: &ab}
 }
 
-func (s *SettingsHandler) UpdateAppBehaviorConfig(cfg AppBehaviorConfig) (AppBehaviorConfig, error) {
-	const op = "SettingsHandler.UpdateAppBehaviorConfig"
-	startTime := time.Now()
-	s.logger.Info(fmt.Sprintf("%s: updating app behavior configuration", op))
-
-	result, err := s.settingsService.UpdateAppBehaviorConfig(&cfg)
+func (h *SettingsHandler) UpdateAppBehaviorConfig(cfg apperr.AppBehaviorConfig) (res apperr.AppBehaviorResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(h.zlog, ae)
+			res = apperr.AppBehaviorResult{Error: &wire}
+		}
+	}()
+	v2cfg := fromWireAppBehaviorConfig(cfg)
+	updated, err := h.settingsService.UpdateAppBehaviorConfig(&v2cfg)
 	if err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to update app behavior config: %v", op, err))
-		return AppBehaviorConfig{}, fmt.Errorf("%s: %w", op, err)
+		wire := apperr.ToWire(h.zlog, err)
+		return apperr.AppBehaviorResult{Error: &wire}
 	}
-
-	if result == nil {
-		s.logger.Error(fmt.Sprintf("%s: updated app behavior config is nil", op))
-		return AppBehaviorConfig{}, fmt.Errorf("%s: updated app behavior config is nil", op)
-	}
-
-	duration := time.Since(startTime)
-	s.logger.Info(fmt.Sprintf("%s: successfully updated app behavior config in %v", op, duration))
-	return *result, nil
+	ab := toWireAppBehaviorConfig(*updated)
+	return apperr.AppBehaviorResult{Data: &ab}
 }

@@ -81,6 +81,34 @@ Repository  (settings/repository.go → JSON file on disk)
 - `internal/logging/` — zerolog wrapper bridged to Wails logger
 - `internal/tasklog/` — `TaskLogService`: appends JSONL task-execution records to daily log files; controlled by `AppBehaviorConfig`
 - `internal/file/` — `FileUtilsService`: OS-specific path resolution for settings and logs directories
+- `internal/apperr/` — `AppError`, `ErrorCode`, `WireError`, `ToWire`, and all `*Result` envelope types
+
+### Handler Boundary Convention
+
+All Wails-bound handler methods **must** follow the result-envelope pattern:
+- Return a concrete `apperr.*Result` struct — never `(T, error)`.
+- Use a named return + `defer/recover` to convert panics to `apperr.CodeInternal`.
+- Call `apperr.ToWire(h.zlog, err)` for any service error before returning.
+- Inner services keep `(T, error)` signatures — the envelope is handler-boundary only.
+- After any bound-signature change, run `wails generate module` to regenerate TypeScript bindings.
+
+```go
+func (h *XxxHandler) DoSomething() (res apperr.XxxResult) {
+    defer func() {
+        if r := recover(); r != nil {
+            ae := apperr.Internal(fmt.Errorf("panic: %v", r))
+            wire := apperr.ToWire(h.zlog, ae)
+            res = apperr.XxxResult{Error: &wire}
+        }
+    }()
+    data, err := h.service.DoSomething()
+    if err != nil {
+        wire := apperr.ToWire(h.zlog, err)
+        return apperr.XxxResult{Error: &wire}
+    }
+    return apperr.XxxResult{Data: data}
+}
+```
 
 ### Frontend (React/TypeScript, `frontend/src/`)
 
@@ -126,7 +154,7 @@ JSON at platform-specific paths:
 
 ## Testing
 
-Backend integration tests use `net/http/httptest` to mock LLM providers — see `internal/llms/service_integration_test.go` and `internal/actions/handler_integration_test.go`. No external LLM needed for tests.
+Backend integration tests use `net/http/httptest` to mock LLM providers — see `internal/llms/service_integration_test.go`. No external LLM needed for tests.
 
 Frontend uses Jest. Redux async thunks are testable without a real backend.
 

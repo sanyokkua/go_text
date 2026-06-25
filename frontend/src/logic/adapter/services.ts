@@ -1,11 +1,4 @@
-import {
-    GetCompletionResponseForProvider,
-    GetModelsList,
-    GetModelsListForProvider,
-    GetPromptGroups,
-    ProcessPrompt,
-} from '../../../wailsjs/go/actions/ActionHandler';
-import { llms, settings } from '../../../wailsjs/go/models';
+import { apperr } from '../../../wailsjs/go/models';
 import {
     AddLanguage,
     CreateProviderConfig,
@@ -43,6 +36,64 @@ import {
     ProviderConfig,
     Settings,
 } from './models';
+
+// ─── v3 → v2 field mappers (T04 bridge; T19 replaces with real v3 frontend) ───
+
+function unwrapOrThrow<T>(result: { data?: T; error?: apperr.WireError }): T {
+    if (result.error) {
+        throw new Error(`${result.error.title}: ${result.error.message}`);
+    }
+    if (result.data === undefined) {
+        throw new Error('No data in result envelope');
+    }
+    return result.data;
+}
+
+function fromWireProvider(v: apperr.ProviderConfig): ProviderConfig {
+    return {
+        providerId: v.id,
+        providerName: v.name,
+        providerType: v.kind,
+        baseUrl: v.baseUrl,
+        modelsEndpoint: v.modelsPath,
+        completionEndpoint: v.completionPath,
+        authType: v.authScheme,
+        authToken: '',
+        useAuthTokenFromEnv: !!v.apiKeyEnvVar,
+        envVarTokenName: v.apiKeyEnvVar,
+        useCustomHeaders: Object.keys(v.headers ?? {}).length > 0,
+        headers: v.headers ?? {},
+        useCustomModels: v.useCustomModels,
+        customModels: v.customModels ?? [],
+    };
+}
+
+function toWireProvider(v: ProviderConfig): apperr.ProviderConfig {
+    return apperr.ProviderConfig.createFrom({
+        id: v.providerId,
+        name: v.providerName,
+        kind: v.providerType,
+        baseUrl: v.baseUrl,
+        authScheme: v.authType,
+        apiKeyEnvVar: v.envVarTokenName,
+        completionPath: v.completionEndpoint,
+        modelsPath: v.modelsEndpoint,
+        useCustomModels: v.useCustomModels,
+        headers: v.headers,
+        customModels: v.customModels,
+    });
+}
+
+function fromWireSettings(v: apperr.Settings): Settings {
+    return {
+        availableProviderConfigs: (v.availableProviderConfigs ?? []).map(fromWireProvider),
+        currentProviderConfig: fromWireProvider(v.currentProviderConfig),
+        inferenceBaseConfig: v.inferenceBaseConfig,
+        modelConfig: v.modelConfig,
+        languageConfig: v.languageConfig,
+        appBehaviorConfig: { enableTaskLogging: v.appBehaviorConfig.enableTaskLogging, logDirectory: '' },
+    };
+}
 
 /**
  * Formats log messages with service context for consistent logging structure
@@ -132,119 +183,39 @@ export class LoggerService implements ILoggerService {
  * Action Handler Service Implementation
  *
  * Concrete implementation of IActionHandler that bridges frontend UI with backend LLM services.
- * Handles all AI-related operations including completion requests, model management, and prompt processing.
- *
- * Key Responsibilities:
- * - Converting frontend models to Wails-compatible formats
- * - Error handling and logging for all LLM operations
- * - Managing provider-specific operations
- * - Processing user-initiated prompt actions
+ * All v2 methods are stubbed — the v3 chain API replaces them in T19.
  */
 export class ActionHandler implements IActionHandler {
     constructor(private readonly logger: ILoggerService) {}
 
-    /**
-     * Gets completion response from a specific provider
-     *
-     * @param providerConfig - Provider configuration to use
-     * @param chatCompletionRequest - Complete request with a model, messages, and parameters
-     * @returns Generated completion text
-     * @throws Rejects with original error if operation fails
-     */
-    async getCompletionResponseForProvider(providerConfig: ProviderConfig, chatCompletionRequest: ChatCompletionRequest): Promise<string> {
-        try {
-            this.logger.logInfo(
-                `Attempt to call Wails generated GetCompletionResponseForProvider with provider: ${providerConfig.providerName}, request: ${JSON.stringify(chatCompletionRequest)}`,
-            );
-            const wailsProviderConfig = settings.ProviderConfig.createFrom(providerConfig);
-            const wailsChatCompletionRequest = llms.ChatCompletionRequest.createFrom(chatCompletionRequest);
-            const result = await GetCompletionResponseForProvider(wailsProviderConfig, wailsChatCompletionRequest);
-            this.logger.logInfo(`Wails generated GetCompletionResponseForProvider completed successfully`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated GetCompletionResponseForProvider failed: ${err.message}`);
-            return Promise.reject(error);
-        }
+    async getCompletionResponseForProvider(_providerConfig: ProviderConfig, _chatCompletionRequest: ChatCompletionRequest): Promise<string> {
+        // T19 — v2 method removed; replaced by v3 chain API
+        this.logger.logError('getCompletionResponseForProvider: not implemented in v3; see T19');
+        throw new Error('Not implemented in v3; see T19');
     }
 
-    /**
-     * Retrieves a list of available models from current provider
-     *
-     * @returns Array of model names
-     * @throws Rejects with original error if operation fails
-     */
     async getModelsList(): Promise<Array<string>> {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated GetModelsList`);
-            const result = await GetModelsList();
-            this.logger.logInfo(`Wails generated GetModelsList completed successfully, found ${result.length} models`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated GetModelsList failed: ${err.message}`);
-            return Promise.reject(error);
-        }
+        // T19 — v2 method removed; replaced by v3 chain API
+        this.logger.logError('getModelsList: not implemented in v3; see T19');
+        throw new Error('Not implemented in v3; see T19');
     }
 
-    /**
-     * Retrieves a list of available models from specific provider
-     *
-     * @param providerConfig - Provider configuration to query
-     * @returns Array of model names
-     * @throws Rejects with original error if operation fails
-     */
-    async getModelsListForProvider(providerConfig: ProviderConfig): Promise<Array<string>> {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated GetModelsListForProvider with provider: ${providerConfig.providerName}`);
-            const result = await GetModelsListForProvider(providerConfig);
-            this.logger.logInfo(`Wails generated GetModelsListForProvider completed successfully, found ${result.length} models`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated GetModelsListForProvider failed: ${err.message}`);
-            return Promise.reject(error);
-        }
+    async getModelsListForProvider(_providerConfig: ProviderConfig): Promise<Array<string>> {
+        // T19 — v2 method removed; replaced by v3 chain API
+        this.logger.logError('getModelsListForProvider: not implemented in v3; see T19');
+        throw new Error('Not implemented in v3; see T19');
     }
 
-    /**
-     * Retrieves all available prompt groups
-     *
-     * @returns Complete prompts collection with all groups and individual prompts
-     * @throws Rejects with original error if operation fails
-     */
     async getPromptGroups(): Promise<Prompts> {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated GetPromptGroups`);
-            const result = await GetPromptGroups();
-            const groupCount = Object.keys(result.promptGroups).length;
-            this.logger.logInfo(`Wails generated GetPromptGroups completed successfully, found ${groupCount} prompt groups`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated GetPromptGroups failed: ${err.message}`);
-            return Promise.reject(error);
-        }
+        // T19 — v2 method removed; replaced by v3 chain API
+        this.logger.logError('getPromptGroups: not implemented in v3; see T19');
+        throw new Error('Not implemented in v3; see T19');
     }
 
-    /**
-     * Processes a specific prompt action with user input
-     *
-     * @param promptActionRequest - Request containing prompt ID, input text, and language config
-     * @returns Generated output text from prompt processing
-     * @throws Rejects with original error if operation fails
-     */
-    async processPrompt(promptActionRequest: PromptActionRequest): Promise<string> {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated ProcessPrompt with request: ${JSON.stringify(promptActionRequest)}`);
-            const result = await ProcessPrompt(promptActionRequest);
-            this.logger.logInfo(`Wails generated ProcessPrompt completed successfully`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated ProcessPrompt failed: ${err.message}`);
-            return Promise.reject(error);
-        }
+    async processPrompt(_promptActionRequest: PromptActionRequest): Promise<string> {
+        // T19 — v2 method removed; replaced by v3 chain API
+        this.logger.logError('processPrompt: not implemented in v3; see T19');
+        throw new Error('Not implemented in v3; see T19');
     }
 }
 /**
@@ -274,12 +245,13 @@ export class SettingsHandler implements ISettingsHandler {
         try {
             this.logger.logInfo(`Attempt to call Wails generated AddLanguage with language: ${language}`);
             const result = await AddLanguage(language);
-            this.logger.logInfo(`Wails generated AddLanguage completed successfully, languages count: ${result.length}`);
-            return result;
+            const data = result.data ?? [];
+            this.logger.logInfo(`Wails generated AddLanguage completed successfully, languages count: ${data.length}`);
+            return data;
         } catch (error) {
             const err = parseError(error);
             this.logger.logError(`Wails generated AddLanguage failed: ${err.message}`);
-            return Promise.reject(error);
+            throw error;
         }
     }
 
@@ -293,14 +265,14 @@ export class SettingsHandler implements ISettingsHandler {
     async createProviderConfig(providerConfig: ProviderConfig): Promise<ProviderConfig> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated CreateProviderConfig with provider: ${providerConfig.providerName}`);
-            const wailsProviderConfig = settings.ProviderConfig.createFrom(providerConfig);
-            const result = await CreateProviderConfig(wailsProviderConfig);
-            this.logger.logInfo(`Wails generated CreateProviderConfig completed successfully for provider: ${result.providerName}`);
-            return result;
+            const result = await CreateProviderConfig(toWireProvider(providerConfig));
+            const data = fromWireProvider(unwrapOrThrow(result));
+            this.logger.logInfo(`Wails generated CreateProviderConfig completed successfully for provider: ${data.providerName}`);
+            return data;
         } catch (error) {
             const err = parseError(error);
             this.logger.logError(`Wails generated CreateProviderConfig failed: ${err.message}`);
-            return Promise.reject(error);
+            throw error;
         }
     }
 
@@ -313,12 +285,15 @@ export class SettingsHandler implements ISettingsHandler {
     async deleteProviderConfig(providerId: string): Promise<void> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated DeleteProviderConfig with providerId: ${providerId}`);
-            await DeleteProviderConfig(providerId);
+            const result = await DeleteProviderConfig(providerId);
+            if (result.error) {
+                throw new Error(`${result.error.title}: ${result.error.message}`);
+            }
             this.logger.logInfo(`Wails generated DeleteProviderConfig completed successfully`);
         } catch (error) {
             const err = parseError(error);
             this.logger.logError(`Wails generated DeleteProviderConfig failed: ${err.message}`);
-            return Promise.reject(error);
+            throw error;
         }
     }
 
@@ -332,12 +307,13 @@ export class SettingsHandler implements ISettingsHandler {
         try {
             this.logger.logInfo(`Attempt to call Wails generated GetAllProviderConfigs`);
             const result = await GetAllProviderConfigs();
-            this.logger.logInfo(`Wails generated GetAllProviderConfigs completed successfully, found ${result.length} providers`);
-            return result;
+            const data = (result.data ?? []).map(fromWireProvider);
+            this.logger.logInfo(`Wails generated GetAllProviderConfigs completed successfully, found ${data.length} providers`);
+            return data;
         } catch (error) {
             const err = parseError(error);
             this.logger.logError(`Wails generated GetAllProviderConfigs failed: ${err.message}`);
-            return Promise.reject(error);
+            throw error;
         }
     }
 
@@ -351,12 +327,20 @@ export class SettingsHandler implements ISettingsHandler {
         try {
             this.logger.logInfo(`Attempt to call Wails generated GetAppSettingsMetadata`);
             const result = await GetAppSettingsMetadata();
+            const wire = unwrapOrThrow(result);
+            const data: AppSettingsMetadata = {
+                authTypes: wire.authSchemes,
+                providerTypes: wire.providerKinds,
+                settingsFolder: wire.settingsFolder,
+                settingsFile: wire.databaseFile,
+                logsFolder: wire.logsFolder,
+            };
             this.logger.logInfo(`Wails generated GetAppSettingsMetadata completed successfully`);
-            return result;
+            return data;
         } catch (error) {
             const err = parseError(error);
             this.logger.logError(`Wails generated GetAppSettingsMetadata failed: ${err.message}`);
-            return Promise.reject(error);
+            throw error;
         }
     }
 
@@ -370,12 +354,13 @@ export class SettingsHandler implements ISettingsHandler {
         try {
             this.logger.logInfo(`Attempt to call Wails generated GetCurrentProviderConfig`);
             const result = await GetCurrentProviderConfig();
-            this.logger.logInfo(`Wails generated GetCurrentProviderConfig completed successfully for provider: ${result.providerName}`);
-            return result;
+            const data = fromWireProvider(unwrapOrThrow(result));
+            this.logger.logInfo(`Wails generated GetCurrentProviderConfig completed successfully for provider: ${data.providerName}`);
+            return data;
         } catch (error) {
             const err = parseError(error);
             this.logger.logError(`Wails generated GetCurrentProviderConfig failed: ${err.message}`);
-            return Promise.reject(error);
+            throw error;
         }
     }
 
@@ -389,12 +374,13 @@ export class SettingsHandler implements ISettingsHandler {
         try {
             this.logger.logInfo(`Attempt to call Wails generated GetInferenceBaseConfig`);
             const result = await GetInferenceBaseConfig();
+            const data = unwrapOrThrow(result);
             this.logger.logInfo(`Wails generated GetInferenceBaseConfig completed successfully`);
-            return result;
+            return data;
         } catch (error) {
             const err = parseError(error);
             this.logger.logError(`Wails generated GetInferenceBaseConfig failed: ${err.message}`);
-            return Promise.reject(error);
+            throw error;
         }
     }
 
@@ -408,12 +394,13 @@ export class SettingsHandler implements ISettingsHandler {
         try {
             this.logger.logInfo(`Attempt to call Wails generated GetLanguageConfig`);
             const result = await GetLanguageConfig();
-            this.logger.logInfo(`Wails generated GetLanguageConfig completed successfully, languages count: ${result.languages.length}`);
-            return result;
+            const data = unwrapOrThrow(result);
+            this.logger.logInfo(`Wails generated GetLanguageConfig completed successfully, languages count: ${data.languages.length}`);
+            return data;
         } catch (error) {
             const err = parseError(error);
             this.logger.logError(`Wails generated GetLanguageConfig failed: ${err.message}`);
-            return Promise.reject(error);
+            throw error;
         }
     }
 
@@ -427,12 +414,13 @@ export class SettingsHandler implements ISettingsHandler {
         try {
             this.logger.logInfo(`Attempt to call Wails generated GetModelConfig`);
             const result = await GetModelConfig();
-            this.logger.logInfo(`Wails generated GetModelConfig completed successfully for model: ${result.name}`);
-            return result;
+            const data = unwrapOrThrow(result);
+            this.logger.logInfo(`Wails generated GetModelConfig completed successfully for model: ${data.name}`);
+            return data;
         } catch (error) {
             const err = parseError(error);
             this.logger.logError(`Wails generated GetModelConfig failed: ${err.message}`);
-            return Promise.reject(error);
+            throw error;
         }
     }
 
@@ -446,12 +434,13 @@ export class SettingsHandler implements ISettingsHandler {
         try {
             this.logger.logInfo(`Attempt to call Wails generated GetSettings`);
             const result = await GetSettings();
-            this.logger.logInfo(`Wails generated GetSettings completed successfully, providers count: ${result.availableProviderConfigs.length}`);
-            return result;
+            const data = fromWireSettings(unwrapOrThrow(result));
+            this.logger.logInfo(`Wails generated GetSettings completed successfully, providers count: ${data.availableProviderConfigs.length}`);
+            return data;
         } catch (error) {
             const err = parseError(error);
             this.logger.logError(`Wails generated GetSettings failed: ${err.message}`);
-            return Promise.reject(error);
+            throw error;
         }
     }
 
@@ -466,12 +455,13 @@ export class SettingsHandler implements ISettingsHandler {
         try {
             this.logger.logInfo(`Attempt to call Wails generated RemoveLanguage with language: ${language}`);
             const result = await RemoveLanguage(language);
-            this.logger.logInfo(`Wails generated RemoveLanguage completed successfully, languages count: ${result.length}`);
-            return result;
+            const data = result.data ?? [];
+            this.logger.logInfo(`Wails generated RemoveLanguage completed successfully, languages count: ${data.length}`);
+            return data;
         } catch (error) {
             const err = parseError(error);
             this.logger.logError(`Wails generated RemoveLanguage failed: ${err.message}`);
-            return Promise.reject(error);
+            throw error;
         }
     }
 
@@ -485,12 +475,13 @@ export class SettingsHandler implements ISettingsHandler {
         try {
             this.logger.logInfo(`Attempt to call Wails generated ResetSettingsToDefault`);
             const result = await ResetSettingsToDefault();
+            const data = fromWireSettings(unwrapOrThrow(result));
             this.logger.logInfo(`Wails generated ResetSettingsToDefault completed successfully`);
-            return result;
+            return data;
         } catch (error) {
             const err = parseError(error);
             this.logger.logError(`Wails generated ResetSettingsToDefault failed: ${err.message}`);
-            return Promise.reject(error);
+            throw error;
         }
     }
 
@@ -505,12 +496,13 @@ export class SettingsHandler implements ISettingsHandler {
         try {
             this.logger.logInfo(`Attempt to call Wails generated SetAsCurrentProviderConfig with providerId: ${providerId}`);
             const result = await SetAsCurrentProviderConfig(providerId);
-            this.logger.logInfo(`Wails generated SetAsCurrentProviderConfig completed successfully for provider: ${result.providerName}`);
-            return result;
+            const data = fromWireProvider(unwrapOrThrow(result));
+            this.logger.logInfo(`Wails generated SetAsCurrentProviderConfig completed successfully for provider: ${data.providerName}`);
+            return data;
         } catch (error) {
             const err = parseError(error);
             this.logger.logError(`Wails generated SetAsCurrentProviderConfig failed: ${err.message}`);
-            return Promise.reject(error);
+            throw error;
         }
     }
 
@@ -523,12 +515,15 @@ export class SettingsHandler implements ISettingsHandler {
     async setDefaultInputLanguage(language: string): Promise<void> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated SetDefaultInputLanguage with language: ${language}`);
-            await SetDefaultInputLanguage(language);
+            const result = await SetDefaultInputLanguage(language);
+            if (result.error) {
+                throw new Error(`${result.error.title}: ${result.error.message}`);
+            }
             this.logger.logInfo(`Wails generated SetDefaultInputLanguage completed successfully`);
         } catch (error) {
             const err = parseError(error);
             this.logger.logError(`Wails generated SetDefaultInputLanguage failed: ${err.message}`);
-            return Promise.reject(error);
+            throw error;
         }
     }
 
@@ -541,12 +536,15 @@ export class SettingsHandler implements ISettingsHandler {
     async setDefaultOutputLanguage(language: string): Promise<void> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated SetDefaultOutputLanguage with language: ${language}`);
-            await SetDefaultOutputLanguage(language);
+            const result = await SetDefaultOutputLanguage(language);
+            if (result.error) {
+                throw new Error(`${result.error.title}: ${result.error.message}`);
+            }
             this.logger.logInfo(`Wails generated SetDefaultOutputLanguage completed successfully`);
         } catch (error) {
             const err = parseError(error);
             this.logger.logError(`Wails generated SetDefaultOutputLanguage failed: ${err.message}`);
-            return Promise.reject(error);
+            throw error;
         }
     }
 
@@ -560,14 +558,14 @@ export class SettingsHandler implements ISettingsHandler {
     async updateInferenceBaseConfig(inferenceBaseConfig: InferenceBaseConfig): Promise<InferenceBaseConfig> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated UpdateInferenceBaseConfig`);
-            const wailsInferenceBaseConfig = settings.InferenceBaseConfig.createFrom(inferenceBaseConfig);
-            const result = await UpdateInferenceBaseConfig(wailsInferenceBaseConfig);
+            const result = await UpdateInferenceBaseConfig(apperr.InferenceBaseConfig.createFrom(inferenceBaseConfig));
+            const data = unwrapOrThrow(result);
             this.logger.logInfo(`Wails generated UpdateInferenceBaseConfig completed successfully`);
-            return result;
+            return data;
         } catch (error) {
             const err = parseError(error);
             this.logger.logError(`Wails generated UpdateInferenceBaseConfig failed: ${err.message}`);
-            return Promise.reject(error);
+            throw error;
         }
     }
 
@@ -581,14 +579,14 @@ export class SettingsHandler implements ISettingsHandler {
     async updateModelConfig(modelConfig: ModelConfig): Promise<ModelConfig> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated UpdateModelConfig with model: ${modelConfig.name}`);
-            const wailsModelConfig = settings.ModelConfig.createFrom(modelConfig);
-            const result = await UpdateModelConfig(wailsModelConfig);
-            this.logger.logInfo(`Wails generated UpdateModelConfig completed successfully for model: ${result.name}`);
-            return result;
+            const result = await UpdateModelConfig(apperr.ModelConfig.createFrom(modelConfig));
+            const data = unwrapOrThrow(result);
+            this.logger.logInfo(`Wails generated UpdateModelConfig completed successfully for model: ${data.name}`);
+            return data;
         } catch (error) {
             const err = parseError(error);
             this.logger.logError(`Wails generated UpdateModelConfig failed: ${err.message}`);
-            return Promise.reject(error);
+            throw error;
         }
     }
 
@@ -602,14 +600,14 @@ export class SettingsHandler implements ISettingsHandler {
     async updateProviderConfig(providerConfig: ProviderConfig): Promise<ProviderConfig> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated UpdateProviderConfig with provider: ${providerConfig.providerName}`);
-            const wailsProviderConfig = settings.ProviderConfig.createFrom(providerConfig);
-            const result = await UpdateProviderConfig(wailsProviderConfig);
-            this.logger.logInfo(`Wails generated UpdateProviderConfig completed successfully for provider: ${result.providerName}`);
-            return result;
+            const result = await UpdateProviderConfig(toWireProvider(providerConfig));
+            const data = fromWireProvider(unwrapOrThrow(result));
+            this.logger.logInfo(`Wails generated UpdateProviderConfig completed successfully for provider: ${data.providerName}`);
+            return data;
         } catch (error) {
             const err = parseError(error);
             this.logger.logError(`Wails generated UpdateProviderConfig failed: ${err.message}`);
-            return Promise.reject(error);
+            throw error;
         }
     }
 
@@ -623,12 +621,14 @@ export class SettingsHandler implements ISettingsHandler {
         try {
             this.logger.logInfo(`Attempt to call Wails generated GetAppBehaviorConfig`);
             const result = await GetAppBehaviorConfig();
+            const wire = unwrapOrThrow(result);
+            const data: AppBehaviorConfig = { enableTaskLogging: wire.enableTaskLogging, logDirectory: '' };
             this.logger.logInfo(`Wails generated GetAppBehaviorConfig completed successfully`);
-            return result;
+            return data;
         } catch (error) {
             const err = parseError(error);
             this.logger.logError(`Wails generated GetAppBehaviorConfig failed: ${err.message}`);
-            return Promise.reject(error);
+            throw error;
         }
     }
 
@@ -642,14 +642,15 @@ export class SettingsHandler implements ISettingsHandler {
     async updateAppBehaviorConfig(config: AppBehaviorConfig): Promise<AppBehaviorConfig> {
         try {
             this.logger.logInfo(`Attempt to call Wails generated UpdateAppBehaviorConfig`);
-            const wailsConfig = settings.AppBehaviorConfig.createFrom(config);
-            const result = await UpdateAppBehaviorConfig(wailsConfig);
+            const result = await UpdateAppBehaviorConfig(apperr.AppBehaviorConfig.createFrom({ enableTaskLogging: config.enableTaskLogging }));
+            const wire = unwrapOrThrow(result);
+            const data: AppBehaviorConfig = { enableTaskLogging: wire.enableTaskLogging, logDirectory: '' };
             this.logger.logInfo(`Wails generated UpdateAppBehaviorConfig completed successfully`);
-            return result;
+            return data;
         } catch (error) {
             const err = parseError(error);
             this.logger.logError(`Wails generated UpdateAppBehaviorConfig failed: ${err.message}`);
-            return Promise.reject(error);
+            throw error;
         }
     }
 }
@@ -671,7 +672,7 @@ export class ClipboardService implements IClipboardService {
         } catch (error) {
             const err = parseError(error);
             this.logger.logError(`Wails generated ClipboardGetText failed: ${err.message}`);
-            return Promise.reject(error);
+            throw error;
         }
     }
 
@@ -691,7 +692,7 @@ export class ClipboardService implements IClipboardService {
         } catch (error) {
             const err = parseError(error);
             this.logger.logError(`Wails generated ClipboardSetText failed: ${err.message}`);
-            return Promise.reject(error);
+            throw error;
         }
     }
 }

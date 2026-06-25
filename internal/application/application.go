@@ -9,6 +9,7 @@ import (
 	"go_text/internal/settings"
 	"go_text/internal/tasklog"
 
+	zlog "github.com/rs/zerolog/log"
 	"github.com/wailsapp/wails/v2/pkg/logger"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"resty.dev/v3"
@@ -16,24 +17,24 @@ import (
 
 type ApplicationContextHolder struct {
 	ctx             context.Context
-	SettingsHandler settings.SettingsHandlerAPI
+	SettingsHandler *settings.SettingsHandler
 	SettingsService settings.SettingsServiceAPI
-	ActionHandler   actions.ActionHandlerAPI
+	ActionHandler   *actions.ActionHandler
 	RestyClient     *resty.Client
 }
 
 // ApplicationContextHolder creates a new App application struct
-func NewApplicationContextHolder(logger logger.Logger, restyClient *resty.Client) *ApplicationContextHolder {
-	fileUtilsService := file.NewFileUtilsService(logger)
-	settingsRepo := settings.NewSettingsRepository(logger, fileUtilsService)
-	settingsService := settings.NewSettingsService(logger, settingsRepo, fileUtilsService)
-	settingsHandler := settings.NewSettingsHandler(logger, settingsService)
+func NewApplicationContextHolder(wailsLogger logger.Logger, restyClient *resty.Client) *ApplicationContextHolder {
+	fileUtilsService := file.NewFileUtilsService(wailsLogger)
+	settingsRepo := settings.NewSettingsRepository(wailsLogger, fileUtilsService)
+	settingsService := settings.NewSettingsService(wailsLogger, settingsRepo, fileUtilsService)
+	settingsHandler := settings.NewSettingsHandler(wailsLogger, zlog.Logger, settingsService)
 
-	taskLogService := tasklog.NewTaskLogService(logger, settingsService, fileUtilsService)
-	promptService := prompts.NewPromptService(logger)
-	llmService := llms.NewLLMApiService(logger, restyClient, settingsService)
-	actionService := actions.NewActionService(logger, promptService, llmService, settingsService, taskLogService)
-	actionHandler := actions.NewActionHandler(logger, actionService)
+	taskLogService := tasklog.NewTaskLogService(wailsLogger, settingsService, fileUtilsService)
+	promptService := prompts.NewPromptService(wailsLogger)
+	llmService := llms.NewLLMApiService(wailsLogger, restyClient, settingsService)
+	actionService := actions.NewActionService(wailsLogger, promptService, llmService, settingsService, taskLogService)
+	actionHandler := actions.NewActionHandler(wailsLogger, zlog.Logger, actionService)
 
 	return &ApplicationContextHolder{
 		SettingsHandler: settingsHandler,
