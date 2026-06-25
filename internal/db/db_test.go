@@ -134,6 +134,19 @@ func TestSeed_FactoryReset_RepopulatesDefaults(t *testing.T) {
 	stacks, err := database.Queries.ListStacks(ctx)
 	require.NoError(t, err)
 	assert.Len(t, stacks, 17)
+
+	settings, err := database.Queries.ListSettings(ctx)
+	require.NoError(t, err)
+	assert.Len(t, settings, 24)
+
+	langs, err := database.Queries.ListLanguages(ctx)
+	require.NoError(t, err)
+	assert.Len(t, langs, 15)
+
+	provID, err := database.Queries.GetCurrentProviderID(ctx)
+	require.NoError(t, err)
+	assert.True(t, provID.Valid)
+	assert.NotEmpty(t, provID.String)
 }
 
 func TestSeed_Idempotent_WhenCalledTwice(t *testing.T) {

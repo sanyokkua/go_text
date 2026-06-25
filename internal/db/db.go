@@ -121,19 +121,33 @@ func (d *Database) migrate() error {
 
 // seedIfEmpty is called from Open; inserts all defaults when the DB is new.
 // "New" is detected by providers count = 0.
+// It opens its own transaction and calls seedDefaults only — it never wipes.
 func (d *Database) seedIfEmpty() error {
-	count, err := d.Queries.CountProviders(context.Background())
+	ctx := context.Background()
+	count, err := d.Queries.CountProviders(ctx)
 	if err != nil {
 		return fmt.Errorf("db.seedIfEmpty: count providers: %w", err)
 	}
 	if count > 0 {
 		return nil
 	}
-	return d.Seed(context.Background())
+
+	tx, err := d.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("db.seedIfEmpty: begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	if err := seedDefaults(ctx, d.Queries.WithTx(tx)); err != nil {
+		return fmt.Errorf("db.seedIfEmpty: %w", err)
+	}
+
+	return tx.Commit()
 }
 
 // Seed wipes all entity and settings tables, then reseeds defaults in a
 // single transaction. This is the factory-reset operation.
+// It calls wipeAllTables followed by seedDefaults.
 func (d *Database) Seed(ctx context.Context) error {
 	tx, err := d.DB.BeginTx(ctx, nil)
 	if err != nil {
@@ -145,26 +159,33 @@ func (d *Database) Seed(ctx context.Context) error {
 		return fmt.Errorf("db.Seed: wipe: %w", err)
 	}
 
-	q := d.Queries.WithTx(tx)
-
-	ollamaID, err := seedProviders(ctx, q)
-	if err != nil {
-		return fmt.Errorf("db.Seed: providers: %w", err)
-	}
-	if err := seedLanguages(ctx, q); err != nil {
-		return fmt.Errorf("db.Seed: languages: %w", err)
-	}
-	if err := seedSettings(ctx, q); err != nil {
-		return fmt.Errorf("db.Seed: settings: %w", err)
-	}
-	if err := q.SetCurrentProviderID(ctx, sql.NullString{String: ollamaID, Valid: true}); err != nil {
-		return fmt.Errorf("db.Seed: app_state: %w", err)
-	}
-	if err := seedStarterStacks(ctx, q); err != nil {
-		return fmt.Errorf("db.Seed: stacks: %w", err)
+	if err := seedDefaults(ctx, d.Queries.WithTx(tx)); err != nil {
+		return fmt.Errorf("db.Seed: %w", err)
 	}
 
 	return tx.Commit()
+}
+
+// seedDefaults inserts all defaults into an already-open transaction via q.
+// Called by seedIfEmpty (fresh DB, no wipe) and Seed (after wipeAllTables).
+func seedDefaults(ctx context.Context, q *store.Queries) error {
+	ollamaID, err := seedProviders(ctx, q)
+	if err != nil {
+		return fmt.Errorf("providers: %w", err)
+	}
+	if err := seedLanguages(ctx, q); err != nil {
+		return fmt.Errorf("languages: %w", err)
+	}
+	if err := seedSettings(ctx, q); err != nil {
+		return fmt.Errorf("settings: %w", err)
+	}
+	if err := q.SetCurrentProviderID(ctx, sql.NullString{String: ollamaID, Valid: true}); err != nil {
+		return fmt.Errorf("app_state: %w", err)
+	}
+	if err := seedStarterStacks(ctx, q); err != nil {
+		return fmt.Errorf("stacks: %w", err)
+	}
+	return nil
 }
 
 // wipeAllTables deletes all rows from entity and settings tables.
