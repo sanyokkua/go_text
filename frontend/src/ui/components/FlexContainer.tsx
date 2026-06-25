@@ -25,10 +25,7 @@ const FlexContainer: React.FC<FlexContainerProps> = ({
     const computedStyle: React.CSSProperties = {
         display: 'flex',
         flexDirection: direction,
-        ...(overflowHidden && {
-            overflow: 'hidden',
-            ...(direction === 'column' ? { minHeight: 0 } : { minWidth: 0 }),
-        }),
+        ...(overflowHidden && { overflow: 'hidden', ...(direction === 'column' ? { minHeight: 0 } : { minWidth: 0 }) }),
         ...(grow && { flex: 1 }),
         ...(gap !== undefined && { gap: typeof gap === 'number' ? `${gap * 8}px` : gap }),
         ...style,

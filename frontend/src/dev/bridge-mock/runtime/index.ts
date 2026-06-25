@@ -8,7 +8,7 @@ export function EventsOn(eventName: string, callback: EventCallback): () => void
     listeners.set(eventName, [...existing, callback]);
     return () => {
         const current = listeners.get(eventName) ?? [];
-        const filtered = current.filter(cb => cb !== callback);
+        const filtered = current.filter((cb) => cb !== callback);
         if (filtered.length === 0) {
             listeners.delete(eventName);
         } else {
@@ -19,7 +19,7 @@ export function EventsOn(eventName: string, callback: EventCallback): () => void
 
 export function EventsOff(eventName: string, ...additionalEventNames: string[]): void {
     listeners.delete(eventName);
-    additionalEventNames.forEach(name => listeners.delete(name));
+    additionalEventNames.forEach((name) => listeners.delete(name));
 }
 
 export function EventsOffAll(): void {
@@ -71,10 +71,18 @@ export function WindowHide(): void {}
 export function WindowShow(): void {}
 export function WindowFullscreen(): void {}
 export function WindowUnfullscreen(): void {}
-export function WindowIsMaximised(): Promise<boolean> { return Promise.resolve(false); }
-export function WindowIsMinimised(): Promise<boolean> { return Promise.resolve(false); }
-export function WindowIsFullscreen(): Promise<boolean> { return Promise.resolve(false); }
-export function WindowIsNormal(): Promise<boolean> { return Promise.resolve(true); }
+export function WindowIsMaximised(): Promise<boolean> {
+    return Promise.resolve(false);
+}
+export function WindowIsMinimised(): Promise<boolean> {
+    return Promise.resolve(false);
+}
+export function WindowIsFullscreen(): Promise<boolean> {
+    return Promise.resolve(false);
+}
+export function WindowIsNormal(): Promise<boolean> {
+    return Promise.resolve(true);
+}
 
 export function Environment(): Promise<unknown> {
     return Promise.resolve({ buildType: 'dev', platform: 'mac', arch: 'arm64' });
@@ -85,5 +93,9 @@ export function Hide(): void {}
 export function Show(): void {}
 
 // Clipboard stubs
-export function ClipboardGetText(): Promise<string> { return Promise.resolve(''); }
-export function ClipboardSetText(_text: string): Promise<void> { return Promise.resolve(); }
+export function ClipboardGetText(): Promise<string> {
+    return Promise.resolve('');
+}
+export function ClipboardSetText(_text: string): Promise<void> {
+    return Promise.resolve();
+}

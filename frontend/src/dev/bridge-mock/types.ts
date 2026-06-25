@@ -21,6 +21,4 @@ export interface AnyResult<T = unknown> {
 
 export const ok = <T>(data: T): AnyResult<T> => ({ data });
 export const voidOk = (): VoidResult => ({});
-export const fail = (code: string, message: string): AnyResult<never> => ({
-    error: { code, message },
-});
+export const fail = (code: string, message: string): AnyResult<never> => ({ error: { code, message } });

@@ -27,15 +27,32 @@ const SettingsView: React.FC = () => {
 
     let activeTabView: React.ReactElement;
     switch (activeTab) {
-        case 0: activeTabView = <MetadataTab metadata={{ settingsFolder: metadata.settingsFolder, settingsFile: metadata.settingsFile }} />; break;
-        case 1: activeTabView = <CurrentProviderTab settings={settings} metadata={metadata} />; break;
-        case 2: activeTabView = <ProviderManagementTab settings={settings} metadata={metadata} />; break;
-        case 3: activeTabView = <ModelConfigTab settings={settings} />; break;
-        case 4: activeTabView = <InferenceConfigTab settings={settings} />; break;
-        case 5: activeTabView = <LanguageConfigTab settings={settings} />; break;
-        case 6: activeTabView = <FactoryResetTab />; break;
-        case 7: activeTabView = <AppBehaviorTab settings={settings} metadata={metadata} />; break;
-        default: activeTabView = <div style={{ padding: 'var(--space-4)', color: 'var(--ink-3)' }}>Unknown tab</div>;
+        case 0:
+            activeTabView = <MetadataTab metadata={{ settingsFolder: metadata.settingsFolder, settingsFile: metadata.settingsFile }} />;
+            break;
+        case 1:
+            activeTabView = <CurrentProviderTab settings={settings} metadata={metadata} />;
+            break;
+        case 2:
+            activeTabView = <ProviderManagementTab settings={settings} metadata={metadata} />;
+            break;
+        case 3:
+            activeTabView = <ModelConfigTab settings={settings} />;
+            break;
+        case 4:
+            activeTabView = <InferenceConfigTab settings={settings} />;
+            break;
+        case 5:
+            activeTabView = <LanguageConfigTab settings={settings} />;
+            break;
+        case 6:
+            activeTabView = <FactoryResetTab />;
+            break;
+        case 7:
+            activeTabView = <AppBehaviorTab settings={settings} metadata={metadata} />;
+            break;
+        default:
+            activeTabView = <div style={{ padding: 'var(--space-4)', color: 'var(--ink-3)' }}>Unknown tab</div>;
     }
 
     return (

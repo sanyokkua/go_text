@@ -5,7 +5,16 @@ interface SettingsTabsProps {
     onChange: (event: React.SyntheticEvent, newValue: number) => void;
 }
 
-const TAB_LABELS = ['Settings Info', 'Current Provider', 'Provider Management', 'Model Config', 'Inference Config', 'Language Config', 'Factory Reset', 'App Behavior'];
+const TAB_LABELS = [
+    'Settings Info',
+    'Current Provider',
+    'Provider Management',
+    'Model Config',
+    'Inference Config',
+    'Language Config',
+    'Factory Reset',
+    'App Behavior',
+];
 
 const SettingsTabs: React.FC<SettingsTabsProps> = ({ activeTab, onChange }) => {
     return (
@@ -14,7 +23,17 @@ const SettingsTabs: React.FC<SettingsTabsProps> = ({ activeTab, onChange }) => {
                 <button
                     key={index}
                     onClick={(e) => onChange(e, index)}
-                    style={{ padding: 'var(--space-2) var(--space-3)', border: 'none', borderBottom: index === activeTab ? '2px solid var(--teal)' : '2px solid transparent', background: 'none', cursor: 'pointer', color: index === activeTab ? 'var(--teal)' : 'var(--ink-2)', fontWeight: index === activeTab ? 700 : 400, fontSize: '0.85rem', whiteSpace: 'nowrap' }}
+                    style={{
+                        padding: 'var(--space-2) var(--space-3)',
+                        border: 'none',
+                        borderBottom: index === activeTab ? '2px solid var(--teal)' : '2px solid transparent',
+                        background: 'none',
+                        cursor: 'pointer',
+                        color: index === activeTab ? 'var(--teal)' : 'var(--ink-2)',
+                        fontWeight: index === activeTab ? 700 : 400,
+                        fontSize: '0.85rem',
+                        whiteSpace: 'nowrap',
+                    }}
                 >
                     {label}
                 </button>

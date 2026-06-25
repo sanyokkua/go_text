@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 // T00: Placeholder smoke flows — expanded per feature task as views are built
 // T21+ will replace these with real interaction flows (action run, stack build, history, etc.)

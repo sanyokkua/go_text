@@ -1,25 +1,24 @@
 // Mock the adapter module before any imports so module-level getLogger calls are satisfied
 jest.mock('../../adapter', () => ({
     ...jest.requireActual('../../adapter'),
-    getLogger: jest.fn().mockReturnValue({
-        logPrint: jest.fn(),
-        logTrace: jest.fn(),
-        logDebug: jest.fn(),
-        logInfo: jest.fn(),
-        logWarning: jest.fn(),
-        logError: jest.fn(),
-        logFatal: jest.fn(),
-    }),
-    SettingsHandlerAdapter: {
-        getAppBehaviorConfig: jest.fn(),
-        updateAppBehaviorConfig: jest.fn(),
-    },
+    getLogger: jest
+        .fn()
+        .mockReturnValue({
+            logPrint: jest.fn(),
+            logTrace: jest.fn(),
+            logDebug: jest.fn(),
+            logInfo: jest.fn(),
+            logWarning: jest.fn(),
+            logError: jest.fn(),
+            logFatal: jest.fn(),
+        }),
+    SettingsHandlerAdapter: { getAppBehaviorConfig: jest.fn(), updateAppBehaviorConfig: jest.fn() },
 }));
 
 import { AppBehaviorConfig, Settings, SettingsHandlerAdapter } from '../../adapter';
 import { RootState } from '../index';
-import settingsReducer from './slice';
 import { selectAppBehaviorConfig } from './selectors';
+import settingsReducer from './slice';
 import { getAppBehaviorConfig, updateAppBehaviorConfig } from './thunks';
 import { SettingsState } from './types';
 
@@ -51,8 +50,7 @@ const fullSettings: Settings = {
     appBehaviorConfig: { enableTaskLogging: false, logDirectory: '' },
 };
 
-const makeState = (allSettings: Settings | null): RootState =>
-    ({ settings: { allSettings, metadata: null } } as unknown as RootState);
+const makeState = (allSettings: Settings | null): RootState => ({ settings: { allSettings, metadata: null } }) as unknown as RootState;
 
 // ---------------------------------------------------------------------------
 // Part A: Selectors

@@ -16,7 +16,10 @@ const InputOutputContainer: React.FC = () => {
     const outputContent = useAppSelector(selectOutputContent);
     const isAppBusy = useAppSelector(selectIsAppBusy);
 
-    const handleInputClear = () => { dispatch(clearInput()); logger.logInfo('Input cleared'); };
+    const handleInputClear = () => {
+        dispatch(clearInput());
+        logger.logInfo('Input cleared');
+    };
 
     const handleInputPaste = async () => {
         try {
@@ -35,11 +38,17 @@ const InputOutputContainer: React.FC = () => {
         }
     };
 
-    const handleOutputClear = () => { dispatch(clearOutput()); logger.logInfo('Output cleared'); };
+    const handleOutputClear = () => {
+        dispatch(clearOutput());
+        logger.logInfo('Output cleared');
+    };
 
     const handleOutputCopy = async () => {
         try {
-            if (!outputContent) { dispatch(enqueueNotification({ message: 'No content to copy', severity: 'info' })); return; }
+            if (!outputContent) {
+                dispatch(enqueueNotification({ message: 'No content to copy', severity: 'info' }));
+                return;
+            }
             logger.logInfo('Attempting to copy to clipboard');
             const success = await ClipboardServiceAdapter.setText(outputContent);
             if (success) {
@@ -54,7 +63,10 @@ const InputOutputContainer: React.FC = () => {
     };
 
     const handleOutputUseAsInput = () => {
-        if (outputContent) { dispatch(useOutputAsInput()); logger.logInfo('Output used as input'); }
+        if (outputContent) {
+            dispatch(useOutputAsInput());
+            logger.logInfo('Output used as input');
+        }
     };
 
     return (
