@@ -10,4 +10,5 @@ frontend/wailsjs
 .vscode/*
 .continue/*
 .tmp/*
+**/.tmp/*
 .claude/settings.local.json
