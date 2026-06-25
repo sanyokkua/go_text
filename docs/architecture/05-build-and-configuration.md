@@ -11,6 +11,7 @@
     - [Development Build](#development-build)
     - [Production Build](#production-build)
     - [Platform-Specific Builds](#platform-specific-builds)
+- [Database Code Generation & Migrations](#database-code-generation--migrations)
 - [Configuration Management](#configuration-management)
     - [Wails Configuration](#wails-configuration)
     - [Application Settings](#application-settings)
@@ -185,6 +186,47 @@ wails build -platform linux/amd64
 
 ```bash
 wails build -clean -ldflags="-s -w" -upx
+```
+
+---
+
+## Database Code Generation & Migrations
+
+GoText uses two database development tools that are **not** runtime dependencies:
+
+### goose (migration runner)
+
+Migrations live in `internal/db/migrations/*.sql` using goose-annotated SQL
+(`-- +goose Up` / `-- +goose Down`). They are compiled into the binary via
+`//go:embed` and applied on startup using `goose.NewProvider` in library mode.
+
+- **Apply:** happens automatically on `db.Open` at startup.
+- **Round-trip test:** `go test -run TestMigrationRoundTrip ./internal/db/...`
+- **Down (manual / dev):** accessible via the `Database.provider` field in tests.
+
+### sqlc (type-safe query generator)
+
+SQL queries live in `internal/db/queries/*.sql` with sqlc annotations
+(`-- name: QueryName :one/:many/:exec`). sqlc reads the goose migration files
+as the schema source and generates the `internal/db/store` package.
+
+**Regenerate after schema or query changes:**
+```bash
+sqlc generate
+```
+
+**Verify generated code is not stale (CI gate):**
+```bash
+sqlc generate --diff
+# exits non-zero if committed store/ differs from what generate would produce
+```
+
+The generated `internal/db/store/` directory is **committed to the repo**.
+Never hand-edit files in `store/` — they are overwritten by `sqlc generate`.
+
+**Install sqlc:**
+```bash
+go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 ```
 
 ---
