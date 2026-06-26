@@ -65,6 +65,59 @@ describe('notifyError', () => {
         expect(without.payload.message).not.toContain('retrying');
     });
 
+    it('maps CodeContextWindow to error toast with input too long title', () => {
+        const action = notifyError(wire(apperr.ErrorCode.CodeContextWindow));
+        expect(action.payload.severity).toBe('error');
+        expect(action.payload.surface).toBe('toast');
+        expect(action.payload.title).toBe('Input too long');
+    });
+
+    it('maps CodeEmptyCompletion to warning toast with no response title', () => {
+        const action = notifyError(wire(apperr.ErrorCode.CodeEmptyCompletion, { provider: 'Ollama' }));
+        expect(action.payload.severity).toBe('warning');
+        expect(action.payload.surface).toBe('toast');
+        expect(action.payload.title).toBe('No response');
+    });
+
+    it('maps CodeInvalidPlan to error toast with stack not allowed title', () => {
+        const action = notifyError(wire(apperr.ErrorCode.CodeInvalidPlan));
+        expect(action.payload.severity).toBe('error');
+        expect(action.payload.surface).toBe('toast');
+        expect(action.payload.title).toBe('Stack not allowed');
+    });
+
+    it('maps CodeModelNotFound to error toast with model not found title', () => {
+        const action = notifyError(wire(apperr.ErrorCode.CodeModelNotFound, { provider: 'OpenAI', model: 'gpt-5' }));
+        expect(action.payload.severity).toBe('error');
+        expect(action.payload.surface).toBe('toast');
+        expect(action.payload.title).toBe('Model not found');
+        expect(action.payload.message).toContain('gpt-5');
+    });
+
+    it('maps CodeProviderUnreachable to error toast with provider unreachable title', () => {
+        const action = notifyError(wire(apperr.ErrorCode.CodeProviderUnreachable, { provider: 'LM Studio' }));
+        expect(action.payload.severity).toBe('error');
+        expect(action.payload.surface).toBe('toast');
+        expect(action.payload.title).toBe('Provider unreachable');
+        expect(action.payload.message).toContain('LM Studio');
+    });
+
+    it('maps CodeStepFailed to error toast with step index in title', () => {
+        const action = notifyError(wire(apperr.ErrorCode.CodeStepFailed, { stepIndex: '2', family: 'inference' }));
+        expect(action.payload.severity).toBe('error');
+        expect(action.payload.surface).toBe('toast');
+        expect(action.payload.title).toMatch(/^Step/);
+        expect(action.payload.title).toContain('2');
+    });
+
+    it('maps CodeUpstream to error toast with provider error title', () => {
+        const action = notifyError(wire(apperr.ErrorCode.CodeUpstream, { provider: 'OpenRouter', statusCode: '503' }));
+        expect(action.payload.severity).toBe('error');
+        expect(action.payload.surface).toBe('toast');
+        expect(action.payload.title).toBe('Provider error');
+        expect(action.payload.message).toContain('503');
+    });
+
     it('falls through unknown code to internal copy', () => {
         const action = notifyError(wire('unknown_future_code' as apperr.ErrorCode));
         expect(action.payload.title).toBe('Something went wrong');

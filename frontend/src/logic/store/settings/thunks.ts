@@ -19,8 +19,9 @@ export const addLanguage = createAsyncThunk<Array<string>, string, { rejectValue
         try {
             return unwrap(await SettingsHandlerAdapter.addLanguage(language)) ?? [];
         } catch (error: unknown) {
-            logger.logError(`addLanguage failed: ${parseError(error).message}`);
-            return rejectWithValue(parseError(error).message);
+            const err = parseError(error);
+            logger.logError(`addLanguage failed: ${err.message}`);
+            return rejectWithValue(err.message);
         }
     },
 );
@@ -32,8 +33,9 @@ export const createProviderConfig = createAsyncThunk<Settings, ProviderConfig, {
             unwrap(await SettingsHandlerAdapter.createProviderConfig(providerConfig));
             return fromWireSettings(unwrap(await SettingsHandlerAdapter.getSettings()));
         } catch (error: unknown) {
-            logger.logError(`createProviderConfig failed: ${parseError(error).message}`);
-            return rejectWithValue(parseError(error).message);
+            const err = parseError(error);
+            logger.logError(`createProviderConfig failed: ${err.message}`);
+            return rejectWithValue(err.message);
         }
     },
 );
@@ -44,8 +46,9 @@ export const deleteProviderConfig = createAsyncThunk<void, string, { rejectValue
         try {
             unwrap(await SettingsHandlerAdapter.deleteProviderConfig(providerId));
         } catch (error: unknown) {
-            logger.logError(`deleteProviderConfig failed: ${parseError(error).message}`);
-            return rejectWithValue(parseError(error).message);
+            const err = parseError(error);
+            logger.logError(`deleteProviderConfig failed: ${err.message}`);
+            return rejectWithValue(err.message);
         }
     },
 );
@@ -56,8 +59,9 @@ export const getAllProviderConfigs = createAsyncThunk<Array<ProviderConfig>, voi
         try {
             return (unwrap(await SettingsHandlerAdapter.getAllProviderConfigs()) ?? []).map(fromWireProvider);
         } catch (error: unknown) {
-            logger.logError(`getAllProviderConfigs failed: ${parseError(error).message}`);
-            return rejectWithValue(parseError(error).message);
+            const err = parseError(error);
+            logger.logError(`getAllProviderConfigs failed: ${err.message}`);
+            return rejectWithValue(err.message);
         }
     },
 );
@@ -68,8 +72,9 @@ export const getAppSettingsMetadata = createAsyncThunk<AppSettingsMetadata, void
         try {
             return fromWireMetadata(unwrap(await SettingsHandlerAdapter.getAppSettingsMetadata()));
         } catch (error: unknown) {
-            logger.logError(`getAppSettingsMetadata failed: ${parseError(error).message}`);
-            return rejectWithValue(parseError(error).message);
+            const err = parseError(error);
+            logger.logError(`getAppSettingsMetadata failed: ${err.message}`);
+            return rejectWithValue(err.message);
         }
     },
 );
@@ -80,8 +85,9 @@ export const getCurrentProviderConfig = createAsyncThunk<ProviderConfig, void, {
         try {
             return fromWireProvider(unwrap(await SettingsHandlerAdapter.getCurrentProviderConfig()));
         } catch (error: unknown) {
-            logger.logError(`getCurrentProviderConfig failed: ${parseError(error).message}`);
-            return rejectWithValue(parseError(error).message);
+            const err = parseError(error);
+            logger.logError(`getCurrentProviderConfig failed: ${err.message}`);
+            return rejectWithValue(err.message);
         }
     },
 );
@@ -92,8 +98,9 @@ export const getInferenceBaseConfig = createAsyncThunk<InferenceBaseConfig, void
         try {
             return unwrap(await SettingsHandlerAdapter.getInferenceBaseConfig());
         } catch (error: unknown) {
-            logger.logError(`getInferenceBaseConfig failed: ${parseError(error).message}`);
-            return rejectWithValue(parseError(error).message);
+            const err = parseError(error);
+            logger.logError(`getInferenceBaseConfig failed: ${err.message}`);
+            return rejectWithValue(err.message);
         }
     },
 );
@@ -104,8 +111,9 @@ export const getLanguageConfig = createAsyncThunk<LanguageConfig, void, { reject
         try {
             return unwrap(await SettingsHandlerAdapter.getLanguageConfig());
         } catch (error: unknown) {
-            logger.logError(`getLanguageConfig failed: ${parseError(error).message}`);
-            return rejectWithValue(parseError(error).message);
+            const err = parseError(error);
+            logger.logError(`getLanguageConfig failed: ${err.message}`);
+            return rejectWithValue(err.message);
         }
     },
 );
@@ -116,8 +124,9 @@ export const getModelConfig = createAsyncThunk<ModelConfig, void, { rejectValue:
         try {
             return unwrap(await SettingsHandlerAdapter.getModelConfig());
         } catch (error: unknown) {
-            logger.logError(`getModelConfig failed: ${parseError(error).message}`);
-            return rejectWithValue(parseError(error).message);
+            const err = parseError(error);
+            logger.logError(`getModelConfig failed: ${err.message}`);
+            return rejectWithValue(err.message);
         }
     },
 );
@@ -128,8 +137,9 @@ export const getSettings = createAsyncThunk<Settings, void, { rejectValue: strin
         try {
             return fromWireSettings(unwrap(await SettingsHandlerAdapter.getSettings()));
         } catch (error: unknown) {
-            logger.logError(`getSettings failed: ${parseError(error).message}`);
-            return rejectWithValue(parseError(error).message);
+            const err = parseError(error);
+            logger.logError(`getSettings failed: ${err.message}`);
+            return rejectWithValue(err.message);
         }
     },
 );
@@ -140,8 +150,9 @@ export const removeLanguage = createAsyncThunk<Array<string>, string, { rejectVa
         try {
             return unwrap(await SettingsHandlerAdapter.removeLanguage(language)) ?? [];
         } catch (error: unknown) {
-            logger.logError(`removeLanguage failed: ${parseError(error).message}`);
-            return rejectWithValue(parseError(error).message);
+            const err = parseError(error);
+            logger.logError(`removeLanguage failed: ${err.message}`);
+            return rejectWithValue(err.message);
         }
     },
 );
@@ -152,8 +163,9 @@ export const resetSettingsToDefault = createAsyncThunk<Settings, void, { rejectV
         try {
             return fromWireSettings(unwrap(await SettingsHandlerAdapter.resetSettingsToDefault()));
         } catch (error: unknown) {
-            logger.logError(`resetSettingsToDefault failed: ${parseError(error).message}`);
-            return rejectWithValue(parseError(error).message);
+            const err = parseError(error);
+            logger.logError(`resetSettingsToDefault failed: ${err.message}`);
+            return rejectWithValue(err.message);
         }
     },
 );
@@ -164,8 +176,9 @@ export const setAsCurrentProviderConfig = createAsyncThunk<ProviderConfig, strin
         try {
             return fromWireProvider(unwrap(await SettingsHandlerAdapter.setAsCurrentProviderConfig(providerId)));
         } catch (error: unknown) {
-            logger.logError(`setAsCurrentProviderConfig failed: ${parseError(error).message}`);
-            return rejectWithValue(parseError(error).message);
+            const err = parseError(error);
+            logger.logError(`setAsCurrentProviderConfig failed: ${err.message}`);
+            return rejectWithValue(err.message);
         }
     },
 );
@@ -176,8 +189,9 @@ export const setDefaultInputLanguage = createAsyncThunk<void, string, { rejectVa
         try {
             unwrap(await SettingsHandlerAdapter.setDefaultInputLanguage(language));
         } catch (error: unknown) {
-            logger.logError(`setDefaultInputLanguage failed: ${parseError(error).message}`);
-            return rejectWithValue(parseError(error).message);
+            const err = parseError(error);
+            logger.logError(`setDefaultInputLanguage failed: ${err.message}`);
+            return rejectWithValue(err.message);
         }
     },
 );
@@ -188,8 +202,9 @@ export const setDefaultOutputLanguage = createAsyncThunk<void, string, { rejectV
         try {
             unwrap(await SettingsHandlerAdapter.setDefaultOutputLanguage(language));
         } catch (error: unknown) {
-            logger.logError(`setDefaultOutputLanguage failed: ${parseError(error).message}`);
-            return rejectWithValue(parseError(error).message);
+            const err = parseError(error);
+            logger.logError(`setDefaultOutputLanguage failed: ${err.message}`);
+            return rejectWithValue(err.message);
         }
     },
 );
@@ -200,8 +215,9 @@ export const updateInferenceBaseConfig = createAsyncThunk<InferenceBaseConfig, I
         try {
             return unwrap(await SettingsHandlerAdapter.updateInferenceBaseConfig(config));
         } catch (error: unknown) {
-            logger.logError(`updateInferenceBaseConfig failed: ${parseError(error).message}`);
-            return rejectWithValue(parseError(error).message);
+            const err = parseError(error);
+            logger.logError(`updateInferenceBaseConfig failed: ${err.message}`);
+            return rejectWithValue(err.message);
         }
     },
 );
@@ -212,8 +228,9 @@ export const updateModelConfig = createAsyncThunk<ModelConfig, ModelConfig, { re
         try {
             return unwrap(await SettingsHandlerAdapter.updateModelConfig(config));
         } catch (error: unknown) {
-            logger.logError(`updateModelConfig failed: ${parseError(error).message}`);
-            return rejectWithValue(parseError(error).message);
+            const err = parseError(error);
+            logger.logError(`updateModelConfig failed: ${err.message}`);
+            return rejectWithValue(err.message);
         }
     },
 );
@@ -224,8 +241,9 @@ export const updateProviderConfig = createAsyncThunk<ProviderConfig, ProviderCon
         try {
             return fromWireProvider(unwrap(await SettingsHandlerAdapter.updateProviderConfig(providerConfig)));
         } catch (error: unknown) {
-            logger.logError(`updateProviderConfig failed: ${parseError(error).message}`);
-            return rejectWithValue(parseError(error).message);
+            const err = parseError(error);
+            logger.logError(`updateProviderConfig failed: ${err.message}`);
+            return rejectWithValue(err.message);
         }
     },
 );
@@ -236,8 +254,9 @@ export const getAppBehaviorConfig = createAsyncThunk<AppBehaviorConfig, void, { 
         try {
             return fromWireBehavior(unwrap(await SettingsHandlerAdapter.getAppBehaviorConfig()));
         } catch (error: unknown) {
-            logger.logError(`getAppBehaviorConfig failed: ${parseError(error).message}`);
-            return rejectWithValue(parseError(error).message);
+            const err = parseError(error);
+            logger.logError(`getAppBehaviorConfig failed: ${err.message}`);
+            return rejectWithValue(err.message);
         }
     },
 );
@@ -248,8 +267,9 @@ export const updateAppBehaviorConfig = createAsyncThunk<AppBehaviorConfig, AppBe
         try {
             return fromWireBehavior(unwrap(await SettingsHandlerAdapter.updateAppBehaviorConfig(config)));
         } catch (error: unknown) {
-            logger.logError(`updateAppBehaviorConfig failed: ${parseError(error).message}`);
-            return rejectWithValue(parseError(error).message);
+            const err = parseError(error);
+            logger.logError(`updateAppBehaviorConfig failed: ${err.message}`);
+            return rejectWithValue(err.message);
         }
     },
 );
@@ -268,8 +288,9 @@ export const initializeSettingsState = createAsyncThunk<void, void, { rejectValu
                 dispatch(getAppSettingsMetadata()).unwrap(),
             ]);
         } catch (error: unknown) {
-            logger.logError(`initializeSettingsState failed: ${parseError(error).message}`);
-            return rejectWithValue(parseError(error).message);
+            const err = parseError(error);
+            logger.logError(`initializeSettingsState failed: ${err.message}`);
+            return rejectWithValue(err.message);
         }
     },
 );
