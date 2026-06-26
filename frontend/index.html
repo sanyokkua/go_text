@@ -4,6 +4,14 @@
     <meta charset="UTF-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>go_text</title>
+    <script>
+        (function () {
+            var m = globalThis.localStorage.getItem('ui.theme') || 'auto';
+            if (m === 'dark' || (m !== 'light' && globalThis.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
 </head>
 <body>
 <div id="root"></div>
