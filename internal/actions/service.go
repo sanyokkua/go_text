@@ -2,6 +2,7 @@ package actions
 
 import (
 	"fmt"
+	"go_text/internal/apperr"
 	"go_text/internal/llms"
 	"go_text/internal/prompts"
 	"go_text/internal/prompts/categories"
@@ -68,6 +69,7 @@ type ActionServiceAPI interface {
 	GetModelsList() ([]string, error)
 	GetCompletionResponse(request *llms.ChatCompletionRequest) (string, error)
 	GetModelsListForProvider(provider *settings.ProviderConfig) ([]string, error)
+	GetModelsInfo(providerID string) ([]apperr.ModelInfo, error)
 	GetCompletionResponseForProvider(provider *settings.ProviderConfig, request *llms.ChatCompletionRequest) (string, error)
 	GetPromptGroups() (*prompts.Prompts, error)
 	ProcessPromptActionRequest(actionReq *prompts.PromptActionRequest) (string, error)
@@ -132,6 +134,31 @@ func (a *ActionService) GetModelsListForProvider(provider *settings.ProviderConf
 	const op = "ActionService.GetModelsListForProvider"
 	a.logger.Debug(fmt.Sprintf("[%s] Retrieving models list for provider", op))
 	return a.llmService.GetModelsListForProvider(provider)
+}
+
+// GetModelsInfo returns the full []apperr.ModelInfo for the given provider.
+// Empty providerID → uses the current provider.
+// Non-empty providerID → validated against stored providers; returns apperr.Validation on miss.
+func (a *ActionService) GetModelsInfo(providerID string) ([]apperr.ModelInfo, error) {
+	const op = "ActionService.GetModelsInfo"
+	a.logger.Debug(fmt.Sprintf("[%s] Retrieving models info providerID=%q", op, providerID))
+
+	var provider *settings.ProviderConfig
+	var err error
+
+	if providerID == "" {
+		provider, err = a.settingsService.GetCurrentProviderConfig()
+		if err != nil {
+			return nil, fmt.Errorf("%s: get current provider: %w", op, err)
+		}
+	} else {
+		provider, err = a.settingsService.GetProviderConfig(providerID)
+		if err != nil {
+			return nil, apperr.Validation("providerId", "existing provider id", providerID)
+		}
+	}
+
+	return a.llmService.GetModelsInfoForProvider(provider)
 }
 
 func (a *ActionService) GetCompletionResponseForProvider(provider *settings.ProviderConfig, request *llms.ChatCompletionRequest) (string, error) {
