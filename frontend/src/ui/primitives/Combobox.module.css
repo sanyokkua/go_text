@@ -125,3 +125,7 @@
     font-size: 11px;
     color: var(--ink-3);
 }
+
+@media (prefers-reduced-motion: reduce) {
+    .spinning { animation: none; }
+}
