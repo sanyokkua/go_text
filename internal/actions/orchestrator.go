@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"go_text/internal/apperr"
 	v3 "go_text/internal/prompts/v3"
+	"go_text/internal/settings"
 )
 
 // RunChain executes req sequentially through planned inference groups.
@@ -24,6 +26,7 @@ func (a *ActionService) RunChain(
 	emitProgress func(apperr.StepProgress),
 ) (*apperr.ChainResult, error) {
 	const op = "ActionService.RunChain"
+	startTime := time.Now()
 
 	if strings.TrimSpace(req.InputText) == "" {
 		return nil, apperr.Validation("inputText", "non-empty text", "empty string")
@@ -63,11 +66,14 @@ func (a *ActionService) RunChain(
 		// Cooperative cancellation: checked before each group so the current group always finishes.
 		select {
 		case <-ctx.Done():
-			return &apperr.ChainResult{
+			cancelErr := apperr.Cancelled(completed)
+			partialResult := &apperr.ChainResult{
 				FinalText: input,
 				Completed: completed,
-				Error:     apperr.Cancelled(completed).Message,
-			}, apperr.Cancelled(completed)
+				Error:     cancelErr.Message,
+			}
+			a.recordChainHistory(req, plan, cfg, partialResult, cancelErr, completed, time.Since(startTime))
+			return partialResult, cancelErr
 		default:
 		}
 
@@ -106,12 +112,14 @@ func (a *ActionService) RunChain(
 				ae = apperr.Internal(stepErr)
 			}
 			wrapped := apperr.StepFailed(i, group.Family, ae)
-			return &apperr.ChainResult{
+			failedResult := &apperr.ChainResult{
 				FinalText:   input,
 				Completed:   completed,
 				FailedIndex: &idx,
 				Error:       wrapped.Message,
-			}, wrapped
+			}
+			a.recordChainHistory(req, plan, cfg, failedResult, wrapped, completed, time.Since(startTime))
+			return failedResult, wrapped
 		}
 
 		input = out
@@ -119,5 +127,97 @@ func (a *ActionService) RunChain(
 		emit(i, total, group.Family, "done")
 	}
 
-	return &apperr.ChainResult{FinalText: input, Completed: completed}, nil
+	successResult := &apperr.ChainResult{FinalText: input, Completed: completed}
+	a.recordChainHistory(req, plan, cfg, successResult, nil, completed, time.Since(startTime))
+	return successResult, nil
+}
+
+// recordChainHistory builds and records one HistoryEntry per RunChain call.
+// All errors are swallowed by historyService.Record — recording never breaks a run.
+func (a *ActionService) recordChainHistory(
+	req apperr.ChainRequest,
+	plan ChainPlan,
+	cfg *settings.Settings,
+	result *apperr.ChainResult,
+	runErr error,
+	completed int,
+	duration time.Duration,
+) {
+	applied := make([]apperr.AppliedAction, 0)
+	for i := 0; i < completed && i < len(plan.Groups); i++ {
+		for _, step := range plan.Groups[i].Steps {
+			for _, m := range a.catalog {
+				if m.ID == step.ActionID {
+					applied = append(applied, apperr.AppliedAction{
+						ID:       m.ID,
+						Name:     m.Name,
+						Category: m.Category,
+					})
+					break
+				}
+			}
+		}
+	}
+
+	ids := make([]string, len(req.Steps))
+	for i, s := range req.Steps {
+		ids[i] = s.ActionID
+	}
+	title := strings.Join(ids, " + ")
+	if len(title) > 120 {
+		title = title[:120] + "…"
+	}
+
+	kind := "stack"
+	if len(req.Steps) == 1 {
+		kind = "single"
+	}
+
+	status := "success"
+	errorCode := ""
+	failedIndex := -1
+	if runErr != nil {
+		if completed > 0 {
+			status = "partial"
+		} else {
+			status = "error"
+		}
+		var ae *apperr.AppError
+		if errors.As(runErr, &ae) {
+			errorCode = string(ae.Code)
+		}
+	}
+	if result != nil && result.FailedIndex != nil {
+		failedIndex = *result.FailedIndex
+	}
+
+	outputText := ""
+	if result != nil {
+		outputText = result.FinalText
+	}
+
+	providerName := ""
+	model := ""
+	if cfg != nil {
+		providerName = cfg.CurrentProviderConfig.Name
+		model = cfg.ModelConfig.Name
+	}
+
+	a.historyService.Record(apperr.HistoryEntry{
+		ID:           req.RunID,
+		Kind:         kind,
+		Title:        title,
+		InputText:    req.InputText,
+		OutputText:   outputText,
+		Applied:      applied,
+		ProviderName: providerName,
+		Model:        model,
+		InputLang:    req.InputLanguageID,
+		OutputLang:   req.OutputLanguageID,
+		DurationMs:   duration.Milliseconds(),
+		Inferences:   completed,
+		Status:       status,
+		ErrorCode:    errorCode,
+		FailedIndex:  failedIndex,
+	})
 }

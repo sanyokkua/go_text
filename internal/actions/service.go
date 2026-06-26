@@ -8,6 +8,7 @@ import (
 	"go_text/internal/prompts"
 	"go_text/internal/prompts/categories"
 	"go_text/internal/settings"
+	"go_text/internal/history"
 	"go_text/internal/tasklog"
 	"slices"
 	"strings"
@@ -85,6 +86,7 @@ type ActionService struct {
 	llmService      llms.LLMServiceAPI
 	settingsService settings.SettingsServiceAPI
 	taskLogService  tasklog.TaskLogServiceAPI
+	historyService  history.HistoryServiceAPI
 	catalog         []apperr.ActionMeta // cached at construction; avoids promptService call in BuildPlanAndPrompts
 	planner         *Planner
 	composer        *Composer
@@ -96,6 +98,7 @@ func NewActionService(
 	llmService llms.LLMServiceAPI,
 	settingsService settings.SettingsServiceAPI,
 	taskLogService tasklog.TaskLogServiceAPI,
+	historyService history.HistoryServiceAPI,
 ) ActionServiceAPI {
 	const op = "ActionService.NewActionService"
 
@@ -114,6 +117,9 @@ func NewActionService(
 	if taskLogService == nil {
 		panic(fmt.Sprintf("%s: task log service cannot be nil", op))
 	}
+	if historyService == nil {
+		panic(fmt.Sprintf("%s: history service cannot be nil", op))
+	}
 
 	logger.Info(fmt.Sprintf("[%s] Initializing action service", op))
 	catalog := promptService.Catalog()
@@ -123,6 +129,7 @@ func NewActionService(
 		llmService:      llmService,
 		settingsService: settingsService,
 		taskLogService:  taskLogService,
+		historyService:  historyService,
 		catalog:         catalog,
 		planner:         NewPlanner(catalog),
 		composer:        NewComposer(catalog),

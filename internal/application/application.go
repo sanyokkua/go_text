@@ -8,6 +8,7 @@ import (
 	"go_text/internal/db"
 	"go_text/internal/file"
 	"go_text/internal/gate"
+	"go_text/internal/history"
 	"go_text/internal/llms"
 	"go_text/internal/logging"
 	"go_text/internal/prompts"
@@ -28,11 +29,13 @@ type ApplicationContextHolder struct {
 	SettingsService *settings.SettingsService
 	ActionHandler   *actions.ActionHandler
 	StackHandler    *stacks.StackHandler
+	HistoryHandler  *history.HistoryHandler
 	RestyClient     *resty.Client
 	DB              *db.Database
 
-	fileService file.FileUtilsServiceAPI
-	appLogger   *logging.Logger
+	fileService    file.FileUtilsServiceAPI
+	appLogger      *logging.Logger
+	historyService *history.HistoryService
 }
 
 // NewApplicationContextHolder wires the DI graph.
@@ -44,10 +47,11 @@ func NewApplicationContextHolder(appLogger *logging.Logger, restyClient *resty.C
 	settingsHandler := settings.NewSettingsHandler(appLogger, zlog.Logger, settingsService)
 
 	taskLogService := tasklog.NewTaskLogService(appLogger, settingsService, fileUtilsService)
+	historyService := history.NewHistoryService(appLogger, settingsService)
 	promptService := prompts.NewPromptService(appLogger)
 	providerFactory := llms.NewProviderFactory(restyClient)
 	llmService := llms.NewLLMApiService(appLogger, providerFactory, settingsService)
-	actionService := actions.NewActionService(appLogger, promptService, llmService, settingsService, taskLogService)
+	actionService := actions.NewActionService(appLogger, promptService, llmService, settingsService, taskLogService, historyService)
 
 	inferenceGate := gate.New()
 	verificationService := verification.NewService(appLogger, settingsService, providerFactory, inferenceGate)
@@ -55,15 +59,18 @@ func NewApplicationContextHolder(appLogger *logging.Logger, restyClient *resty.C
 
 	catalog := actionService.GetActionCatalog()
 	stackHandler := stacks.NewStackHandler(appLogger, zlog.Logger, nil, catalog)
+	historyHandler := history.NewHistoryHandler(appLogger, zlog.Logger, historyService)
 
 	return &ApplicationContextHolder{
 		SettingsHandler: settingsHandler,
 		SettingsService: settingsService,
 		ActionHandler:   actionHandler,
 		StackHandler:    stackHandler,
+		HistoryHandler:  historyHandler,
 		RestyClient:     restyClient,
 		fileService:     fileUtilsService,
 		appLogger:       appLogger,
+		historyService:  historyService,
 	}
 }
 
@@ -92,6 +99,9 @@ func (a *ApplicationContextHolder) Init(ctx context.Context) error {
 	sqliteRepo := settings.NewSqliteSettingsRepository(database)
 	a.SettingsService.SetRepository(sqliteRepo)
 	a.SettingsHandler.Configure(a.appLogger, zlog.Logger, a.SettingsService)
+
+	historyRepo := history.NewSqliteHistoryRepository(database)
+	a.historyService.SetRepository(historyRepo)
 
 	stackRepo := stacks.NewSqliteStackRepository(database)
 	a.StackHandler.SetRepository(stackRepo)

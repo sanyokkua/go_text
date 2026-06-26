@@ -31,6 +31,16 @@ type noopTaskLog struct{}
 
 func (n *noopTaskLog) LogTaskExecution(_ tasklog.TaskLogEntry) error { return nil }
 
+// noopHistoryService satisfies history.HistoryServiceAPI with no side effects.
+type noopHistoryService struct{}
+
+func (n *noopHistoryService) Record(_ apperr.HistoryEntry)                   {}
+func (n *noopHistoryService) List(_, _ int64) ([]apperr.HistoryEntry, error) { return nil, nil }
+func (n *noopHistoryService) Get(_ string) (*apperr.HistoryEntry, error)     { return nil, nil }
+func (n *noopHistoryService) Delete(_ string) error                          { return nil }
+func (n *noopHistoryService) Clear() error                                   { return nil }
+func (n *noopHistoryService) Count() (int64, error)                          { return 0, nil }
+
 // orchestratorSettings is a stubSettingsService variant that returns a real
 // *settings.Settings pointing at the given provider URL.
 type orchestratorSettings struct {
@@ -101,7 +111,7 @@ func newTestChainService(t *testing.T, serverURL string) ActionServiceAPI {
 	factory := llms.NewProviderFactory(restyClient)
 	llmSvc := llms.NewLLMApiService(wlog, factory, settingsSvc)
 	promptSvc := prompts.NewPromptService(wlog)
-	return NewActionService(wlog, promptSvc, llmSvc, settingsSvc, &noopTaskLog{})
+	return NewActionService(wlog, promptSvc, llmSvc, settingsSvc, &noopTaskLog{}, &noopHistoryService{})
 }
 
 // twoFamilySteps returns action IDs for two steps from different families
