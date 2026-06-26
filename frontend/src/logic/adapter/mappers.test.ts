@@ -1,5 +1,5 @@
 import { apperr } from '../../../wailsjs/go/models';
-import { fromWireBehavior, fromWireMetadata, fromWireProvider, fromWireSettings, toWireBehavior, toWireProvider } from './mappers';
+import { fromWireBehavior, fromWireMetadata, fromWireProvider, toWireBehavior, toWireProvider } from './mappers';
 
 const wireProvider: apperr.ProviderConfig = apperr.ProviderConfig.createFrom({
     id: 'p1',

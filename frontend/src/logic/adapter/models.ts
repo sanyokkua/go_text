@@ -102,6 +102,8 @@ export interface Prompts {
 export interface AppBehaviorConfig {
     enableTaskLogging: boolean;
     logDirectory: string;
+    historyEnabled?: boolean;
+    historyMaxEntries?: number;
 }
 
 /**
