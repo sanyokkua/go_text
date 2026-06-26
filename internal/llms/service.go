@@ -17,6 +17,7 @@ type LLMServiceAPI interface {
 	GetModelsList() ([]string, error)
 	GetCompletionResponse(request *ChatCompletionRequest) (string, error)
 	GetModelsListForProvider(provider *settings.ProviderConfig) ([]string, error)
+	GetModelsInfoForProvider(provider *settings.ProviderConfig) ([]apperr.ModelInfo, error)
 	GetCompletionResponseForProvider(provider *settings.ProviderConfig, request *ChatCompletionRequest) (string, error)
 }
 
@@ -114,6 +115,52 @@ func (l *LLMService) GetModelsListForProvider(provider *settings.ProviderConfig)
 	return ids, nil
 }
 
+// GetModelsInfoForProvider returns the model list with optional capability metadata.
+// If UseCustomModels is true and CustomModels is non-empty, those are returned without
+// an HTTP call (Caps = nil for all). If discovery fails, CustomModels are used as a
+// silent fallback. An empty provider always returns an empty non-nil slice.
+func (l *LLMService) GetModelsInfoForProvider(provider *settings.ProviderConfig) ([]apperr.ModelInfo, error) {
+	const op = "LLMService.GetModelsInfoForProvider"
+	if provider == nil {
+		return nil, fmt.Errorf("%s: provider configuration cannot be nil", op)
+	}
+
+	if provider.UseCustomModels && len(provider.CustomModels) > 0 {
+		l.logger.Info(fmt.Sprintf("[%s] Using custom models for provider %s", op, provider.Name))
+		return customModelsAsModelInfo(provider.CustomModels), nil
+	}
+
+	resolved, err := l.resolveConfig(provider)
+	if err != nil {
+		return l.customModelsInfoFallback(provider, op, err)
+	}
+
+	p, err := l.factory.Build(resolved)
+	if err != nil {
+		return l.customModelsInfoFallback(provider, op, err)
+	}
+
+	baseConfig, err := l.settingsService.GetInferenceBaseConfig()
+	if err != nil {
+		return l.customModelsInfoFallback(provider, op, err)
+	}
+
+	timeout := l.validateTimeout(baseConfig.Timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
+	defer cancel()
+
+	models, err := p.ListModels(ctx)
+	if err != nil {
+		return l.customModelsInfoFallback(provider, op, err)
+	}
+
+	l.logger.Info(fmt.Sprintf("[%s] Retrieved %d models for provider %s", op, len(models), provider.Name))
+	if models == nil {
+		return []apperr.ModelInfo{}, nil
+	}
+	return models, nil
+}
+
 func (l *LLMService) GetCompletionResponseForProvider(provider *settings.ProviderConfig, request *ChatCompletionRequest) (string, error) {
 	const op = "LLMService.GetCompletionResponseForProvider"
 	if provider == nil {
@@ -192,6 +239,25 @@ func (l *LLMService) customModelsFallback(provider *settings.ProviderConfig, op 
 		return provider.CustomModels, nil
 	}
 	return []string{}, nil
+}
+
+// customModelsAsModelInfo converts a string slice into ModelInfo entries with Caps=nil.
+func customModelsAsModelInfo(ids []string) []apperr.ModelInfo {
+	out := make([]apperr.ModelInfo, 0, len(ids))
+	for _, id := range ids {
+		if id != "" {
+			out = append(out, apperr.ModelInfo{ID: id, Label: id})
+		}
+	}
+	return out
+}
+
+// customModelsInfoFallback logs a warning and returns CustomModels as ModelInfo (Caps=nil).
+// The discovery error is intentionally swallowed — no user-facing error — per the spec.
+func (l *LLMService) customModelsInfoFallback(provider *settings.ProviderConfig, op string, err error) ([]apperr.ModelInfo, error) {
+	l.logger.Warning(fmt.Sprintf("[%s] Discovery failed for provider %s, falling back to custom models: %v",
+		op, provider.Name, err))
+	return customModelsAsModelInfo(provider.CustomModels), nil
 }
 
 // chatRequestFrom converts a ChatCompletionRequest (facade format) to a ChatRequest (Provider format).
