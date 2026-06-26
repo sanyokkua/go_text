@@ -76,6 +76,7 @@ type ActionServiceAPI interface {
 	ProcessPromptActionRequest(actionReq *prompts.PromptActionRequest) (string, error)
 	GetActionCatalog() []apperr.ActionMeta
 	BuildPlanAndPrompts(req apperr.PromptPreviewRequest) (*apperr.PromptPreview, error)
+	RunChain(ctx context.Context, req apperr.ChainRequest, emitProgress func(apperr.StepProgress)) (*apperr.ChainResult, error)
 }
 
 type ActionService struct {
