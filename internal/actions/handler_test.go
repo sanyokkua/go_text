@@ -196,9 +196,11 @@ func (p *panicVerifyService) TestInference(_ string) (*apperr.VerifyOutcome, err
 
 // mockActionService stubs ActionServiceAPI for GetModels handler tests.
 type mockActionService struct {
-	models  []apperr.ModelInfo
-	err     error
-	catalog []apperr.ActionMeta
+	models        []apperr.ModelInfo
+	err           error
+	catalog       []apperr.ActionMeta
+	previewResult *apperr.PromptPreview
+	previewErr    error
 }
 
 func (m *mockActionService) GetModelsList() ([]string, error) { return nil, nil }
@@ -220,7 +222,7 @@ func (m *mockActionService) ProcessPromptActionRequest(_ *prompts.PromptActionRe
 }
 func (m *mockActionService) GetActionCatalog() []apperr.ActionMeta { return m.catalog }
 func (m *mockActionService) BuildPlanAndPrompts(_ apperr.PromptPreviewRequest) (*apperr.PromptPreview, error) {
-	return nil, nil
+	return m.previewResult, m.previewErr
 }
 func (m *mockActionService) RunChain(_ context.Context, _ apperr.ChainRequest, _ func(apperr.StepProgress)) (*apperr.ChainResult, error) {
 	return nil, nil
@@ -418,6 +420,239 @@ func TestActionHandler_GetModels_PanicRecovery(t *testing.T) {
 	}
 	if res.Error.Code != apperr.CodeInternal {
 		t.Errorf("expected code=internal, got %q", res.Error.Code)
+	}
+}
+
+// ─── PreviewPrompt helpers ───────────────────────────────────────────────────
+
+type mockStackLookup struct {
+	result apperr.StackResult
+}
+
+func (m *mockStackLookup) GetStack(_ string) apperr.StackResult {
+	return m.result
+}
+
+func newPreviewHandler(svc *mockActionService, lookup *mockStackLookup) *ActionHandler {
+	h := &ActionHandler{
+		zlog:                zerolog.Nop(),
+		actionService:       svc,
+		verificationService: &mockVerificationService{},
+		gate:                gate.New(),
+	}
+	if lookup != nil {
+		h.stackLookup = lookup
+	}
+	return h
+}
+
+func defaultPreview() *apperr.PromptPreview {
+	return &apperr.PromptPreview{
+		Kind:       "single",
+		Inferences: 1,
+		Groups: []apperr.PreviewGroup{
+			{
+				Index:  0,
+				Family: "Rewrite",
+				AppliedActions: []apperr.AppliedAction{
+					{ID: "rewrite.proofread.basic", Name: "Basic proofreading", Category: "rewrite"},
+				},
+				SystemPrompt: "You are a proofreader.",
+				UserPrompt:   "Proofread the text.",
+				Parameters:   apperr.PreviewParams{Model: "gpt-4o", Format: "plain", TokenParam: "max_completion_tokens"},
+			},
+		},
+		Summary: "1 step(s) · 1 inference(s)",
+	}
+}
+
+// ─── PreviewPrompt: happy paths ──────────────────────────────────────────────
+
+func TestActionHandler_PreviewPrompt_SingleActionID_Success(t *testing.T) {
+	t.Parallel()
+	svc := &mockActionService{previewResult: defaultPreview()}
+	h := newPreviewHandler(svc, nil)
+
+	res := h.PreviewPrompt(apperr.PromptPreviewRequest{ActionID: "rewrite.proofread.basic"})
+
+	if res.Error != nil {
+		t.Fatalf("expected no error, got %v", res.Error)
+	}
+	if res.Data == nil {
+		t.Fatal("expected non-nil Data")
+	}
+	if res.Data.Kind != "single" {
+		t.Errorf("Kind = %q, want %q", res.Data.Kind, "single")
+	}
+	if res.Data.Inferences != 1 {
+		t.Errorf("Inferences = %d, want 1", res.Data.Inferences)
+	}
+}
+
+func TestActionHandler_PreviewPrompt_Steps_Success(t *testing.T) {
+	t.Parallel()
+	chainPreview := &apperr.PromptPreview{Kind: "chain", Inferences: 2, Groups: []apperr.PreviewGroup{{}, {}}}
+	svc := &mockActionService{previewResult: chainPreview}
+	h := newPreviewHandler(svc, nil)
+
+	res := h.PreviewPrompt(apperr.PromptPreviewRequest{
+		Steps: []apperr.ChainStep{{ActionID: "rewrite.proofread.basic"}, {ActionID: "summarize.summary"}},
+	})
+
+	if res.Error != nil {
+		t.Fatalf("unexpected error: %v", res.Error)
+	}
+	if res.Data == nil {
+		t.Fatal("expected non-nil Data")
+	}
+	if res.Data.Kind != "chain" {
+		t.Errorf("Kind = %q, want %q", res.Data.Kind, "chain")
+	}
+}
+
+func TestActionHandler_PreviewPrompt_StackID_ResolvesAndSucceeds(t *testing.T) {
+	t.Parallel()
+	savedStack := &apperr.SavedStack{
+		ID:    "stack-1",
+		Name:  "My Stack",
+		Steps: []string{"rewrite.proofread.basic"},
+	}
+	lookup := &mockStackLookup{result: apperr.StackResult{Data: savedStack}}
+	svc := &mockActionService{previewResult: defaultPreview()}
+	h := newPreviewHandler(svc, lookup)
+
+	res := h.PreviewPrompt(apperr.PromptPreviewRequest{StackID: "stack-1"})
+
+	if res.Error != nil {
+		t.Fatalf("unexpected error: %v", res.Error)
+	}
+	if res.Data == nil {
+		t.Fatal("expected non-nil Data")
+	}
+}
+
+// ─── PreviewPrompt: validation errors ────────────────────────────────────────
+
+func TestActionHandler_PreviewPrompt_ZeroSpecifiers_ValidationError(t *testing.T) {
+	t.Parallel()
+	h := newPreviewHandler(&mockActionService{}, nil)
+
+	res := h.PreviewPrompt(apperr.PromptPreviewRequest{})
+
+	if res.Error == nil {
+		t.Fatal("expected validation error for 0 specifiers")
+	}
+	if res.Error.Code != apperr.CodeValidation {
+		t.Errorf("expected code=validation, got %q", res.Error.Code)
+	}
+}
+
+func TestActionHandler_PreviewPrompt_TwoSpecifiers_ValidationError(t *testing.T) {
+	t.Parallel()
+	h := newPreviewHandler(&mockActionService{}, nil)
+
+	res := h.PreviewPrompt(apperr.PromptPreviewRequest{
+		ActionID: "rewrite.proofread.basic",
+		Steps:    []apperr.ChainStep{{ActionID: "rewrite.proofread.basic"}},
+	})
+
+	if res.Error == nil {
+		t.Fatal("expected validation error for 2 specifiers")
+	}
+	if res.Error.Code != apperr.CodeValidation {
+		t.Errorf("expected code=validation, got %q", res.Error.Code)
+	}
+}
+
+func TestActionHandler_PreviewPrompt_ThreeSpecifiers_ValidationError(t *testing.T) {
+	t.Parallel()
+	h := newPreviewHandler(&mockActionService{}, nil)
+
+	res := h.PreviewPrompt(apperr.PromptPreviewRequest{
+		ActionID: "x",
+		Steps:    []apperr.ChainStep{{ActionID: "y"}},
+		StackID:  "z",
+	})
+
+	if res.Error == nil || res.Error.Code != apperr.CodeValidation {
+		t.Errorf("expected validation error for 3 specifiers, got %v", res.Error)
+	}
+}
+
+// ─── PreviewPrompt: StackID error paths ──────────────────────────────────────
+
+func TestActionHandler_PreviewPrompt_StackID_NilLookup_InternalError(t *testing.T) {
+	t.Parallel()
+	h := newPreviewHandler(&mockActionService{}, nil)
+
+	res := h.PreviewPrompt(apperr.PromptPreviewRequest{StackID: "any-id"})
+
+	if res.Error == nil {
+		t.Fatal("expected internal error when stackLookup is nil")
+	}
+	if res.Error.Code != apperr.CodeInternal {
+		t.Errorf("expected code=internal, got %q", res.Error.Code)
+	}
+}
+
+func TestActionHandler_PreviewPrompt_StackID_LookupReturnsError(t *testing.T) {
+	t.Parallel()
+	wire := apperr.WireError{Code: apperr.CodeValidation, Title: "not found", Message: "stack not found"}
+	lookup := &mockStackLookup{result: apperr.StackResult{Error: &wire}}
+	h := newPreviewHandler(&mockActionService{}, lookup)
+
+	res := h.PreviewPrompt(apperr.PromptPreviewRequest{StackID: "missing-id"})
+
+	if res.Error == nil {
+		t.Fatal("expected error propagated from stack lookup")
+	}
+	if res.Error.Code != apperr.CodeValidation {
+		t.Errorf("expected code=validation, got %q", res.Error.Code)
+	}
+}
+
+func TestActionHandler_PreviewPrompt_StackID_LookupReturnsNilData_ValidationError(t *testing.T) {
+	t.Parallel()
+	lookup := &mockStackLookup{result: apperr.StackResult{Data: nil}}
+	h := newPreviewHandler(&mockActionService{}, lookup)
+
+	res := h.PreviewPrompt(apperr.PromptPreviewRequest{StackID: "some-id"})
+
+	if res.Error == nil || res.Error.Code != apperr.CodeValidation {
+		t.Errorf("expected validation error for nil Data, got %v", res.Error)
+	}
+}
+
+// ─── PreviewPrompt: service error + panic ────────────────────────────────────
+
+func TestActionHandler_PreviewPrompt_ServiceError_ReturnsError(t *testing.T) {
+	t.Parallel()
+	svc := &mockActionService{previewErr: apperr.Validation("steps", "at least one step", "0 steps provided")}
+	h := newPreviewHandler(svc, nil)
+
+	res := h.PreviewPrompt(apperr.PromptPreviewRequest{ActionID: "rewrite.proofread.basic"})
+
+	if res.Error == nil {
+		t.Fatal("expected error from service, got nil")
+	}
+	if res.Error.Code != apperr.CodeValidation {
+		t.Errorf("expected code=validation, got %q", res.Error.Code)
+	}
+}
+
+func TestActionHandler_PreviewPrompt_PanicRecovery(t *testing.T) {
+	t.Parallel()
+	h := &ActionHandler{
+		zlog:                zerolog.Nop(),
+		actionService:       &panicActionService{},
+		verificationService: &mockVerificationService{},
+		gate:                gate.New(),
+	}
+
+	res := h.PreviewPrompt(apperr.PromptPreviewRequest{ActionID: "x"})
+
+	if res.Error == nil || res.Error.Code != apperr.CodeInternal {
+		t.Errorf("expected internal error from panic recovery, got %v", res.Error)
 	}
 }
 

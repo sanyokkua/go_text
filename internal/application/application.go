@@ -95,6 +95,7 @@ func (a *ApplicationContextHolder) Init(ctx context.Context) error {
 
 	stackRepo := stacks.NewSqliteStackRepository(database)
 	a.StackHandler.SetRepository(stackRepo)
+	a.ActionHandler.SetStackLookup(a.StackHandler)
 
 	// Read logging config via service (now SQLite-backed).
 	logCfg, err := a.SettingsService.GetLoggingConfig()

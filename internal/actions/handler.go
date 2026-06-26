@@ -16,6 +16,13 @@ import (
 
 const panicMsgFmt = "panic: %v"
 
+// StackLookupAPI is the minimal contract ActionHandler needs to resolve a StackID
+// to its saved-stack definition when handling PreviewPrompt (T15).
+// Implemented by *stacks.StackHandler — defined here to avoid an import cycle.
+type StackLookupAPI interface {
+	GetStack(id string) apperr.StackResult
+}
+
 // ActionHandler is the Wails-bound handler for action-related operations.
 // All bound methods must follow the envelope pattern: return apperr.*Result,
 // no error return, and include defer/recover for panic safety.
@@ -25,6 +32,10 @@ type ActionHandler struct {
 	actionService       ActionServiceAPI
 	verificationService verification.ServiceAPI
 	gate                *gate.InferenceGate
+
+	// stackLookup is wired in application.Init after the stacks repo is open.
+	// Nil before Init; PreviewPrompt returns an internal error if called before Init.
+	stackLookup StackLookupAPI
 
 	// Run lifecycle: Wails runtime context for event emission and
 	// run registry mapping runId → cancel function.
@@ -56,6 +67,93 @@ func NewActionHandler(
 // ApplicationContextHolder.SetContext during OnStartup.
 func (h *ActionHandler) SetContext(ctx context.Context) {
 	h.appCtx = ctx
+}
+
+// SetStackLookup wires the stack repository accessor needed by PreviewPrompt.
+// Called from ApplicationContextHolder.Init after the SQLite repo is open.
+func (h *ActionHandler) SetStackLookup(lookup StackLookupAPI) {
+	h.stackLookup = lookup
+}
+
+// PreviewPrompt returns a read-only view of the composed prompts and inference parameters
+// for the given action, steps, or saved stack — without making an LLM call.
+// Reuses the same Planner + Composer as ProcessPromptChain to guarantee parity.
+//
+// Exactly one of req.ActionID, req.Steps, or req.StackID must be set.
+func (h *ActionHandler) PreviewPrompt(req apperr.PromptPreviewRequest) (res apperr.PromptPreviewResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicMsgFmt, r))
+			wire := apperr.ToWire(h.zlog, ae)
+			res = apperr.PromptPreviewResult{Error: &wire}
+		}
+	}()
+
+	specifiers := countPreviewSpecifiers(req)
+	if specifiers != 1 {
+		ae := apperr.Validation("request",
+			"exactly one of actionId, steps, stackId",
+			fmt.Sprintf("%d specifier(s) set", specifiers))
+		wire := apperr.ToWire(h.zlog, ae)
+		return apperr.PromptPreviewResult{Error: &wire}
+	}
+
+	if req.StackID != "" {
+		if errResult := h.resolveStackID(&req); errResult != nil {
+			return *errResult
+		}
+	}
+
+	preview, err := h.actionService.BuildPlanAndPrompts(req)
+	if err != nil {
+		wire := apperr.ToWire(h.zlog, err)
+		return apperr.PromptPreviewResult{Error: &wire}
+	}
+	return apperr.PromptPreviewResult{Data: preview}
+}
+
+// countPreviewSpecifiers counts how many of actionId/steps/stackId are set in the request.
+func countPreviewSpecifiers(req apperr.PromptPreviewRequest) int {
+	count := 0
+	if req.ActionID != "" {
+		count++
+	}
+	if len(req.Steps) > 0 {
+		count++
+	}
+	if req.StackID != "" {
+		count++
+	}
+	return count
+}
+
+// resolveStackID resolves req.StackID to a Steps slice, mutating req in place.
+// Returns a non-nil result carrying an error if resolution fails; nil on success.
+func (h *ActionHandler) resolveStackID(req *apperr.PromptPreviewRequest) *apperr.PromptPreviewResult {
+	if h.stackLookup == nil {
+		ae := apperr.Internal(fmt.Errorf("stack lookup not configured"))
+		wire := apperr.ToWire(h.zlog, ae)
+		res := apperr.PromptPreviewResult{Error: &wire}
+		return &res
+	}
+	stackResult := h.stackLookup.GetStack(req.StackID)
+	if stackResult.Error != nil {
+		res := apperr.PromptPreviewResult{Error: stackResult.Error}
+		return &res
+	}
+	if stackResult.Data == nil {
+		ae := apperr.Validation("stackId", "a known stack ID", req.StackID)
+		wire := apperr.ToWire(h.zlog, ae)
+		res := apperr.PromptPreviewResult{Error: &wire}
+		return &res
+	}
+	steps := make([]apperr.ChainStep, len(stackResult.Data.Steps))
+	for i, id := range stackResult.Data.Steps {
+		steps[i] = apperr.ChainStep{ActionID: id}
+	}
+	req.Steps = steps
+	req.StackID = ""
+	return nil
 }
 
 // emit dispatches a Wails event. No-op if the runtime context is not yet set
