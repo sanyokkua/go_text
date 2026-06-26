@@ -1,6 +1,7 @@
 package actions
 
 import (
+	"context"
 	"fmt"
 	"go_text/internal/apperr"
 	"go_text/internal/llms"
@@ -73,6 +74,8 @@ type ActionServiceAPI interface {
 	GetCompletionResponseForProvider(provider *settings.ProviderConfig, request *llms.ChatCompletionRequest) (string, error)
 	GetPromptGroups() (*prompts.Prompts, error)
 	ProcessPromptActionRequest(actionReq *prompts.PromptActionRequest) (string, error)
+	GetActionCatalog() []apperr.ActionMeta
+	BuildPlanAndPrompts(req apperr.PromptPreviewRequest) (*apperr.PromptPreview, error)
 }
 
 type ActionService struct {
@@ -81,6 +84,9 @@ type ActionService struct {
 	llmService      llms.LLMServiceAPI
 	settingsService settings.SettingsServiceAPI
 	taskLogService  tasklog.TaskLogServiceAPI
+	catalog         []apperr.ActionMeta // cached at construction; avoids promptService call in BuildPlanAndPrompts
+	planner         *Planner
+	composer        *Composer
 }
 
 func NewActionService(
@@ -109,12 +115,16 @@ func NewActionService(
 	}
 
 	logger.Info(fmt.Sprintf("[%s] Initializing action service", op))
+	catalog := promptService.Catalog()
 	return &ActionService{
 		logger:          logger,
 		promptService:   promptService,
 		llmService:      llmService,
 		settingsService: settingsService,
 		taskLogService:  taskLogService,
+		catalog:         catalog,
+		planner:         NewPlanner(catalog),
+		composer:        NewComposer(catalog),
 	}
 }
 
@@ -165,6 +175,12 @@ func (a *ActionService) GetCompletionResponseForProvider(provider *settings.Prov
 	const op = "ActionService.GetCompletionResponseForProvider"
 	a.logger.Debug(fmt.Sprintf("[%s] Sending completion request for provider", op))
 	return a.llmService.GetCompletionResponseForProvider(provider, request)
+}
+
+func (a *ActionService) GetActionCatalog() []apperr.ActionMeta {
+	const op = "ActionService.GetActionCatalog"
+	a.logger.Debug(fmt.Sprintf("[%s] Retrieving action catalog", op))
+	return a.promptService.Catalog()
 }
 
 func (a *ActionService) GetPromptGroups() (*prompts.Prompts, error) {
@@ -315,59 +331,148 @@ func (a *ActionService) processAction(action *prompts.PromptActionRequest) (stri
 		return action.InputText, nil
 	}
 
-	// 7. Send to LLM and sanitize
-	llmStart := time.Now()
-	req := newChatCompletionRequest(cfg, userPrompt, sysPrompt)
-	rawResp, err := a.GetCompletionResponse(&req)
-	llmDuration := time.Since(llmStart)
-
+	// 7. Send to LLM via the shared runStep primitive
+	stepReq := ChatStepRequest{
+		System:      sysPrompt,
+		User:        userPrompt,
+		GroupFamily: promptDef.Category,
+		ActionIDs:   []string{promptDef.ID},
+		InputText:   action.InputText,
+		InputLang:   action.InputLanguageID,
+		OutputLang:  action.OutputLanguageID,
+	}
+	result, err := a.runStep(context.Background(), cfg, stepReq)
 	if err != nil {
-		a.logger.Error(fmt.Sprintf("[%s] LLM completion failed - action_id=%s, model=%s, provider=%s, duration_ms=%d, error=%v",
-			op, actionID, cfg.ModelConfig.Name, providerName, llmDuration.Milliseconds(), err))
-		return "", fmt.Errorf("%s: failed to get completion result for action '%s': %w", op, actionID, err)
+		a.logger.Error(fmt.Sprintf("[%s] runStep failed action_id=%s: %v", op, actionID, err))
+		return "", fmt.Errorf("%s: %w", op, err)
 	}
-
-	if strings.TrimSpace(rawResp) == "" {
-		a.logger.Warning(fmt.Sprintf("[%s] Received empty response from LLM - action_id=%s, model=%s, provider=%s",
-			op, actionID, cfg.ModelConfig.Name, providerName))
-	}
-
-	a.logger.Info(fmt.Sprintf("[%s] LLM completion successful - action_id=%s, model=%s, provider=%s, duration_ms=%d, response_length=%d",
-		op, actionID, cfg.ModelConfig.Name, providerName, llmDuration.Milliseconds(), len(rawResp)))
-
-	result, err := a.promptService.SanitizeReasoningBlock(rawResp)
-	if err != nil {
-		a.logger.Error(fmt.Sprintf("[%s] Failed to sanitize response - action_id=%s, error=%v", op, actionID, err))
-		return "", fmt.Errorf("%s: failed to sanitize response for action '%s': %w", op, actionID, err)
-	}
-
-	if strings.TrimSpace(result) == "" {
-		a.logger.Warning(fmt.Sprintf("[%s] Sanitized result is empty - action_id=%s", op, actionID))
-	}
-
-	_ = a.taskLogService.LogTaskExecution(tasklog.TaskLogEntry{
-		SchemaVersion:  1,
-		Timestamp:      time.Now().UTC().Format(time.RFC3339),
-		ActionID:       promptDef.ID,
-		ActionName:     promptDef.Name,
-		Category:       promptDef.Category,
-		InputText:      action.InputText,
-		OutputText:     result,
-		SystemPrompt:   sysPrompt,
-		UserPrompt:     userPrompt,
-		ProviderName:   cfg.CurrentProviderConfig.Name,
-		ProviderType:   string(cfg.CurrentProviderConfig.Kind),
-		Model:          cfg.ModelConfig.Name,
-		DurationMs:     time.Since(startTime).Milliseconds(),
-		InputLanguage:  action.InputLanguageID,
-		OutputLanguage: action.OutputLanguageID,
-	})
 
 	totalDuration := time.Since(startTime)
 	a.logger.Info(fmt.Sprintf("[%s] Action completed successfully - action_id=%s, category=%s, total_duration_ms=%d, result_length=%d",
 		op, actionID, promptDef.Category, totalDuration.Milliseconds(), len(result)))
 
 	return result, nil
+}
+
+// runStep executes one LLM inference: builds the chat-completion request,
+// calls the provider, strips reasoning blocks, and writes one tasklog entry.
+// It is the shared primitive used by processAction and (via T13) ChainOrchestrator.
+func (a *ActionService) runStep(ctx context.Context, cfg *settings.Settings, req ChatStepRequest) (string, error) {
+	const op = "ActionService.runStep"
+	startTime := time.Now()
+	_ = ctx // accepted for T13 cancellation; propagation added when LLMService gains context support
+
+	a.logger.Debug(fmt.Sprintf("[%s] Starting LLM inference family=%s actions=%v", op, req.GroupFamily, req.ActionIDs))
+
+	llmReq := newChatCompletionRequest(cfg, req.User, req.System)
+	rawResp, err := a.llmService.GetCompletionResponse(&llmReq)
+	if err != nil {
+		a.logger.Error(fmt.Sprintf("[%s] LLM call failed family=%s error=%v", op, req.GroupFamily, err))
+		return "", fmt.Errorf("%s: LLM call failed: %w", op, err)
+	}
+
+	if strings.TrimSpace(rawResp) == "" {
+		a.logger.Warning(fmt.Sprintf("[%s] Received empty response from LLM family=%s", op, req.GroupFamily))
+	}
+
+	result, err := a.promptService.SanitizeReasoningBlock(rawResp)
+	if err != nil {
+		a.logger.Error(fmt.Sprintf("[%s] Sanitize failed: %v", op, err))
+		return "", fmt.Errorf("%s: sanitize failed: %w", op, err)
+	}
+
+	actionID := strings.Join(req.ActionIDs, "+")
+
+	_ = a.taskLogService.LogTaskExecution(tasklog.TaskLogEntry{
+		SchemaVersion:  1,
+		Timestamp:      time.Now().UTC().Format(time.RFC3339),
+		ActionID:       actionID,
+		ActionName:     actionID,
+		Category:       req.GroupFamily,
+		InputText:      req.InputText,
+		OutputText:     result,
+		SystemPrompt:   req.System,
+		UserPrompt:     req.User,
+		ProviderName:   cfg.CurrentProviderConfig.Name,
+		ProviderType:   string(cfg.CurrentProviderConfig.Kind),
+		Model:          cfg.ModelConfig.Name,
+		DurationMs:     time.Since(startTime).Milliseconds(),
+		InputLanguage:  req.InputLang,
+		OutputLanguage: req.OutputLang,
+	})
+
+	a.logger.Debug(fmt.Sprintf("[%s] Done family=%s duration_ms=%d result_len=%d",
+		op, req.GroupFamily, time.Since(startTime).Milliseconds(), len(result)))
+
+	return result, nil
+}
+
+// BuildPlanAndPrompts runs planning + composition without calling the LLM.
+// Used by the Prompt Inspector (PreviewPrompt handler, T15) and ProcessPromptChain (T13).
+// Provider/model resolution is NOT performed here; PreviewGroup.Parameters is left
+// for the handler layer to fill from resolved provider settings.
+func (a *ActionService) BuildPlanAndPrompts(req apperr.PromptPreviewRequest) (*apperr.PromptPreview, error) {
+	const op = "ActionService.BuildPlanAndPrompts"
+
+	chainReq := apperr.ChainRequest{
+		Steps:            req.Steps,
+		InputLanguageID:  req.InputLanguageID,
+		OutputLanguageID: req.OutputLanguageID,
+		UseMarkdown:      req.UseMarkdown,
+	}
+	if req.ActionID != "" && len(req.Steps) == 0 {
+		chainReq.Steps = []apperr.ChainStep{{ActionID: req.ActionID}}
+	}
+
+	plan, err := a.planner.Plan(chainReq)
+	if err != nil {
+		return nil, fmt.Errorf("%s: planning failed: %w", op, err)
+	}
+
+	sampleInput := req.SampleInput
+	if sampleInput == "" {
+		sampleInput = "[sample input text]"
+	}
+
+	catalogMap := make(map[string]apperr.ActionMeta, len(a.catalog))
+	for _, m := range a.catalog {
+		catalogMap[m.ID] = m
+	}
+
+	groups := make([]apperr.PreviewGroup, len(plan.Groups))
+	for i, g := range plan.Groups {
+		sys, user := a.composer.Compose(g, sampleInput, chainReq, req.UseMarkdown)
+
+		applied := make([]apperr.AppliedAction, len(g.Steps))
+		for j, s := range g.Steps {
+			meta := catalogMap[s.ActionID]
+			applied[j] = apperr.AppliedAction{
+				ID:       meta.ID,
+				Name:     meta.Name,
+				Category: meta.Category,
+			}
+		}
+
+		groups[i] = apperr.PreviewGroup{
+			Index:          i,
+			Family:         g.Family,
+			AppliedActions: applied,
+			SystemPrompt:   sys,
+			UserPrompt:     user,
+		}
+	}
+
+	kind := "chain"
+	if len(plan.Groups) == 1 {
+		kind = "single"
+	}
+
+	return &apperr.PromptPreview{
+		Kind:       kind,
+		Inferences: plan.Inferences,
+		Groups:     groups,
+		Summary:    fmt.Sprintf("%d step(s) · %d inference(s)", len(chainReq.Steps), plan.Inferences),
+	}, nil
 }
 
 func (a *ActionService) validateProviderConfiguration(provider *settings.ProviderConfig) error {

@@ -195,8 +195,9 @@ func (p *panicVerifyService) TestInference(_ string) (*apperr.VerifyOutcome, err
 
 // mockActionService stubs ActionServiceAPI for GetModels handler tests.
 type mockActionService struct {
-	models []apperr.ModelInfo
-	err    error
+	models  []apperr.ModelInfo
+	err     error
+	catalog []apperr.ActionMeta
 }
 
 func (m *mockActionService) GetModelsList() ([]string, error) { return nil, nil }
@@ -215,6 +216,15 @@ func (m *mockActionService) GetCompletionResponseForProvider(_ *settings.Provide
 func (m *mockActionService) GetPromptGroups() (*prompts.Prompts, error) { return nil, nil }
 func (m *mockActionService) ProcessPromptActionRequest(_ *prompts.PromptActionRequest) (string, error) {
 	return "", nil
+}
+func (m *mockActionService) GetActionCatalog() []apperr.ActionMeta { return m.catalog }
+func (m *mockActionService) BuildPlanAndPrompts(_ apperr.PromptPreviewRequest) (*apperr.PromptPreview, error) {
+	return nil, nil
+}
+
+func (m *mockActionService) withCatalog(catalog []apperr.ActionMeta) *mockActionService {
+	m.catalog = catalog
+	return m
 }
 
 // ─── GetModels handler ──────────────────────────────────────────────────────
@@ -329,6 +339,64 @@ func TestActionHandler_GetModels_EmptyResult_NonNilSlice(t *testing.T) {
 	}
 }
 
+func TestActionHandler_GetActionCatalog_ReturnsCatalog(t *testing.T) {
+	t.Parallel()
+	catalog := []apperr.ActionMeta{
+		{ID: "rewrite.proofread.basic", Name: "Basic proofreading", Family: "rewrite"},
+		{ID: "summarize.summary", Name: "Summary", Family: "summarize"},
+	}
+	h := newModelsActionHandler((&mockActionService{}).withCatalog(catalog))
+
+	res := h.GetActionCatalog()
+
+	if res.Error != nil {
+		t.Fatalf("unexpected error: %v", res.Error)
+	}
+	if len(res.Data) != 2 {
+		t.Fatalf("want 2 actions, got %d", len(res.Data))
+	}
+	if res.Data[0].ID != "rewrite.proofread.basic" {
+		t.Errorf("Data[0].ID = %q, want %q", res.Data[0].ID, "rewrite.proofread.basic")
+	}
+}
+
+func TestActionHandler_GetActionCatalog_NilBecomesEmptySlice(t *testing.T) {
+	t.Parallel()
+	h := newModelsActionHandler(&mockActionService{catalog: nil})
+
+	res := h.GetActionCatalog()
+
+	if res.Error != nil {
+		t.Fatalf("unexpected error: %v", res.Error)
+	}
+	if res.Data == nil {
+		t.Error("Data must not be nil when service returns nil")
+	}
+	if len(res.Data) != 0 {
+		t.Errorf("want empty slice, got %d items", len(res.Data))
+	}
+}
+
+func TestActionHandler_GetActionCatalog_PanicRecovery(t *testing.T) {
+	t.Parallel()
+	h := &ActionHandler{
+		logger:              nil,
+		zlog:                zerolog.Nop(),
+		actionService:       &panicActionService{},
+		verificationService: &mockVerificationService{},
+		gate:                gate.New(),
+	}
+
+	res := h.GetActionCatalog()
+
+	if res.Error == nil {
+		t.Fatal("expected error after panic recovery")
+	}
+	if res.Error.Code != apperr.CodeInternal {
+		t.Errorf("expected code=internal, got %q", res.Error.Code)
+	}
+}
+
 func TestActionHandler_GetModels_PanicRecovery(t *testing.T) {
 	t.Parallel()
 	panicSvc := &panicActionService{}
@@ -370,4 +438,10 @@ func (p *panicActionService) GetPromptGroups() (*prompts.Prompts, error) {
 }
 func (p *panicActionService) ProcessPromptActionRequest(_ *prompts.PromptActionRequest) (string, error) {
 	panic("panic ProcessPromptActionRequest")
+}
+func (p *panicActionService) GetActionCatalog() []apperr.ActionMeta {
+	panic("panic GetActionCatalog")
+}
+func (p *panicActionService) BuildPlanAndPrompts(_ apperr.PromptPreviewRequest) (*apperr.PromptPreview, error) {
+	panic("panic BuildPlanAndPrompts")
 }
