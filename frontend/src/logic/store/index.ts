@@ -17,6 +17,7 @@ import actionsReducer from './actions/slice';
 import editorReducer from './editor/slice';
 import notificationsReducer from './notifications/slice';
 import settingsReducer from './settings/slice';
+import themeReducer from './theme/slice';
 import uiReducer from './ui/slice';
 
 // Export selectors from all store modules
@@ -24,12 +25,20 @@ export * from './actions/selectors';
 export * from './editor/selectors';
 export * from './notifications/selectors';
 export * from './settings/selectors';
+export * from './theme/selectors';
 export * from './ui/selectors';
 
 // Configure the Redux store
 
 export const store = configureStore({
-    reducer: { settings: settingsReducer, actions: actionsReducer, editor: editorReducer, ui: uiReducer, notifications: notificationsReducer },
+    reducer: {
+        settings: settingsReducer,
+        actions: actionsReducer,
+        editor: editorReducer,
+        ui: uiReducer,
+        notifications: notificationsReducer,
+        theme: themeReducer,
+    },
 });
 
 // Infer the RootState and AppDispatch types from the store itself
