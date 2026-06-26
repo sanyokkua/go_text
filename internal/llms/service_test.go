@@ -63,7 +63,7 @@ func (s *stubSettingsService) UpdateAppBehaviorConfig(_ *settings.AppBehaviorCon
 func (s *stubSettingsService) GetLoggingConfig() (*settings.LoggingConfig, error)                               { return nil, nil }
 func (s *stubSettingsService) UpdateLoggingConfig(_ *settings.LoggingConfig) (*settings.LoggingConfig, error)   { return nil, nil }
 
-func newTestLLMService(t *testing.T, baseURL string) *LLMService {
+func newTestLLMService(t *testing.T) *LLMService {
 	t.Helper()
 	client := resty.New()
 	factory := NewProviderFactory(client)
@@ -86,7 +86,7 @@ func openAIProvider(baseURL string) *settings.ProviderConfig {
 
 func TestGetModelsInfoForProvider_CustomModels_SkipsHTTP(t *testing.T) {
 	t.Parallel()
-	svc := newTestLLMService(t, "http://unreachable.invalid")
+	svc := newTestLLMService(t)
 	provider := &settings.ProviderConfig{
 		Name:            "custom",
 		Kind:            "openai",
@@ -113,8 +113,6 @@ func TestGetModelsInfoForProvider_CustomModels_SkipsHTTP(t *testing.T) {
 
 func TestGetModelsInfoForProvider_DiscoverySuccess_ReturnsCaps(t *testing.T) {
 	t.Parallel()
-	trueVal := true
-	maxTok := 8192
 	body := map[string]any{
 		"data": []map[string]any{
 			{
@@ -126,8 +124,6 @@ func TestGetModelsInfoForProvider_DiscoverySuccess_ReturnsCaps(t *testing.T) {
 			},
 		},
 	}
-	_ = trueVal
-	_ = maxTok
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -135,7 +131,7 @@ func TestGetModelsInfoForProvider_DiscoverySuccess_ReturnsCaps(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	svc := newTestLLMService(t, srv.URL)
+	svc := newTestLLMService(t)
 	provider := &settings.ProviderConfig{
 		Name:       "azure-test",
 		Kind:       "azure",
@@ -178,7 +174,7 @@ func TestGetModelsInfoForProvider_PlainCatalog_NilCaps(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	svc := newTestLLMService(t, srv.URL)
+	svc := newTestLLMService(t)
 	provider := openAIProvider(srv.URL)
 
 	got, err := svc.GetModelsInfoForProvider(provider)
@@ -203,7 +199,7 @@ func TestGetModelsInfoForProvider_DiscoveryFails_FallsBackToCustom(t *testing.T)
 	}))
 	defer srv.Close()
 
-	svc := newTestLLMService(t, srv.URL)
+	svc := newTestLLMService(t)
 	provider := &settings.ProviderConfig{
 		Name:         "fallback-test",
 		Kind:         "openai",
@@ -232,7 +228,7 @@ func TestGetModelsInfoForProvider_DiscoveryFails_NoCustomModels_ReturnsEmpty(t *
 	}))
 	defer srv.Close()
 
-	svc := newTestLLMService(t, srv.URL)
+	svc := newTestLLMService(t)
 	provider := &settings.ProviderConfig{
 		Name:       "no-fallback",
 		Kind:       "openai",
@@ -253,9 +249,9 @@ func TestGetModelsInfoForProvider_DiscoveryFails_NoCustomModels_ReturnsEmpty(t *
 	}
 }
 
-func TestGetModelsInfoForProvider_MissingCredential_ReturnsError(t *testing.T) {
+func TestGetModelsInfoForProvider_MissingCredential_SilentFallback(t *testing.T) {
 	t.Parallel()
-	svc := newTestLLMService(t, "http://irrelevant.invalid")
+	svc := newTestLLMService(t)
 	provider := &settings.ProviderConfig{
 		Name:         "auth-test",
 		Kind:         "openai",
@@ -278,7 +274,7 @@ func TestGetModelsInfoForProvider_MissingCredential_ReturnsError(t *testing.T) {
 
 func TestGetModelsInfoForProvider_NilProvider_ReturnsError(t *testing.T) {
 	t.Parallel()
-	svc := newTestLLMService(t, "http://irrelevant.invalid")
+	svc := newTestLLMService(t)
 	_, err := svc.GetModelsInfoForProvider(nil)
 	if err == nil {
 		t.Fatal("want error for nil provider")
