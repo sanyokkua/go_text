@@ -7,7 +7,9 @@ import (
 	"strings"
 	"time"
 
+	"go_text/internal/apperr"
 	"go_text/internal/prompts/categories"
+	v3 "go_text/internal/prompts/v3"
 
 	"github.com/wailsapp/wails/v2/pkg/logger"
 )
@@ -21,6 +23,7 @@ type PromptServiceAPI interface {
 	GetPrompt(promptID string) (Prompt, error)
 	GetSystemPrompt(category string) (string, error)
 	BuildPrompt(template, category string, action *PromptActionRequest, useMarkdown bool) (string, error)
+	Catalog() []apperr.ActionMeta
 }
 
 type PromptService struct {
@@ -244,6 +247,10 @@ func (p *PromptService) BuildPrompt(template, category string, action *PromptAct
 	))
 
 	return template, nil
+}
+
+func (p *PromptService) Catalog() []apperr.ActionMeta {
+	return v3.Catalog()
 }
 
 func (p *PromptService) validateActionRequest(req *PromptActionRequest, isTranslation bool) error {
