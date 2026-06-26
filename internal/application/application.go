@@ -7,11 +7,13 @@ import (
 	"go_text/internal/actions"
 	"go_text/internal/db"
 	"go_text/internal/file"
+	"go_text/internal/gate"
 	"go_text/internal/llms"
 	"go_text/internal/logging"
 	"go_text/internal/prompts"
 	"go_text/internal/settings"
 	"go_text/internal/tasklog"
+	"go_text/internal/verification"
 
 	zlog "github.com/rs/zerolog/log"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -44,7 +46,10 @@ func NewApplicationContextHolder(appLogger *logging.Logger, restyClient *resty.C
 	providerFactory := llms.NewProviderFactory(restyClient)
 	llmService := llms.NewLLMApiService(appLogger, providerFactory, settingsService)
 	actionService := actions.NewActionService(appLogger, promptService, llmService, settingsService, taskLogService)
-	actionHandler := actions.NewActionHandler(appLogger, zlog.Logger, actionService)
+
+	inferenceGate := gate.New()
+	verificationService := verification.NewService(appLogger, settingsService, providerFactory, inferenceGate)
+	actionHandler := actions.NewActionHandler(appLogger, zlog.Logger, actionService, verificationService, inferenceGate)
 
 	return &ApplicationContextHolder{
 		SettingsHandler: settingsHandler,
