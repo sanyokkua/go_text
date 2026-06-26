@@ -538,4 +538,53 @@ Events would be beneficial for:
 
 ---
 
+## Chain Run Data Flow (T13)
+
+`ProcessPromptChain` orchestrates multi-step inference across sequential inference groups, emitting per-group progress events over the Wails event bus.
+
+### Key Invariants
+
+- **Single concurrent inference** — `InferenceGate` (shared with `TestInference`) is acquired before any LLM call and released on exit, even on panic.
+- **Partial failure** — on step failure, `ChainResultEnv` has both `Data` (last good output) and `Error` (code=`step_failed`).
+- **Cooperative cancel** — checked via `ctx.Done()` before each group; the current `runStep` always completes.
+- **Provider fixed for the run** — `GetSettings()` is called once at the start of `RunChain`, not re-fetched between groups.
+
+### Sequence
+
+```
+Frontend              ActionHandler               ActionService.RunChain
+────────              ─────────────               ──────────────────────
+ProcessPromptChain ─► TryAcquire(gate)
+                      busy? → return CodeBusy
+                      ─
+                      WithCancel(appCtx)
+                      runs[runID] = cancel
+                                              Plan(req)
+                                              GetSettings() [once]
+                                              ── for each group ──────────────
+                                              ctx.Done()? → return partial+cancelled
+                                              emit "chain:progress" running
+                                              same-lang translate? → skip LLM, continue
+                                              Compose(group, input, req)
+                                              runStep(ctx, cfg) ──► LLM provider
+                                              ok  → emit done, input=output, completed++
+                                              err → emit failed, return partial+step_failed
+                      ◄─ (*ChainResult, err)
+                      emit "chain:done" or "chain:error"
+                      delete runs[runID]; cancel(); gate.Release()
+◄─ ChainResultEnv ────
+
+(concurrent) CancelChain(runID) ─► runs[runID]() → ctx.Done() fires before next group
+```
+
+### Progress Events
+
+| Event | Payload | When |
+|---|---|---|
+| `chain:progress` | `StepProgress{RunID, GroupIndex, TotalGroups, Family, Status}` | Before each group ("running") and after ("done"/"failed") |
+| `chain:done` | `*ChainResult` | All groups completed successfully |
+| `chain:error` | `WireError` | Any step failed or run was cancelled |
+
+---
+
 *Previous: [Frontend Architecture](./03-frontend-architecture.md) | Next: [Build & Configuration](./05-build-and-configuration.md)*
