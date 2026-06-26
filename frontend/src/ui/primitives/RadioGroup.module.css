@@ -1,0 +1,50 @@
+/* frontend/src/ui/primitives/RadioGroup.module.css */
+.root {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.row {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.item {
+    width: 16px;
+    height: 16px;
+    border-radius: var(--radius-pill);
+    border: 2px solid var(--ink-3);
+    background: var(--surface);
+    cursor: pointer;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.item[data-state='checked'] { border-color: var(--teal); }
+
+.item:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.item[data-disabled] { opacity: 0.45; cursor: not-allowed; }
+
+.indicator {
+    display: block;
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radius-pill);
+    background: var(--teal);
+}
+
+.label {
+    font-size: 13px;
+    color: var(--ink);
+    cursor: pointer;
+    user-select: none;
+}

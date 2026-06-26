@@ -1,0 +1,43 @@
+/* frontend/src/ui/primitives/Switch.module.css */
+.root {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    width: 38px;
+    height: 22px;
+    border-radius: var(--radius-pill);
+    background: var(--line);
+    border: none;
+    cursor: pointer;
+    transition: background 150ms;
+    flex-shrink: 0;
+    padding: 0;
+}
+
+.root[data-state='checked'] { background: var(--teal); }
+
+.root:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.root[data-disabled] { opacity: 0.45; cursor: not-allowed; }
+
+.thumb {
+    display: block;
+    width: 18px;
+    height: 18px;
+    border-radius: var(--radius-pill);
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+    transform: translateX(2px);
+    transition: transform 150ms;
+    will-change: transform;
+}
+
+.root[data-state='checked'] .thumb { transform: translateX(18px); }
+
+@media (prefers-reduced-motion: reduce) {
+    .root { transition: none; }
+    .thumb { transition: none; }
+}
