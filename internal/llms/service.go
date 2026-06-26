@@ -118,7 +118,8 @@ func (l *LLMService) GetModelsListForProvider(provider *settings.ProviderConfig)
 // GetModelsInfoForProvider returns the model list with optional capability metadata.
 // If UseCustomModels is true and CustomModels is non-empty, those are returned without
 // an HTTP call (Caps = nil for all). If discovery fails, CustomModels are used as a
-// silent fallback. An empty provider always returns an empty non-nil slice.
+// silent fallback. A nil provider returns an error; a live discovery with no models
+// returns an empty non-nil slice.
 func (l *LLMService) GetModelsInfoForProvider(provider *settings.ProviderConfig) ([]apperr.ModelInfo, error) {
 	const op = "LLMService.GetModelsInfoForProvider"
 	if provider == nil {
