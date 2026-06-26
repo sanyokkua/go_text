@@ -1,18 +1,29 @@
-// Mock the adapter module before any imports so module-level getLogger calls are satisfied
+// Mock the adapter module before any imports so module-level getLogger calls are satisfied.
+// We do NOT spread jest.requireActual here — it would pull in services.ts which imports
+// wailsjs ESM files that Jest cannot transform.
 jest.mock('../../adapter', () => ({
-    ...jest.requireActual('../../adapter'),
-    getLogger: jest
-        .fn()
-        .mockReturnValue({
-            logPrint: jest.fn(),
-            logTrace: jest.fn(),
-            logDebug: jest.fn(),
-            logInfo: jest.fn(),
-            logWarning: jest.fn(),
-            logError: jest.fn(),
-            logFatal: jest.fn(),
-        }),
-    SettingsHandlerAdapter: { getAppBehaviorConfig: jest.fn(), updateAppBehaviorConfig: jest.fn() },
+    getLogger: jest.fn().mockReturnValue({
+        logPrint: jest.fn(),
+        logTrace: jest.fn(),
+        logDebug: jest.fn(),
+        logInfo: jest.fn(),
+        logWarning: jest.fn(),
+        logError: jest.fn(),
+        logFatal: jest.fn(),
+    }),
+    unwrap: jest.fn((res: { data?: unknown; error?: unknown }) => {
+        if (res.error) throw res.error;
+        return res.data;
+    }),
+    // Inline implementation mirrors mappers.ts fromWireBehavior — avoids wailsjs ESM import
+    fromWireBehavior: jest.fn((v: { enableTaskLogging: boolean }) => ({
+        enableTaskLogging: v.enableTaskLogging,
+        logDirectory: '',
+    })),
+    SettingsHandlerAdapter: {
+        getAppBehaviorConfig: jest.fn().mockResolvedValue({ data: { enableTaskLogging: false } }),
+        updateAppBehaviorConfig: jest.fn().mockResolvedValue({ data: { enableTaskLogging: true } }),
+    },
 }));
 
 import { AppBehaviorConfig, Settings, SettingsHandlerAdapter } from '../../adapter';
@@ -154,14 +165,14 @@ describe('getAppBehaviorConfig thunk', () => {
         jest.clearAllMocks();
     });
 
-    it('dispatches fulfilled action with the returned config on success', async () => {
-        const cfg: AppBehaviorConfig = { enableTaskLogging: true, logDirectory: '/tmp' };
-        (SettingsHandlerAdapter.getAppBehaviorConfig as jest.Mock).mockResolvedValue(cfg);
+    it('dispatches fulfilled action with the mapped config on success', async () => {
+        (SettingsHandlerAdapter.getAppBehaviorConfig as jest.Mock).mockResolvedValue({ data: { enableTaskLogging: true } });
 
         const action = await getAppBehaviorConfig()(dispatch, getState, undefined);
 
         expect(action.type).toBe('settings/getAppBehaviorConfig/fulfilled');
-        expect(action.payload).toEqual(cfg);
+        // fromWireBehavior maps enableTaskLogging and hardcodes logDirectory: ''
+        expect(action.payload).toEqual({ enableTaskLogging: true, logDirectory: '' });
     });
 
     it('dispatches rejected action with parsed error message on failure', async () => {
@@ -183,14 +194,15 @@ describe('updateAppBehaviorConfig thunk', () => {
         jest.clearAllMocks();
     });
 
-    it('dispatches fulfilled action with the updated config on success', async () => {
+    it('dispatches fulfilled action with the mapped config on success', async () => {
         const input: AppBehaviorConfig = { enableTaskLogging: false, logDirectory: '' };
-        (SettingsHandlerAdapter.updateAppBehaviorConfig as jest.Mock).mockResolvedValue(input);
+        (SettingsHandlerAdapter.updateAppBehaviorConfig as jest.Mock).mockResolvedValue({ data: { enableTaskLogging: false } });
 
         const action = await updateAppBehaviorConfig(input)(dispatch, getState, undefined);
 
         expect(action.type).toBe('settings/updateAppBehaviorConfig/fulfilled');
-        expect(action.payload).toEqual(input);
+        // fromWireBehavior maps enableTaskLogging and hardcodes logDirectory: ''
+        expect(action.payload).toEqual({ enableTaskLogging: false, logDirectory: '' });
     });
 
     it('dispatches rejected action with parsed error message on failure', async () => {
