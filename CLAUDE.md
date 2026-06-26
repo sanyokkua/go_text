@@ -168,3 +168,51 @@ Frontend uses Jest. Redux async thunks are testable without a real backend.
 ## Temporary Files
 
 For the intermediate files, temporary files, plans and other documents and files that are needed only for short period of time and not part of the project - use ".tmp" folder to store them.
+
+# During Application Live Testing you can use local Providers (Not Unit/Integration, only live app testing)
+
+## [LM STUDIO SERVER] Supported endpoints:
+
+### LM Studio API
+
+GET  http://localhost:1234/api/v1/models
+POST http://localhost:1234/api/v1/chat
+POST http://localhost:1234/api/v1/models/load
+POST http://localhost:1234/api/v1/models/download
+GET http://localhost:1234/api/v1/models/download/status:job_id
+
+
+### OpenAI-compatible
+
+GET  http://localhost:1234/v1/models
+POST http://localhost:1234/v1/responses
+POST http://localhost:1234/v1/chat/completions
+POST http://localhost:1234/v1/completions
+POST http://localhost:1234/v1/embeddings
+
+## Ollama
+
+Base URL: http://localhost:11434/api
+
+### Ollama Native
+
+http://localhost:11434/api/generate
+http://localhost:11434/api/chat
+http://localhost:11434/api/embed
+http://localhost:11434/api/tags
+http://localhost:11434/api/ps
+http://localhost:11434/api/show
+http://localhost:11434/api/version
+
+### OpenAI-compatible
+
+GET  http://localhost:11434/v1/models
+POST http://localhost:11434/v1/responses
+POST http://localhost:11434/v1/chat/completions
+POST http://localhost:11434/v1/completions
+POST http://localhost:11434/v1/embeddings
+
+## Notes
+
+All these endpoints and models are available on the current PC.
+If you need test inference - chose the smallest model available.
