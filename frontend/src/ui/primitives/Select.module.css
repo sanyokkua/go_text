@@ -1,0 +1,90 @@
+/* frontend/src/ui/primitives/Select.module.css */
+.trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: var(--radius);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.trigger:hover { background: var(--surface); }
+.trigger:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.trigger[data-disabled] { opacity: 0.45; cursor: not-allowed; }
+
+.accent {
+    background: var(--teal-50);
+    border-color: var(--teal-light);
+    color: var(--teal-dark);
+}
+
+:global(.dark) .accent { color: var(--teal-light); }
+
+.keyLabel {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-3);
+    font-weight: 600;
+}
+
+.caret { font-size: 10px; color: var(--ink-3); margin-left: 2px; }
+
+/* Portaled content */
+.content {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-popover);
+    overflow: hidden;
+    min-width: 160px;
+    max-height: 320px;
+    z-index: var(--z-overlay);
+}
+
+.viewport { padding: var(--space-1); }
+
+.item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    padding: 8px 13px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    outline: none;
+    color: var(--ink);
+}
+
+.item[data-highlighted] { background: var(--surface-2); }
+.item[data-state='checked'] { background: var(--teal-50); color: var(--teal-dark); }
+:global(.dark) .item[data-state='checked'] { color: var(--teal-light); }
+.item[data-disabled] { opacity: 0.45; pointer-events: none; }
+
+.indicator { font-size: 8px; color: var(--teal); flex-shrink: 0; }
+
+.tag {
+    margin-left: auto;
+    font-size: 10.5px;
+    color: var(--ink-3);
+}
+
+.separator { height: 1px; background: var(--line); margin: var(--space-1) 0; }
+
+.scrollBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 24px;
+    background: var(--surface);
+    color: var(--ink-3);
+    font-size: 10px;
+    cursor: default;
+}
