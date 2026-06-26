@@ -97,3 +97,25 @@ func (h *ActionHandler) TestInference(providerID string) (res apperr.VerifyResul
 	}
 	return apperr.VerifyResult{Data: outcome}
 }
+
+// GetModels returns the live model list for the given provider.
+// An empty providerID uses the current provider.
+// Returns ModelsResult.Data as a non-nil slice (may be empty if no models are available).
+func (h *ActionHandler) GetModels(providerID string) (res apperr.ModelsResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicMsgFmt, r))
+			wire := apperr.ToWire(h.zlog, ae)
+			res = apperr.ModelsResult{Error: &wire}
+		}
+	}()
+	models, err := h.actionService.GetModelsInfo(providerID)
+	if err != nil {
+		wire := apperr.ToWire(h.zlog, err)
+		return apperr.ModelsResult{Error: &wire}
+	}
+	if models == nil {
+		models = []apperr.ModelInfo{}
+	}
+	return apperr.ModelsResult{Data: models}
+}
