@@ -39,7 +39,7 @@
 }
 
 :global(.dark) .item[data-state='on'] {
-    background: #0e1413;
+    background: var(--bg);
     color: var(--teal-light);
 }
 
