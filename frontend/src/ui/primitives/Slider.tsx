@@ -20,7 +20,7 @@ export const Slider: React.FC<SliderProps> = ({ value, onValueChange, min = 0, m
         min={min}
         max={max}
         step={step}
-        disabled={disabled}
+        disabled={disabled ?? false}
     >
         <RadixSlider.Track className={styles.track}>
             <RadixSlider.Range className={styles.range} />
