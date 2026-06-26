@@ -22,7 +22,7 @@
         "jsx": "react-jsx"
     },
     "include": ["src", "src/types/**/*.d.ts"],
-    "exclude": ["node_modules", "**/*.js", "src/logic", "src/ui"],
+    "exclude": ["node_modules", "**/*.js", "src/logic"],
     "typeRoots": ["node_modules/@types", "src/types"],
     "references": [{ "path": "./tsconfig.node.json" }]
 }
