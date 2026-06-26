@@ -1,4 +1,4 @@
-import { Component, type ReactNode } from 'react';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { LogError } from '../../wailsjs/runtime';
 
 interface Props {
@@ -16,14 +16,12 @@ export default class RootErrorBoundary extends Component<Props, State> {
 		return { failed: true };
 	}
 
-	componentDidCatch(err: Error, info: React.ErrorInfo): void {
+	componentDidCatch(err: Error, info: ErrorInfo): void {
 		const detail = `${err.message}\n${info.componentStack ?? ''}`;
-		LogError(detail).catch(() => {
-			// LogError itself failed — nothing to do, swallow silently
-		});
+		LogError(detail);
 	}
 
-	render(): React.ReactNode {
+	render(): ReactNode {
 		if (this.state.failed) {
 			return (
 				<div style={{ padding: '2rem', textAlign: 'center' }}>
