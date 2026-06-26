@@ -237,6 +237,15 @@ type ChainResultEnv struct {
 	Error *WireError   `json:"error,omitempty"`
 }
 
+// StepProgress is emitted as the "chain:progress" Wails event payload per inference group.
+type StepProgress struct {
+	RunID       string `json:"runId"`
+	GroupIndex  int    `json:"groupIndex"`
+	TotalGroups int    `json:"totalGroups"`
+	Family      string `json:"family"`
+	Status      string `json:"status"` // "running" | "done" | "failed"
+}
+
 type StacksResult struct {
 	Data  []SavedStack `json:"data"`
 	Error *WireError   `json:"error,omitempty"`
