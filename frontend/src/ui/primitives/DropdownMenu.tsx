@@ -12,26 +12,32 @@ export interface DropdownMenuProps {
     items: DropdownMenuItem[];
 }
 
+function renderDropdownItem(item: DropdownMenuItem, i: number): React.ReactElement {
+    if (item.type === 'separator') {
+        return <RadixDropdown.Separator key={`sep-${i}`} className={styles.separator} />;
+    }
+    const onClick = item.onClick;
+    const onSelectProp = onClick ? { onSelect: () => onClick() } : {};
+    const dangerClass = item.variant === 'danger' ? styles.danger : '';
+    return (
+        <RadixDropdown.Item
+            key={item.label}
+            className={`${styles.item} ${dangerClass}`}
+            disabled={item.disabled ?? false}
+            {...onSelectProp}
+        >
+            {item.icon && <span className={styles.icon}>{item.icon}</span>}
+            {item.label}
+        </RadixDropdown.Item>
+    );
+}
+
 export const DropdownMenu: React.FC<DropdownMenuProps> = ({ trigger, items }) => (
     <RadixDropdown.Root>
         <RadixDropdown.Trigger asChild>{trigger}</RadixDropdown.Trigger>
         <RadixDropdown.Portal>
             <RadixDropdown.Content className={styles.content} sideOffset={4}>
-                {items.map((item, i) =>
-                    item.type === 'separator' ? (
-                        <RadixDropdown.Separator key={`sep-${i}`} className={styles.separator} />
-                    ) : (
-                        <RadixDropdown.Item
-                            key={item.label}
-                            className={`${styles.item} ${item.variant === 'danger' ? styles.danger : ''}`}
-                            disabled={item.disabled ?? false}
-                            onSelect={item.onClick}
-                        >
-                            {item.icon && <span className={styles.icon}>{item.icon}</span>}
-                            {item.label}
-                        </RadixDropdown.Item>
-                    ),
-                )}
+                {items.map((item, i) => renderDropdownItem(item, i))}
             </RadixDropdown.Content>
         </RadixDropdown.Portal>
     </RadixDropdown.Root>
