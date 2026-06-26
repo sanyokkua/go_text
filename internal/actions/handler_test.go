@@ -1,6 +1,7 @@
 package actions
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -219,6 +220,9 @@ func (m *mockActionService) ProcessPromptActionRequest(_ *prompts.PromptActionRe
 }
 func (m *mockActionService) GetActionCatalog() []apperr.ActionMeta { return m.catalog }
 func (m *mockActionService) BuildPlanAndPrompts(_ apperr.PromptPreviewRequest) (*apperr.PromptPreview, error) {
+	return nil, nil
+}
+func (m *mockActionService) RunChain(_ context.Context, _ apperr.ChainRequest, _ func(apperr.StepProgress)) (*apperr.ChainResult, error) {
 	return nil, nil
 }
 
@@ -444,4 +448,7 @@ func (p *panicActionService) GetActionCatalog() []apperr.ActionMeta {
 }
 func (p *panicActionService) BuildPlanAndPrompts(_ apperr.PromptPreviewRequest) (*apperr.PromptPreview, error) {
 	panic("panic BuildPlanAndPrompts")
+}
+func (p *panicActionService) RunChain(_ context.Context, _ apperr.ChainRequest, _ func(apperr.StepProgress)) (*apperr.ChainResult, error) {
+	panic("panic RunChain")
 }

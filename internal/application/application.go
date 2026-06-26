@@ -64,6 +64,7 @@ func NewApplicationContextHolder(appLogger *logging.Logger, restyClient *resty.C
 // SetContext stores the Wails runtime context for use by bound methods.
 func (a *ApplicationContextHolder) SetContext(ctx context.Context) {
 	a.ctx = ctx
+	a.ActionHandler.SetContext(ctx)
 }
 
 // Init opens the database, wires the SQLite settings repository, and
@@ -119,9 +120,9 @@ func (a *ApplicationContextHolder) Init(ctx context.Context) error {
 	return nil
 }
 
-// CancelAllRuns cancels any in-flight background goroutines.
+// CancelAllRuns cancels every in-flight chain run (called on shutdown).
 func (a *ApplicationContextHolder) CancelAllRuns() {
-	// No background goroutines exist yet; expanded when background processing is introduced.
+	a.ActionHandler.CancelAllRuns()
 }
 
 // EnableLoggingForDev enables resty debug logging in dev builds.
