@@ -7,6 +7,7 @@
     --teal-light: #4db6ac;
     --teal-50: #e0f2f1;
     --purple: #5e35b1;
+    --purple-light: #b39ddb;
     --purple-50: #ede7f6;
     --purple-line: #d1c4e9;
 
@@ -33,6 +34,7 @@
     /* Elevation */
     --shadow: 0 1px 2px rgba(16, 32, 30, 0.06), 0 8px 24px rgba(16, 32, 30, 0.08);
     --shadow-popover: 0 18px 44px rgba(16, 32, 30, 0.22);
+    --shadow-primary: 0 4px 12px rgba(0, 150, 136, 0.28);
 
     /* Radii */
     --radius-sm: 7px;

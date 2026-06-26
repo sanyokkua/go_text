@@ -19,7 +19,7 @@
 :global(.dark) .accent { color: var(--teal-light); }
 
 .purple { background: var(--purple-50); border-color: var(--purple-line); color: var(--purple); }
-:global(.dark) .purple { color: #b39ddb; }
+:global(.dark) .purple { color: var(--purple-light); }
 
 .remove {
     display: inline-flex;

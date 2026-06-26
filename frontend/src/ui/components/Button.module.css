@@ -31,7 +31,7 @@
     background: var(--teal);
     border-color: var(--teal);
     color: #fff;
-    box-shadow: 0 4px 12px rgba(0, 150, 136, 0.28);
+    box-shadow: var(--shadow-primary);
 }
 
 .primary:hover:not(:disabled) { background: var(--teal-dark); border-color: var(--teal-dark); }

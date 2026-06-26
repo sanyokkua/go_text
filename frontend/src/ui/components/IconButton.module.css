@@ -5,7 +5,7 @@
     justify-content: center;
     min-width: 31px;
     height: 31px;
-    border-radius: 9px;
+    border-radius: var(--radius);
     border: 1px solid var(--line);
     background: var(--surface);
     color: var(--ink-2);
@@ -37,6 +37,6 @@
 .compact {
     height: 24px;
     min-width: 24px;
-    border-radius: 7px;
+    border-radius: var(--radius-sm);
     font-size: 12px;
 }
