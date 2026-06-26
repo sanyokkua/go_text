@@ -97,7 +97,7 @@ func main() {
 			}
 		},
 		Bind: []any{
-			app, app.ActionHandler, app.SettingsHandler,
+			app, app.ActionHandler, app.SettingsHandler, app.StackHandler,
 		},
 		EnumBind: []any{
 			allErrorCodes,

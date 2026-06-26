@@ -12,6 +12,7 @@ import (
 	"go_text/internal/logging"
 	"go_text/internal/prompts"
 	"go_text/internal/settings"
+	"go_text/internal/stacks"
 	"go_text/internal/tasklog"
 	"go_text/internal/verification"
 
@@ -26,6 +27,7 @@ type ApplicationContextHolder struct {
 	SettingsHandler *settings.SettingsHandler
 	SettingsService *settings.SettingsService
 	ActionHandler   *actions.ActionHandler
+	StackHandler    *stacks.StackHandler
 	RestyClient     *resty.Client
 	DB              *db.Database
 
@@ -51,10 +53,14 @@ func NewApplicationContextHolder(appLogger *logging.Logger, restyClient *resty.C
 	verificationService := verification.NewService(appLogger, settingsService, providerFactory, inferenceGate)
 	actionHandler := actions.NewActionHandler(appLogger, zlog.Logger, actionService, verificationService, inferenceGate)
 
+	catalog := actionService.GetActionCatalog()
+	stackHandler := stacks.NewStackHandler(appLogger, zlog.Logger, nil, catalog)
+
 	return &ApplicationContextHolder{
 		SettingsHandler: settingsHandler,
 		SettingsService: settingsService,
 		ActionHandler:   actionHandler,
+		StackHandler:    stackHandler,
 		RestyClient:     restyClient,
 		fileService:     fileUtilsService,
 		appLogger:       appLogger,
@@ -86,6 +92,9 @@ func (a *ApplicationContextHolder) Init(ctx context.Context) error {
 	sqliteRepo := settings.NewSqliteSettingsRepository(database)
 	a.SettingsService.SetRepository(sqliteRepo)
 	a.SettingsHandler.Configure(a.appLogger, zlog.Logger, a.SettingsService)
+
+	stackRepo := stacks.NewSqliteStackRepository(database)
+	a.StackHandler.SetRepository(stackRepo)
 
 	// Read logging config via service (now SQLite-backed).
 	logCfg, err := a.SettingsService.GetLoggingConfig()
