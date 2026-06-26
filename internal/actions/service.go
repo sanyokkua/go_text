@@ -408,12 +408,43 @@ func (a *ActionService) runStep(ctx context.Context, cfg *settings.Settings, req
 	return result, nil
 }
 
+// buildPreviewParams constructs PreviewParams from resolved settings and request context.
+// Format values match the spec: "plain" | "markdown".
+// TokenParam values: "max_tokens" (legacy) | "max_completion_tokens" (default).
+func buildPreviewParams(cfg *settings.Settings, req apperr.PromptPreviewRequest) apperr.PreviewParams {
+	format := "plain"
+	if req.UseMarkdown {
+		format = "markdown"
+	}
+	tokenParam := "max_completion_tokens"
+	if cfg.ModelConfig.UseLegacyMaxTokens {
+		tokenParam = "max_tokens"
+	}
+	p := apperr.PreviewParams{
+		Model:      cfg.ModelConfig.Name,
+		Format:     format,
+		InputLang:  req.InputLanguageID,
+		OutputLang: req.OutputLanguageID,
+		TokenParam: tokenParam,
+		Stream:     false,
+	}
+	if cfg.ModelConfig.UseTemperature {
+		t := cfg.ModelConfig.Temperature
+		p.Temperature = &t
+	}
+	return p
+}
+
 // BuildPlanAndPrompts runs planning + composition without calling the LLM.
-// Used by the Prompt Inspector (PreviewPrompt handler, T15) and ProcessPromptChain (T13).
-// Provider/model resolution is NOT performed here; PreviewGroup.Parameters is left
-// for the handler layer to fill from resolved provider settings.
+// Used by PreviewPrompt (T15). Same Planner + Composer as RunChain — preview cannot drift from a real run.
+// Group 0 uses sampleInput (or a placeholder); groups 1+ show the previous-step placeholder.
+// Parameters are filled from settings when the service is fully wired; left zero in unit tests.
 func (a *ActionService) BuildPlanAndPrompts(req apperr.PromptPreviewRequest) (*apperr.PromptPreview, error) {
-	const op = "ActionService.BuildPlanAndPrompts"
+	const (
+		op                  = "ActionService.BuildPlanAndPrompts"
+		defaultSampleInput  = "[sample input text]"
+		prevStepPlaceholder = "‹output of previous step›"
+	)
 
 	chainReq := apperr.ChainRequest{
 		Steps:            req.Steps,
@@ -432,7 +463,19 @@ func (a *ActionService) BuildPlanAndPrompts(req apperr.PromptPreviewRequest) (*a
 
 	sampleInput := req.SampleInput
 	if sampleInput == "" {
-		sampleInput = "[sample input text]"
+		sampleInput = defaultSampleInput
+	}
+
+	// Fill per-group parameters from current settings when the service is fully wired.
+	// In unit tests that construct ActionService directly without a settingsService, params
+	// are left as zero values — tests that verify Parameters must supply a mock settingsService.
+	var params apperr.PreviewParams
+	if a.settingsService != nil {
+		cfg, err := a.settingsService.GetSettings()
+		if err != nil {
+			return nil, fmt.Errorf("%s: resolve settings: %w", op, err)
+		}
+		params = buildPreviewParams(cfg, req)
 	}
 
 	catalogMap := make(map[string]apperr.ActionMeta, len(a.catalog))
@@ -442,7 +485,13 @@ func (a *ActionService) BuildPlanAndPrompts(req apperr.PromptPreviewRequest) (*a
 
 	groups := make([]apperr.PreviewGroup, len(plan.Groups))
 	for i, g := range plan.Groups {
-		sys, user := a.composer.Compose(g, sampleInput, chainReq, req.UseMarkdown)
+		// Group 0 receives the actual sample input; later groups show the prev-step placeholder
+		// because their real input is the runtime output of the preceding group.
+		groupInput := sampleInput
+		if i > 0 {
+			groupInput = prevStepPlaceholder
+		}
+		sys, user := a.composer.Compose(g, groupInput, chainReq, req.UseMarkdown)
 
 		applied := make([]apperr.AppliedAction, len(g.Steps))
 		for j, s := range g.Steps {
@@ -460,6 +509,7 @@ func (a *ActionService) BuildPlanAndPrompts(req apperr.PromptPreviewRequest) (*a
 			AppliedActions: applied,
 			SystemPrompt:   sys,
 			UserPrompt:     user,
+			Parameters:     params,
 		}
 	}
 
