@@ -15,33 +15,6 @@ export type ParsedErrorType =
     | 'UnknownError';
 
 /**
- * Formats backend error messages by splitting on colons and joining with newlines
- *
- * Backend errors often contain multiple levels of wrapping separated by colons,
- * making them difficult to read. This function improves readability by converting
- * them to a multi-line format.
- *
- * @param message - The error message to format
- * @returns Formatted message with better readability for backend errors
- */
-function formatBackendError(message: string): string {
-    // Check if this looks like a backend error (contains colons)
-    if (message.includes(':')) {
-        // Split by colons, trim whitespace, and filter out empty segments
-        const parts = message
-            .split(':')
-            .map((part) => part.trim())
-            .filter((part) => part.length > 0);
-
-        // If we have multiple parts, join with newlines
-        if (parts.length > 1) {
-            return parts.join('. ');
-        }
-    }
-    return message;
-}
-
-/**
  * Parsed error result with structured error information
  */
 export interface ParsedErrorResult {
@@ -81,10 +54,10 @@ export function parseError(error: unknown, includeOriginal: boolean = false): Pa
         errorMessage = 'Received undefined value';
     } else if (error instanceof Error) {
         errorType = (error.name as ParsedErrorType) || 'Error';
-        errorMessage = formatBackendError(error.message || 'No error message available');
+        errorMessage = error.message || 'No error message available';
     } else if (typeof error === 'string') {
         errorType = 'StringError';
-        errorMessage = formatBackendError(error);
+        errorMessage = error;
     } else if (typeof error === 'object') {
         const errObj = error as Record<string, unknown>;
 
@@ -93,7 +66,7 @@ export function parseError(error: unknown, includeOriginal: boolean = false): Pa
             errorType = typeof errObj.name === 'string' && errObj.name.length > 0 ? (String(errObj.name) as ParsedErrorType) : 'ObjectError';
 
             try {
-                errorMessage = typeof errObj.message === 'string' ? formatBackendError(errObj.message) : JSON.stringify(error);
+                errorMessage = typeof errObj.message === 'string' ? errObj.message : JSON.stringify(error);
             } catch {
                 errorMessage = 'Failed to serialize error object';
             }
