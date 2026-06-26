@@ -1,0 +1,8 @@
+/* frontend/src/ui/components/Card.module.css */
+.card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 18px;
+    box-shadow: var(--shadow);
+}

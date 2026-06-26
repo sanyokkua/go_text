@@ -12,6 +12,7 @@ const config = {
     ],
     testPathIgnorePatterns: ['/node_modules/', '/e2e/'],
     moduleNameMapper: {
+        '\\.module\\.css$': '<rootDir>/__mocks__/styleMock.js',
         '^(.{1,2}/.*)\\.js$': '$1',
         // v2 wailsjs mocks (preserved until v3 handlers regenerate bindings)
         '^../../../wailsjs/go/actions/ActionHandler$': '<rootDir>/__mocks__/wailsActionHandler.js',

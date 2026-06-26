@@ -1,0 +1,42 @@
+/* frontend/src/ui/components/IconButton.module.css */
+.iconbtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 31px;
+    height: 31px;
+    border-radius: 9px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink-2);
+    cursor: pointer;
+    transition: background 100ms;
+    padding: 0;
+    flex-shrink: 0;
+    user-select: none;
+    font-size: 14px;
+}
+
+.iconbtn:hover:not(:disabled) { background: var(--surface-2); }
+
+.iconbtn:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.iconbtn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.on {
+    background: var(--teal-50);
+    border-color: var(--teal-light);
+    color: var(--teal-dark);
+}
+
+:global(.dark) .on { color: var(--teal-light); }
+
+.compact {
+    height: 24px;
+    min-width: 24px;
+    border-radius: 7px;
+    font-size: 12px;
+}
