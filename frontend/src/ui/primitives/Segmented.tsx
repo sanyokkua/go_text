@@ -22,7 +22,7 @@ export const Segmented: React.FC<SegmentedProps> = ({ value, onValueChange, item
         className={styles.root}
         value={value}
         onValueChange={(v) => { if (v) onValueChange(v); }}
-        disabled={disabled}
+        disabled={disabled ?? false}
     >
         {items.map((item) => (
             <ToggleGroup.Item
