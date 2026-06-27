@@ -1,6 +1,4 @@
-import React from 'react';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
@@ -37,12 +35,13 @@ function makeStore(
             editor: { inputContent: '', outputContent: '', viewMode: 'preview' as const, ...editorOverrides },
             ui: {
                 layout: 'side' as const, sidebarCollapsed: false, historyOpen: false,
-                inferenceRunning: false, currentView: 'main' as const, armedActionId: null, activeActionsTab: null,
+                inferenceRunning: false, currentView: 'main' as const, armedActionId: null,
+                activeActionsTab: null, buildMode: false, editingStackId: null,
                 theme: { mode: 'auto' as const, effective: 'light' as const },
                 ...uiOverrides,
             },
             run: { status: 'idle' as const, runId: null, currentGroupIndex: null, totalGroups: null, currentGroupFamily: null, failedIndex: null, partialOutput: null, errorCode: null, errorMessage: null, ...runOverrides },
-            actions: { catalog, catalogStatus: (catalog.length > 0 ? 'success' : 'idle') as 'success' | 'idle', availableModels: [], modelsStatus: 'idle' as const },
+            actions: { catalog, catalogStatus: catalog.length > 0 ? 'success' as const : 'idle' as const, availableModels: [], modelsStatus: 'idle' as const },
         },
     });
 }

@@ -11,5 +11,8 @@ export const selectCurrentView = (state: RootState): CurrentView => state.ui.cur
 export const selectArmedActionId = (state: RootState): string | null => state.ui.armedActionId;
 export const selectActiveActionsTab = (state: RootState): string | null => state.ui.activeActionsTab;
 
+export const selectBuildMode = (state: RootState): boolean => state.ui.buildMode;
+export const selectEditingStackId = (state: RootState): string | null => state.ui.editingStackId;
+
 // Backward-compat alias — replaces the v2 `selectIsAppBusy` across old components
 export const selectIsAppBusy = selectInferenceRunning;

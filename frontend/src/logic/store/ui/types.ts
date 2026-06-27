@@ -1,7 +1,7 @@
 export type ThemeMode = 'auto' | 'light' | 'dark';
 export type ThemeEffective = 'light' | 'dark';
 
-export type CurrentView = 'main' | 'settings' | 'info';
+export type CurrentView = 'main' | 'settings' | 'info' | 'stacks';
 
 export interface ThemeSubState {
     mode: ThemeMode;
@@ -16,5 +16,7 @@ export interface UIState {
     currentView: CurrentView;
     armedActionId: string | null;
     activeActionsTab: string | null;
+    buildMode: boolean;
+    editingStackId: string | null;
     theme: ThemeSubState;
 }

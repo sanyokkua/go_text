@@ -14,6 +14,8 @@ const initialState: UIState = {
     currentView: 'main',
     armedActionId: null,
     activeActionsTab: null,
+    buildMode: false,
+    editingStackId: null,
     theme: {
         mode: 'auto',
         effective: 'light',
@@ -56,6 +58,17 @@ const uiSlice = createSlice({
         setActiveActionsTab: (state, action: PayloadAction<string | null>) => {
             state.activeActionsTab = action.payload;
         },
+        enterBuildMode: (state) => {
+            state.buildMode = true;
+            state.editingStackId = null;
+        },
+        exitBuildMode: (state) => {
+            state.buildMode = false;
+            state.editingStackId = null;
+        },
+        setEditingStackId: (state, action: PayloadAction<string | null>) => {
+            state.editingStackId = action.payload;
+        },
     },
     extraReducers: (builder) => {
         builder
@@ -85,11 +98,13 @@ export const {
     toggleHistory, setHistoryOpen,
     setThemeMode, setThemeEffective,
     setCurrentView, armAction, setActiveActionsTab,
+    enterBuildMode, exitBuildMode, setEditingStackId,
 } = uiSlice.actions;
 
 // Navigation helpers — each navigates to the named view
 export const navigateToSettings = () => setCurrentView('settings');
 export const navigateToInfo = () => setCurrentView('info');
 export const navigateToMain = () => setCurrentView('main');
+export const navigateToStacks = () => setCurrentView('stacks');
 
 export default uiSlice.reducer;
