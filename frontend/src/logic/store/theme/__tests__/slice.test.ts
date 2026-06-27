@@ -33,6 +33,8 @@ describe('UI slice — theme functionality', () => {
         currentView: 'main',
         armedActionId: null,
         activeActionsTab: null,
+        buildMode: false,
+        editingStackId: null,
         theme: { mode: 'auto', effective: 'light' },
     };
 

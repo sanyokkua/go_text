@@ -48,6 +48,8 @@ const initialState: UIState = {
     currentView: 'main',
     armedActionId: null,
     activeActionsTab: null,
+    buildMode: false,
+    editingStackId: null,
     theme: {
         mode: 'auto',
         effective: 'light',
