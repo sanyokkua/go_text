@@ -25,7 +25,7 @@ const GlobalLoadingOverlay: React.FC = () => {
                 flexDirection: 'column',
                 justifyContent: 'center',
                 alignItems: 'center',
-                background: 'rgba(0,0,0,0.1)',
+                background: 'var(--scrim)',
             }}
         >
             <div

@@ -36,7 +36,7 @@ const AppBar: React.FC = () => {
                 justifyContent: 'space-between',
                 padding: '0 var(--space-3)',
                 background: 'var(--teal-dark)',
-                color: '#fff',
+                color: 'var(--white)',
                 gap: 'var(--space-2)',
             }}
         >

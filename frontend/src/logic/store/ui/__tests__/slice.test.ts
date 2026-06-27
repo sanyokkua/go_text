@@ -38,6 +38,7 @@ import {
     selectActiveActionsTab,
 } from '../selectors';
 import type { UIState } from '../types';
+import type { RootState } from '../../../index';
 
 const initialState: UIState = {
     layout: 'side',
@@ -230,7 +231,7 @@ describe('ui slice reducer', () => {
 describe('ui selectors', () => {
     const mockRootState = {
         ui: initialState,
-    } as any;
+    } as unknown as RootState;
 
     it('selectCurrentView returns the currentView from state', () => {
         expect(selectCurrentView(mockRootState)).toBe('main');
@@ -239,7 +240,7 @@ describe('ui selectors', () => {
     it('selectCurrentView returns updated currentView after state change', () => {
         const changedState = {
             ui: { ...initialState, currentView: 'settings' },
-        } as any;
+        } as unknown as RootState;
 
         expect(selectCurrentView(changedState)).toBe('settings');
     });
@@ -251,7 +252,7 @@ describe('ui selectors', () => {
     it('selectArmedActionId returns the action id when armed', () => {
         const armedState = {
             ui: { ...initialState, armedActionId: 'action-id-456' },
-        } as any;
+        } as unknown as RootState;
 
         expect(selectArmedActionId(armedState)).toBe('action-id-456');
     });
@@ -263,7 +264,7 @@ describe('ui selectors', () => {
     it('selectActiveActionsTab returns the tab name when set', () => {
         const tabState = {
             ui: { ...initialState, activeActionsTab: 'tab-2' },
-        } as any;
+        } as unknown as RootState;
 
         expect(selectActiveActionsTab(tabState)).toBe('tab-2');
     });

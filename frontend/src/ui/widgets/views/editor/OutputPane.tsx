@@ -79,7 +79,8 @@ const OutputPane: React.FC = () => {
                             key={mode}
                             className={`${styles.viewTab} ${viewMode === mode ? styles.viewTabActive : ''}`}
                             onClick={() => dispatch(setViewMode(mode))}
-                            disabled={mode === 'diff' && !hasDiff}
+                            disabled={inferenceRunning || (mode === 'diff' && !hasDiff)}
+                            aria-disabled={inferenceRunning || (mode === 'diff' && !hasDiff)}
                             aria-label={`${mode} view`}
                         >
                             {mode.charAt(0).toUpperCase() + mode.slice(1)}

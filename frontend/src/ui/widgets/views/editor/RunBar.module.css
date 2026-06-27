@@ -39,7 +39,7 @@
 
 .chipBadge {
     background: var(--teal-light);
-    color: white;
+    color: var(--white);
     border-radius: var(--radius-pill);
     font-size: 0.65rem;
     padding: 1px 6px;
@@ -63,7 +63,7 @@
     background: var(--teal);
     border: none;
     border-radius: var(--radius-sm);
-    color: white;
+    color: var(--white);
     cursor: pointer;
     font-size: 0.875rem;
     font-weight: 600;
