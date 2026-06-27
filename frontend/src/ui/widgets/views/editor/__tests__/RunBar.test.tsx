@@ -31,12 +31,12 @@ function makeStore(uiOverrides = {}, editorOverrides = {}, runOverrides = {}) {
         preloadedState: {
             editor: { inputContent: '', outputContent: '', viewMode: 'preview' as const, ...editorOverrides },
             ui: {
-                layout: 'side', sidebarCollapsed: false, historyOpen: false,
-                inferenceRunning: false, currentView: 'main', armedActionId: null, activeActionsTab: null,
-                theme: { mode: 'auto', effective: 'light' },
+                layout: 'side' as const, sidebarCollapsed: false, historyOpen: false,
+                inferenceRunning: false, currentView: 'main' as const, armedActionId: null, activeActionsTab: null,
+                theme: { mode: 'auto' as const, effective: 'light' as const },
                 ...uiOverrides,
             },
-            run: { status: 'idle', runId: null, currentGroupIndex: null, totalGroups: null, currentGroupFamily: null, failedIndex: null, partialOutput: null, errorCode: null, errorMessage: null, ...runOverrides },
+            run: { status: 'idle' as const, runId: null, currentGroupIndex: null, totalGroups: null, currentGroupFamily: null, failedIndex: null, partialOutput: null, errorCode: null, errorMessage: null, ...runOverrides },
         },
     });
 }
