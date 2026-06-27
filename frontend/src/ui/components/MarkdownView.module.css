@@ -1,0 +1,11 @@
+.root {
+    color: var(--ink);
+    font-family: var(--font);
+    line-height: 1.6;
+}
+
+.stub {
+    white-space: pre-wrap;
+    font-family: var(--font);
+    margin: 0;
+}
