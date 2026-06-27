@@ -1,0 +1,135 @@
+.sidebar {
+    width: 186px;
+    height: 100%;
+    background: var(--surface-2);
+    border-right: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.iconStrip {
+    width: 44px;
+    height: 100%;
+    background: var(--surface-2);
+    border-right: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--space-2) 0;
+    gap: var(--space-1);
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.iconBtn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--ink-2);
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.iconBtn:hover {
+    background: var(--surface);
+}
+
+.tabs {
+    display: flex;
+    flex-direction: column;
+    border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+    max-height: 40%;
+    overflow-y: auto;
+}
+
+.tab {
+    background: none;
+    border: none;
+    border-left: 3px solid transparent;
+    color: var(--ink-2);
+    cursor: pointer;
+    font-size: 0.75rem;
+    padding: var(--space-2) var(--space-3);
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tab:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.tabActive {
+    border-left-color: var(--teal);
+    color: var(--teal-dark);
+    background: var(--teal-50);
+    font-weight: 600;
+}
+
+.list {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--space-1) 0;
+}
+
+.actionRow {
+    width: 100%;
+    background: none;
+    border: none;
+    border-left: 3px solid transparent;
+    color: var(--ink);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-3);
+    text-align: left;
+    font-size: 0.8rem;
+}
+
+.actionRow:hover:not(:disabled) {
+    background: var(--surface);
+}
+
+.actionRow:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.actionArmed {
+    background: var(--teal-50);
+    border-left-color: var(--teal);
+    color: var(--teal-dark);
+    font-weight: 600;
+}
+
+.check {
+    color: var(--teal);
+    font-size: 0.7rem;
+    flex-shrink: 0;
+}
+
+.actionName {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.emptyState {
+    color: var(--ink-3);
+    font-size: 0.75rem;
+    padding: var(--space-3);
+    text-align: center;
+}
