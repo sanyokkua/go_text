@@ -1,13 +1,13 @@
 import React from 'react';
-import { selectCurrentView, selectIsAppBusy, useAppSelector } from '../../../logic/store';
+
+import { selectCurrentView, selectInferenceRunning, useAppSelector } from '../../../logic/store';
 import { UI_HEIGHTS } from '../../styles/constants';
 
 const GlobalLoadingOverlay: React.FC = () => {
-    const isAppBusy = useAppSelector(selectIsAppBusy);
+    const isRunning = useAppSelector(selectInferenceRunning);
     const view = useAppSelector(selectCurrentView);
-    const isSettings = view === 'settings';
 
-    if (!isAppBusy) {
+    if (!isRunning || view !== 'main') {
         return null;
     }
 
@@ -18,7 +18,7 @@ const GlobalLoadingOverlay: React.FC = () => {
                 zIndex: 'var(--z-modal)' as React.CSSProperties['zIndex'],
                 top: UI_HEIGHTS.APP_BAR,
                 right: 0,
-                bottom: isSettings ? 0 : UI_HEIGHTS.STATUS_BAR,
+                bottom: UI_HEIGHTS.STATUS_BAR,
                 left: 0,
                 backdropFilter: 'blur(4px)',
                 display: 'flex',

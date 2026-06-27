@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { getLogger } from '../../../logic/adapter';
 import { selectCurrentView, useAppDispatch, useAppSelector } from '../../../logic/store';
-import { getPromptGroups } from '../../../logic/store/actions';
+import { loadActionCatalog } from '../../../logic/store/actions';
 import { initializeSettingsState } from '../../../logic/store/settings';
 import { setActiveActionsTab } from '../../../logic/store/ui';
 import { parseError } from '../../../logic/utils/error_utils';
@@ -23,13 +23,11 @@ const AppMainView: React.FC = () => {
             try {
                 logger.logInfo('Initializing app state');
                 await dispatch(initializeSettingsState()).unwrap();
-                logger.logInfo('Settings initialized successfully');
-                const promptGroupsResult = await dispatch(getPromptGroups()).unwrap();
-                logger.logInfo('Prompt groups loaded successfully');
-                if (promptGroupsResult && Object.keys(promptGroupsResult.promptGroups).length > 0) {
-                    const firstGroupId = Object.keys(promptGroupsResult.promptGroups)[0];
-                    dispatch(setActiveActionsTab(firstGroupId));
-                    logger.logInfo(`Set active actions tab to: ${firstGroupId}`);
+                logger.logInfo('Settings initialized');
+                const catalog = await dispatch(loadActionCatalog()).unwrap();
+                logger.logInfo(`Catalog loaded: ${catalog.length} actions`);
+                if (catalog.length > 0) {
+                    dispatch(setActiveActionsTab(catalog[0].category));
                 }
             } catch (error: unknown) {
                 const err = parseError(error);
