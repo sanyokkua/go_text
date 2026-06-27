@@ -154,3 +154,78 @@ runtime.EventsOnce(ctx, "init:complete", func(data ...interface{}) {
 ```
 
 Useful for one-time handshakes or initialization signals. Equivalent TypeScript: `EventsOnce`.
+
+---
+
+## GoText Chain Progress Events
+
+GoText uses three events to stream chain-run progress from the Go backend to the frontend. These
+events are emitted by `ChainOrchestrator` via `runtime.EventsEmit`.
+
+### Event contract
+
+| Event name | Payload shape | When emitted |
+|---|---|---|
+| `chain:progress` | `{ runId, stepIndex, totalSteps, output }` | After each inference group completes — carries the output so far |
+| `chain:error` | `{ runId, stepIndex, error: WireError, output? }` | If a step fails; `output` may be set for partial results |
+| `chain:done` | `{ runId, output, cancelled }` | Chain finished or was cancelled — final event, always emitted |
+
+`WireError` shape: `{ code: ErrorCode, message: string, details?: Record<string,string> }`.
+
+### Go emission
+
+```go
+// ChainOrchestrator emits after each step
+type progressPayload struct {
+    RunID      string `json:"runId"`
+    StepIndex  int    `json:"stepIndex"`
+    TotalSteps int    `json:"totalSteps"`
+    Output     string `json:"output"`
+}
+
+runtime.EventsEmit(ctx, "chain:progress", progressPayload{
+    RunID:      runID,
+    StepIndex:  i,
+    TotalSteps: total,
+    Output:     stepOutput,
+})
+```
+
+### TypeScript listener (Redux thunk)
+
+```typescript
+import { EventsOn } from '@wailsapp/runtime'
+import { useAppDispatch } from 'logic/hooks'
+import { setProgress, setDone, setError } from 'logic/store/run/slice'
+
+// Register in a useEffect tied to the active runId
+useEffect(() => {
+    if (!runId) return
+
+    const cancelProgress = EventsOn('chain:progress', (payload) => {
+        dispatch(setProgress({ stepIndex: payload.stepIndex, output: payload.output }))
+    })
+    const cancelError = EventsOn('chain:error', (payload) => {
+        dispatch(setError({ error: payload.error, output: payload.output }))
+    })
+    const cancelDone = EventsOn('chain:done', (payload) => {
+        dispatch(setDone({ output: payload.output, cancelled: payload.cancelled }))
+        // Clean up listeners — chain is complete
+        cancelProgress(); cancelError(); cancelDone()
+    })
+
+    return () => {
+        cancelProgress(); cancelError(); cancelDone()
+    }
+}, [runId, dispatch])
+```
+
+### Key invariants
+
+- `chain:done` is **always** the last event for a run — fire-and-forget is safe.
+- A `chain:progress` event with `stepIndex === totalSteps - 1` does NOT mean the run is done —
+  wait for `chain:done`.
+- If the frontend calls `CancelChain(runId)`, the backend may still emit one more `chain:progress`
+  before emitting `chain:done` with `cancelled: true`. Handle this gracefully.
+- Event listeners that aren't cleaned up leak across component mounts. Always return cancel
+  functions from `useEffect`.
