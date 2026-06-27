@@ -1,7 +1,7 @@
 import { AnyResult, VoidResult, ok, voidOk } from '../../types';
 
 export function ProcessPromptChain(_req: unknown): Promise<AnyResult> {
-    return Promise.resolve(ok({ steps: [], finalText: '' }));
+    return Promise.resolve(ok({ steps: [], finalText: 'Mock output text.' }));
 }
 
 export function CancelChain(_runId: string): Promise<VoidResult> {
@@ -9,15 +9,59 @@ export function CancelChain(_runId: string): Promise<VoidResult> {
 }
 
 export function GetActionCatalog(): Promise<AnyResult> {
-    return Promise.resolve(ok({ groups: [] }));
+    return Promise.resolve(ok([
+        {
+            id: 'mock-summarise',
+            name: 'Summarise',
+            category: 'Writing',
+            family: 'single',
+            directive: 'Summarise the text.',
+            orderRank: 0,
+            exclusivityGroup: '',
+            mergeable: false,
+            terminal: true,
+            requires: [],
+        },
+        {
+            id: 'mock-translate',
+            name: 'Translate',
+            category: 'Language',
+            family: 'single',
+            directive: 'Translate the text.',
+            orderRank: 1,
+            exclusivityGroup: '',
+            mergeable: false,
+            terminal: true,
+            requires: [],
+        },
+    ]));
 }
 
 export function GetModels(_providerId: string): Promise<AnyResult> {
-    return Promise.resolve(ok({ models: [] }));
+    return Promise.resolve(ok([]));
 }
 
 export function PreviewPrompt(_req: unknown): Promise<AnyResult> {
-    return Promise.resolve(ok({ system: '(mock system prompt)', user: '(mock user prompt)' }));
+    return Promise.resolve(ok({
+        kind: 'single',
+        inferences: 1,
+        groups: [
+            {
+                index: 0,
+                family: 'single',
+                appliedActions: [{ id: 'mock-summarise', name: 'Summarise', category: 'Writing' }],
+                systemPrompt: 'You are a helpful assistant that summarises text.',
+                userPrompt: 'Summarise the following:\n\n{{user_text}}',
+                parameters: {
+                    model: 'mock-model',
+                    format: 'text',
+                    tokenParam: 'max_tokens',
+                    stream: false,
+                },
+            },
+        ],
+        summary: 'Summarise action preview',
+    }));
 }
 
 export function TestConnection(_providerId: string): Promise<AnyResult> {

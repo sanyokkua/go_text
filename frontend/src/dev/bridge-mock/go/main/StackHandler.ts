@@ -1,6 +1,16 @@
 import { AnyResult, VoidResult, ok, voidOk } from '../../types';
 
-const mockStack = { id: 'mock-stack-1', name: 'Mock Stack', actions: [] };
+const mockStack = {
+    id: 'mock-stack-1',
+    name: 'Mock Stack',
+    icon: '📝',
+    steps: ['mock-summarise', 'mock-translate'],
+    defaultFormat: 'text',
+    defaultInLang: 'auto',
+    defaultOutLang: 'auto',
+    createdAt: 1700000000,
+    updatedAt: 1700000000,
+};
 
 export function ListStacks(): Promise<AnyResult> {
     return Promise.resolve(ok([mockStack]));
