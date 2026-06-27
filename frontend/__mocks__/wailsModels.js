@@ -147,6 +147,42 @@ class Settings {
     }
 }
 
+class PromptPreviewRequest {
+    constructor(source = {}) {
+        if (typeof source === 'string') source = JSON.parse(source);
+        this.actionId = source['actionId'];
+        this.stackId = source['stackId'];
+        this.steps = source['steps'];
+        this.useMarkdown = source['useMarkdown'] ?? false;
+        this.inputLanguageId = source['inputLanguageId'] ?? '';
+        this.outputLanguageId = source['outputLanguageId'] ?? '';
+        this.sampleInput = source['sampleInput'];
+    }
+
+    static createFrom(source = {}) {
+        return new PromptPreviewRequest(source);
+    }
+}
+
+class SavedStack {
+    constructor(source = {}) {
+        if (typeof source === 'string') source = JSON.parse(source);
+        this.id = source['id'] ?? '';
+        this.name = source['name'] ?? '';
+        this.icon = source['icon'] ?? '';
+        this.steps = source['steps'] ?? [];
+        this.defaultFormat = source['defaultFormat'] ?? '';
+        this.defaultInLang = source['defaultInLang'] ?? '';
+        this.defaultOutLang = source['defaultOutLang'] ?? '';
+        this.createdAt = source['createdAt'] ?? 0;
+        this.updatedAt = source['updatedAt'] ?? 0;
+    }
+
+    static createFrom(source = {}) {
+        return new SavedStack(source);
+    }
+}
+
 // eslint-disable-next-line no-undef
 module.exports = {
     apperr: {
@@ -159,5 +195,7 @@ module.exports = {
         LanguageConfig,
         ModelConfig,
         Settings,
+        PromptPreviewRequest,
+        SavedStack,
     },
 };
