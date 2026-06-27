@@ -22,7 +22,12 @@ jest.mock('../../../../../logic/adapter', () => ({
     unwrap: jest.fn(),
 }));
 
-function makeStore(uiOverrides = {}, editorOverrides = {}, runOverrides = {}) {
+function makeStore(
+    uiOverrides = {},
+    editorOverrides = {},
+    runOverrides = {},
+    catalog: Array<{ id: string; name: string; category: string; directive: string }> = [],
+) {
     return configureStore({
         reducer: {
             editor: editorReducer, ui: uiReducer, run: runReducer,
@@ -37,6 +42,7 @@ function makeStore(uiOverrides = {}, editorOverrides = {}, runOverrides = {}) {
                 ...uiOverrides,
             },
             run: { status: 'idle' as const, runId: null, currentGroupIndex: null, totalGroups: null, currentGroupFamily: null, failedIndex: null, partialOutput: null, errorCode: null, errorMessage: null, ...runOverrides },
+            ...(catalog.length > 0 ? { actions: { catalog, catalogStatus: 'success' as const, availableModels: [], modelsStatus: 'idle' as const } } : {}),
         },
     });
 }
@@ -79,13 +85,23 @@ describe('RunBar', () => {
         expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
     });
 
-    it('shows armed action name in chip', () => {
+    it('shows action name and badge in chip when an action is armed', () => {
         render(
-            <Provider store={makeStore({ armedActionId: 'action1' }, { inputContent: 'hi' })}>
+            <Provider store={makeStore(
+                { armedActionId: 'action1' },
+                { inputContent: 'hi' },
+                {},
+                [{ id: 'action1', name: 'Summarise', category: 'Writing', directive: '' }],
+            )}>
                 <RunBar />
             </Provider>,
         );
-        // The chip area should be present; action name requires catalog lookup (integration concern)
-        expect(screen.getByRole('button', { name: /run/i })).toBeInTheDocument();
+        expect(screen.getByText('Summarise')).toBeInTheDocument();
+        expect(screen.getByText('1 inference')).toBeInTheDocument();
+    });
+
+    it('shows hint text in chip when no action is armed', () => {
+        render(<Provider store={makeStore()}><RunBar /></Provider>);
+        expect(screen.getByText(/select an action from the sidebar/i)).toBeInTheDocument();
     });
 });

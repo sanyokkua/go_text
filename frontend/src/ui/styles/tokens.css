@@ -16,6 +16,7 @@
     --ok-bg: #d8f0e3;
     --warn: #c9821a;
     --err: #d05353;
+    --err-dark: #b04444;
     --err-bg: #fae3e3;
 
     /* Diff */
@@ -75,6 +76,7 @@
     --purple-50: rgba(94, 53, 177, 0.22);
     --purple-line: rgba(149, 117, 205, 0.4);
     --ok-bg: rgba(46, 158, 107, 0.22);
+    --err-dark: #c05555;
     --err-bg: rgba(208, 83, 83, 0.2);
     --add: rgba(46, 158, 107, 0.32);
     --del: rgba(208, 83, 83, 0.3);
