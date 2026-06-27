@@ -1,4 +1,3 @@
-import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
@@ -10,6 +9,8 @@ import runReducer from '../../../../../logic/store/run/slice';
 import actionsReducer from '../../../../../logic/store/actions/slice';
 import settingsReducer from '../../../../../logic/store/settings/slice';
 import notificationsReducer from '../../../../../logic/store/notifications/slice';
+import stacksBuilderReducer from '../../../../../logic/store/stacks/builder/slice';
+import stacksSavedReducer from '../../../../../logic/store/stacks/saved/slice';
 import EditorView from '../EditorView';
 
 jest.mock('../../../../../logic/adapter', () => ({
@@ -22,6 +23,11 @@ jest.mock('../../../../../logic/adapter', () => ({
         cancelChain: jest.fn().mockResolvedValue({ data: null, error: null }),
         getActionCatalog: jest.fn().mockResolvedValue({ data: [], error: null }),
     },
+    StackHandlerAdapter: {
+        createStack: jest.fn().mockResolvedValue({ data: null, error: null }),
+        updateStack: jest.fn().mockResolvedValue({ data: null, error: null }),
+        listStacks: jest.fn().mockResolvedValue({ data: [], error: null }),
+    },
     getLogger: () => ({ logInfo: jest.fn(), logDebug: jest.fn(), logError: jest.fn(), logWarn: jest.fn() }),
     tryUnwrap: jest.fn(),
     unwrap: jest.fn(),
@@ -32,17 +38,21 @@ function makeStore(editorOverrides = {}, uiOverrides = {}) {
         reducer: {
             editor: editorReducer, ui: uiReducer, run: runReducer,
             actions: actionsReducer, settings: settingsReducer, notifications: notificationsReducer,
+            stacksBuilder: stacksBuilderReducer, stacksSaved: stacksSavedReducer,
         },
         preloadedState: {
             editor: { inputContent: '', outputContent: '', viewMode: 'preview' as const, ...editorOverrides },
             ui: {
                 layout: 'side' as const, sidebarCollapsed: false, historyOpen: false,
                 inferenceRunning: false, currentView: 'main' as const, armedActionId: null, activeActionsTab: null,
+                buildMode: false, editingStackId: null,
                 theme: { mode: 'auto' as const, effective: 'light' as const },
                 ...uiOverrides,
             },
             run: { status: 'idle' as const, runId: null, currentGroupIndex: null, totalGroups: null, currentGroupFamily: null, failedIndex: null, partialOutput: null, errorCode: null, errorMessage: null },
             actions: { catalog: [], catalogStatus: 'idle' as const, availableModels: [], modelsStatus: 'idle' as const },
+            stacksBuilder: { steps: [], name: '', icon: '' },
+            stacksSaved: { stacks: [], status: 'idle' as const, error: null },
         },
     });
 }

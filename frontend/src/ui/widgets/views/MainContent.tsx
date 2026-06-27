@@ -1,20 +1,19 @@
-import React from 'react';
-
 import { selectCurrentView, useAppSelector } from '../../../logic/store';
 import FlexContainer from '../../components/FlexContainer';
 import EditorView from './editor/EditorView';
 import { InfoView } from './info';
 import { SettingsView } from './settings';
+import StacksManageView from './stacks/StacksManageView';
 
 const resolveView = (view: ReturnType<typeof selectCurrentView>): React.ReactElement => {
     if (view === 'settings') return <SettingsView />;
     if (view === 'info') return <InfoView />;
+    if (view === 'stacks') return <StacksManageView />;
     return <EditorView />;
 };
 
 const MainContent: React.FC = () => {
     const view = useAppSelector(selectCurrentView);
-
     return (
         <FlexContainer grow overflowHidden>
             {resolveView(view)}
