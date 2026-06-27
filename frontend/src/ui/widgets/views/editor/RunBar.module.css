@@ -1,0 +1,89 @@
+.bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 14px;
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+    flex-shrink: 0;
+    gap: var(--space-3);
+}
+
+.chip {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    background: var(--teal-50);
+    border: 1px solid var(--teal-light);
+    border-radius: var(--radius-pill);
+    padding: 4px var(--space-3);
+    min-width: 0;
+    flex: 1;
+    max-width: 400px;
+}
+
+.chipCheck {
+    color: var(--teal);
+    font-size: 0.75rem;
+    flex-shrink: 0;
+}
+
+.chipName {
+    color: var(--teal-dark);
+    font-size: 0.8rem;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chipBadge {
+    background: var(--teal-light);
+    color: #fff;
+    border-radius: var(--radius-pill);
+    font-size: 0.65rem;
+    padding: 1px 6px;
+    flex-shrink: 0;
+}
+
+.chipHint {
+    color: var(--ink-3);
+    font-size: 0.8rem;
+    font-style: italic;
+}
+
+.actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-shrink: 0;
+}
+
+.runBtn {
+    background: var(--teal);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: #fff;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 600;
+    padding: 6px 18px;
+    min-width: 80px;
+}
+
+.runBtn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.runBtn:hover:not(:disabled) {
+    background: var(--teal-dark);
+}
+
+.cancelBtn {
+    background: var(--err);
+}
+
+.cancelBtn:hover {
+    background: #b04444;
+}
