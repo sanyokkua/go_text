@@ -18,7 +18,13 @@ jest.mock('../../../adapter', () => ({
     SettingsHandlerAdapter: {},
 }));
 
-import aboutReducer, { clearAboutSelection } from '../slice';
+import aboutReducer, {
+    clearAboutSelection,
+    selectAboutItem,
+    setAboutSection,
+    setInspectorOpen,
+    togglePreviewInput,
+} from '../slice';
 import { previewPromptForInspector } from '../thunks';
 import { AboutState } from '../types';
 
@@ -36,6 +42,42 @@ const initialState: AboutState = {
 describe('aboutSlice', () => {
     it('returns initial state with inspectorError null', () => {
         expect(aboutReducer(undefined, { type: 'unknown' })).toEqual(initialState);
+    });
+
+    it('setAboutSection changes the activeSection', () => {
+        const state = aboutReducer(initialState, setAboutSection('actions-stacks'));
+
+        expect(state.activeSection).toBe('actions-stacks');
+    });
+
+    it('selectAboutItem sets selectedItemId, selectedItemType, and opens the inspector', () => {
+        const state = aboutReducer(initialState, selectAboutItem({ id: 'action-7', type: 'action' }));
+
+        expect(state.selectedItemId).toBe('action-7');
+        expect(state.selectedItemType).toBe('action');
+        expect(state.inspectorOpen).toBe(true);
+    });
+
+    it('togglePreviewInput flips previewInputEnabled from false to true', () => {
+        const state = aboutReducer(initialState, togglePreviewInput());
+
+        expect(state.previewInputEnabled).toBe(true);
+    });
+
+    it('togglePreviewInput flips previewInputEnabled from true back to false', () => {
+        const enabledState: AboutState = { ...initialState, previewInputEnabled: true };
+
+        const state = aboutReducer(enabledState, togglePreviewInput());
+
+        expect(state.previewInputEnabled).toBe(false);
+    });
+
+    it('setInspectorOpen(false) closes the inspector', () => {
+        const openState: AboutState = { ...initialState, inspectorOpen: true };
+
+        const state = aboutReducer(openState, setInspectorOpen(false));
+
+        expect(state.inspectorOpen).toBe(false);
     });
 
     it('sets inspectorError on previewPromptForInspector rejected', () => {
