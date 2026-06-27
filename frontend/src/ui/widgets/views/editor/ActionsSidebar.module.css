@@ -133,3 +133,112 @@
     padding: var(--space-3);
     text-align: center;
 }
+
+.stacksSection {
+    padding: var(--space-2) var(--space-2) 0;
+    border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+}
+
+.stacksHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-1);
+}
+
+.stacksTitle {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.manageLink {
+    background: none;
+    border: none;
+    color: var(--teal);
+    font-size: 0.7rem;
+    cursor: pointer;
+    padding: 0;
+}
+
+.manageLink:hover {
+    color: var(--teal-dark);
+}
+
+.stackRow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: 3px 0;
+}
+
+.stackIcon {
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+.stackName {
+    flex: 1;
+    font-size: 0.75rem;
+    color: var(--ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.stackCount {
+    font-size: 0.65rem;
+    color: var(--ink-3);
+    background: var(--surface);
+    border-radius: var(--radius-pill);
+    padding: 1px 5px;
+    flex-shrink: 0;
+}
+
+.buildStackBtn {
+    width: 100%;
+    background: none;
+    border: 1px dashed var(--teal-light);
+    border-radius: var(--radius-sm);
+    color: var(--teal);
+    cursor: pointer;
+    font-size: 0.75rem;
+    padding: 4px var(--space-2);
+    margin: var(--space-1) 0 var(--space-2);
+    text-align: center;
+}
+
+.buildStackBtn:hover:not(:disabled) {
+    background: var(--teal-50);
+}
+
+.buildStackBtn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.buildHint {
+    padding: var(--space-2) var(--space-3);
+    font-size: 0.75rem;
+    color: var(--teal-dark);
+    background: var(--teal-50);
+    border-bottom: 1px solid var(--teal-light);
+    font-style: italic;
+    flex-shrink: 0;
+}
+
+.actionDisabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.inferenceHint {
+    font-size: 0.6rem;
+    color: var(--teal);
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-left: auto;
+}
