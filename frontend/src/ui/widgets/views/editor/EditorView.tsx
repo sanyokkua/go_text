@@ -1,13 +1,15 @@
 import { useState } from 'react';
-import { selectBuildMode, useAppSelector } from '../../../../logic/store';
+import { selectBuildMode, selectHistoryOpen, useAppSelector } from '../../../../logic/store';
 import ActionsSidebar from './ActionsSidebar';
 import EditorArea from './EditorArea';
+import HistoryRail from './HistoryRail';
 import RunBar from './RunBar';
 import SaveStackDialog from './SaveStackDialog';
 import StackBuilderBar from './StackBuilderBar';
 
 const EditorView: React.FC = () => {
     const buildMode = useAppSelector(selectBuildMode);
+    const historyOpen = useAppSelector(selectHistoryOpen);
     const [saveDialogOpen, setSaveDialogOpen] = useState(false);
 
     return (
@@ -17,6 +19,7 @@ const EditorView: React.FC = () => {
                 <div style={{ flex: 1, overflow: 'hidden', padding: 'var(--space-2)' }}>
                     <EditorArea />
                 </div>
+                {historyOpen && <HistoryRail />}
             </div>
             {buildMode ? (
                 <StackBuilderBar onSave={() => setSaveDialogOpen(true)} />

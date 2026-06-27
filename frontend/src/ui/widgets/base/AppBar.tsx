@@ -2,7 +2,9 @@ import React from 'react';
 
 import { getLogger } from '../../../logic/adapter';
 import {
+    selectAppBehaviorConfig,
     selectCurrentView,
+    selectHistoryOpen,
     selectInferenceRunning,
     selectLayout,
     selectSidebarCollapsed,
@@ -11,7 +13,7 @@ import {
     useAppSelector,
 } from '../../../logic/store';
 import { setViewMode } from '../../../logic/store/editor';
-import { setCurrentView, setLayout, toggleSidebar } from '../../../logic/store/ui';
+import { setCurrentView, setLayout, toggleHistory, toggleSidebar } from '../../../logic/store/ui';
 import { Segmented } from '../../primitives/Segmented';
 
 const logger = getLogger('AppBar');
@@ -23,8 +25,11 @@ const AppBar: React.FC = () => {
     const viewMode = useAppSelector(selectViewMode);
     const sidebarCollapsed = useAppSelector(selectSidebarCollapsed);
     const inferenceRunning = useAppSelector(selectInferenceRunning);
+    const historyOpen = useAppSelector(selectHistoryOpen);
+    const appBehavior = useAppSelector(selectAppBehaviorConfig);
 
     const isMain = view === 'main';
+    const historyEnabled = appBehavior?.historyEnabled ?? true;
 
     return (
         <header
@@ -88,6 +93,27 @@ const AppBar: React.FC = () => {
             )}
 
             <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center', flexShrink: 0 }}>
+                {isMain && (
+                    <button
+                        aria-label="Toggle history rail"
+                        aria-pressed={historyOpen}
+                        disabled={!historyEnabled}
+                        onClick={() => { dispatch(toggleHistory()); logger.logInfo('History toggled'); }}
+                        style={{
+                            background: historyOpen ? 'rgba(255,255,255,0.15)' : 'none',
+                            border: 'none',
+                            color: 'inherit',
+                            cursor: historyEnabled ? 'pointer' : 'default',
+                            fontSize: '1rem',
+                            opacity: historyEnabled ? 1 : 0.45,
+                            borderRadius: 'var(--radius-sm)',
+                            padding: '2px 4px',
+                        }}
+                        title={historyEnabled ? 'Toggle history' : 'History is disabled in Settings'}
+                    >
+                        🕘
+                    </button>
+                )}
                 {isMain && (
                     <button
                         aria-label="About and info"
