@@ -1,10 +1,10 @@
 // frontend/src/ui/widgets/base/__tests__/NotificationContainer.test.tsx
+import { configureStore } from '@reduxjs/toolkit';
+import '@testing-library/jest-dom';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import '@testing-library/jest-dom';
-import { Provider } from 'react-redux';
-import { configureStore } from '@reduxjs/toolkit';
 import { axe } from 'jest-axe';
+import { Provider } from 'react-redux';
 import notificationsReducer, { enqueueNotification } from '../../../../logic/store/notifications/slice';
 import NotificationContainer from '../NotificationContainer';
 
@@ -61,12 +61,14 @@ describe('NotificationContainer', () => {
 
     it('renders a warning (busy) toast with correct text', () => {
         const store = makeStore();
-        store.dispatch(enqueueNotification({
-            severity: 'warning',
-            surface: 'toast',
-            title: 'Already running',
-            message: 'An inference is already running — wait for it to finish before starting another.',
-        }));
+        store.dispatch(
+            enqueueNotification({
+                severity: 'warning',
+                surface: 'toast',
+                title: 'Already running',
+                message: 'An inference is already running — wait for it to finish before starting another.',
+            }),
+        );
         renderWithStore(store);
         expect(screen.getByText('Already running')).toBeInTheDocument();
         expect(screen.getByText(/wait for it to finish/i)).toBeInTheDocument();

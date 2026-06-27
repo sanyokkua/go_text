@@ -1,12 +1,11 @@
 // frontend/src/ui/primitives/Tooltip.tsx
-import React from 'react';
 import { Tooltip as RadixTooltip } from 'radix-ui';
+import React from 'react';
 import styles from './Tooltip.module.css';
 
-export const TooltipProvider: React.FC<{ children: React.ReactNode; delayDuration?: number }> = ({
-    children,
-    delayDuration = 200,
-}) => <RadixTooltip.Provider delayDuration={delayDuration}>{children}</RadixTooltip.Provider>;
+export const TooltipProvider: React.FC<{ children: React.ReactNode; delayDuration?: number }> = ({ children, delayDuration = 200 }) => (
+    <RadixTooltip.Provider delayDuration={delayDuration}>{children}</RadixTooltip.Provider>
+);
 
 TooltipProvider.displayName = 'TooltipProvider';
 

@@ -23,15 +23,7 @@ interface CheckRowProps {
 }
 
 const CheckRow: React.FC<CheckRowProps> = ({ label, state, disabled, onRun }) => (
-    <div
-        style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 'var(--space-2)',
-            padding: 'var(--space-2) 0',
-            borderBottom: '1px solid var(--line)',
-        }}
-    >
+    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: 'var(--space-2) 0', borderBottom: '1px solid var(--line)' }}>
         <button
             type="button"
             onClick={onRun}
@@ -56,22 +48,13 @@ const CheckRow: React.FC<CheckRowProps> = ({ label, state, disabled, onRun }) =>
         {state.status === 'running' && (
             <span
                 aria-label="Running"
-                style={{
-                    display: 'inline-block',
-                    animation: 'vp-spin 1s linear infinite',
-                    color: 'var(--ink-3)',
-                    fontSize: '1rem',
-                }}
+                style={{ display: 'inline-block', animation: 'vp-spin 1s linear infinite', color: 'var(--ink-3)', fontSize: '1rem' }}
             >
                 ⟳
             </span>
         )}
 
-        {state.status === 'ok' && (
-            <span style={{ color: 'var(--ok)', fontSize: '0.8125rem' }}>
-                ✓ {state.durationMs}ms
-            </span>
-        )}
+        {state.status === 'ok' && <span style={{ color: 'var(--ok)', fontSize: '0.8125rem' }}>✓ {state.durationMs}ms</span>}
 
         {state.status === 'fail' && (
             <span style={{ color: 'var(--err)', fontSize: '0.8125rem' }} role="alert">
@@ -99,10 +82,7 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({ providerId }) => 
     const [modelsState, setModelsState] = useState<CheckState>(INITIAL_CHECK);
     const [inferenceState, setInferenceState] = useState<CheckState>(INITIAL_CHECK);
 
-    const applyOutcome = useCallback((
-        outcome: apperr.VerifyOutcome,
-        setState: React.Dispatch<React.SetStateAction<CheckState>>,
-    ) => {
+    const applyOutcome = useCallback((outcome: apperr.VerifyOutcome, setState: React.Dispatch<React.SetStateAction<CheckState>>) => {
         if (outcome.ok) {
             setState({ status: 'ok', message: '', durationMs: outcome.durationMs });
         } else {
@@ -140,12 +120,14 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({ providerId }) => 
         } else {
             const message = result.payload ?? 'Inference test failed';
             if (BUSY_PATTERN.test(message)) {
-                dispatch(enqueueNotification({
-                    severity: 'warning',
-                    surface: 'toast',
-                    title: 'Already running',
-                    message: 'An inference is already running — wait for it to finish before starting another.',
-                }));
+                dispatch(
+                    enqueueNotification({
+                        severity: 'warning',
+                        surface: 'toast',
+                        title: 'Already running',
+                        message: 'An inference is already running — wait for it to finish before starting another.',
+                    }),
+                );
             }
             setInferenceState({ status: 'fail', message, durationMs: 0 });
         }
@@ -167,24 +149,9 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({ providerId }) => 
                 These checks do not affect your saved settings
             </p>
 
-            <CheckRow
-                label="Test connection"
-                state={connectionState}
-                disabled={isConnectionRunning}
-                onRun={handleTestConnection}
-            />
-            <CheckRow
-                label="Test models"
-                state={modelsState}
-                disabled={isModelsRunning}
-                onRun={handleTestModels}
-            />
-            <CheckRow
-                label="Test inference"
-                state={inferenceState}
-                disabled={isInferenceRunning || inferenceRunning}
-                onRun={handleTestInference}
-            />
+            <CheckRow label="Test connection" state={connectionState} disabled={isConnectionRunning} onRun={handleTestConnection} />
+            <CheckRow label="Test models" state={modelsState} disabled={isModelsRunning} onRun={handleTestModels} />
+            <CheckRow label="Test inference" state={inferenceState} disabled={isInferenceRunning || inferenceRunning} onRun={handleTestInference} />
         </section>
     );
 };

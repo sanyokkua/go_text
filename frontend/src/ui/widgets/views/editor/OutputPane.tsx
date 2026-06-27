@@ -1,9 +1,15 @@
 import React from 'react';
 import { ClipboardServiceAdapter, getLogger } from '../../../../logic/adapter';
 import {
-    selectHasDiff, selectInputContent, selectInferenceRunning,
-    selectOutputContent, selectRunProgress, selectRunStatus, selectViewMode,
-    useAppDispatch, useAppSelector,
+    selectHasDiff,
+    selectInferenceRunning,
+    selectInputContent,
+    selectOutputContent,
+    selectRunProgress,
+    selectRunStatus,
+    selectViewMode,
+    useAppDispatch,
+    useAppSelector,
 } from '../../../../logic/store';
 import { clearOutput, setViewMode, useOutputAsInput } from '../../../../logic/store/editor';
 import { enqueueNotification } from '../../../../logic/store/notifications/slice';
@@ -90,17 +96,12 @@ const OutputPane: React.FC = () => {
             </div>
             <div className={styles.body}>{renderBody()}</div>
             <div className={styles.footer}>
-                <button
-                    className={styles.btn}
-                    onClick={handleCopy}
-                    disabled={!output || inferenceRunning}
-                    aria-label="Copy output"
-                >
+                <button className={styles.btn} onClick={handleCopy} disabled={!output || inferenceRunning} aria-label="Copy output">
                     Copy
                 </button>
                 <button
                     className={styles.btn}
-                    onClick={() => dispatch(useOutputAsInput())}
+                    onClick={() => dispatch(useOutputAsInput())} // eslint-disable-line react-hooks/rules-of-hooks -- useOutputAsInput is a Redux action creator, not a React hook
                     disabled={!output || inferenceRunning}
                     aria-label="Use as input"
                 >

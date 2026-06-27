@@ -1,20 +1,20 @@
 import React from 'react';
+import { apperr } from '../../../../../wailsjs/go/models';
 import { getLogger } from '../../../../logic/adapter';
 import {
     selectActionCatalog,
     selectAllSettings,
     selectArmedActionId,
-    selectInputContent,
     selectInferenceRunning,
+    selectInputContent,
     selectRunId,
     selectRunStatus,
     useAppDispatch,
     useAppSelector,
 } from '../../../../logic/store';
-import { cancelChain, processPromptChain } from '../../../../logic/store/run';
 import { enqueueNotification } from '../../../../logic/store/notifications/slice';
+import { cancelChain, processPromptChain } from '../../../../logic/store/run';
 import { parseError } from '../../../../logic/utils/error_utils';
-import { apperr } from '../../../../../wailsjs/go/models';
 import styles from './RunBar.module.css';
 
 const logger = getLogger('RunBar');
@@ -79,22 +79,11 @@ const RunBar: React.FC = () => {
 
             <div className={styles.actions}>
                 {isRunning ? (
-                    <button
-                        className={`${styles.runBtn} ${styles.cancelBtn}`}
-                        onClick={handleCancel}
-                        aria-label="Cancel run"
-                        type="button"
-                    >
+                    <button className={`${styles.runBtn} ${styles.cancelBtn}`} onClick={handleCancel} aria-label="Cancel run" type="button">
                         ✕ Cancel
                     </button>
                 ) : (
-                    <button
-                        className={styles.runBtn}
-                        onClick={handleRun}
-                        disabled={!canRun}
-                        aria-label="Run"
-                        type="button"
-                    >
+                    <button className={styles.runBtn} onClick={handleRun} disabled={!canRun} aria-label="Run" type="button">
                         ▶ Run
                     </button>
                 )}

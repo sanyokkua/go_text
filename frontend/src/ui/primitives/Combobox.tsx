@@ -1,7 +1,7 @@
 // frontend/src/ui/primitives/Combobox.tsx
 import { Command } from 'cmdk';
-import * as React from 'react';
 import { Popover } from 'radix-ui';
+import * as React from 'react';
 import styles from './Combobox.module.css';
 
 export interface ComboboxItem {
@@ -42,7 +42,9 @@ export const Combobox: React.FC<ComboboxProps> = ({
                 <button type="button" className={styles.trigger} aria-haspopup="listbox" aria-expanded={open}>
                     {keyLabel && <span className={styles.keyLabel}>{keyLabel}</span>}
                     <span className={styles.valueLabel}>{selected?.label ?? value}</span>
-                    <span className={styles.caret} aria-hidden>▾</span>
+                    <span className={styles.caret} aria-hidden>
+                        ▾
+                    </span>
                 </button>
             </Popover.Trigger>
 
@@ -70,9 +72,7 @@ export const Combobox: React.FC<ComboboxProps> = ({
                         </div>
 
                         <Command.List className={styles.list}>
-                            <Command.Empty className={styles.empty}>
-                                {emptyContent ?? 'No results.'}
-                            </Command.Empty>
+                            <Command.Empty className={styles.empty}>{emptyContent ?? 'No results.'}</Command.Empty>
                             {items.map((item) => (
                                 <Command.Item
                                     key={item.value}
@@ -84,7 +84,11 @@ export const Combobox: React.FC<ComboboxProps> = ({
                                     }}
                                     className={styles.item}
                                 >
-                                    {item.value === value && <span className={styles.check} aria-hidden>✓</span>}
+                                    {item.value === value && (
+                                        <span className={styles.check} aria-hidden>
+                                            ✓
+                                        </span>
+                                    )}
                                     <span className={styles.itemLabel}>{item.label}</span>
                                     {item.meta && <span className={styles.meta}>{item.meta}</span>}
                                 </Command.Item>

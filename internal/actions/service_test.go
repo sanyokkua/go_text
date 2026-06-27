@@ -38,8 +38,8 @@ func (s *stubSettingsService) GetProviderConfig(providerID string) (*settings.Pr
 func (s *stubSettingsService) GetAppSettingsMetadata() (*settings.AppSettingsMetadata, error) {
 	return nil, nil
 }
-func (s *stubSettingsService) GetSettings() (*settings.Settings, error)             { return nil, nil }
-func (s *stubSettingsService) ResetSettingsToDefault() (*settings.Settings, error)  { return nil, nil }
+func (s *stubSettingsService) GetSettings() (*settings.Settings, error)            { return nil, nil }
+func (s *stubSettingsService) ResetSettingsToDefault() (*settings.Settings, error) { return nil, nil }
 func (s *stubSettingsService) GetAllProviderConfigs() ([]settings.ProviderConfig, error) {
 	return nil, nil
 }

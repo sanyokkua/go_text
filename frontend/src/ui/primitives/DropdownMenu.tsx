@@ -1,6 +1,6 @@
 // frontend/src/ui/primitives/DropdownMenu.tsx
-import React from 'react';
 import { DropdownMenu as RadixDropdown } from 'radix-ui';
+import React from 'react';
 import styles from './DropdownMenu.module.css';
 
 export type DropdownMenuItem =
@@ -20,12 +20,7 @@ function renderDropdownItem(item: DropdownMenuItem, i: number): React.ReactEleme
     const onSelectProp = onClick ? { onSelect: () => onClick() } : {};
     const dangerClass = item.variant === 'danger' ? styles.danger : '';
     return (
-        <RadixDropdown.Item
-            key={item.label}
-            className={`${styles.item} ${dangerClass}`}
-            disabled={item.disabled ?? false}
-            {...onSelectProp}
-        >
+        <RadixDropdown.Item key={item.label} className={`${styles.item} ${dangerClass}`} disabled={item.disabled ?? false} {...onSelectProp}>
             {item.icon && <span className={styles.icon}>{item.icon}</span>}
             {item.label}
         </RadixDropdown.Item>

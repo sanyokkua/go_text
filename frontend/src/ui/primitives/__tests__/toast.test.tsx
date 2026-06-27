@@ -2,8 +2,8 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axe } from 'jest-axe';
-import { ToastProvider, ToastRegion } from '../Toast';
 import type { ToastItem } from '../Toast';
+import { ToastProvider, ToastRegion } from '../Toast';
 
 function Wrapper({ items, onDismiss }: { readonly items: ToastItem[]; readonly onDismiss: (id: string) => void }) {
     return (
@@ -15,9 +15,7 @@ function Wrapper({ items, onDismiss }: { readonly items: ToastItem[]; readonly o
 
 describe('Toast', () => {
     it('has no accessibility violations with a success toast', async () => {
-        const { container } = render(
-            <Wrapper items={[{ id: '1', variant: 'success', message: 'Saved!' }]} onDismiss={() => {}} />,
-        );
+        const { container } = render(<Wrapper items={[{ id: '1', variant: 'success', message: 'Saved!' }]} onDismiss={() => {}} />);
         expect(await axe(container)).toHaveNoViolations();
     });
 
@@ -40,10 +38,7 @@ describe('Toast', () => {
 
     it('renders title when provided', () => {
         render(
-            <Wrapper
-                items={[{ id: '1', variant: 'error', title: 'Authentication failed', message: 'Check your API key.' }]}
-                onDismiss={() => {}}
-            />,
+            <Wrapper items={[{ id: '1', variant: 'error', title: 'Authentication failed', message: 'Check your API key.' }]} onDismiss={() => {}} />,
         );
         expect(screen.getByText('Authentication failed')).toBeInTheDocument();
         expect(screen.getByText('Check your API key.')).toBeInTheDocument();

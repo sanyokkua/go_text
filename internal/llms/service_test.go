@@ -31,37 +31,49 @@ func (s *stubSettingsService) GetInferenceBaseConfig() (*settings.InferenceBaseC
 func (s *stubSettingsService) GetAppSettingsMetadata() (*settings.AppSettingsMetadata, error) {
 	return nil, nil
 }
-func (s *stubSettingsService) GetSettings() (*settings.Settings, error)                            { return nil, nil }
-func (s *stubSettingsService) ResetSettingsToDefault() (*settings.Settings, error)                 { return nil, nil }
-func (s *stubSettingsService) GetAllProviderConfigs() ([]settings.ProviderConfig, error)           { return nil, nil }
-func (s *stubSettingsService) GetCurrentProviderConfig() (*settings.ProviderConfig, error)         { return nil, nil }
-func (s *stubSettingsService) GetProviderConfig(_ string) (*settings.ProviderConfig, error)        { return nil, nil }
+func (s *stubSettingsService) GetSettings() (*settings.Settings, error)            { return nil, nil }
+func (s *stubSettingsService) ResetSettingsToDefault() (*settings.Settings, error) { return nil, nil }
+func (s *stubSettingsService) GetAllProviderConfigs() ([]settings.ProviderConfig, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) GetCurrentProviderConfig() (*settings.ProviderConfig, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) GetProviderConfig(_ string) (*settings.ProviderConfig, error) {
+	return nil, nil
+}
 func (s *stubSettingsService) CreateProviderConfig(_ *settings.ProviderConfig) (*settings.ProviderConfig, error) {
 	return nil, nil
 }
 func (s *stubSettingsService) UpdateProviderConfig(_ *settings.ProviderConfig) (*settings.ProviderConfig, error) {
 	return nil, nil
 }
-func (s *stubSettingsService) DeleteProviderConfig(_ string) error                       { return nil }
+func (s *stubSettingsService) DeleteProviderConfig(_ string) error { return nil }
 func (s *stubSettingsService) SetAsCurrentProviderConfig(_ string) (*settings.ProviderConfig, error) {
 	return nil, nil
 }
 func (s *stubSettingsService) UpdateInferenceBaseConfig(_ *settings.InferenceBaseConfig) (*settings.InferenceBaseConfig, error) {
 	return nil, nil
 }
-func (s *stubSettingsService) GetModelConfig() (*settings.ModelConfig, error)                                   { return nil, nil }
-func (s *stubSettingsService) UpdateModelConfig(_ *settings.ModelConfig) (*settings.ModelConfig, error)         { return nil, nil }
-func (s *stubSettingsService) GetLanguageConfig() (*settings.LanguageConfig, error)                             { return nil, nil }
-func (s *stubSettingsService) SetDefaultInputLanguage(_ string) error                                           { return nil }
-func (s *stubSettingsService) SetDefaultOutputLanguage(_ string) error                                          { return nil }
-func (s *stubSettingsService) AddLanguage(_ string) ([]string, error)                                           { return nil, nil }
-func (s *stubSettingsService) RemoveLanguage(_ string) ([]string, error)                                        { return nil, nil }
-func (s *stubSettingsService) GetAppBehaviorConfig() (*settings.AppBehaviorConfig, error)                       { return nil, nil }
+func (s *stubSettingsService) GetModelConfig() (*settings.ModelConfig, error) { return nil, nil }
+func (s *stubSettingsService) UpdateModelConfig(_ *settings.ModelConfig) (*settings.ModelConfig, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) GetLanguageConfig() (*settings.LanguageConfig, error) { return nil, nil }
+func (s *stubSettingsService) SetDefaultInputLanguage(_ string) error               { return nil }
+func (s *stubSettingsService) SetDefaultOutputLanguage(_ string) error              { return nil }
+func (s *stubSettingsService) AddLanguage(_ string) ([]string, error)               { return nil, nil }
+func (s *stubSettingsService) RemoveLanguage(_ string) ([]string, error)            { return nil, nil }
+func (s *stubSettingsService) GetAppBehaviorConfig() (*settings.AppBehaviorConfig, error) {
+	return nil, nil
+}
 func (s *stubSettingsService) UpdateAppBehaviorConfig(_ *settings.AppBehaviorConfig) (*settings.AppBehaviorConfig, error) {
 	return nil, nil
 }
-func (s *stubSettingsService) GetLoggingConfig() (*settings.LoggingConfig, error)                               { return nil, nil }
-func (s *stubSettingsService) UpdateLoggingConfig(_ *settings.LoggingConfig) (*settings.LoggingConfig, error)   { return nil, nil }
+func (s *stubSettingsService) GetLoggingConfig() (*settings.LoggingConfig, error) { return nil, nil }
+func (s *stubSettingsService) UpdateLoggingConfig(_ *settings.LoggingConfig) (*settings.LoggingConfig, error) {
+	return nil, nil
+}
 
 func newTestLLMService(t *testing.T) *LLMService {
 	t.Helper()

@@ -1,6 +1,4 @@
-jest.mock('../adapter', () => ({
-    getLogger: jest.fn().mockReturnValue({ logDebug: jest.fn(), logInfo: jest.fn(), logError: jest.fn() }),
-}));
+jest.mock('../adapter', () => ({ getLogger: jest.fn().mockReturnValue({ logDebug: jest.fn(), logInfo: jest.fn(), logError: jest.fn() }) }));
 
 import { ProviderConfig } from '../adapter';
 import { AppDispatch } from '../store';

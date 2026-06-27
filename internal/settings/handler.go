@@ -66,16 +66,16 @@ func (h *SettingsHandler) Configure(wailsLogger logger.Logger, zlog zerolog.Logg
 // Internal settings.* types match apperr.* wire types field-for-field,
 // so conversions are direct Go type conversions.
 
-func toWireProvider(v ProviderConfig) apperr.ProviderConfig     { return apperr.ProviderConfig(v) }
-func fromWireProvider(v apperr.ProviderConfig) ProviderConfig   { return ProviderConfig(v) }
+func toWireProvider(v ProviderConfig) apperr.ProviderConfig   { return apperr.ProviderConfig(v) }
+func fromWireProvider(v apperr.ProviderConfig) ProviderConfig { return ProviderConfig(v) }
 func toWireInference(v InferenceBaseConfig) apperr.InferenceBaseConfig {
 	return apperr.InferenceBaseConfig(v)
 }
 func fromWireInference(v apperr.InferenceBaseConfig) InferenceBaseConfig {
 	return InferenceBaseConfig(v)
 }
-func toWireModel(v ModelConfig) apperr.ModelConfig       { return apperr.ModelConfig(v) }
-func fromWireModel(v apperr.ModelConfig) ModelConfig     { return ModelConfig(v) }
+func toWireModel(v ModelConfig) apperr.ModelConfig          { return apperr.ModelConfig(v) }
+func fromWireModel(v apperr.ModelConfig) ModelConfig        { return ModelConfig(v) }
 func toWireLanguage(v LanguageConfig) apperr.LanguageConfig { return apperr.LanguageConfig(v) }
 func toWireAppBehavior(v AppBehaviorConfig) apperr.AppBehaviorConfig {
 	return apperr.AppBehaviorConfig(v)

@@ -28,23 +28,14 @@ const CatalogList: React.FC = memo(function CatalogList() {
 
     const q = query.toLowerCase().trim();
 
-    const filteredStacks = useMemo(
-        () => (q ? savedStacks.filter((s) => s.name.toLowerCase().includes(q)) : savedStacks),
-        [savedStacks, q],
-    );
+    const filteredStacks = useMemo(() => (q ? savedStacks.filter((s) => s.name.toLowerCase().includes(q)) : savedStacks), [savedStacks, q]);
 
     const filteredCatalog = useMemo(
         () =>
             catalogByCategory
                 .map(({ category, actions }) => ({
                     category,
-                    actions: q
-                        ? actions.filter(
-                              (a) =>
-                                  a.name.toLowerCase().includes(q) ||
-                                  a.category.toLowerCase().includes(q),
-                          )
-                        : actions,
+                    actions: q ? actions.filter((a) => a.name.toLowerCase().includes(q) || a.category.toLowerCase().includes(q)) : actions,
                 }))
                 .filter((g) => g.actions.length > 0),
         [catalogByCategory, q],
@@ -113,11 +104,7 @@ const CatalogList: React.FC = memo(function CatalogList() {
                     </div>
                 ))}
 
-                {isEmpty && (
-                    <div className={styles.empty}>
-                        {q ? `No results for "${query}"` : 'No actions available'}
-                    </div>
-                )}
+                {isEmpty && <div className={styles.empty}>{q ? `No results for "${query}"` : 'No actions available'}</div>}
             </div>
         </div>
     );

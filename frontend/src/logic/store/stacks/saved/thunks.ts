@@ -33,19 +33,16 @@ export const createStack = createAsyncThunk<apperr.SavedStack, apperr.SavedStack
     },
 );
 
-export const deleteStack = createAsyncThunk<string, string, { rejectValue: string }>(
-    'stacksSaved/deleteStack',
-    async (id, { rejectWithValue }) => {
-        try {
-            unwrap(await StackHandlerAdapter.deleteStack(id));
-            return id;
-        } catch (error: unknown) {
-            const err = parseError(error);
-            logger.logError(`deleteStack failed: ${err.message}`);
-            return rejectWithValue(err.message);
-        }
-    },
-);
+export const deleteStack = createAsyncThunk<string, string, { rejectValue: string }>('stacksSaved/deleteStack', async (id, { rejectWithValue }) => {
+    try {
+        unwrap(await StackHandlerAdapter.deleteStack(id));
+        return id;
+    } catch (error: unknown) {
+        const err = parseError(error);
+        logger.logError(`deleteStack failed: ${err.message}`);
+        return rejectWithValue(err.message);
+    }
+});
 
 export const duplicateStack = createAsyncThunk<apperr.SavedStack, { id: string; newName: string }, { rejectValue: string }>(
     'stacksSaved/duplicateStack',

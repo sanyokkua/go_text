@@ -1,14 +1,16 @@
 // Mock the adapter before any imports so module-level getLogger calls succeed.
 jest.mock('../../../adapter', () => ({
-    getLogger: jest.fn().mockReturnValue({
-        logDebug: jest.fn(),
-        logInfo: jest.fn(),
-        logError: jest.fn(),
-        logWarning: jest.fn(),
-        logTrace: jest.fn(),
-        logPrint: jest.fn(),
-        logFatal: jest.fn(),
-    }),
+    getLogger: jest
+        .fn()
+        .mockReturnValue({
+            logDebug: jest.fn(),
+            logInfo: jest.fn(),
+            logError: jest.fn(),
+            logWarning: jest.fn(),
+            logTrace: jest.fn(),
+            logPrint: jest.fn(),
+            logFatal: jest.fn(),
+        }),
     unwrap: jest.fn((res: { data?: unknown; error?: unknown }) => {
         if (res.error) throw res.error;
         return res.data;
@@ -22,12 +24,7 @@ import actionsReducer from '../slice';
 import { loadActionCatalog, loadModels, loadModelsForProvider } from '../thunks';
 import type { ActionsCatalogState } from '../types';
 
-const initialState: ActionsCatalogState = {
-    catalog: [],
-    catalogStatus: 'idle',
-    availableModels: [],
-    modelsStatus: 'idle',
-};
+const initialState: ActionsCatalogState = { catalog: [], catalogStatus: 'idle', availableModels: [], modelsStatus: 'idle' };
 
 describe('actions slice reducer', () => {
     it('returns initial state for unknown action', () => {
@@ -44,10 +41,7 @@ describe('actions slice reducer', () => {
 
     it('loadActionCatalog.fulfilled populates catalog and sets catalogStatus to success', () => {
         const catalog = [{ id: 'action-1', name: 'Summarise', group: 'text' }];
-        const action = {
-            type: loadActionCatalog.fulfilled.type,
-            payload: catalog,
-        };
+        const action = { type: loadActionCatalog.fulfilled.type, payload: catalog };
 
         const state = actionsReducer(initialState, action);
 
@@ -56,11 +50,7 @@ describe('actions slice reducer', () => {
     });
 
     it('loadActionCatalog.rejected sets catalogStatus to error', () => {
-        const action = {
-            type: loadActionCatalog.rejected.type,
-            payload: 'Failed to load catalog',
-            error: { message: 'Rejected' },
-        };
+        const action = { type: loadActionCatalog.rejected.type, payload: 'Failed to load catalog', error: { message: 'Rejected' } };
 
         const state = actionsReducer(initialState, action);
 
@@ -77,10 +67,7 @@ describe('actions slice reducer', () => {
 
     it('loadModels.fulfilled populates availableModels and sets modelsStatus to success', () => {
         const models = [{ id: 'model-gpt4', name: 'GPT-4' }];
-        const action = {
-            type: loadModels.fulfilled.type,
-            payload: models,
-        };
+        const action = { type: loadModels.fulfilled.type, payload: models };
 
         const state = actionsReducer(initialState, action);
 
@@ -89,11 +76,7 @@ describe('actions slice reducer', () => {
     });
 
     it('loadModels.rejected sets modelsStatus to error', () => {
-        const action = {
-            type: loadModels.rejected.type,
-            payload: 'Failed to load models',
-            error: { message: 'Rejected' },
-        };
+        const action = { type: loadModels.rejected.type, payload: 'Failed to load models', error: { message: 'Rejected' } };
 
         const state = actionsReducer(initialState, action);
 
@@ -110,10 +93,7 @@ describe('actions slice reducer', () => {
 
     it('loadModelsForProvider.fulfilled updates availableModels and sets modelsStatus to success', () => {
         const models = [{ id: 'model-claude', name: 'Claude 3' }];
-        const action = {
-            type: loadModelsForProvider.fulfilled.type,
-            payload: models,
-        };
+        const action = { type: loadModelsForProvider.fulfilled.type, payload: models };
 
         const state = actionsReducer(initialState, action);
 
@@ -122,11 +102,7 @@ describe('actions slice reducer', () => {
     });
 
     it('loadModelsForProvider.rejected sets modelsStatus to error', () => {
-        const action = {
-            type: loadModelsForProvider.rejected.type,
-            payload: 'Failed to load provider models',
-            error: { message: 'Rejected' },
-        };
+        const action = { type: loadModelsForProvider.rejected.type, payload: 'Failed to load provider models', error: { message: 'Rejected' } };
 
         const state = actionsReducer(initialState, action);
 

@@ -10,10 +10,7 @@ export function unwrap<T>(res: { data?: T; error?: apperr.WireError }): T {
     return res.data as T;
 }
 
-export function tryUnwrap<T>(res: {
-    data?: T;
-    error?: apperr.WireError;
-}): { data?: T; error?: apperr.WireError } {
+export function tryUnwrap<T>(res: { data?: T; error?: apperr.WireError }): { data?: T; error?: apperr.WireError } {
     if (res.error) {
         store.dispatch(notifyError(res.error));
     }

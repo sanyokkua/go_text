@@ -1,23 +1,28 @@
 import { configureStore } from '@reduxjs/toolkit';
-import stacksBuilderReducer from '../slice';
 import actionsReducer from '../../../actions/slice';
+import stacksBuilderReducer from '../slice';
 
 jest.mock('../../../../../logic/adapter', () => ({
     getLogger: () => ({ logInfo: jest.fn(), logDebug: jest.fn(), logError: jest.fn(), logWarn: jest.fn() }),
 }));
 
-import {
-    selectBuilderFamilyGroups,
-    selectBuilderInferenceCount,
-    selectBuilderIsValid,
-    selectBuilderActionAvailability,
-} from '../selectors';
 import type { RootState } from '../../../index';
+import { selectBuilderActionAvailability, selectBuilderFamilyGroups, selectBuilderInferenceCount, selectBuilderIsValid } from '../selectors';
 
-function meta(overrides: Partial<{
-    id: string; name: string; family: string; category: string; mergeable: boolean;
-    terminal: boolean; exclusivityGroup: string; orderRank: number; directive: string; requires: string[];
-}>) {
+function meta(
+    overrides: Partial<{
+        id: string;
+        name: string;
+        family: string;
+        category: string;
+        mergeable: boolean;
+        terminal: boolean;
+        exclusivityGroup: string;
+        orderRank: number;
+        directive: string;
+        requires: string[];
+    }>,
+) {
     return {
         id: overrides.id ?? 'a1',
         name: overrides.name ?? 'Action',
@@ -38,7 +43,14 @@ const REWRITE_TONE_FRIENDLY = meta({ id: 'tone-friendly', name: 'Friendly', fami
 const STRUCTURE_FORMAT = meta({ id: 'bullets', name: 'Bullets', family: 'structure', mergeable: true, exclusivityGroup: 'format' });
 const SUMMARIZE = meta({ id: 'summary', name: 'Summary', family: 'summarize', mergeable: false, terminal: true, exclusivityGroup: 'summarize' });
 const TRANSLATE = meta({ id: 'translate', name: 'Translate', family: 'translate', mergeable: false, terminal: true, exclusivityGroup: 'translate' });
-const PROMPTENG = meta({ id: 'prompteng-text', name: 'Improve Prompt', family: 'prompteng', mergeable: false, terminal: true, exclusivityGroup: 'prompteng-text' });
+const PROMPTENG = meta({
+    id: 'prompteng-text',
+    name: 'Improve Prompt',
+    family: 'prompteng',
+    mergeable: false,
+    terminal: true,
+    exclusivityGroup: 'prompteng-text',
+});
 
 const ALL_METAS = [REWRITE_PROOFREAD, REWRITE_TONE_FORMAL, REWRITE_TONE_FRIENDLY, STRUCTURE_FORMAT, SUMMARIZE, TRANSLATE, PROMPTENG];
 

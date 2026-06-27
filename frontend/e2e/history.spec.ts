@@ -24,20 +24,33 @@ test.describe('History Rail: e2e flows', () => {
     test.beforeEach(async ({ page }) => {
         await page.addInitScript((entry) => {
             const ok = (d: unknown) => Promise.resolve({ data: d, error: undefined });
-            const historyHandler = new Proxy({}, {
-                get(_, method) {
-                    if (method === 'ListHistory') return () => ok([entry]);
-                    if (method === 'GetHistoryEntry') return () => ok(entry);
-                    if (method === 'DeleteHistoryEntry') return () => ok(null);
-                    if (method === 'ClearHistory') return () => ok(null);
-                    return () => ok(null);
+            const historyHandler = new Proxy(
+                {},
+                {
+                    get(_, method) {
+                        if (method === 'ListHistory') return () => ok([entry]);
+                        if (method === 'GetHistoryEntry') return () => ok(entry);
+                        if (method === 'DeleteHistoryEntry') return () => ok(null);
+                        if (method === 'ClearHistory') return () => ok(null);
+                        return () => ok(null);
+                    },
                 },
-            });
-            (globalThis as unknown as Record<string, unknown>)['go'] = new Proxy({}, {
-                get() {
-                    return new Proxy({}, { get() { return historyHandler; } });
+            );
+            (globalThis as unknown as Record<string, unknown>)['go'] = new Proxy(
+                {},
+                {
+                    get() {
+                        return new Proxy(
+                            {},
+                            {
+                                get() {
+                                    return historyHandler;
+                                },
+                            },
+                        );
+                    },
                 },
-            });
+            );
         }, MOCK_ENTRY);
 
         await page.goto('/');

@@ -1,16 +1,12 @@
 import React, { memo } from 'react';
-import {
-    selectAboutSection,
-    useAppDispatch,
-    useAppSelector,
-} from '../../../../logic/store';
+import { selectAboutSection, useAppDispatch, useAppSelector } from '../../../../logic/store';
 import { setAboutSection } from '../../../../logic/store/about/slice';
 import { AboutSection } from '../../../../logic/store/about/types';
 import { MarkdownView } from '../../../components/MarkdownView';
 import { Tabs } from '../../../primitives/Tabs';
 import CatalogList from './CatalogList';
-import PromptInspector from './PromptInspector';
 import styles from './InfoView.module.css';
+import PromptInspector from './PromptInspector';
 
 const GUIDE_CONTENT = `# Text Processing Suite
 

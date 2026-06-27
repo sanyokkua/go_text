@@ -20,12 +20,21 @@
     transition: background 160ms;
 }
 
-.scrollbar:hover { background: var(--surface-2); }
+.scrollbar:hover {
+    background: var(--surface-2);
+}
 
-.scrollbar[data-orientation='vertical'] { width: 8px; }
-.scrollbar[data-orientation='horizontal'] { flex-direction: column; height: 8px; }
+.scrollbar[data-orientation='vertical'] {
+    width: 8px;
+}
+.scrollbar[data-orientation='horizontal'] {
+    flex-direction: column;
+    height: 8px;
+}
 
-.horizontal { width: 100%; }
+.horizontal {
+    width: 100%;
+}
 
 .thumb {
     flex: 1;
@@ -41,4 +50,6 @@
     inset: -50%;
 }
 
-.thumb:hover { opacity: 0.8; }
+.thumb:hover {
+    opacity: 0.8;
+}

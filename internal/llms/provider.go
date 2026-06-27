@@ -45,7 +45,7 @@ type Message struct {
 // ChatRequest is the provider-agnostic inference request.
 type ChatRequest struct {
 	Model              string
-	System             string   // injected as role=system message
+	System             string // injected as role=system message
 	Messages           []Message
 	Temperature        *float64
 	MaxTokens          *int

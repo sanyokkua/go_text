@@ -1,19 +1,49 @@
+import { configureStore } from '@reduxjs/toolkit';
+import '@testing-library/jest-dom';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import '@testing-library/jest-dom';
 import { Provider } from 'react-redux';
-import { configureStore } from '@reduxjs/toolkit';
+import actionsReducer from '../../../../../logic/store/actions/slice';
+import notificationsReducer from '../../../../../logic/store/notifications/slice';
 import stacksBuilderReducer from '../../../../../logic/store/stacks/builder/slice';
 import stacksSavedReducer from '../../../../../logic/store/stacks/saved/slice';
-import actionsReducer from '../../../../../logic/store/actions/slice';
 import uiReducer from '../../../../../logic/store/ui/slice';
-import notificationsReducer from '../../../../../logic/store/notifications/slice';
 import SaveStackDialog from '../SaveStackDialog';
 
 jest.mock('../../../../../logic/adapter', () => ({
     StackHandlerAdapter: {
-        createStack: jest.fn().mockResolvedValue({ data: { id: 'new-stack', name: 'Test', icon: '📝', steps: [], defaultFormat: 'PlainText', defaultInLang: '', defaultOutLang: '', createdAt: 0, updatedAt: 0 }, error: null }),
-        updateStack: jest.fn().mockResolvedValue({ data: { id: 'stack-1', name: 'Updated', icon: '📝', steps: [], defaultFormat: 'PlainText', defaultInLang: '', defaultOutLang: '', createdAt: 0, updatedAt: 0 }, error: null }),
+        createStack: jest
+            .fn()
+            .mockResolvedValue({
+                data: {
+                    id: 'new-stack',
+                    name: 'Test',
+                    icon: '📝',
+                    steps: [],
+                    defaultFormat: 'PlainText',
+                    defaultInLang: '',
+                    defaultOutLang: '',
+                    createdAt: 0,
+                    updatedAt: 0,
+                },
+                error: null,
+            }),
+        updateStack: jest
+            .fn()
+            .mockResolvedValue({
+                data: {
+                    id: 'stack-1',
+                    name: 'Updated',
+                    icon: '📝',
+                    steps: [],
+                    defaultFormat: 'PlainText',
+                    defaultInLang: '',
+                    defaultOutLang: '',
+                    createdAt: 0,
+                    updatedAt: 0,
+                },
+                error: null,
+            }),
         listStacks: jest.fn().mockResolvedValue({ data: [], error: null }),
     },
     getLogger: () => ({ logInfo: jest.fn(), logDebug: jest.fn(), logError: jest.fn(), logWarn: jest.fn() }),
@@ -25,8 +55,15 @@ jest.mock('../../../../../logic/adapter', () => ({
 }));
 
 const EXISTING_STACK = {
-    id: 'existing', name: 'My Stack', icon: '📝', steps: [],
-    defaultFormat: 'PlainText', defaultInLang: '', defaultOutLang: '', createdAt: 0, updatedAt: 0,
+    id: 'existing',
+    name: 'My Stack',
+    icon: '📝',
+    steps: [],
+    defaultFormat: 'PlainText',
+    defaultInLang: '',
+    defaultOutLang: '',
+    createdAt: 0,
+    updatedAt: 0,
 };
 
 interface StoreOverrides {
@@ -38,18 +75,27 @@ interface StoreOverrides {
 function makeStore(overrides: StoreOverrides = {}) {
     return configureStore({
         reducer: {
-            stacksBuilder: stacksBuilderReducer, stacksSaved: stacksSavedReducer,
-            actions: actionsReducer, ui: uiReducer, notifications: notificationsReducer,
+            stacksBuilder: stacksBuilderReducer,
+            stacksSaved: stacksSavedReducer,
+            actions: actionsReducer,
+            ui: uiReducer,
+            notifications: notificationsReducer,
         },
         preloadedState: {
             stacksBuilder: { steps: overrides.steps ?? ['proofread'], name: '', icon: '' },
             stacksSaved: { stacks: (overrides.savedStacks ?? []) as never, status: 'idle' as const, error: null },
             actions: { catalog: [], catalogStatus: 'idle' as const, availableModels: [], modelsStatus: 'idle' as const },
             ui: {
-                layout: 'side' as const, sidebarCollapsed: false, historyOpen: false,
-                inferenceRunning: false, currentView: 'main' as const, armedActionId: null, activeActionsTab: null,
-                buildMode: true, editingStackId: overrides.editingStackId ?? null,
-                    activeSettingsTab: 0,
+                layout: 'side' as const,
+                sidebarCollapsed: false,
+                historyOpen: false,
+                inferenceRunning: false,
+                currentView: 'main' as const,
+                armedActionId: null,
+                activeActionsTab: null,
+                buildMode: true,
+                editingStackId: overrides.editingStackId ?? null,
+                activeSettingsTab: 0,
                 theme: { mode: 'auto' as const, effective: 'light' as const },
             },
             notifications: { queue: [] },
@@ -60,18 +106,28 @@ function makeStore(overrides: StoreOverrides = {}) {
 describe('SaveStackDialog', () => {
     it('renders the dialog title when open', () => {
         render(
-            <Provider store={makeStore()}><SaveStackDialog open onOpenChange={jest.fn()} /></Provider>,
+            <Provider store={makeStore()}>
+                <SaveStackDialog open onOpenChange={jest.fn()} />
+            </Provider>,
         );
         expect(screen.getByText(/save custom stack/i)).toBeInTheDocument();
     });
 
     it('shows a name input field', () => {
-        render(<Provider store={makeStore()}><SaveStackDialog open onOpenChange={jest.fn()} /></Provider>);
+        render(
+            <Provider store={makeStore()}>
+                <SaveStackDialog open onOpenChange={jest.fn()} />
+            </Provider>,
+        );
         expect(screen.getByRole('textbox', { name: /name/i })).toBeInTheDocument();
     });
 
     it('Save button is disabled when name is empty', async () => {
-        render(<Provider store={makeStore()}><SaveStackDialog open onOpenChange={jest.fn()} /></Provider>);
+        render(
+            <Provider store={makeStore()}>
+                <SaveStackDialog open onOpenChange={jest.fn()} />
+            </Provider>,
+        );
         const nameInput = screen.getByRole('textbox', { name: /name/i });
         await userEvent.clear(nameInput);
         expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled();
@@ -102,7 +158,11 @@ describe('SaveStackDialog', () => {
     });
 
     it('Save button is enabled with a valid unique name', async () => {
-        render(<Provider store={makeStore()}><SaveStackDialog open onOpenChange={jest.fn()} /></Provider>);
+        render(
+            <Provider store={makeStore()}>
+                <SaveStackDialog open onOpenChange={jest.fn()} />
+            </Provider>,
+        );
         const nameInput = screen.getByRole('textbox', { name: /name/i });
         await userEvent.clear(nameInput);
         await userEvent.type(nameInput, 'New Stack');
@@ -111,18 +171,30 @@ describe('SaveStackDialog', () => {
 
     it('Cancel button calls onOpenChange(false)', async () => {
         const onOpenChange = jest.fn();
-        render(<Provider store={makeStore()}><SaveStackDialog open onOpenChange={onOpenChange} /></Provider>);
+        render(
+            <Provider store={makeStore()}>
+                <SaveStackDialog open onOpenChange={onOpenChange} />
+            </Provider>,
+        );
         await userEvent.click(screen.getByRole('button', { name: /^cancel$/i }));
         expect(onOpenChange).toHaveBeenCalledWith(false);
     });
 
     it('shows step count summary', () => {
-        render(<Provider store={makeStore({ steps: ['proofread'] })}><SaveStackDialog open onOpenChange={jest.fn()} /></Provider>);
+        render(
+            <Provider store={makeStore({ steps: ['proofread'] })}>
+                <SaveStackDialog open onOpenChange={jest.fn()} />
+            </Provider>,
+        );
         expect(screen.getByText(/1 step/i)).toBeInTheDocument();
     });
 
     it('shows icon picker buttons', () => {
-        render(<Provider store={makeStore()}><SaveStackDialog open onOpenChange={jest.fn()} /></Provider>);
+        render(
+            <Provider store={makeStore()}>
+                <SaveStackDialog open onOpenChange={jest.fn()} />
+            </Provider>,
+        );
         expect(screen.getAllByRole('button', { name: /icon/i }).length).toBeGreaterThan(0);
     });
 });

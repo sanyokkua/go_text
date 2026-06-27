@@ -60,12 +60,6 @@ const aboutSlice = createSlice({
     },
 });
 
-export const {
-    setAboutSection,
-    selectAboutItem,
-    clearAboutSelection,
-    togglePreviewInput,
-    setInspectorOpen,
-} = aboutSlice.actions;
+export const { setAboutSection, selectAboutItem, clearAboutSelection, togglePreviewInput, setInspectorOpen } = aboutSlice.actions;
 
 export default aboutSlice.reducer;

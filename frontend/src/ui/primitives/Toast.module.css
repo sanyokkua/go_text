@@ -28,8 +28,12 @@
     animation: slideInRight 200ms ease-out;
 }
 
-.root[data-state='closed'] { animation: slideOutRight 150ms ease-in; }
-.root[data-swipe='end'] { animation: swipeOut 100ms ease-out; }
+.root[data-state='closed'] {
+    animation: slideOutRight 150ms ease-in;
+}
+.root[data-swipe='end'] {
+    animation: swipeOut 100ms ease-out;
+}
 
 .body {
     display: flex;
@@ -39,7 +43,11 @@
     min-width: 0;
 }
 
-.glyph { flex-shrink: 0; font-size: 14px; padding-top: 1px; }
+.glyph {
+    flex-shrink: 0;
+    font-size: 14px;
+    padding-top: 1px;
+}
 
 .textBlock {
     display: flex;
@@ -72,17 +80,33 @@
     color: inherit;
 }
 
-.close:hover { opacity: 1; }
+.close:hover {
+    opacity: 1;
+}
 
 /* Variants */
-.success { background: #16201e; color: #fff; }
-:global(.dark) .success { background: #000; }
+.success {
+    background: #16201e;
+    color: #fff;
+}
+:global(.dark) .success {
+    background: #000;
+}
 
-.error { background: var(--err); color: #fff; }
+.error {
+    background: var(--err);
+    color: #fff;
+}
 
-.warning { background: var(--warn); color: #fff; }
+.warning {
+    background: var(--warn);
+    color: #fff;
+}
 
-.info { background: var(--teal); color: #fff; }
+.info {
+    background: var(--teal);
+    color: #fff;
+}
 
 .progress {
     background: var(--surface);
@@ -91,20 +115,38 @@
 }
 
 @keyframes slideInRight {
-    from { opacity: 0; transform: translateX(100%); }
-    to { opacity: 1; transform: translateX(0); }
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 @keyframes slideOutRight {
-    from { opacity: 1; transform: translateX(0); }
-    to { opacity: 0; transform: translateX(100%); }
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(100%);
+    }
 }
 
 @keyframes swipeOut {
-    from { transform: translateX(var(--radix-toast-swipe-end-x)); }
-    to { transform: translateX(100%); }
+    from {
+        transform: translateX(var(--radix-toast-swipe-end-x));
+    }
+    to {
+        transform: translateX(100%);
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .root { animation: none; }
+    .root {
+        animation: none;
+    }
 }

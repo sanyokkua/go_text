@@ -291,10 +291,25 @@ jobs:
         working-directory: frontend
         run: npm audit --audit-level=high
 
-      # ── Pending gates (activated when feature tasks add these tools) ──────────
-      # sqlc generate --diff  → activated in T04 (SQLite/DB layer)
-      # wails generate module → activated in T01 (first Go handler change)
-      # wails doctor          → activated in T01
+      # ── Codegen drift checks ─────────────────────────────────────────────────
+
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+      - name: Go – wails doctor
+        run: wails doctor
+
+      - name: Install sqlc
+        run: go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+
+      - name: Go – sqlc drift check
+        run: sqlc generate --diff
+
+      - name: Go – wails bindings drift check
+        run: |
+          wails generate module
+          git diff --exit-code frontend/wailsjs/ || \
+            (echo "ERROR: wailsjs bindings are out of sync — run 'wails generate module' and commit" && exit 1)
 
   # ==============================================================================
   # RELEASE JOB - Creates GitHub Release with build artifacts

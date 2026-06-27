@@ -9,7 +9,9 @@ describe('Tooltip', () => {
         const { container } = render(
             <TooltipProvider>
                 <Tooltip content="Copy to clipboard">
-                    <button type="button" aria-label="Copy">📋</button>
+                    <button type="button" aria-label="Copy">
+                        📋
+                    </button>
                 </Tooltip>
             </TooltipProvider>,
         );
@@ -20,7 +22,9 @@ describe('Tooltip', () => {
         render(
             <TooltipProvider>
                 <Tooltip content="Copy">
-                    <button type="button" aria-label="Copy">📋</button>
+                    <button type="button" aria-label="Copy">
+                        📋
+                    </button>
                 </Tooltip>
             </TooltipProvider>,
         );

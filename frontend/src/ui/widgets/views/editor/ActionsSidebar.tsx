@@ -1,12 +1,16 @@
 import React from 'react';
 import { getLogger } from '../../../../logic/adapter';
 import {
-    selectActiveActionsTab, selectArmedActionId,
+    selectActiveActionsTab,
+    selectArmedActionId,
     selectBuildMode,
     selectBuilderActionAvailability,
-    selectCatalogByCategory, selectInferenceRunning,
+    selectCatalogByCategory,
+    selectInferenceRunning,
     selectSavedStacks,
-    selectSidebarCollapsed, useAppDispatch, useAppSelector,
+    selectSidebarCollapsed,
+    useAppDispatch,
+    useAppSelector,
 } from '../../../../logic/store';
 import { addStep } from '../../../../logic/store/stacks/builder/slice';
 import { armAction, enterBuildMode, setActiveActionsTab, setCurrentView } from '../../../../logic/store/ui';
@@ -73,20 +77,13 @@ const ActionsSidebar: React.FC = () => {
                         <span className={styles.stackCount}>{stack.steps.length}</span>
                     </div>
                 ))}
-                <button
-                    className={styles.buildStackBtn}
-                    onClick={handleEnterBuildMode}
-                    disabled={inferenceRunning}
-                    aria-label="Build a stack"
-                >
+                <button className={styles.buildStackBtn} onClick={handleEnterBuildMode} disabled={inferenceRunning} aria-label="Build a stack">
                     ＋ Build a stack
                 </button>
             </div>
 
             {/* Build mode hint */}
-            {buildMode && (
-                <div className={styles.buildHint}>⌕ click to add a step…</div>
-            )}
+            {buildMode && <div className={styles.buildHint}>⌕ click to add a step…</div>}
 
             {/* Category tabs */}
             <div className={styles.tabs}>
@@ -135,15 +132,11 @@ const ActionsSidebar: React.FC = () => {
                         >
                             {isSelected && <span className={styles.check}>✓</span>}
                             <span className={styles.actionName}>{action.name}</span>
-                            {buildMode && avail?.addsNewInference && !avail.selected && (
-                                <span className={styles.inferenceHint}>+1</span>
-                            )}
+                            {buildMode && avail?.addsNewInference && !avail.selected && <span className={styles.inferenceHint}>+1</span>}
                         </button>
                     );
                 })}
-                {(!activeGroup || activeGroup.actions.length === 0) && (
-                    <div className={styles.emptyState}>No actions loaded</div>
-                )}
+                {(!activeGroup || activeGroup.actions.length === 0) && <div className={styles.emptyState}>No actions loaded</div>}
             </div>
         </aside>
     );

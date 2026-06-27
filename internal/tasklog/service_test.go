@@ -55,35 +55,45 @@ func (m *mockSettingsService) UpdateLoggingConfig(cfg *settings.LoggingConfig) (
 	return cfg, nil
 }
 
-func (m *mockSettingsService) GetAppSettingsMetadata() (*settings.AppSettingsMetadata, error) { return nil, nil }
-func (m *mockSettingsService) GetSettings() (*settings.Settings, error)                       { return nil, nil }
-func (m *mockSettingsService) ResetSettingsToDefault() (*settings.Settings, error)            { return nil, nil }
-func (m *mockSettingsService) GetAllProviderConfigs() ([]settings.ProviderConfig, error)      { return nil, nil }
-func (m *mockSettingsService) GetCurrentProviderConfig() (*settings.ProviderConfig, error)    { return nil, nil }
-func (m *mockSettingsService) GetProviderConfig(_ string) (*settings.ProviderConfig, error)   { return nil, nil }
+func (m *mockSettingsService) GetAppSettingsMetadata() (*settings.AppSettingsMetadata, error) {
+	return nil, nil
+}
+func (m *mockSettingsService) GetSettings() (*settings.Settings, error)            { return nil, nil }
+func (m *mockSettingsService) ResetSettingsToDefault() (*settings.Settings, error) { return nil, nil }
+func (m *mockSettingsService) GetAllProviderConfigs() ([]settings.ProviderConfig, error) {
+	return nil, nil
+}
+func (m *mockSettingsService) GetCurrentProviderConfig() (*settings.ProviderConfig, error) {
+	return nil, nil
+}
+func (m *mockSettingsService) GetProviderConfig(_ string) (*settings.ProviderConfig, error) {
+	return nil, nil
+}
 func (m *mockSettingsService) CreateProviderConfig(_ *settings.ProviderConfig) (*settings.ProviderConfig, error) {
 	return nil, nil
 }
 func (m *mockSettingsService) UpdateProviderConfig(_ *settings.ProviderConfig) (*settings.ProviderConfig, error) {
 	return nil, nil
 }
-func (m *mockSettingsService) DeleteProviderConfig(_ string) error                             { return nil }
+func (m *mockSettingsService) DeleteProviderConfig(_ string) error { return nil }
 func (m *mockSettingsService) SetAsCurrentProviderConfig(_ string) (*settings.ProviderConfig, error) {
 	return nil, nil
 }
-func (m *mockSettingsService) GetInferenceBaseConfig() (*settings.InferenceBaseConfig, error) { return nil, nil }
-func (m *mockSettingsService) GetModelConfig() (*settings.ModelConfig, error)                 { return nil, nil }
+func (m *mockSettingsService) GetInferenceBaseConfig() (*settings.InferenceBaseConfig, error) {
+	return nil, nil
+}
+func (m *mockSettingsService) GetModelConfig() (*settings.ModelConfig, error) { return nil, nil }
 func (m *mockSettingsService) UpdateInferenceBaseConfig(_ *settings.InferenceBaseConfig) (*settings.InferenceBaseConfig, error) {
 	return nil, nil
 }
 func (m *mockSettingsService) UpdateModelConfig(_ *settings.ModelConfig) (*settings.ModelConfig, error) {
 	return nil, nil
 }
-func (m *mockSettingsService) GetLanguageConfig() (*settings.LanguageConfig, error)           { return nil, nil }
-func (m *mockSettingsService) SetDefaultInputLanguage(_ string) error                         { return nil }
-func (m *mockSettingsService) SetDefaultOutputLanguage(_ string) error                        { return nil }
-func (m *mockSettingsService) AddLanguage(_ string) ([]string, error)                         { return nil, nil }
-func (m *mockSettingsService) RemoveLanguage(_ string) ([]string, error)                      { return nil, nil }
+func (m *mockSettingsService) GetLanguageConfig() (*settings.LanguageConfig, error) { return nil, nil }
+func (m *mockSettingsService) SetDefaultInputLanguage(_ string) error               { return nil }
+func (m *mockSettingsService) SetDefaultOutputLanguage(_ string) error              { return nil }
+func (m *mockSettingsService) AddLanguage(_ string) ([]string, error)               { return nil, nil }
+func (m *mockSettingsService) RemoveLanguage(_ string) ([]string, error)            { return nil, nil }
 func (m *mockSettingsService) UpdateAppBehaviorConfig(_ *settings.AppBehaviorConfig) (*settings.AppBehaviorConfig, error) {
 	return nil, nil
 }
@@ -102,9 +112,9 @@ func (m *mockFileUtilsService) EnsureAppLogsFolderExists(_ string) (string, erro
 	return m.ensurePath, m.ensureErr
 }
 
-func (m *mockFileUtilsService) GetAppSettingsFolderPath() (string, error)  { return "", nil }
-func (m *mockFileUtilsService) GetAppSettingsFilePath() (string, error)    { return "", nil }
-func (m *mockFileUtilsService) GetAppDatabaseFilePath() (string, error)    { return "", nil }
+func (m *mockFileUtilsService) GetAppSettingsFolderPath() (string, error) { return "", nil }
+func (m *mockFileUtilsService) GetAppSettingsFilePath() (string, error)   { return "", nil }
+func (m *mockFileUtilsService) GetAppDatabaseFilePath() (string, error)   { return "", nil }
 func (m *mockFileUtilsService) ResolveAppLogsFolderPath(_ string) (string, error) {
 	return "", nil
 }
@@ -112,19 +122,19 @@ func (m *mockFileUtilsService) ResolveAppLogsFolderPath(_ string) (string, error
 // makeEntry returns a fully-populated TaskLogEntry for use across test cases.
 func makeEntry() TaskLogEntry {
 	return TaskLogEntry{
-		SchemaVersion: 1,
-		Timestamp:     "2024-01-15T10:00:00Z",
-		ActionID:      "action-123",
-		ActionName:    "Translate",
-		Category:      "translation",
-		InputText:     "Hello",
-		OutputText:    "Hola",
-		SystemPrompt:  "You are a translator",
-		UserPrompt:    "Translate to Spanish",
-		ProviderName:  "Ollama",
-		ProviderType:  "ollama",
-		Model:         "llama3",
-		DurationMs:    1234,
+		SchemaVersion:  1,
+		Timestamp:      "2024-01-15T10:00:00Z",
+		ActionID:       "action-123",
+		ActionName:     "Translate",
+		Category:       "translation",
+		InputText:      "Hello",
+		OutputText:     "Hola",
+		SystemPrompt:   "You are a translator",
+		UserPrompt:     "Translate to Spanish",
+		ProviderName:   "Ollama",
+		ProviderType:   "ollama",
+		Model:          "llama3",
+		DurationMs:     1234,
 		InputLanguage:  "English",
 		OutputLanguage: "Spanish",
 	}
@@ -192,7 +202,15 @@ func TestNewTaskLogService(t *testing.T) {
 
 			// Resolve typed interface values so nil comparisons work correctly at
 			// the interface level inside the constructor.
-			var log interface{ Print(string); Trace(string); Debug(string); Info(string); Warning(string); Error(string); Fatal(string) }
+			var log interface {
+				Print(string)
+				Trace(string)
+				Debug(string)
+				Info(string)
+				Warning(string)
+				Error(string)
+				Fatal(string)
+			}
 			var svc settings.SettingsServiceAPI
 			var fu interface {
 				GetAppSettingsFolderPath() (string, error)

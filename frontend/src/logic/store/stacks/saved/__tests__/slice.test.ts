@@ -1,14 +1,16 @@
 // Mock the adapter before any imports so module-level getLogger calls succeed.
 jest.mock('../../../../adapter', () => ({
-    getLogger: jest.fn().mockReturnValue({
-        logDebug: jest.fn(),
-        logInfo: jest.fn(),
-        logError: jest.fn(),
-        logWarning: jest.fn(),
-        logTrace: jest.fn(),
-        logPrint: jest.fn(),
-        logFatal: jest.fn(),
-    }),
+    getLogger: jest
+        .fn()
+        .mockReturnValue({
+            logDebug: jest.fn(),
+            logInfo: jest.fn(),
+            logError: jest.fn(),
+            logWarning: jest.fn(),
+            logTrace: jest.fn(),
+            logPrint: jest.fn(),
+            logFatal: jest.fn(),
+        }),
     unwrap: jest.fn((res: { data?: unknown; error?: unknown }) => {
         if (res.error) throw res.error;
         return res.data;
@@ -20,14 +22,10 @@ jest.mock('../../../../adapter', () => ({
 }));
 
 import stacksSavedReducer from '../slice';
-import { listStacks, createStack, deleteStack, duplicateStack, updateStack } from '../thunks';
+import { createStack, deleteStack, duplicateStack, listStacks, updateStack } from '../thunks';
 import type { StacksSavedState } from '../types';
 
-const initialState: StacksSavedState = {
-    stacks: [],
-    status: 'idle',
-    error: null,
-};
+const initialState: StacksSavedState = { stacks: [], status: 'idle', error: null };
 
 const stackA = { id: 'stack-1', name: 'My Stack', steps: [] };
 const stackB = { id: 'stack-2', name: 'Another Stack', steps: [] };
@@ -49,10 +47,7 @@ describe('stacks/saved slice reducer', () => {
 
     it('listStacks.fulfilled populates stacks and sets status to idle', () => {
         const loadingState: StacksSavedState = { ...initialState, status: 'loading' };
-        const action = {
-            type: listStacks.fulfilled.type,
-            payload: [stackA, stackB],
-        };
+        const action = { type: listStacks.fulfilled.type, payload: [stackA, stackB] };
 
         const state = stacksSavedReducer(loadingState, action);
 
@@ -61,11 +56,7 @@ describe('stacks/saved slice reducer', () => {
     });
 
     it('listStacks.rejected sets status to error and stores error message', () => {
-        const action = {
-            type: listStacks.rejected.type,
-            payload: 'Network error',
-            error: { message: 'Rejected' },
-        };
+        const action = { type: listStacks.rejected.type, payload: 'Network error', error: { message: 'Rejected' } };
 
         const state = stacksSavedReducer(initialState, action);
 
@@ -83,10 +74,7 @@ describe('stacks/saved slice reducer', () => {
 
     it('createStack.fulfilled appends new stack to stacks and sets status to idle', () => {
         const existingState: StacksSavedState = { ...initialState, stacks: [stackA] };
-        const action = {
-            type: createStack.fulfilled.type,
-            payload: stackB,
-        };
+        const action = { type: createStack.fulfilled.type, payload: stackB };
 
         const state = stacksSavedReducer(existingState, action);
 
@@ -104,10 +92,7 @@ describe('stacks/saved slice reducer', () => {
 
     it('deleteStack.fulfilled removes the stack with matching id and sets status to idle', () => {
         const existingState: StacksSavedState = { ...initialState, stacks: [stackA, stackB] };
-        const action = {
-            type: deleteStack.fulfilled.type,
-            payload: 'stack-1',
-        };
+        const action = { type: deleteStack.fulfilled.type, payload: 'stack-1' };
 
         const state = stacksSavedReducer(existingState, action);
 
@@ -118,10 +103,7 @@ describe('stacks/saved slice reducer', () => {
     it('duplicateStack.fulfilled appends duplicated stack to stacks and sets status to idle', () => {
         const existingState: StacksSavedState = { ...initialState, stacks: [stackA] };
         const duplicated = { id: 'stack-3', name: 'My Stack (copy)', steps: [] };
-        const action = {
-            type: duplicateStack.fulfilled.type,
-            payload: duplicated,
-        };
+        const action = { type: duplicateStack.fulfilled.type, payload: duplicated };
 
         const state = stacksSavedReducer(existingState, action);
 
@@ -132,10 +114,7 @@ describe('stacks/saved slice reducer', () => {
     it('updateStack.fulfilled replaces the matching stack in place and sets status to idle', () => {
         const updatedStackA = { id: 'stack-1', name: 'Renamed Stack', steps: [] };
         const existingState: StacksSavedState = { ...initialState, stacks: [stackA, stackB] };
-        const action = {
-            type: updateStack.fulfilled.type,
-            payload: updatedStackA,
-        };
+        const action = { type: updateStack.fulfilled.type, payload: updatedStackA };
 
         const state = stacksSavedReducer(existingState, action);
 
@@ -147,10 +126,7 @@ describe('stacks/saved slice reducer', () => {
     it('updateStack.fulfilled does not modify stacks when no id matches', () => {
         const existingState: StacksSavedState = { ...initialState, stacks: [stackA] };
         const nonExistent = { id: 'stack-999', name: 'Ghost Stack', steps: [] };
-        const action = {
-            type: updateStack.fulfilled.type,
-            payload: nonExistent,
-        };
+        const action = { type: updateStack.fulfilled.type, payload: nonExistent };
 
         const state = stacksSavedReducer(existingState, action);
 

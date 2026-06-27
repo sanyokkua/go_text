@@ -9,11 +9,18 @@ const defaultProvider = {
     isCurrent: true,
 };
 
-const defaultSettings = { currentProviderId: 'mock-provider-1' };
+const defaultSettings = {
+    availableProviderConfigs: [defaultProvider],
+    currentProviderConfig: defaultProvider,
+    inferenceBaseConfig: { temperature: 0.7, maxTokens: 2048, topP: 1.0 },
+    modelConfig: { model: 'mock-model' },
+    languageConfig: { inputLanguage: 'English', outputLanguage: 'English', languages: ['English'] },
+    appBehaviorConfig: { saveTaskLog: false },
+};
 
-const defaultInference = { temperature: 0.7, maxTokens: 2048, topP: 1.0 };
+const defaultInference = { temperature: 0.7, maxTokens: 2048, topP: 1 };
 const defaultModel = { model: 'mock-model' };
-const defaultBehavior = { saveTaskLog: false };
+const defaultBehavior = { enableTaskLogging: false, historyEnabled: true, historyMaxEntries: 50 };
 const defaultLogging = { level: 'info' };
 const defaultLanguage = { inputLanguage: 'English', outputLanguage: 'English', languages: ['English'] };
 

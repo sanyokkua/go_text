@@ -1,14 +1,16 @@
 // Mock the adapter before any imports so module-level getLogger calls succeed.
 jest.mock('../../../adapter', () => ({
-    getLogger: jest.fn().mockReturnValue({
-        logDebug: jest.fn(),
-        logInfo: jest.fn(),
-        logError: jest.fn(),
-        logWarning: jest.fn(),
-        logTrace: jest.fn(),
-        logPrint: jest.fn(),
-        logFatal: jest.fn(),
-    }),
+    getLogger: jest
+        .fn()
+        .mockReturnValue({
+            logDebug: jest.fn(),
+            logInfo: jest.fn(),
+            logError: jest.fn(),
+            logWarning: jest.fn(),
+            logTrace: jest.fn(),
+            logPrint: jest.fn(),
+            logFatal: jest.fn(),
+        }),
     unwrap: jest.fn((res: { data?: unknown; error?: unknown }) => {
         if (res.error) throw res.error;
         return res.data;
@@ -18,21 +20,10 @@ jest.mock('../../../adapter', () => ({
     SettingsHandlerAdapter: {},
 }));
 
-import editorReducer, {
-    setInputContent,
-    setOutputContent,
-    useOutputAsInput,
-    clearInput,
-    clearOutput,
-    setViewMode,
-} from '../slice';
+import editorReducer, { clearInput, clearOutput, setInputContent, setOutputContent, setViewMode, useOutputAsInput } from '../slice';
 import type { EditorState } from '../types';
 
-const initialState: EditorState = {
-    inputContent: '',
-    outputContent: '',
-    viewMode: 'preview',
-};
+const initialState: EditorState = { inputContent: '', outputContent: '', viewMode: 'preview' };
 
 describe('editor slice reducer', () => {
     it('returns initial state with viewMode preview for unknown action', () => {
@@ -52,11 +43,7 @@ describe('editor slice reducer', () => {
     });
 
     it('useOutputAsInput copies outputContent to inputContent and clears outputContent', () => {
-        const stateWithContent: EditorState = {
-            ...initialState,
-            inputContent: 'old input',
-            outputContent: 'processed result',
-        };
+        const stateWithContent: EditorState = { ...initialState, inputContent: 'old input', outputContent: 'processed result' };
 
         const state = editorReducer(stateWithContent, useOutputAsInput());
 

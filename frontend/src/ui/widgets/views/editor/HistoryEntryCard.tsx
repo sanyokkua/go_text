@@ -34,16 +34,16 @@ const chipClass = (status: string): string => {
     return `${styles.chip} ${styles.error}`;
 };
 
-const HistoryEntryCard: React.FC<HistoryEntryCardProps> = ({
-    entry, isSelected, onRestore, onDelete,
-}) => {
+const HistoryEntryCard: React.FC<HistoryEntryCardProps> = ({ entry, isSelected, onRestore, onDelete }) => {
     const infLabel = `${entry.inferences} inf`;
     const cardClass = [styles.card, isSelected && styles.selected].filter(Boolean).join(' ');
 
     return (
         <div className={cardClass}>
             <div className={styles.header}>
-                <span className={styles.title} title={entry.title}>{entry.title}</span>
+                <span className={styles.title} title={entry.title}>
+                    {entry.title}
+                </span>
                 <span className={chipClass(entry.status)} aria-label={`${infLabel} · ${entry.status}`}>
                     {infLabel} · {entry.status}
                 </span>
@@ -55,7 +55,10 @@ const HistoryEntryCard: React.FC<HistoryEntryCardProps> = ({
                     className={styles.actionBtn}
                     type="button"
                     aria-label={`Restore entry ${entry.title}`}
-                    onClick={(e) => { e.stopPropagation(); onRestore(); }}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onRestore();
+                    }}
                 >
                     ↺ Restore
                 </button>
@@ -63,7 +66,10 @@ const HistoryEntryCard: React.FC<HistoryEntryCardProps> = ({
                     className={styles.actionBtn}
                     type="button"
                     aria-label={`Delete entry ${entry.title}`}
-                    onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete();
+                    }}
                 >
                     🗑
                 </button>

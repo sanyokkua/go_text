@@ -11,11 +11,7 @@ describe('DropdownMenu', () => {
         const { container } = render(
             <DropdownMenu
                 trigger={<button type="button">⋮</button>}
-                items={[
-                    { label: 'Run' },
-                    { type: 'separator' },
-                    { label: 'Delete', variant: 'danger' },
-                ]}
+                items={[{ label: 'Run' }, { type: 'separator' }, { label: 'Delete', variant: 'danger' }]}
             />,
         );
         expect(await axe(container)).toHaveNoViolations();
@@ -23,12 +19,7 @@ describe('DropdownMenu', () => {
 
     it('calls item onClick when item is selected', async () => {
         const onRun = jest.fn();
-        render(
-            <DropdownMenu
-                trigger={<button type="button">⋮</button>}
-                items={[{ label: 'Run', onClick: onRun }]}
-            />,
-        );
+        render(<DropdownMenu trigger={<button type="button">⋮</button>} items={[{ label: 'Run', onClick: onRun }]} />);
         await userEvent.click(screen.getByRole('button', { name: '⋮' }));
         await userEvent.click(screen.getByRole('menuitem', { name: 'Run' }));
         expect(onRun).toHaveBeenCalledTimes(1);
@@ -86,14 +77,7 @@ describe('AlertDialog', () => {
     it('calls onConfirm when confirm button is clicked', async () => {
         const onConfirm = jest.fn();
         render(
-            <AlertDialog
-                open
-                title="Delete?"
-                description="This is permanent."
-                confirmLabel="Delete"
-                onConfirm={onConfirm}
-                onOpenChange={() => {}}
-            />,
+            <AlertDialog open title="Delete?" description="This is permanent." confirmLabel="Delete" onConfirm={onConfirm} onOpenChange={() => {}} />,
         );
         await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
         expect(onConfirm).toHaveBeenCalledTimes(1);
@@ -103,14 +87,7 @@ describe('AlertDialog', () => {
         const onConfirm = jest.fn();
         const onChange = jest.fn();
         render(
-            <AlertDialog
-                open
-                title="Delete?"
-                description="This is permanent."
-                confirmLabel="Delete"
-                onConfirm={onConfirm}
-                onOpenChange={onChange}
-            />,
+            <AlertDialog open title="Delete?" description="This is permanent." confirmLabel="Delete" onConfirm={onConfirm} onOpenChange={onChange} />,
         );
         await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
         expect(onConfirm).not.toHaveBeenCalled();

@@ -1,16 +1,16 @@
+import { configureStore } from '@reduxjs/toolkit';
+import '@testing-library/jest-dom';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import '@testing-library/jest-dom';
 import { Provider } from 'react-redux';
-import { configureStore } from '@reduxjs/toolkit';
-import uiReducer from '../../../../../logic/store/ui/slice';
-import runReducer from '../../../../../logic/store/run/slice';
-import editorReducer from '../../../../../logic/store/editor/slice';
 import actionsReducer from '../../../../../logic/store/actions/slice';
+import editorReducer from '../../../../../logic/store/editor/slice';
+import notificationsReducer from '../../../../../logic/store/notifications/slice';
+import runReducer from '../../../../../logic/store/run/slice';
+import settingsReducer from '../../../../../logic/store/settings/slice';
 import stacksBuilderReducer from '../../../../../logic/store/stacks/builder/slice';
 import stacksSavedReducer from '../../../../../logic/store/stacks/saved/slice';
-import settingsReducer from '../../../../../logic/store/settings/slice';
-import notificationsReducer from '../../../../../logic/store/notifications/slice';
+import uiReducer from '../../../../../logic/store/ui/slice';
 import StackBuilderBar from '../StackBuilderBar';
 
 jest.mock('../../../../../logic/adapter', () => ({
@@ -24,14 +24,28 @@ jest.mock('../../../../../logic/adapter', () => ({
 }));
 
 const PROOFREAD = {
-    id: 'proofread', name: 'Proofread', category: 'Writing', family: 'rewrite',
-    directive: '', orderRank: 10, exclusivityGroup: 'proofread',
-    mergeable: true, terminal: false, requires: [],
+    id: 'proofread',
+    name: 'Proofread',
+    category: 'Writing',
+    family: 'rewrite',
+    directive: '',
+    orderRank: 10,
+    exclusivityGroup: 'proofread',
+    mergeable: true,
+    terminal: false,
+    requires: [],
 };
 const TONE = {
-    id: 'tone-formal', name: 'Formal', category: 'Writing', family: 'rewrite',
-    directive: '', orderRank: 30, exclusivityGroup: 'tone',
-    mergeable: true, terminal: false, requires: [],
+    id: 'tone-formal',
+    name: 'Formal',
+    category: 'Writing',
+    family: 'rewrite',
+    directive: '',
+    orderRank: 30,
+    exclusivityGroup: 'tone',
+    mergeable: true,
+    terminal: false,
+    requires: [],
 };
 
 interface StoreOverrides {
@@ -45,24 +59,39 @@ interface StoreOverrides {
 function makeStore(overrides: StoreOverrides = {}) {
     return configureStore({
         reducer: {
-            ui: uiReducer, run: runReducer, editor: editorReducer,
-            actions: actionsReducer, stacksBuilder: stacksBuilderReducer,
-            stacksSaved: stacksSavedReducer, settings: settingsReducer, notifications: notificationsReducer,
+            ui: uiReducer,
+            run: runReducer,
+            editor: editorReducer,
+            actions: actionsReducer,
+            stacksBuilder: stacksBuilderReducer,
+            stacksSaved: stacksSavedReducer,
+            settings: settingsReducer,
+            notifications: notificationsReducer,
         },
         preloadedState: {
             ui: {
-                layout: 'side' as const, sidebarCollapsed: false, historyOpen: false,
+                layout: 'side' as const,
+                sidebarCollapsed: false,
+                historyOpen: false,
                 inferenceRunning: overrides.inferenceRunning ?? false,
-                currentView: 'main' as const, armedActionId: null, activeActionsTab: null,
-                buildMode: true, editingStackId: null,
-                    activeSettingsTab: 0,
+                currentView: 'main' as const,
+                armedActionId: null,
+                activeActionsTab: null,
+                buildMode: true,
+                editingStackId: null,
+                activeSettingsTab: 0,
                 theme: { mode: 'auto' as const, effective: 'light' as const },
             },
             run: {
                 status: (overrides.runStatus ?? 'idle') as 'idle' | 'running' | 'done' | 'partial' | 'error' | 'cancelled',
                 runId: overrides.runId ?? null,
-                currentGroupIndex: null, totalGroups: null, currentGroupFamily: null,
-                failedIndex: null, partialOutput: null, errorCode: null, errorMessage: null,
+                currentGroupIndex: null,
+                totalGroups: null,
+                currentGroupFamily: null,
+                failedIndex: null,
+                partialOutput: null,
+                errorCode: null,
+                errorMessage: null,
             },
             editor: { inputContent: overrides.inputContent ?? 'some text', outputContent: '', viewMode: 'preview' as const },
             actions: { catalog: [PROOFREAD, TONE], catalogStatus: 'success' as const, availableModels: [], modelsStatus: 'idle' as const },
@@ -74,7 +103,11 @@ function makeStore(overrides: StoreOverrides = {}) {
 
 describe('StackBuilderBar', () => {
     it('shows counter "0 / 5 steps · 0 inferences" when no steps added', () => {
-        render(<Provider store={makeStore()}><StackBuilderBar onSave={jest.fn()} /></Provider>);
+        render(
+            <Provider store={makeStore()}>
+                <StackBuilderBar onSave={jest.fn()} />
+            </Provider>,
+        );
         expect(screen.getByText(/0 \/ 5/)).toBeInTheDocument();
     });
 
@@ -99,7 +132,11 @@ describe('StackBuilderBar', () => {
     });
 
     it('Save button is disabled when no steps added', () => {
-        render(<Provider store={makeStore()}><StackBuilderBar onSave={jest.fn()} /></Provider>);
+        render(
+            <Provider store={makeStore()}>
+                <StackBuilderBar onSave={jest.fn()} />
+            </Provider>,
+        );
         expect(screen.getByRole('button', { name: /save/i })).toBeDisabled();
     });
 
@@ -133,13 +170,21 @@ describe('StackBuilderBar', () => {
     });
 
     it('Run button is disabled when no steps', () => {
-        render(<Provider store={makeStore()}><StackBuilderBar onSave={jest.fn()} /></Provider>);
+        render(
+            <Provider store={makeStore()}>
+                <StackBuilderBar onSave={jest.fn()} />
+            </Provider>,
+        );
         expect(screen.getByRole('button', { name: /^run$/i })).toBeDisabled();
     });
 
     it('Cancel button dispatches exitBuildMode and clears builder', async () => {
         const store = makeStore({ steps: ['proofread'] });
-        render(<Provider store={store}><StackBuilderBar onSave={jest.fn()} /></Provider>);
+        render(
+            <Provider store={store}>
+                <StackBuilderBar onSave={jest.fn()} />
+            </Provider>,
+        );
         await userEvent.click(screen.getByRole('button', { name: /cancel/i }));
         expect(store.getState().ui.buildMode).toBe(false);
         expect(store.getState().stacksBuilder.steps).toHaveLength(0);
@@ -147,7 +192,11 @@ describe('StackBuilderBar', () => {
 
     it('clicking ✕ on a chip removes that step', async () => {
         const store = makeStore({ steps: ['proofread', 'tone-formal'] });
-        render(<Provider store={store}><StackBuilderBar onSave={jest.fn()} /></Provider>);
+        render(
+            <Provider store={store}>
+                <StackBuilderBar onSave={jest.fn()} />
+            </Provider>,
+        );
         const removeBtns = screen.getAllByRole('button', { name: /remove/i });
         await userEvent.click(removeBtns[0]);
         expect(store.getState().stacksBuilder.steps).toHaveLength(1);

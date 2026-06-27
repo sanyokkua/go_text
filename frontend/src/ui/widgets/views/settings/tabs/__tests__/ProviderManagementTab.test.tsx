@@ -1,12 +1,12 @@
+import { configureStore } from '@reduxjs/toolkit';
+import '@testing-library/jest-dom';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import '@testing-library/jest-dom';
 import { Provider } from 'react-redux';
-import { configureStore } from '@reduxjs/toolkit';
+import { AppSettingsMetadata, Settings } from '../../../../../../logic/adapter/models';
+import notificationsReducer from '../../../../../../logic/store/notifications/slice';
 import settingsReducer from '../../../../../../logic/store/settings/slice';
 import uiReducer from '../../../../../../logic/store/ui/slice';
-import notificationsReducer from '../../../../../../logic/store/notifications/slice';
-import { Settings, AppSettingsMetadata } from '../../../../../../logic/adapter/models';
 import ProviderManagementTab from '../ProviderManagementTab';
 
 // ProviderForm is deeply dependent on wailsjs ESM interop (apperr.ModelInfo).
@@ -18,29 +18,31 @@ jest.mock('../components/ProviderForm', () => {
         if (!provider) {
             return React.createElement('div', null, '(Select a provider to edit or create a new one)');
         }
-        return React.createElement('form', null,
-            React.createElement('input', { 'aria-label': 'Provider name', type: 'text' }),
-        );
+        return React.createElement('form', null, React.createElement('input', { 'aria-label': 'Provider name', 'type': 'text' }));
     };
     MockProviderForm.displayName = 'MockProviderForm';
-    return { __esModule: true, default: MockProviderForm, BLANK_PROVIDER: {
-        providerId: '',
-        providerName: '',
-        providerType: 'openai',
-        baseUrl: '',
-        modelsEndpoint: '',
-        completionEndpoint: '',
-        authType: 'api-key',
-        authToken: '',
-        useAuthTokenFromEnv: true,
-        envVarTokenName: '',
-        apiVersion: '',
-        selectedModel: '',
-        useCustomHeaders: false,
-        headers: {},
-        useCustomModels: false,
-        customModels: [],
-    }};
+    return {
+        __esModule: true,
+        default: MockProviderForm,
+        BLANK_PROVIDER: {
+            providerId: '',
+            providerName: '',
+            providerType: 'openai',
+            baseUrl: '',
+            modelsEndpoint: '',
+            completionEndpoint: '',
+            authType: 'api-key',
+            authToken: '',
+            useAuthTokenFromEnv: true,
+            envVarTokenName: '',
+            apiVersion: '',
+            selectedModel: '',
+            useCustomHeaders: false,
+            headers: {},
+            useCustomModels: false,
+            customModels: [],
+        },
+    };
 });
 
 jest.mock('../../../../../../logic/adapter', () => ({
@@ -59,7 +61,10 @@ jest.mock('../../../../../../logic/adapter', () => ({
     },
     ClipboardServiceAdapter: { setText: jest.fn().mockResolvedValue(undefined) },
     getLogger: () => ({ logInfo: jest.fn(), logDebug: jest.fn(), logError: jest.fn(), logWarn: jest.fn() }),
-    unwrap: jest.fn((r) => { if (r?.error) throw new Error(r.error.message); return r?.data; }),
+    unwrap: jest.fn((r) => {
+        if (r?.error) throw new Error(r.error.message);
+        return r?.data;
+    }),
     fromWireSettings: jest.fn((v) => v),
     fromWireProvider: jest.fn((v) => v),
     fromWireBehavior: jest.fn((v) => v),
@@ -105,16 +110,9 @@ const MOCK_METADATA: AppSettingsMetadata = {
 
 function makeStore() {
     return configureStore({
-        reducer: {
-            settings: settingsReducer,
-            ui: uiReducer,
-            notifications: notificationsReducer,
-        },
+        reducer: { settings: settingsReducer, ui: uiReducer, notifications: notificationsReducer },
         preloadedState: {
-            settings: {
-                allSettings: MOCK_SETTINGS,
-                metadata: MOCK_METADATA,
-            },
+            settings: { allSettings: MOCK_SETTINGS, metadata: MOCK_METADATA },
             ui: {
                 layout: 'side' as const,
                 sidebarCollapsed: false,

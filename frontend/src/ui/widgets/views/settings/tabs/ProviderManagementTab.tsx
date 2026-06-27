@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 
 import { ProviderConfig } from '../../../../../logic/adapter/models';
 import { useAppDispatch, useAppSelector } from '../../../../../logic/store';
+import { selectAllSettings, selectSettingsMetadata } from '../../../../../logic/store/settings/selectors';
 import {
     createProviderConfig,
     deleteProviderConfig,
     setAsCurrentProviderConfig,
     updateProviderConfig,
 } from '../../../../../logic/store/settings/thunks';
-import { selectAllSettings, selectSettingsMetadata } from '../../../../../logic/store/settings/selectors';
 import ProviderForm, { BLANK_PROVIDER } from './components/ProviderForm';
 import ProviderList from './components/ProviderList';
 
@@ -36,18 +36,14 @@ const ProviderManagementTab: React.FC = () => {
         return providers.find((p) => p.providerId === selectedId) ?? null;
     })();
 
-    const existingNames = providers
-        .filter((p) => p.providerId !== selectedId)
-        .map((p) => p.providerName);
+    const existingNames = providers.filter((p) => p.providerId !== selectedId).map((p) => p.providerName);
 
     const isCurrent = selectedId !== null && selectedId !== NEW_ID && selectedId === currentId;
 
     const handleSave = async (p: ProviderConfig) => {
         if (selectedId === NEW_ID) {
             const result = await dispatch(createProviderConfig(p)).unwrap();
-            const created = result.availableProviderConfigs.find(
-                (c) => c.providerName === p.providerName,
-            );
+            const created = result.availableProviderConfigs.find((c) => c.providerName === p.providerName);
             if (created) setSelectedId(created.providerId);
         } else {
             await dispatch(updateProviderConfig(p)).unwrap();
@@ -82,9 +78,15 @@ const ProviderManagementTab: React.FC = () => {
                 providerTypes={providerTypes}
                 existingNames={existingNames}
                 isCurrent={isCurrent}
-                onSave={(p) => { handleSave(p).catch(() => undefined); }}
-                onDelete={(id) => { handleDelete(id).catch(() => undefined); }}
-                onSetCurrent={(id) => { handleSetCurrent(id).catch(() => undefined); }}
+                onSave={(p) => {
+                    handleSave(p).catch(() => undefined);
+                }}
+                onDelete={(id) => {
+                    handleDelete(id).catch(() => undefined);
+                }}
+                onSetCurrent={(id) => {
+                    handleSetCurrent(id).catch(() => undefined);
+                }}
                 onCancel={handleCancel}
             />
         </div>

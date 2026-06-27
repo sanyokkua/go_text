@@ -20,12 +20,16 @@
     border: none;
     border-radius: 7px;
     cursor: pointer;
-    transition: background 100ms, color 100ms;
+    transition:
+        background 100ms,
+        color 100ms;
     user-select: none;
     white-space: nowrap;
 }
 
-.item:hover:not([data-disabled]) { background: var(--surface); }
+.item:hover:not([data-disabled]) {
+    background: var(--surface);
+}
 
 .item:focus-visible {
     outline: none;
@@ -43,4 +47,7 @@
     color: var(--teal-light);
 }
 
-.item[data-disabled] { opacity: 0.45; cursor: not-allowed; }
+.item[data-disabled] {
+    opacity: 0.45;
+    cursor: not-allowed;
+}

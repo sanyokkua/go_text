@@ -1,12 +1,12 @@
+import { configureStore } from '@reduxjs/toolkit';
+import '@testing-library/jest-dom';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import '@testing-library/jest-dom';
 import { Provider } from 'react-redux';
-import { configureStore } from '@reduxjs/toolkit';
+import { Settings } from '../../../../../../logic/adapter/models';
+import notificationsReducer from '../../../../../../logic/store/notifications/slice';
 import settingsReducer from '../../../../../../logic/store/settings/slice';
 import uiReducer from '../../../../../../logic/store/ui/slice';
-import notificationsReducer from '../../../../../../logic/store/notifications/slice';
-import { Settings } from '../../../../../../logic/adapter/models';
 import LanguageConfigTab from '../LanguageConfigTab';
 
 jest.mock('../../../../../../logic/adapter', () => ({
@@ -18,16 +18,30 @@ jest.mock('../../../../../../logic/adapter', () => ({
         getSettings: jest.fn().mockResolvedValue({ data: null, error: null }),
     },
     getLogger: () => ({ logInfo: jest.fn(), logDebug: jest.fn(), logError: jest.fn(), logWarn: jest.fn() }),
-    unwrap: (r: { data: unknown; error: { message: string } | null }) => { if (r?.error) throw new Error(r.error.message); return r?.data; },
+    unwrap: (r: { data: unknown; error: { message: string } | null }) => {
+        if (r?.error) throw new Error(r.error.message);
+        return r?.data;
+    },
     fromWireSettings: (v: unknown) => v,
 }));
 
 const MOCK_PROVIDER = {
-    providerId: 'p1', providerName: 'Test Provider', providerType: 'openai',
-    baseUrl: 'http://localhost:1234', modelsEndpoint: '', completionEndpoint: '',
-    authType: 'api-key', authToken: '', useAuthTokenFromEnv: true, envVarTokenName: 'TEST_KEY',
-    apiVersion: '', selectedModel: 'gpt-4o',
-    useCustomHeaders: false, headers: {}, useCustomModels: false, customModels: [],
+    providerId: 'p1',
+    providerName: 'Test Provider',
+    providerType: 'openai',
+    baseUrl: 'http://localhost:1234',
+    modelsEndpoint: '',
+    completionEndpoint: '',
+    authType: 'api-key',
+    authToken: '',
+    useAuthTokenFromEnv: true,
+    envVarTokenName: 'TEST_KEY',
+    apiVersion: '',
+    selectedModel: 'gpt-4o',
+    useCustomHeaders: false,
+    headers: {},
+    useCustomModels: false,
+    customModels: [],
 };
 
 const MOCK_SETTINGS: Settings = {
@@ -45,9 +59,16 @@ function makeStore() {
         preloadedState: {
             settings: { allSettings: MOCK_SETTINGS, metadata: null },
             ui: {
-                layout: 'side' as const, sidebarCollapsed: false, historyOpen: false,
-                inferenceRunning: false, currentView: 'settings' as const, armedActionId: null,
-                activeActionsTab: null, buildMode: false, editingStackId: null, activeSettingsTab: 0,
+                layout: 'side' as const,
+                sidebarCollapsed: false,
+                historyOpen: false,
+                inferenceRunning: false,
+                currentView: 'settings' as const,
+                armedActionId: null,
+                activeActionsTab: null,
+                buildMode: false,
+                editingStackId: null,
+                activeSettingsTab: 0,
                 theme: { mode: 'auto' as const, effective: 'light' as const },
             },
         },
@@ -56,29 +77,49 @@ function makeStore() {
 
 describe('LanguageConfigTab', () => {
     it('renders existing languages English and French', () => {
-        render(<Provider store={makeStore()}><LanguageConfigTab settings={MOCK_SETTINGS} /></Provider>);
+        render(
+            <Provider store={makeStore()}>
+                <LanguageConfigTab settings={MOCK_SETTINGS} />
+            </Provider>,
+        );
         expect(screen.getByText('English')).toBeInTheDocument();
         expect(screen.getByText('French')).toBeInTheDocument();
     });
 
     it('shows default input badge for English', () => {
-        render(<Provider store={makeStore()}><LanguageConfigTab settings={MOCK_SETTINGS} /></Provider>);
+        render(
+            <Provider store={makeStore()}>
+                <LanguageConfigTab settings={MOCK_SETTINGS} />
+            </Provider>,
+        );
         expect(screen.getByText('default input')).toBeInTheDocument();
     });
 
     it('Add button is disabled when input is empty', () => {
-        render(<Provider store={makeStore()}><LanguageConfigTab settings={MOCK_SETTINGS} /></Provider>);
+        render(
+            <Provider store={makeStore()}>
+                <LanguageConfigTab settings={MOCK_SETTINGS} />
+            </Provider>,
+        );
         expect(screen.getByRole('button', { name: /^add$/i })).toBeDisabled();
     });
 
     it('enables Add button when user types a language name', async () => {
-        render(<Provider store={makeStore()}><LanguageConfigTab settings={MOCK_SETTINGS} /></Provider>);
+        render(
+            <Provider store={makeStore()}>
+                <LanguageConfigTab settings={MOCK_SETTINGS} />
+            </Provider>,
+        );
         await userEvent.type(screen.getByRole('textbox', { name: /new language/i }), 'Spanish');
         expect(screen.getByRole('button', { name: /^add$/i })).toBeEnabled();
     });
 
     it('renders options menu trigger for each language', () => {
-        render(<Provider store={makeStore()}><LanguageConfigTab settings={MOCK_SETTINGS} /></Provider>);
+        render(
+            <Provider store={makeStore()}>
+                <LanguageConfigTab settings={MOCK_SETTINGS} />
+            </Provider>,
+        );
         expect(screen.getByRole('button', { name: /options for english/i })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /options for french/i })).toBeInTheDocument();
     });

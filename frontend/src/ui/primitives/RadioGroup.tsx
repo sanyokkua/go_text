@@ -1,6 +1,6 @@
 // frontend/src/ui/primitives/RadioGroup.tsx
-import React from 'react';
 import { Label, RadioGroup as RadixRadioGroup } from 'radix-ui';
+import React from 'react';
 import styles from './RadioGroup.module.css';
 
 export interface RadioGroupItem {
@@ -20,7 +20,13 @@ export const RadioGroup: React.FC<RadioGroupProps> = ({ value, onValueChange, it
     <RadixRadioGroup.Root className={styles.root} value={value} onValueChange={onValueChange} disabled={disabled}>
         {items.map((item) => (
             <div key={item.value} className={styles.row}>
-                <RadixRadioGroup.Item value={item.value} id={`rg-${item.value}`} className={styles.item} disabled={item.disabled} aria-label={item.label}>
+                <RadixRadioGroup.Item
+                    value={item.value}
+                    id={`rg-${item.value}`}
+                    className={styles.item}
+                    disabled={item.disabled}
+                    aria-label={item.label}
+                >
                     <RadixRadioGroup.Indicator className={styles.indicator} />
                 </RadixRadioGroup.Item>
                 <Label.Root htmlFor={`rg-${item.value}`} className={styles.label}>

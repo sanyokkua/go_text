@@ -1,21 +1,21 @@
 import { useCallback, useState } from 'react';
+import { apperr } from '../../../../../wailsjs/go/models';
 import { getLogger } from '../../../../logic/adapter';
 import {
     selectActionCatalog,
     selectAllSettings,
-    selectInputContent,
     selectInferenceRunning,
+    selectInputContent,
     selectSavedStacks,
     useAppDispatch,
     useAppSelector,
 } from '../../../../logic/store';
+import { enqueueNotification } from '../../../../logic/store/notifications/slice';
+import { processPromptChain } from '../../../../logic/store/run';
 import { addStep, clearBuilder, setBuilderIcon, setBuilderName } from '../../../../logic/store/stacks/builder/slice';
 import { deleteStack, duplicateStack } from '../../../../logic/store/stacks/saved/thunks';
-import { processPromptChain } from '../../../../logic/store/run';
 import { enterBuildMode, exitBuildMode, setCurrentView, setEditingStackId } from '../../../../logic/store/ui';
-import { enqueueNotification } from '../../../../logic/store/notifications/slice';
 import { parseError } from '../../../../logic/utils/error_utils';
-import { apperr } from '../../../../../wailsjs/go/models';
 import { AlertDialog } from '../../../../ui/primitives/AlertDialog';
 import StackCard from './StackCard';
 import styles from './StacksManageView.module.css';
@@ -30,13 +30,7 @@ function computeInferences(steps: string[], catalog: apperr.ActionMeta[]): numbe
 
     for (const stepId of steps) {
         const meta = metaById.get(stepId);
-        const canExtend =
-            groups > 0 &&
-            meta !== undefined &&
-            lastFamily === meta.family &&
-            meta.mergeable &&
-            lastMergeable &&
-            !meta.terminal;
+        const canExtend = groups > 0 && meta !== undefined && lastFamily === meta.family && meta.mergeable && lastMergeable && !meta.terminal;
 
         if (!canExtend) {
             groups++;
@@ -67,25 +61,28 @@ const StacksManageView: React.FC = () => {
         dispatch(setCurrentView('main'));
     };
 
-    const handleRun = useCallback(async (stack: apperr.SavedStack) => {
-        dispatch(setCurrentView('main'));
-        try {
-            const req = new apperr.ChainRequest({
-                runId: crypto.randomUUID(),
-                inputText: inputContent,
-                steps: stack.steps.map((id) => new apperr.ChainStep({ actionId: id })),
-                inputLanguageId: settings?.languageConfig?.defaultInputLanguage ?? 'auto',
-                outputLanguageId: settings?.languageConfig?.defaultOutputLanguage ?? 'auto',
-                useMarkdown: settings?.inferenceBaseConfig?.useMarkdownForOutput ?? false,
-            });
-            logger.logInfo(`Stacks run: ${req.runId}`);
-            await dispatch(processPromptChain(req)).unwrap();
-        } catch (error: unknown) {
-            const err = parseError(error);
-            logger.logError(`Stack run failed: ${err.message}`);
-            dispatch(enqueueNotification({ message: `Run failed: ${err.message}`, severity: 'error' }));
-        }
-    }, [dispatch, inputContent, settings]);
+    const handleRun = useCallback(
+        async (stack: apperr.SavedStack) => {
+            dispatch(setCurrentView('main'));
+            try {
+                const req = new apperr.ChainRequest({
+                    runId: crypto.randomUUID(),
+                    inputText: inputContent,
+                    steps: stack.steps.map((id) => new apperr.ChainStep({ actionId: id })),
+                    inputLanguageId: settings?.languageConfig?.defaultInputLanguage ?? 'auto',
+                    outputLanguageId: settings?.languageConfig?.defaultOutputLanguage ?? 'auto',
+                    useMarkdown: settings?.inferenceBaseConfig?.useMarkdownForOutput ?? false,
+                });
+                logger.logInfo(`Stacks run: ${req.runId}`);
+                await dispatch(processPromptChain(req)).unwrap();
+            } catch (error: unknown) {
+                const err = parseError(error);
+                logger.logError(`Stack run failed: ${err.message}`);
+                dispatch(enqueueNotification({ message: `Run failed: ${err.message}`, severity: 'error' }));
+            }
+        },
+        [dispatch, inputContent, settings],
+    );
 
     const handleEdit = (stack: apperr.SavedStack) => {
         dispatch(clearBuilder());
@@ -156,7 +153,9 @@ const StacksManageView: React.FC = () => {
 
             <AlertDialog
                 open={deleteTargetId !== null}
-                onOpenChange={(open) => { if (!open) setDeleteTargetId(null); }}
+                onOpenChange={(open) => {
+                    if (!open) setDeleteTargetId(null);
+                }}
                 title="Delete stack"
                 description={`Delete "${deleteTarget?.name ?? 'this stack'}"? This cannot be undone.`}
                 confirmLabel="Delete"

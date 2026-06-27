@@ -22,10 +22,7 @@ export function initTheme(mode: ThemeMode | string): ThemeEffective {
     return effective;
 }
 
-export function watchSystemTheme(
-    mode: ThemeMode | string,
-    onChange: (effective: ThemeEffective) => void,
-): () => void {
+export function watchSystemTheme(mode: ThemeMode | string, onChange: (effective: ThemeEffective) => void): () => void {
     if (mode !== 'auto' && mode !== '') return () => {};
 
     const mq = window.matchMedia('(prefers-color-scheme: dark)');

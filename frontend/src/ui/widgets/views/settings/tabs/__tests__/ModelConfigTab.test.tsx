@@ -1,22 +1,21 @@
-import { render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom';
-import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
+import '@testing-library/jest-dom';
+import { render, screen } from '@testing-library/react';
+import { Provider } from 'react-redux';
+import { Settings } from '../../../../../../logic/adapter/models';
+import notificationsReducer from '../../../../../../logic/store/notifications/slice';
 import settingsReducer from '../../../../../../logic/store/settings/slice';
 import uiReducer from '../../../../../../logic/store/ui/slice';
-import notificationsReducer from '../../../../../../logic/store/notifications/slice';
-import { Settings } from '../../../../../../logic/adapter/models';
 import ModelConfigTab from '../ModelConfigTab';
 
 jest.mock('../../../../../../logic/adapter', () => ({
-    ActionHandlerAdapter: {
-        getModels: jest.fn().mockResolvedValue({ data: [], error: null }),
-    },
-    SettingsHandlerAdapter: {
-        updateModelConfig: jest.fn().mockResolvedValue({ data: null, error: null }),
-    },
+    ActionHandlerAdapter: { getModels: jest.fn().mockResolvedValue({ data: [], error: null }) },
+    SettingsHandlerAdapter: { updateModelConfig: jest.fn().mockResolvedValue({ data: null, error: null }) },
     getLogger: () => ({ logInfo: jest.fn(), logDebug: jest.fn(), logError: jest.fn(), logWarn: jest.fn() }),
-    unwrap: jest.fn((r) => { if (r?.error) throw new Error(r.error.message); return r?.data; }),
+    unwrap: jest.fn((r) => {
+        if (r?.error) throw new Error(r.error.message);
+        return r?.data;
+    }),
 }));
 
 const MOCK_PROVIDER = {
@@ -49,16 +48,9 @@ const MOCK_SETTINGS: Settings = {
 
 function makeStore() {
     return configureStore({
-        reducer: {
-            settings: settingsReducer,
-            ui: uiReducer,
-            notifications: notificationsReducer,
-        },
+        reducer: { settings: settingsReducer, ui: uiReducer, notifications: notificationsReducer },
         preloadedState: {
-            settings: {
-                allSettings: MOCK_SETTINGS,
-                metadata: null,
-            },
+            settings: { allSettings: MOCK_SETTINGS, metadata: null },
             ui: {
                 layout: 'side' as const,
                 sidebarCollapsed: false,

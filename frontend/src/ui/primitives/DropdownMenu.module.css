@@ -23,21 +23,44 @@
     user-select: none;
 }
 
-.item[data-highlighted] { background: var(--surface-2); }
-.item[data-disabled] { opacity: 0.45; pointer-events: none; }
+.item[data-highlighted] {
+    background: var(--surface-2);
+}
+.item[data-disabled] {
+    opacity: 0.45;
+    pointer-events: none;
+}
 
-.danger { color: var(--err); }
-.danger[data-highlighted] { background: var(--err-bg); }
+.danger {
+    color: var(--err);
+}
+.danger[data-highlighted] {
+    background: var(--err-bg);
+}
 
-.icon { font-size: 12px; }
+.icon {
+    font-size: 12px;
+}
 
-.separator { height: 1px; background: var(--line); margin: var(--space-1) 0; }
+.separator {
+    height: 1px;
+    background: var(--line);
+    margin: var(--space-1) 0;
+}
 
 @keyframes slideIn {
-    from { opacity: 0; transform: translateY(-4px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .content { animation: none; }
+    .content {
+        animation: none;
+    }
 }

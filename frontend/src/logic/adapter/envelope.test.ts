@@ -1,11 +1,7 @@
 import { apperr } from '../../../wailsjs/go/models';
 
-jest.mock('../store', () => ({
-    store: { dispatch: jest.fn() },
-}));
-jest.mock('../store/notifications/slice', () => ({
-    notifyError: jest.fn((wire) => ({ type: 'notifications/enqueueNotification', payload: wire })),
-}));
+jest.mock('../store', () => ({ store: { dispatch: jest.fn() } }));
+jest.mock('../store/notifications/slice', () => ({ notifyError: jest.fn((wire) => ({ type: 'notifications/enqueueNotification', payload: wire })) }));
 
 import { store } from '../store';
 import { tryUnwrap, unwrap } from './envelope';
@@ -14,12 +10,7 @@ const mockDispatch = store.dispatch as jest.Mock;
 beforeEach(() => mockDispatch.mockClear());
 
 function wireError(code: apperr.ErrorCode = apperr.ErrorCode.CodeInternal): apperr.WireError {
-    return apperr.WireError.createFrom({
-        code,
-        title: 'Error',
-        message: 'Something failed',
-        retryable: false,
-    });
+    return apperr.WireError.createFrom({ code, title: 'Error', message: 'Something failed', retryable: false });
 }
 
 describe('unwrap', () => {
@@ -37,7 +28,11 @@ describe('unwrap', () => {
     it('throws the WireError object (not a wrapped Error)', () => {
         const err = wireError();
         let caught: unknown;
-        try { unwrap({ error: err }); } catch (e) { caught = e; }
+        try {
+            unwrap({ error: err });
+        } catch (e) {
+            caught = e;
+        }
         expect(caught).toBe(err);
     });
 });

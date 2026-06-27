@@ -31,26 +31,11 @@ const fieldRow: React.CSSProperties = {
     borderBottom: '1px solid var(--line)',
 };
 
-const fieldLabel: React.CSSProperties = {
-    minWidth: 220,
-    color: 'var(--ink-1)',
-    fontSize: '0.875rem',
-    fontWeight: 500,
-};
+const fieldLabel: React.CSSProperties = { minWidth: 220, color: 'var(--ink-1)', fontSize: '0.875rem', fontWeight: 500 };
 
-const fieldValue: React.CSSProperties = {
-    flex: 1,
-    display: 'flex',
-    alignItems: 'center',
-    gap: 'var(--space-2)',
-};
+const fieldValue: React.CSSProperties = { flex: 1, display: 'flex', alignItems: 'center', gap: 'var(--space-2)' };
 
-const monoPath: React.CSSProperties = {
-    fontFamily: 'var(--mono)',
-    fontSize: '0.8125rem',
-    color: 'var(--ink-2)',
-    wordBreak: 'break-all',
-};
+const monoPath: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: '0.8125rem', color: 'var(--ink-2)', wordBreak: 'break-all' };
 
 const numberInput: React.CSSProperties = {
     width: 96,
@@ -75,13 +60,11 @@ const AppBehaviorTab: React.FC<Props> = ({ settings, metadata }) => {
     }, [config.historyMaxEntries]);
 
     const handleToggleTaskLogging = (checked: boolean) => {
-        dispatch(updateAppBehaviorConfig({ ...config, enableTaskLogging: checked }))
-            .catch(() => undefined);
+        dispatch(updateAppBehaviorConfig({ ...config, enableTaskLogging: checked })).catch(() => undefined);
     };
 
     const handleToggleHistory = (checked: boolean) => {
-        dispatch(updateAppBehaviorConfig({ ...config, historyEnabled: checked }))
-            .catch(() => undefined);
+        dispatch(updateAppBehaviorConfig({ ...config, historyEnabled: checked })).catch(() => undefined);
     };
 
     const handleMaxEntriesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -103,19 +86,23 @@ const AppBehaviorTab: React.FC<Props> = ({ settings, metadata }) => {
     const handleConfirmClear = async () => {
         try {
             await dispatch(clearHistory()).unwrap();
-            dispatch(enqueueNotification({
-                severity: 'info',
-                surface: 'toast',
-                title: 'History cleared',
-                message: 'All history entries have been removed.',
-            }));
+            dispatch(
+                enqueueNotification({
+                    severity: 'info',
+                    surface: 'toast',
+                    title: 'History cleared',
+                    message: 'All history entries have been removed.',
+                }),
+            );
         } catch {
-            dispatch(enqueueNotification({
-                severity: 'error',
-                surface: 'toast',
-                title: 'Failed to clear history',
-                message: 'An error occurred while clearing history. Please try again.',
-            }));
+            dispatch(
+                enqueueNotification({
+                    severity: 'error',
+                    surface: 'toast',
+                    title: 'Failed to clear history',
+                    message: 'An error occurred while clearing history. Please try again.',
+                }),
+            );
         }
     };
 
@@ -127,7 +114,9 @@ const AppBehaviorTab: React.FC<Props> = ({ settings, metadata }) => {
             <p style={sectionHeader}>Task logging</p>
 
             <div style={fieldRow}>
-                <label htmlFor="task-logging-switch" style={fieldLabel}>Enable task logging</label>
+                <label htmlFor="task-logging-switch" style={fieldLabel}>
+                    Enable task logging
+                </label>
                 <div style={fieldValue}>
                     <Switch
                         id="task-logging-switch"
@@ -148,19 +137,18 @@ const AppBehaviorTab: React.FC<Props> = ({ settings, metadata }) => {
             <p style={{ ...sectionHeader, borderTop: '1px solid var(--line)', marginTop: 'var(--space-2)' }}>History</p>
 
             <div style={fieldRow}>
-                <label htmlFor="history-enabled-switch" style={fieldLabel}>Enable history</label>
+                <label htmlFor="history-enabled-switch" style={fieldLabel}>
+                    Enable history
+                </label>
                 <div style={fieldValue}>
-                    <Switch
-                        id="history-enabled-switch"
-                        checked={historyEnabled}
-                        onCheckedChange={handleToggleHistory}
-                        aria-label="Enable history"
-                    />
+                    <Switch id="history-enabled-switch" checked={historyEnabled} onCheckedChange={handleToggleHistory} aria-label="Enable history" />
                 </div>
             </div>
 
             <div style={fieldRow}>
-                <label htmlFor="history-max-entries" style={fieldLabel}>Max history entries</label>
+                <label htmlFor="history-max-entries" style={fieldLabel}>
+                    Max history entries
+                </label>
                 <div style={fieldValue}>
                     <input
                         id="history-max-entries"
@@ -178,7 +166,9 @@ const AppBehaviorTab: React.FC<Props> = ({ settings, metadata }) => {
                         variant="primary"
                         size="sm"
                         disabled={!isMaxEntriesDirty || savingMaxEntries || !historyEnabled}
-                        onClick={() => { handleSaveMaxEntries().catch(() => undefined); }}
+                        onClick={() => {
+                            handleSaveMaxEntries().catch(() => undefined);
+                        }}
                     >
                         {savingMaxEntries ? 'Saving…' : 'Save'}
                     </Button>
@@ -188,12 +178,7 @@ const AppBehaviorTab: React.FC<Props> = ({ settings, metadata }) => {
             <div style={{ ...fieldRow, borderBottom: 'none' }}>
                 <span style={fieldLabel}>Clear all history</span>
                 <div style={fieldValue}>
-                    <Button
-                        variant="danger"
-                        size="sm"
-                        disabled={!historyEnabled}
-                        onClick={() => setClearDialogOpen(true)}
-                    >
+                    <Button variant="danger" size="sm" disabled={!historyEnabled} onClick={() => setClearDialogOpen(true)}>
                         Clear history…
                     </Button>
                 </div>
@@ -206,7 +191,10 @@ const AppBehaviorTab: React.FC<Props> = ({ settings, metadata }) => {
                 description="All history entries will be permanently deleted. This cannot be undone."
                 confirmLabel="Clear history"
                 variant="danger"
-                onConfirm={() => { setClearDialogOpen(false); handleConfirmClear().catch(() => undefined); }}
+                onConfirm={() => {
+                    setClearDialogOpen(false);
+                    handleConfirmClear().catch(() => undefined);
+                }}
             />
         </section>
     );

@@ -1,6 +1,6 @@
 // frontend/src/ui/primitives/Tabs.tsx
-import React from 'react';
 import { Tabs as RadixTabs } from 'radix-ui';
+import React from 'react';
 import styles from './Tabs.module.css';
 
 export interface TabDef {

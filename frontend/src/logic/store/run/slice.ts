@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { RunState, StepProgress } from './types';
 import { cancelChain, processPromptChain } from './thunks';
+import { RunState, StepProgress } from './types';
 
 const initialState: RunState = {
     status: 'idle',

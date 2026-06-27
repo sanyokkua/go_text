@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"go_text/internal/apperr"
-	"go_text/internal/settings"
 	v3 "go_text/internal/prompts/v3"
+	"go_text/internal/settings"
 )
 
 // buildTestService creates a minimal ActionService using the real v3 catalog without

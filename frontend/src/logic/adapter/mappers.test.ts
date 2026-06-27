@@ -68,11 +68,7 @@ describe('fromWireMetadata', () => {
 
 describe('fromWireBehavior / toWireBehavior', () => {
     it('fromWireBehavior sets logDirectory to empty string and passes through v3 fields', () => {
-        const w = apperr.AppBehaviorConfig.createFrom({
-            enableTaskLogging: true,
-            historyEnabled: true,
-            historyMaxEntries: 50,
-        });
+        const w = apperr.AppBehaviorConfig.createFrom({ enableTaskLogging: true, historyEnabled: true, historyMaxEntries: 50 });
         const b = fromWireBehavior(w);
         expect(b.enableTaskLogging).toBe(true);
         expect(b.logDirectory).toBe('');
@@ -81,12 +77,7 @@ describe('fromWireBehavior / toWireBehavior', () => {
     });
 
     it('toWireBehavior omits logDirectory and preserves historyEnabled/historyMaxEntries', () => {
-        const w = toWireBehavior({
-            enableTaskLogging: false,
-            logDirectory: '/some/path',
-            historyEnabled: true,
-            historyMaxEntries: 100,
-        });
+        const w = toWireBehavior({ enableTaskLogging: false, logDirectory: '/some/path', historyEnabled: true, historyMaxEntries: 100 });
         expect(w.enableTaskLogging).toBe(false);
         expect(w.historyEnabled).toBe(true);
         expect(w.historyMaxEntries).toBe(100);

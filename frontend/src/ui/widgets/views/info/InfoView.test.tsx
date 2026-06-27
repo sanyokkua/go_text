@@ -1,11 +1,11 @@
+import { configureStore } from '@reduxjs/toolkit';
+import '@testing-library/jest-dom';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import '@testing-library/jest-dom';
 import { Provider } from 'react-redux';
-import { configureStore } from '@reduxjs/toolkit';
+import { selectAboutSection } from '../../../../logic/store';
 import aboutReducer from '../../../../logic/store/about/slice';
 import actionsReducer from '../../../../logic/store/actions/slice';
-import { selectAboutSection } from '../../../../logic/store';
 import InfoView from './InfoView';
 
 jest.mock('../../../../logic/adapter', () => ({
@@ -14,23 +14,12 @@ jest.mock('../../../../logic/adapter', () => ({
     unwrap: jest.fn((r: unknown) => (r as { data: unknown } | undefined)?.data),
 }));
 
-jest.mock('./CatalogList', () => ({
-    __esModule: true,
-    default: () => <input aria-label="Filter actions and stacks" />,
-}));
+jest.mock('./CatalogList', () => ({ __esModule: true, default: () => <input aria-label="Filter actions and stacks" /> }));
 
-jest.mock('./PromptInspector', () => ({
-    __esModule: true,
-    default: () => <div data-testid="prompt-inspector" />,
-}));
+jest.mock('./PromptInspector', () => ({ __esModule: true, default: () => <div data-testid="prompt-inspector" /> }));
 
 function makeStore() {
-    return configureStore({
-        reducer: {
-            about: aboutReducer,
-            actions: actionsReducer,
-        },
-    });
+    return configureStore({ reducer: { about: aboutReducer, actions: actionsReducer } });
 }
 
 describe('InfoView', () => {

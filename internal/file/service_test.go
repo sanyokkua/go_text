@@ -414,7 +414,7 @@ func TestFileUtilsService_ResolveAppLogsFolderPath(t *testing.T) {
 			},
 		},
 		{
-			name: "custom_dir_does_not_create_directory",
+			name:     "custom_dir_does_not_create_directory",
 			setupEnv: func(tmpDir string) {},
 			validateResult: func(t *testing.T, result string, err error, tmpDir string) {
 				assert.NoError(t, err)

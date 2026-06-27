@@ -21,8 +21,7 @@ const rowsToRecord = (rows: KvRow[]): Record<string, string> => {
     return result;
 };
 
-const recordToRows = (record: Record<string, string>): KvRow[] =>
-    Object.entries(record).map(([key, value]) => ({ key, value }));
+const recordToRows = (record: Record<string, string>): KvRow[] => Object.entries(record).map(([key, value]) => ({ key, value }));
 
 const inputBase: React.CSSProperties = {
     flex: 1,
@@ -126,15 +125,14 @@ export const KvEditor: React.FC<KvEditorProps> = ({ value, onChange, disabled = 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
             {rows.map((row, index) => {
                 const keyIsInvalid = row.key === '' && row.value !== '';
-                const keyInputStyle: React.CSSProperties = {
-                    ...inputBase,
-                    borderColor: keyIsInvalid ? 'var(--err)' : 'var(--line)',
-                };
+                const keyInputStyle: React.CSSProperties = { ...inputBase, borderColor: keyIsInvalid ? 'var(--err)' : 'var(--line)' };
 
                 return (
                     <div key={index} style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
                         <input
-                            ref={(el) => { keyFieldRefs.current[index] = el; }}
+                            ref={(el) => {
+                                keyFieldRefs.current[index] = el;
+                            }}
                             type="text"
                             value={row.key}
                             onChange={(e) => handleKeyChange(index, e.target.value)}
@@ -166,12 +164,7 @@ export const KvEditor: React.FC<KvEditorProps> = ({ value, onChange, disabled = 
                     </div>
                 );
             })}
-            <button
-                type="button"
-                onClick={handleAddRow}
-                disabled={disabled}
-                style={addButtonStyle}
-            >
+            <button type="button" onClick={handleAddRow} disabled={disabled} style={addButtonStyle}>
                 + Add header
             </button>
         </div>

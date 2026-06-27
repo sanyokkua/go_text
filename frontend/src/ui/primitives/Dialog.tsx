@@ -1,6 +1,6 @@
 // frontend/src/ui/primitives/Dialog.tsx
-import React from 'react';
 import { Dialog as RadixDialog } from 'radix-ui';
+import React from 'react';
 import styles from './Dialog.module.css';
 
 export interface DialogProps {

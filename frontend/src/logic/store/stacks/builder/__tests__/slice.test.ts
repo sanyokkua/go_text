@@ -1,18 +1,7 @@
-import builderReducer, {
-    addStep,
-    clearBuilder,
-    moveStep,
-    removeStep,
-    setBuilderIcon,
-    setBuilderName,
-} from '../slice';
+import builderReducer, { addStep, clearBuilder, moveStep, removeStep, setBuilderIcon, setBuilderName } from '../slice';
 import type { StackBuilderState } from '../types';
 
-const initialState: StackBuilderState = {
-    steps: [],
-    name: '',
-    icon: '',
-};
+const initialState: StackBuilderState = { steps: [], name: '', icon: '' };
 
 describe('stacks builder slice reducer', () => {
     it('returns initial state for unknown action', () => {
@@ -58,11 +47,7 @@ describe('stacks builder slice reducer', () => {
     });
 
     it('clearBuilder resets steps, name, and icon to initial state', () => {
-        const modifiedState: StackBuilderState = {
-            steps: ['step-A', 'step-B'],
-            name: 'My Stack',
-            icon: 'stack-icon',
-        };
+        const modifiedState: StackBuilderState = { steps: ['step-A', 'step-B'], name: 'My Stack', icon: 'stack-icon' };
 
         const state = builderReducer(modifiedState, clearBuilder());
 

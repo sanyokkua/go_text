@@ -21,11 +21,7 @@ const EditorView: React.FC = () => {
                 </div>
                 {historyOpen && <HistoryRail />}
             </div>
-            {buildMode ? (
-                <StackBuilderBar onSave={() => setSaveDialogOpen(true)} />
-            ) : (
-                <RunBar />
-            )}
+            {buildMode ? <StackBuilderBar onSave={() => setSaveDialogOpen(true)} /> : <RunBar />}
             <SaveStackDialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen} />
         </div>
     );

@@ -1,11 +1,11 @@
 // frontend/src/ui/primitives/Segmented.tsx
-import React from 'react';
 import { ToggleGroup } from 'radix-ui';
+import React from 'react';
 import styles from './Segmented.module.css';
 
 export interface SegmentedItem {
-    value: string;
-    label: React.ReactNode;
+    'value': string;
+    'label': React.ReactNode;
     'aria-label'?: string;
 }
 
@@ -21,16 +21,13 @@ export const Segmented: React.FC<SegmentedProps> = ({ value, onValueChange, item
         type="single"
         className={styles.root}
         value={value}
-        onValueChange={(v) => { if (v) onValueChange(v); }}
+        onValueChange={(v) => {
+            if (v) onValueChange(v);
+        }}
         disabled={disabled ?? false}
     >
         {items.map((item) => (
-            <ToggleGroup.Item
-                key={item.value}
-                value={item.value}
-                className={styles.item}
-                aria-label={item['aria-label']}
-            >
+            <ToggleGroup.Item key={item.value} value={item.value} className={styles.item} aria-label={item['aria-label']}>
                 {item.label}
             </ToggleGroup.Item>
         ))}

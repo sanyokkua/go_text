@@ -1,6 +1,6 @@
 // frontend/src/ui/primitives/Slider.tsx
-import React from 'react';
 import { Slider as RadixSlider } from 'radix-ui';
+import React from 'react';
 import styles from './Slider.module.css';
 
 export interface SliderProps {

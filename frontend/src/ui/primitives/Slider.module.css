@@ -9,7 +9,10 @@
     user-select: none;
 }
 
-.root[data-disabled] { opacity: 0.45; cursor: not-allowed; }
+.root[data-disabled] {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
 
 .track {
     position: relative;

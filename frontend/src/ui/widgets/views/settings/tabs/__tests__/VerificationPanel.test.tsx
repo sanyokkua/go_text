@@ -1,11 +1,11 @@
+import { configureStore } from '@reduxjs/toolkit';
+import '@testing-library/jest-dom';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import '@testing-library/jest-dom';
 import { Provider } from 'react-redux';
-import { configureStore } from '@reduxjs/toolkit';
+import notificationsReducer from '../../../../../../logic/store/notifications/slice';
 import settingsReducer from '../../../../../../logic/store/settings/slice';
 import uiReducer from '../../../../../../logic/store/ui/slice';
-import notificationsReducer from '../../../../../../logic/store/notifications/slice';
 import VerificationPanel from '../components/VerificationPanel';
 
 jest.mock('../../../../../../logic/adapter', () => ({
@@ -15,11 +15,12 @@ jest.mock('../../../../../../logic/adapter', () => ({
         testInference: jest.fn().mockResolvedValue({ data: { check: 'inference', ok: true, durationMs: 200, sample: 'Hello' }, error: null }),
         getModels: jest.fn().mockResolvedValue({ data: [], error: null }),
     },
-    SettingsHandlerAdapter: {
-        getSettings: jest.fn().mockResolvedValue({ data: null, error: null }),
-    },
+    SettingsHandlerAdapter: { getSettings: jest.fn().mockResolvedValue({ data: null, error: null }) },
     getLogger: () => ({ logInfo: jest.fn(), logDebug: jest.fn(), logError: jest.fn(), logWarn: jest.fn() }),
-    unwrap: jest.fn((r: { data: unknown; error: { message: string } | null }) => { if (r?.error) throw new Error(r.error.message); return r?.data; }),
+    unwrap: jest.fn((r: { data: unknown; error: { message: string } | null }) => {
+        if (r?.error) throw new Error(r.error.message);
+        return r?.data;
+    }),
 }));
 
 function makeStore(uiOverride = {}) {
@@ -27,9 +28,16 @@ function makeStore(uiOverride = {}) {
         reducer: { settings: settingsReducer, ui: uiReducer, notifications: notificationsReducer },
         preloadedState: {
             ui: {
-                layout: 'side' as const, sidebarCollapsed: false, historyOpen: false,
-                inferenceRunning: false, currentView: 'settings' as const, armedActionId: null,
-                activeActionsTab: null, buildMode: false, editingStackId: null, activeSettingsTab: 0,
+                layout: 'side' as const,
+                sidebarCollapsed: false,
+                historyOpen: false,
+                inferenceRunning: false,
+                currentView: 'settings' as const,
+                armedActionId: null,
+                activeActionsTab: null,
+                buildMode: false,
+                editingStackId: null,
+                activeSettingsTab: 0,
                 theme: { mode: 'auto' as const, effective: 'light' as const },
                 ...uiOverride,
             },
@@ -43,14 +51,22 @@ describe('VerificationPanel', () => {
     });
 
     it('renders three check rows: Test connection, Test models, Test inference', () => {
-        render(<Provider store={makeStore()}><VerificationPanel providerId="p1" /></Provider>);
+        render(
+            <Provider store={makeStore()}>
+                <VerificationPanel providerId="p1" />
+            </Provider>,
+        );
         expect(screen.getByRole('button', { name: /test connection/i })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /test models/i })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /test inference/i })).toBeInTheDocument();
     });
 
     it('all three check buttons are initially enabled', () => {
-        render(<Provider store={makeStore()}><VerificationPanel providerId="p1" /></Provider>);
+        render(
+            <Provider store={makeStore()}>
+                <VerificationPanel providerId="p1" />
+            </Provider>,
+        );
         expect(screen.getByRole('button', { name: /test connection/i })).toBeEnabled();
         expect(screen.getByRole('button', { name: /test models/i })).toBeEnabled();
         expect(screen.getByRole('button', { name: /test inference/i })).toBeEnabled();
@@ -77,7 +93,11 @@ describe('VerificationPanel', () => {
 
     it('calls testConnection with the providerId when Test connection is clicked', async () => {
         const { ActionHandlerAdapter } = jest.requireMock('../../../../../../logic/adapter');
-        render(<Provider store={makeStore()}><VerificationPanel providerId="p1" /></Provider>);
+        render(
+            <Provider store={makeStore()}>
+                <VerificationPanel providerId="p1" />
+            </Provider>,
+        );
         await userEvent.click(screen.getByRole('button', { name: /test connection/i }));
         await waitFor(() => {
             expect(ActionHandlerAdapter.testConnection).toHaveBeenCalledWith('p1');
@@ -85,7 +105,11 @@ describe('VerificationPanel', () => {
     });
 
     it('shows a success indicator after a successful connection test', async () => {
-        render(<Provider store={makeStore()}><VerificationPanel providerId="p1" /></Provider>);
+        render(
+            <Provider store={makeStore()}>
+                <VerificationPanel providerId="p1" />
+            </Provider>,
+        );
         await userEvent.click(screen.getByRole('button', { name: /test connection/i }));
         await waitFor(() => {
             expect(screen.getByText(/✓ 100ms/)).toBeInTheDocument();

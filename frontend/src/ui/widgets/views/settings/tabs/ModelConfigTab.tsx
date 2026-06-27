@@ -57,19 +57,9 @@ const fieldRow: React.CSSProperties = {
     borderBottom: '1px solid var(--line)',
 };
 
-const fieldLabel: React.CSSProperties = {
-    minWidth: 200,
-    color: 'var(--ink-1)',
-    fontSize: '0.875rem',
-    fontWeight: 500,
-};
+const fieldLabel: React.CSSProperties = { minWidth: 200, color: 'var(--ink-1)', fontSize: '0.875rem', fontWeight: 500 };
 
-const fieldValue: React.CSSProperties = {
-    flex: 1,
-    display: 'flex',
-    alignItems: 'center',
-    gap: 'var(--space-3)',
-};
+const fieldValue: React.CSSProperties = { flex: 1, display: 'flex', alignItems: 'center', gap: 'var(--space-3)' };
 
 const numericDisplay: React.CSSProperties = {
     minWidth: 48,
@@ -125,11 +115,7 @@ const ModelConfigTab: React.FC<Props> = ({ settings }) => {
 
     const handleModelChange = (modelId: string) => {
         const matched = discoveredModels.find((m) => m.id === modelId);
-        setForm((prev) => ({
-            ...prev,
-            name: modelId,
-            ...(matched?.caps?.supportsTemperature === false ? { useTemperature: false } : {}),
-        }));
+        setForm((prev) => ({ ...prev, name: modelId, ...(matched?.caps?.supportsTemperature === false ? { useTemperature: false } : {}) }));
     };
 
     const handleSave = async () => {
@@ -172,12 +158,7 @@ const ModelConfigTab: React.FC<Props> = ({ settings }) => {
                             disabled={discoveryState === 'loading'}
                         />
                     </div>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={discoverModels}
-                        disabled={discoveryState === 'loading' || !currentProvider}
-                    >
+                    <Button variant="ghost" size="sm" onClick={discoverModels} disabled={discoveryState === 'loading' || !currentProvider}>
                         ⟳ Refresh
                     </Button>
                 </div>
@@ -245,11 +226,7 @@ const ModelConfigTab: React.FC<Props> = ({ settings }) => {
             </div>
 
             <div style={{ paddingTop: 'var(--space-4)', display: 'flex', justifyContent: 'flex-end' }}>
-                <Button
-                    variant="primary"
-                    onClick={handleSave}
-                    disabled={!isDirty || saving}
-                >
+                <Button variant="primary" onClick={handleSave} disabled={!isDirty || saving}>
                     {saving ? 'Saving…' : 'Save'}
                 </Button>
             </div>

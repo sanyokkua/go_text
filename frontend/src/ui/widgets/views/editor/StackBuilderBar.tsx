@@ -1,23 +1,23 @@
 import { Fragment } from 'react';
+import { apperr } from '../../../../../wailsjs/go/models';
 import { getLogger } from '../../../../logic/adapter';
 import {
     selectAllSettings,
     selectBuilderFamilyGroups,
     selectBuilderInferenceCount,
     selectBuilderStepCount,
-    selectInputContent,
     selectInferenceRunning,
+    selectInputContent,
     selectRunId,
     selectRunStatus,
     useAppDispatch,
     useAppSelector,
 } from '../../../../logic/store';
-import { removeStep, clearBuilder } from '../../../../logic/store/stacks/builder/slice';
-import { cancelChain, processPromptChain } from '../../../../logic/store/run';
-import { exitBuildMode } from '../../../../logic/store/ui';
 import { enqueueNotification } from '../../../../logic/store/notifications/slice';
+import { cancelChain, processPromptChain } from '../../../../logic/store/run';
+import { clearBuilder, removeStep } from '../../../../logic/store/stacks/builder/slice';
+import { exitBuildMode } from '../../../../logic/store/ui';
 import { parseError } from '../../../../logic/utils/error_utils';
-import { apperr } from '../../../../../wailsjs/go/models';
 import styles from './StackBuilderBar.module.css';
 
 const logger = getLogger('StackBuilderBar');
@@ -118,40 +118,18 @@ const StackBuilderBar: React.FC<StackBuilderBarProps> = ({ onSave }) => {
 
             {/* Action buttons */}
             <div className={styles.actions}>
-                <button
-                    className={styles.cancelBtn}
-                    onClick={handleCancel}
-                    type="button"
-                    aria-label="Cancel build"
-                >
+                <button className={styles.cancelBtn} onClick={handleCancel} type="button" aria-label="Cancel build">
                     ✕ Cancel
                 </button>
-                <button
-                    className={styles.saveBtn}
-                    onClick={onSave}
-                    disabled={stepCount === 0}
-                    type="button"
-                    aria-label="Save stack"
-                >
+                <button className={styles.saveBtn} onClick={onSave} disabled={stepCount === 0} type="button" aria-label="Save stack">
                     ⊕ Save…
                 </button>
                 {isRunning ? (
-                    <button
-                        className={`${styles.runBtn} ${styles.runBtnCancel}`}
-                        onClick={handleCancelRun}
-                        type="button"
-                        aria-label="Cancel run"
-                    >
+                    <button className={`${styles.runBtn} ${styles.runBtnCancel}`} onClick={handleCancelRun} type="button" aria-label="Cancel run">
                         ✕ Cancel run
                     </button>
                 ) : (
-                    <button
-                        className={styles.runBtn}
-                        onClick={handleRun}
-                        disabled={!canRun}
-                        type="button"
-                        aria-label="Run"
-                    >
+                    <button className={styles.runBtn} onClick={handleRun} disabled={!canRun} type="button" aria-label="Run">
                         ▶ Run
                     </button>
                 )}

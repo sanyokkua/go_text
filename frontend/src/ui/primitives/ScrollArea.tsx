@@ -1,6 +1,6 @@
 // frontend/src/ui/primitives/ScrollArea.tsx
-import React from 'react';
 import { ScrollArea as RadixScrollArea } from 'radix-ui';
+import React from 'react';
 import styles from './ScrollArea.module.css';
 
 export interface ScrollAreaProps {
@@ -11,9 +11,7 @@ export interface ScrollAreaProps {
 
 export const ScrollArea: React.FC<ScrollAreaProps> = ({ children, className, style }) => (
     <RadixScrollArea.Root className={`${styles.root} ${className ?? ''}`} style={style}>
-        <RadixScrollArea.Viewport className={styles.viewport}>
-            {children}
-        </RadixScrollArea.Viewport>
+        <RadixScrollArea.Viewport className={styles.viewport}>{children}</RadixScrollArea.Viewport>
         <RadixScrollArea.Scrollbar className={styles.scrollbar} orientation="vertical">
             <RadixScrollArea.Thumb className={styles.thumb} />
         </RadixScrollArea.Scrollbar>

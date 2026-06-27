@@ -13,18 +13,12 @@ interface InferenceForm {
 }
 
 function toForm(cfg: Settings['inferenceBaseConfig']): InferenceForm {
-    return {
-        timeout: cfg.timeout,
-        maxRetries: cfg.maxRetries,
-        useMarkdownForOutput: cfg.useMarkdownForOutput,
-    };
+    return { timeout: cfg.timeout, maxRetries: cfg.maxRetries, useMarkdownForOutput: cfg.useMarkdownForOutput };
 }
 
 function isFormDirty(form: InferenceForm, original: Settings['inferenceBaseConfig']): boolean {
     return (
-        form.timeout !== original.timeout ||
-        form.maxRetries !== original.maxRetries ||
-        form.useMarkdownForOutput !== original.useMarkdownForOutput
+        form.timeout !== original.timeout || form.maxRetries !== original.maxRetries || form.useMarkdownForOutput !== original.useMarkdownForOutput
     );
 }
 
@@ -36,19 +30,9 @@ const fieldRow: React.CSSProperties = {
     borderBottom: '1px solid var(--line)',
 };
 
-const fieldLabel: React.CSSProperties = {
-    minWidth: 200,
-    color: 'var(--ink-1)',
-    fontSize: '0.875rem',
-    fontWeight: 500,
-};
+const fieldLabel: React.CSSProperties = { minWidth: 200, color: 'var(--ink-1)', fontSize: '0.875rem', fontWeight: 500 };
 
-const fieldValue: React.CSSProperties = {
-    flex: 1,
-    display: 'flex',
-    alignItems: 'center',
-    gap: 'var(--space-2)',
-};
+const fieldValue: React.CSSProperties = { flex: 1, display: 'flex', alignItems: 'center', gap: 'var(--space-2)' };
 
 const numberInput: React.CSSProperties = {
     width: 96,
@@ -60,11 +44,7 @@ const numberInput: React.CSSProperties = {
     fontSize: '0.875rem',
 };
 
-const caption: React.CSSProperties = {
-    fontSize: '0.75rem',
-    color: 'var(--ink-3)',
-    marginTop: 'var(--space-1)',
-};
+const caption: React.CSSProperties = { fontSize: '0.75rem', color: 'var(--ink-3)', marginTop: 'var(--space-1)' };
 
 interface Props {
     settings: Settings;
@@ -156,11 +136,7 @@ const InferenceConfigTab: React.FC<Props> = ({ settings }) => {
             </div>
 
             <div style={{ paddingTop: 'var(--space-4)', display: 'flex', justifyContent: 'flex-end' }}>
-                <Button
-                    variant="primary"
-                    onClick={handleSave}
-                    disabled={!isDirty || saving}
-                >
+                <Button variant="primary" onClick={handleSave} disabled={!isDirty || saving}>
                     {saving ? 'Saving…' : 'Save'}
                 </Button>
             </div>

@@ -10,7 +10,15 @@ import {
     SettingsHandlerAdapter,
     unwrap,
 } from '../../adapter';
-import { AppBehaviorConfig, AppSettingsMetadata, InferenceBaseConfig, LanguageConfig, ModelConfig, ProviderConfig, Settings } from '../../adapter/models';
+import {
+    AppBehaviorConfig,
+    AppSettingsMetadata,
+    InferenceBaseConfig,
+    LanguageConfig,
+    ModelConfig,
+    ProviderConfig,
+    Settings,
+} from '../../adapter/models';
 import { parseError } from '../../utils/error_utils';
 
 const logger = getLogger('SettingsThunks');
@@ -133,18 +141,15 @@ export const getModelConfig = createAsyncThunk<ModelConfig, void, { rejectValue:
     },
 );
 
-export const getSettings = createAsyncThunk<Settings, void, { rejectValue: string }>(
-    'settings/getSettings',
-    async (_, { rejectWithValue }) => {
-        try {
-            return fromWireSettings(unwrap(await SettingsHandlerAdapter.getSettings()));
-        } catch (error: unknown) {
-            const err = parseError(error);
-            logger.logError(`getSettings failed: ${err.message}`);
-            return rejectWithValue(err.message);
-        }
-    },
-);
+export const getSettings = createAsyncThunk<Settings, void, { rejectValue: string }>('settings/getSettings', async (_, { rejectWithValue }) => {
+    try {
+        return fromWireSettings(unwrap(await SettingsHandlerAdapter.getSettings()));
+    } catch (error: unknown) {
+        const err = parseError(error);
+        logger.logError(`getSettings failed: ${err.message}`);
+        return rejectWithValue(err.message);
+    }
+});
 
 export const removeLanguage = createAsyncThunk<Array<string>, string, { rejectValue: string }>(
     'settings/removeLanguage',

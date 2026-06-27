@@ -6,7 +6,4 @@ export const selectInputContent = (state: RootState): string => state.editor.inp
 export const selectOutputContent = (state: RootState): string => state.editor.outputContent;
 export const selectViewMode = (state: RootState): EditorViewMode => state.editor.viewMode;
 
-export const selectHasDiff = createSelector(
-    [selectInputContent, selectOutputContent],
-    (input, output) => input.length > 0 && output.length > 0,
-);
+export const selectHasDiff = createSelector([selectInputContent, selectOutputContent], (input, output) => input.length > 0 && output.length > 0);

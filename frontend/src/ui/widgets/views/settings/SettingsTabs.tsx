@@ -5,15 +5,7 @@ interface SettingsTabsProps {
     onChange: (event: React.SyntheticEvent, newValue: number) => void;
 }
 
-const TAB_LABELS = [
-    'Providers',
-    'Model',
-    'Generation',
-    'Languages',
-    'Logging',
-    'About & data',
-    'Appearance',
-];
+const TAB_LABELS = ['Providers', 'Model', 'Generation', 'Languages', 'Logging', 'About & data', 'Appearance'];
 
 const SettingsTabs: React.FC<SettingsTabsProps> = ({ activeTab, onChange }) => {
     return (

@@ -1,7 +1,7 @@
 import React from 'react';
 
-import { selectAllSettings, selectSettingsMetadata } from '../../../../logic/store/settings/selectors';
 import { selectActiveSettingsTab, useAppDispatch, useAppSelector } from '../../../../logic/store';
+import { selectAllSettings, selectSettingsMetadata } from '../../../../logic/store/settings/selectors';
 import { setActiveSettingsTab } from '../../../../logic/store/ui';
 import SettingsTabs from './SettingsTabs';
 import AppBehaviorTab from './tabs/AppBehaviorTab';

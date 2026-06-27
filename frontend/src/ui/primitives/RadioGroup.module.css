@@ -25,14 +25,19 @@
     flex-shrink: 0;
 }
 
-.item[data-state='checked'] { border-color: var(--teal); }
+.item[data-state='checked'] {
+    border-color: var(--teal);
+}
 
 .item:focus-visible {
     outline: none;
     box-shadow: var(--focus-ring);
 }
 
-.item[data-disabled] { opacity: 0.45; cursor: not-allowed; }
+.item[data-disabled] {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
 
 .indicator {
     display: block;

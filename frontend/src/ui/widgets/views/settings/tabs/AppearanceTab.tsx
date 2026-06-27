@@ -1,15 +1,15 @@
 import React from 'react';
 
 import { useAppDispatch, useAppSelector } from '../../../../../logic/store';
-import { setThemeMode } from '../../../../../logic/store/ui/slice';
 import { selectThemeMode } from '../../../../../logic/store/ui/selectors';
+import { setThemeMode } from '../../../../../logic/store/ui/slice';
 import { ThemeMode } from '../../../../../logic/store/ui/types';
 import { Segmented, SegmentedItem } from '../../../../primitives/Segmented';
 
 const THEME_OPTIONS: SegmentedItem[] = [
-    { value: 'auto', label: '🌓 Auto', 'aria-label': 'Follow OS setting' },
-    { value: 'light', label: '☀ Light', 'aria-label': 'Light theme' },
-    { value: 'dark', label: '🌙 Dark', 'aria-label': 'Dark theme' },
+    { 'value': 'auto', 'label': '🌓 Auto', 'aria-label': 'Follow OS setting' },
+    { 'value': 'light', 'label': '☀ Light', 'aria-label': 'Light theme' },
+    { 'value': 'dark', 'label': '🌙 Dark', 'aria-label': 'Dark theme' },
 ];
 
 const previewCard: React.CSSProperties = {
@@ -36,34 +36,20 @@ const AppearanceTab: React.FC = () => {
         <section style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
                 <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--ink-1)' }}>Theme</span>
-                <Segmented
-                    value={themeMode}
-                    onValueChange={handleThemeChange}
-                    items={THEME_OPTIONS}
-                />
+                <Segmented value={themeMode} onValueChange={handleThemeChange} items={THEME_OPTIONS} />
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                 <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--ink-1)' }}>Preview</span>
                 <div style={{ display: 'flex', gap: 'var(--space-4)' }}>
                     <div
-                        style={{
-                            ...previewCard,
-                            background: '#ffffff',
-                            color: '#1a1a1a',
-                            border: '1px solid #e2e8f0',
-                        }}
+                        style={{ ...previewCard, background: '#ffffff', color: '#1a1a1a', border: '1px solid #e2e8f0' }}
                         aria-label="Light theme preview"
                     >
                         Aa
                     </div>
                     <div
-                        style={{
-                            ...previewCard,
-                            background: '#1e1e1e',
-                            color: '#e2e8f0',
-                            border: '1px solid #3a3a3a',
-                        }}
+                        style={{ ...previewCard, background: '#1e1e1e', color: '#e2e8f0', border: '1px solid #3a3a3a' }}
                         aria-label="Dark theme preview"
                     >
                         Aa
@@ -71,9 +57,7 @@ const AppearanceTab: React.FC = () => {
                 </div>
             </div>
 
-            <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--ink-3)' }}>
-                Theme changes apply instantly. Auto follows the OS setting.
-            </p>
+            <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--ink-3)' }}>Theme changes apply instantly. Auto follows the OS setting.</p>
         </section>
     );
 };

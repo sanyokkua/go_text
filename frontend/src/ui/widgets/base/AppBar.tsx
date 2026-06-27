@@ -52,7 +52,10 @@ const AppBar: React.FC = () => {
                         <button
                             aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                             aria-pressed={!sidebarCollapsed}
-                            onClick={() => { dispatch(toggleSidebar()); logger.logInfo('Sidebar toggled'); }}
+                            onClick={() => {
+                                dispatch(toggleSidebar());
+                                logger.logInfo('Sidebar toggled');
+                            }}
                             style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '1.1rem' }}
                         >
                             ☰
@@ -62,7 +65,10 @@ const AppBar: React.FC = () => {
                 {!isMain && (
                     <button
                         aria-label="Back to editor"
-                        onClick={() => { dispatch(setCurrentView('main')); logger.logInfo('Navigated to main'); }}
+                        onClick={() => {
+                            dispatch(setCurrentView('main'));
+                            logger.logInfo('Navigated to main');
+                        }}
                         style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '0.875rem' }}
                     >
                         ‹ Editor
@@ -97,15 +103,15 @@ const AppBar: React.FC = () => {
 
             <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center', flexShrink: 0 }}>
                 {isMain && (
-                    <Tooltip
-                        content={historyEnabled ? 'Toggle history' : 'History is disabled in Settings'}
-                        side="bottom"
-                    >
+                    <Tooltip content={historyEnabled ? 'Toggle history' : 'History is disabled in Settings'} side="bottom">
                         <button
                             aria-label="Toggle history rail"
                             aria-pressed={historyOpen}
                             disabled={!historyEnabled}
-                            onClick={() => { dispatch(toggleHistory()); logger.logInfo('History toggled'); }}
+                            onClick={() => {
+                                dispatch(toggleHistory());
+                                logger.logInfo('History toggled');
+                            }}
                             style={{
                                 background: historyOpen ? 'rgba(255,255,255,0.15)' : 'none',
                                 border: 'none',
@@ -125,7 +131,10 @@ const AppBar: React.FC = () => {
                     <Tooltip content="About GoText" side="bottom">
                         <button
                             aria-label="About and info"
-                            onClick={() => { dispatch(setCurrentView('info')); logger.logInfo('Navigated to info'); }}
+                            onClick={() => {
+                                dispatch(setCurrentView('info'));
+                                logger.logInfo('Navigated to info');
+                            }}
                             style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '1rem' }}
                         >
                             ℹ
@@ -135,7 +144,9 @@ const AppBar: React.FC = () => {
                 <Tooltip content={isMain ? 'Settings' : 'Close'} side="bottom">
                     <button
                         aria-label={isMain ? 'Open settings' : 'Close'}
-                        onClick={() => { dispatch(setCurrentView(isMain ? 'settings' : 'main')); }}
+                        onClick={() => {
+                            dispatch(setCurrentView(isMain ? 'settings' : 'main'));
+                        }}
                         style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '1rem' }}
                     >
                         {isMain ? '⚙' : '✕'}

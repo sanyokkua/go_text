@@ -1,13 +1,13 @@
-import { render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom';
-import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
-import editorReducer from '../../../../../logic/store/editor/slice';
-import uiReducer from '../../../../../logic/store/ui/slice';
-import runReducer from '../../../../../logic/store/run/slice';
+import '@testing-library/jest-dom';
+import { render, screen } from '@testing-library/react';
+import { Provider } from 'react-redux';
 import actionsReducer from '../../../../../logic/store/actions/slice';
-import settingsReducer from '../../../../../logic/store/settings/slice';
+import editorReducer from '../../../../../logic/store/editor/slice';
 import notificationsReducer from '../../../../../logic/store/notifications/slice';
+import runReducer from '../../../../../logic/store/run/slice';
+import settingsReducer from '../../../../../logic/store/settings/slice';
+import uiReducer from '../../../../../logic/store/ui/slice';
 import RunBar from '../RunBar';
 
 jest.mock('../../../../../logic/adapter', () => ({
@@ -24,37 +24,82 @@ function makeStore(
     uiOverrides = {},
     editorOverrides = {},
     runOverrides = {},
-    catalog: Array<{ id: string; name: string; category: string; family: string; directive: string; orderRank: number; exclusivityGroup: string; mergeable: boolean; terminal: boolean; requires: string[] }> = [],
+    catalog: Array<{
+        id: string;
+        name: string;
+        category: string;
+        family: string;
+        directive: string;
+        orderRank: number;
+        exclusivityGroup: string;
+        mergeable: boolean;
+        terminal: boolean;
+        requires: string[];
+    }> = [],
 ) {
     return configureStore({
         reducer: {
-            editor: editorReducer, ui: uiReducer, run: runReducer,
-            actions: actionsReducer, settings: settingsReducer, notifications: notificationsReducer,
+            editor: editorReducer,
+            ui: uiReducer,
+            run: runReducer,
+            actions: actionsReducer,
+            settings: settingsReducer,
+            notifications: notificationsReducer,
         },
         preloadedState: {
             editor: { inputContent: '', outputContent: '', viewMode: 'preview' as const, ...editorOverrides },
             ui: {
-                layout: 'side' as const, sidebarCollapsed: false, historyOpen: false,
-                inferenceRunning: false, currentView: 'main' as const, armedActionId: null,
-                activeActionsTab: null, buildMode: false, editingStackId: null,
-                    activeSettingsTab: 0,
+                layout: 'side' as const,
+                sidebarCollapsed: false,
+                historyOpen: false,
+                inferenceRunning: false,
+                currentView: 'main' as const,
+                armedActionId: null,
+                activeActionsTab: null,
+                buildMode: false,
+                editingStackId: null,
+                activeSettingsTab: 0,
                 theme: { mode: 'auto' as const, effective: 'light' as const },
                 ...uiOverrides,
             },
-            run: { status: 'idle' as const, runId: null, currentGroupIndex: null, totalGroups: null, currentGroupFamily: null, failedIndex: null, partialOutput: null, errorCode: null, errorMessage: null, ...runOverrides },
-            actions: { catalog, catalogStatus: catalog.length > 0 ? 'success' as const : 'idle' as const, availableModels: [], modelsStatus: 'idle' as const },
+            run: {
+                status: 'idle' as const,
+                runId: null,
+                currentGroupIndex: null,
+                totalGroups: null,
+                currentGroupFamily: null,
+                failedIndex: null,
+                partialOutput: null,
+                errorCode: null,
+                errorMessage: null,
+                ...runOverrides,
+            },
+            actions: {
+                catalog,
+                catalogStatus: catalog.length > 0 ? ('success' as const) : ('idle' as const),
+                availableModels: [],
+                modelsStatus: 'idle' as const,
+            },
         },
     });
 }
 
 describe('RunBar', () => {
     it('Run button is disabled when no action is armed', () => {
-        render(<Provider store={makeStore()}><RunBar /></Provider>);
+        render(
+            <Provider store={makeStore()}>
+                <RunBar />
+            </Provider>,
+        );
         expect(screen.getByRole('button', { name: /run/i })).toBeDisabled();
     });
 
     it('Run button is disabled when input is empty even with action armed', () => {
-        render(<Provider store={makeStore({ armedActionId: 'action1' })}><RunBar /></Provider>);
+        render(
+            <Provider store={makeStore({ armedActionId: 'action1' })}>
+                <RunBar />
+            </Provider>,
+        );
         expect(screen.getByRole('button', { name: /run/i })).toBeDisabled();
     });
 
@@ -87,12 +132,22 @@ describe('RunBar', () => {
 
     it('shows action name and badge in chip when an action is armed', () => {
         render(
-            <Provider store={makeStore(
-                { armedActionId: 'action1' },
-                { inputContent: 'hi' },
-                {},
-                [{ id: 'action1', name: 'Summarise', category: 'Writing', family: 'text', directive: '', orderRank: 0, exclusivityGroup: '', mergeable: false, terminal: false, requires: [] }],
-            )}>
+            <Provider
+                store={makeStore({ armedActionId: 'action1' }, { inputContent: 'hi' }, {}, [
+                    {
+                        id: 'action1',
+                        name: 'Summarise',
+                        category: 'Writing',
+                        family: 'text',
+                        directive: '',
+                        orderRank: 0,
+                        exclusivityGroup: '',
+                        mergeable: false,
+                        terminal: false,
+                        requires: [],
+                    },
+                ])}
+            >
                 <RunBar />
             </Provider>,
         );
@@ -101,7 +156,11 @@ describe('RunBar', () => {
     });
 
     it('shows hint text in chip when no action is armed', () => {
-        render(<Provider store={makeStore()}><RunBar /></Provider>);
+        render(
+            <Provider store={makeStore()}>
+                <RunBar />
+            </Provider>,
+        );
         expect(screen.getByText(/select an action from the sidebar/i)).toBeInTheDocument();
     });
 });

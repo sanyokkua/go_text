@@ -1,14 +1,16 @@
 // Mock the adapter before any imports so module-level getLogger calls succeed.
 jest.mock('../../../adapter', () => ({
-    getLogger: jest.fn().mockReturnValue({
-        logPrint: jest.fn(),
-        logTrace: jest.fn(),
-        logDebug: jest.fn(),
-        logInfo: jest.fn(),
-        logWarning: jest.fn(),
-        logError: jest.fn(),
-        logFatal: jest.fn(),
-    }),
+    getLogger: jest
+        .fn()
+        .mockReturnValue({
+            logPrint: jest.fn(),
+            logTrace: jest.fn(),
+            logDebug: jest.fn(),
+            logInfo: jest.fn(),
+            logWarning: jest.fn(),
+            logError: jest.fn(),
+            logFatal: jest.fn(),
+        }),
     unwrap: jest.fn((res: { data?: unknown; error?: unknown }) => {
         if (res.error) throw res.error;
         return res.data;
@@ -16,13 +18,12 @@ jest.mock('../../../adapter', () => ({
     tryUnwrap: jest.fn((res: { data?: unknown; error?: unknown }) => res),
 }));
 
-import uiReducer, { setThemeEffective, setThemeMode } from '../../ui/slice';
-import { selectEffectiveTheme, selectThemeMode } from '../../ui/selectors';
 import type { RootState } from '../../index';
+import { selectEffectiveTheme, selectThemeMode } from '../../ui/selectors';
+import uiReducer, { setThemeEffective, setThemeMode } from '../../ui/slice';
 import type { UIState } from '../../ui/types';
 
-const makeRootState = (ui: Partial<UIState>): RootState =>
-    ({ ui } as unknown as RootState);
+const makeRootState = (ui: Partial<UIState>): RootState => ({ ui }) as unknown as RootState;
 
 describe('UI slice — theme functionality', () => {
     const initial: UIState = {

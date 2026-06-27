@@ -1,6 +1,6 @@
 // frontend/src/ui/primitives/AlertDialog.tsx
-import React from 'react';
 import { AlertDialog as RadixAlertDialog } from 'radix-ui';
+import React from 'react';
 import { Button } from '../components/Button';
 import styles from './AlertDialog.module.css';
 
@@ -32,12 +32,12 @@ export const AlertDialog: React.FC<AlertDialogProps> = ({
                 <RadixAlertDialog.Title className={`${styles.title} ${variant === 'danger' ? styles.dangerTitle : ''}`}>
                     {title}
                 </RadixAlertDialog.Title>
-                <RadixAlertDialog.Description className={styles.description}>
-                    {description}
-                </RadixAlertDialog.Description>
+                <RadixAlertDialog.Description className={styles.description}>{description}</RadixAlertDialog.Description>
                 <div className={styles.actions}>
                     <RadixAlertDialog.Cancel asChild>
-                        <Button variant="ghost" size="sm">{cancelLabel}</Button>
+                        <Button variant="ghost" size="sm">
+                            {cancelLabel}
+                        </Button>
                     </RadixAlertDialog.Cancel>
                     <RadixAlertDialog.Action asChild>
                         <Button variant={variant === 'danger' ? 'danger' : 'primary'} size="sm" onClick={onConfirm}>

@@ -17,14 +17,19 @@
     font-size: 14px;
 }
 
-.iconbtn:hover:not(:disabled) { background: var(--surface-2); }
+.iconbtn:hover:not(:disabled) {
+    background: var(--surface-2);
+}
 
 .iconbtn:focus-visible {
     outline: none;
     box-shadow: var(--focus-ring);
 }
 
-.iconbtn:disabled { opacity: 0.45; cursor: not-allowed; }
+.iconbtn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
 
 .on {
     background: var(--teal-50);
@@ -32,7 +37,9 @@
     color: var(--teal-dark);
 }
 
-:global(.dark) .on { color: var(--teal-light); }
+:global(.dark) .on {
+    color: var(--teal-light);
+}
 
 .compact {
     height: 24px;

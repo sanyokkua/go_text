@@ -1,13 +1,13 @@
 // frontend/src/ui/primitives/Switch.tsx
-import React from 'react';
 import { Switch as RadixSwitch } from 'radix-ui';
+import React from 'react';
 import styles from './Switch.module.css';
 
 export interface SwitchProps {
-    checked: boolean;
-    onCheckedChange: (checked: boolean) => void;
-    disabled?: boolean;
-    id?: string;
+    'checked': boolean;
+    'onCheckedChange': (checked: boolean) => void;
+    'disabled'?: boolean;
+    'id'?: string;
     'aria-label'?: string;
 }
 

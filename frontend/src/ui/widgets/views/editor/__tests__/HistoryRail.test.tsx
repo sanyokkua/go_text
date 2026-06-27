@@ -4,9 +4,7 @@ jest.mock('../../../../../logic/adapter', () => ({
         deleteHistoryEntry: jest.fn().mockResolvedValue({ data: null, error: null }),
         clearHistory: jest.fn().mockResolvedValue({ data: null, error: null }),
     },
-    getLogger: () => ({
-        logDebug: jest.fn(), logInfo: jest.fn(), logError: jest.fn(), logWarning: jest.fn(),
-    }),
+    getLogger: () => ({ logDebug: jest.fn(), logInfo: jest.fn(), logError: jest.fn(), logWarning: jest.fn() }),
     unwrap: jest.fn((res: { data?: unknown; error?: unknown }) => {
         if (res.error) throw res.error;
         return res.data;
@@ -14,11 +12,12 @@ jest.mock('../../../../../logic/adapter', () => ({
     tryUnwrap: jest.fn((res: unknown) => res),
 }));
 
+import { configureStore } from '@reduxjs/toolkit';
+import '@testing-library/jest-dom';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import '@testing-library/jest-dom';
 import { Provider } from 'react-redux';
-import { configureStore } from '@reduxjs/toolkit';
+import { HistoryHandlerAdapter } from '../../../../../logic/adapter';
 import actionsReducer from '../../../../../logic/store/actions/slice';
 import editorReducer from '../../../../../logic/store/editor/slice';
 import historyReducer from '../../../../../logic/store/history/slice';
@@ -26,20 +25,34 @@ import notificationsReducer from '../../../../../logic/store/notifications/slice
 import runReducer from '../../../../../logic/store/run/slice';
 import settingsReducer from '../../../../../logic/store/settings/slice';
 import uiReducer from '../../../../../logic/store/ui/slice';
-import { HistoryHandlerAdapter } from '../../../../../logic/adapter';
 import HistoryRail from '../HistoryRail';
 
 const MOCK_ACTION = {
-    id: 'proofread', name: 'Proofread', category: 'Writing', family: 'rewrite',
-    directive: '', orderRank: 10, exclusivityGroup: 'proofread',
-    mergeable: true, terminal: false, requires: [],
+    id: 'proofread',
+    name: 'Proofread',
+    category: 'Writing',
+    family: 'rewrite',
+    directive: '',
+    orderRank: 10,
+    exclusivityGroup: 'proofread',
+    mergeable: true,
+    terminal: false,
+    requires: [],
 };
 
-function makeEntry(overrides: Partial<{
-    id: string; title: string; kind: string; status: string; inferences: number;
-    inputText: string; outputText: string; applied: Array<{ id: string; name: string; category: string }>;
-    createdAt: number;
-}> = {}) {
+function makeEntry(
+    overrides: Partial<{
+        id: string;
+        title: string;
+        kind: string;
+        status: string;
+        inferences: number;
+        inputText: string;
+        outputText: string;
+        applied: Array<{ id: string; name: string; category: string }>;
+        createdAt: number;
+    }> = {},
+) {
     return {
         id: 'entry-1',
         createdAt: Math.floor(Date.now() / 1000) - 60,
@@ -66,7 +79,7 @@ interface StoreOverrides {
     entries?: ReturnType<typeof makeEntry>[];
     historyEnabled?: boolean;
     historyMaxEntries?: number;
-    catalog?: typeof MOCK_ACTION[];
+    catalog?: (typeof MOCK_ACTION)[];
 }
 
 function makeStore(overrides: StoreOverrides = {}) {
@@ -88,19 +101,18 @@ function makeStore(overrides: StoreOverrides = {}) {
             run: runReducer,
         },
         preloadedState: {
-            history: {
-                entries: entries as never,
-                selectedId: null,
-                loading: false,
-                hasMore: false,
-                total: entries.length,
-            },
+            history: { entries: entries as never, selectedId: null, loading: false, hasMore: false, total: entries.length },
             ui: {
-                layout: 'side' as const, sidebarCollapsed: false, historyOpen: true,
-                inferenceRunning: false, currentView: 'main' as const,
-                armedActionId: null, activeActionsTab: null,
-                buildMode: false, editingStackId: null,
-                    activeSettingsTab: 0,
+                layout: 'side' as const,
+                sidebarCollapsed: false,
+                historyOpen: true,
+                inferenceRunning: false,
+                currentView: 'main' as const,
+                armedActionId: null,
+                activeActionsTab: null,
+                buildMode: false,
+                editingStackId: null,
+                activeSettingsTab: 0,
                 theme: { mode: 'auto' as const, effective: 'light' as const },
             },
             editor: { inputContent: '', outputContent: '', viewMode: 'preview' as const },
@@ -110,17 +122,18 @@ function makeStore(overrides: StoreOverrides = {}) {
                 availableModels: [],
                 modelsStatus: 'idle' as const,
             },
-            settings: {
-                allSettings: {
-                    appBehaviorConfig: { historyEnabled, historyMaxEntries },
-                } as never,
-                metadata: null,
-            },
+            settings: { allSettings: { appBehaviorConfig: { historyEnabled, historyMaxEntries } } as never, metadata: null },
             notifications: { queue: [] },
             run: {
-                status: 'idle' as const, runId: null, currentGroupIndex: null,
-                totalGroups: null, currentGroupFamily: null, failedIndex: null,
-                partialOutput: null, errorCode: null, errorMessage: null,
+                status: 'idle' as const,
+                runId: null,
+                currentGroupIndex: null,
+                totalGroups: null,
+                currentGroupFamily: null,
+                failedIndex: null,
+                partialOutput: null,
+                errorCode: null,
+                errorMessage: null,
             },
         },
     });
@@ -132,51 +145,87 @@ describe('HistoryRail', () => {
     });
 
     it('renders "History" heading', async () => {
-        render(<Provider store={makeStore()}><HistoryRail /></Provider>);
+        render(
+            <Provider store={makeStore()}>
+                <HistoryRail />
+            </Provider>,
+        );
         await waitFor(() => expect(screen.getByText('History')).toBeInTheDocument());
     });
 
     it('renders max-entries badge', async () => {
-        render(<Provider store={makeStore({ historyMaxEntries: 50 })}><HistoryRail /></Provider>);
+        render(
+            <Provider store={makeStore({ historyMaxEntries: 50 })}>
+                <HistoryRail />
+            </Provider>,
+        );
         await waitFor(() => expect(screen.getByText(/50 max/i)).toBeInTheDocument());
     });
 
     it('shows "No runs yet" when entries list is empty', async () => {
-        render(<Provider store={makeStore({ entries: [] })}><HistoryRail /></Provider>);
+        render(
+            <Provider store={makeStore({ entries: [] })}>
+                <HistoryRail />
+            </Provider>,
+        );
         await waitFor(() => expect(screen.getByText(/no runs yet/i)).toBeInTheDocument());
     });
 
     it('shows "History is disabled" message when historyEnabled is false', async () => {
-        render(<Provider store={makeStore({ historyEnabled: false })}><HistoryRail /></Provider>);
+        render(
+            <Provider store={makeStore({ historyEnabled: false })}>
+                <HistoryRail />
+            </Provider>,
+        );
         await waitFor(() => expect(screen.getByText(/history is disabled/i)).toBeInTheDocument());
     });
 
     it('renders entry cards for each entry', async () => {
         const entries = [makeEntry({ id: 'e-1', title: 'Proofread' }), makeEntry({ id: 'e-2', title: 'Summarise' })];
-        render(<Provider store={makeStore({ entries })}><HistoryRail /></Provider>);
+        render(
+            <Provider store={makeStore({ entries })}>
+                <HistoryRail />
+            </Provider>,
+        );
         await waitFor(() => expect(screen.getByText('Proofread')).toBeInTheDocument());
         expect(screen.getByText('Summarise')).toBeInTheDocument();
     });
 
     it('Clear button is disabled when no entries', async () => {
-        render(<Provider store={makeStore({ entries: [] })}><HistoryRail /></Provider>);
+        render(
+            <Provider store={makeStore({ entries: [] })}>
+                <HistoryRail />
+            </Provider>,
+        );
         await waitFor(() => expect(screen.getByRole('button', { name: /clear all history/i })).toBeDisabled());
     });
 
     it('Clear button is enabled when entries exist', async () => {
-        render(<Provider store={makeStore({ entries: [makeEntry()] })}><HistoryRail /></Provider>);
+        render(
+            <Provider store={makeStore({ entries: [makeEntry()] })}>
+                <HistoryRail />
+            </Provider>,
+        );
         await waitFor(() => expect(screen.getByRole('button', { name: /clear all history/i })).toBeEnabled());
     });
 
     it('clicking Clear opens confirmation dialog', async () => {
-        render(<Provider store={makeStore({ entries: [makeEntry()] })}><HistoryRail /></Provider>);
+        render(
+            <Provider store={makeStore({ entries: [makeEntry()] })}>
+                <HistoryRail />
+            </Provider>,
+        );
         await userEvent.click(await screen.findByRole('button', { name: /clear all history/i }));
         expect(screen.getByRole('alertdialog')).toBeInTheDocument();
     });
 
     it('confirming Clear calls clearHistory adapter', async () => {
         (HistoryHandlerAdapter.clearHistory as jest.Mock).mockResolvedValue({ data: null, error: null });
-        render(<Provider store={makeStore({ entries: [makeEntry()] })}><HistoryRail /></Provider>);
+        render(
+            <Provider store={makeStore({ entries: [makeEntry()] })}>
+                <HistoryRail />
+            </Provider>,
+        );
         await userEvent.click(await screen.findByRole('button', { name: /clear all history/i }));
         await userEvent.click(screen.getByRole('button', { name: /clear all/i }));
         await waitFor(() => expect(HistoryHandlerAdapter.clearHistory).toHaveBeenCalledTimes(1));
@@ -185,7 +234,11 @@ describe('HistoryRail', () => {
     it('clicking Delete on an entry calls deleteHistoryEntry adapter', async () => {
         (HistoryHandlerAdapter.deleteHistoryEntry as jest.Mock).mockResolvedValue({ data: null, error: null });
         const entry = makeEntry({ id: 'e-del' });
-        render(<Provider store={makeStore({ entries: [entry] })}><HistoryRail /></Provider>);
+        render(
+            <Provider store={makeStore({ entries: [entry] })}>
+                <HistoryRail />
+            </Provider>,
+        );
         await userEvent.click(await screen.findByRole('button', { name: /delete entry proofread/i }));
         await waitFor(() => expect(HistoryHandlerAdapter.deleteHistoryEntry).toHaveBeenCalledWith('e-del'));
     });
@@ -193,7 +246,11 @@ describe('HistoryRail', () => {
     it('Restore sets editor input and output content', async () => {
         const entry = makeEntry({ inputText: 'hello', outputText: 'world' });
         const store = makeStore({ entries: [entry] });
-        render(<Provider store={store}><HistoryRail /></Provider>);
+        render(
+            <Provider store={store}>
+                <HistoryRail />
+            </Provider>,
+        );
         await userEvent.click(await screen.findByRole('button', { name: /restore entry proofread/i }));
         expect(store.getState().editor.inputContent).toBe('hello');
         expect(store.getState().editor.outputContent).toBe('world');
@@ -202,7 +259,11 @@ describe('HistoryRail', () => {
     it('Restore re-arms action when it exists in catalog', async () => {
         const entry = makeEntry({ kind: 'single', applied: [{ id: 'proofread', name: 'Proofread', category: 'Writing' }] });
         const store = makeStore({ entries: [entry], catalog: [MOCK_ACTION] });
-        render(<Provider store={store}><HistoryRail /></Provider>);
+        render(
+            <Provider store={store}>
+                <HistoryRail />
+            </Provider>,
+        );
         await userEvent.click(await screen.findByRole('button', { name: /restore entry proofread/i }));
         expect(store.getState().ui.armedActionId).toBe('proofread');
     });
@@ -210,7 +271,11 @@ describe('HistoryRail', () => {
     it('Restore shows drift warning when action is missing from catalog', async () => {
         const entry = makeEntry({ kind: 'single', applied: [{ id: 'missing-action', name: 'Old Action', category: 'Writing' }] });
         const store = makeStore({ entries: [entry], catalog: [] });
-        render(<Provider store={store}><HistoryRail /></Provider>);
+        render(
+            <Provider store={store}>
+                <HistoryRail />
+            </Provider>,
+        );
         await userEvent.click(await screen.findByRole('button', { name: /restore entry proofread/i }));
         const notifications = store.getState().notifications.queue;
         expect(notifications.length).toBeGreaterThan(0);
@@ -218,7 +283,11 @@ describe('HistoryRail', () => {
     });
 
     it('loads history on mount via listHistory adapter', async () => {
-        render(<Provider store={makeStore()}><HistoryRail /></Provider>);
+        render(
+            <Provider store={makeStore()}>
+                <HistoryRail />
+            </Provider>,
+        );
         await waitFor(() => expect(HistoryHandlerAdapter.listHistory).toHaveBeenCalledWith(100, 0));
     });
 });

@@ -10,7 +10,11 @@ export interface CardProps {
 
 export const Card: React.FC<CardProps> = ({ children, className, style }) => {
     const cls = [styles.card, className].filter(Boolean).join(' ');
-    return <div className={cls} style={style}>{children}</div>;
+    return (
+        <div className={cls} style={style}>
+            {children}
+        </div>
+    );
 };
 
 Card.displayName = 'Card';

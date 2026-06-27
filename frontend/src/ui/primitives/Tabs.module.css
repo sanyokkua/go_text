@@ -37,7 +37,9 @@
     border: none;
     cursor: pointer;
     user-select: none;
-    transition: color 100ms, background 100ms;
+    transition:
+        color 100ms,
+        background 100ms;
 }
 
 /* Horizontal trigger */
@@ -52,7 +54,9 @@
     border-bottom-color: var(--teal);
 }
 
-.root:not(.vertical) .trigger:hover:not([data-state='active']) { color: var(--ink); }
+.root:not(.vertical) .trigger:hover:not([data-state='active']) {
+    color: var(--ink);
+}
 
 /* Vertical trigger */
 .vertical .trigger {
@@ -67,16 +71,27 @@
     font-weight: 600;
 }
 
-:global(.dark) .vertical .trigger[data-state='active'] { color: var(--teal-light); }
+:global(.dark) .vertical .trigger[data-state='active'] {
+    color: var(--teal-light);
+}
 
-.vertical .trigger:hover:not([data-state='active']) { background: var(--surface-2); }
+.vertical .trigger:hover:not([data-state='active']) {
+    background: var(--surface-2);
+}
 
-.trigger:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.trigger:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
 
 .content {
     flex: 1;
     outline: none;
 }
 
-.root:not(.vertical) .content { padding-top: var(--space-3); }
-.vertical .content { padding-left: var(--space-3); }
+.root:not(.vertical) .content {
+    padding-top: var(--space-3);
+}
+.vertical .content {
+    padding-left: var(--space-3);
+}

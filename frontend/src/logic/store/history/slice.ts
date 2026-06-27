@@ -2,13 +2,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { clearHistory, deleteHistoryEntry, getHistoryEntry, listHistory } from './thunks';
 import { HistoryState } from './types';
 
-const initialState: HistoryState = {
-    entries: [],
-    selectedId: null,
-    loading: false,
-    hasMore: true,
-    total: 0,
-};
+const initialState: HistoryState = { entries: [], selectedId: null, loading: false, hasMore: true, total: 0 };
 
 const historySlice = createSlice({
     name: 'history',

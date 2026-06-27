@@ -1,14 +1,16 @@
 // Mock the adapter before any imports so module-level getLogger calls succeed.
 jest.mock('../../../adapter', () => ({
-    getLogger: jest.fn().mockReturnValue({
-        logDebug: jest.fn(),
-        logInfo: jest.fn(),
-        logError: jest.fn(),
-        logWarning: jest.fn(),
-        logTrace: jest.fn(),
-        logPrint: jest.fn(),
-        logFatal: jest.fn(),
-    }),
+    getLogger: jest
+        .fn()
+        .mockReturnValue({
+            logDebug: jest.fn(),
+            logInfo: jest.fn(),
+            logError: jest.fn(),
+            logWarning: jest.fn(),
+            logTrace: jest.fn(),
+            logPrint: jest.fn(),
+            logFatal: jest.fn(),
+        }),
     unwrap: jest.fn((res: { data?: unknown; error?: unknown }) => {
         if (res.error) throw res.error;
         return res.data;
@@ -18,27 +20,23 @@ jest.mock('../../../adapter', () => ({
     SettingsHandlerAdapter: {},
 }));
 
-import uiReducer, {
-    setLayout,
-    toggleSidebar,
-    setSidebarCollapsed,
-    toggleHistory,
-    setHistoryOpen,
-    setThemeMode,
-    setThemeEffective,
-    setCurrentView,
-    armAction,
-    setActiveActionsTab,
-} from '../slice';
+import type { RootState } from '../../../index';
 import { processPromptChain } from '../../run/thunks';
 import { testProviderInference } from '../../settings/thunks';
-import {
-    selectCurrentView,
-    selectArmedActionId,
-    selectActiveActionsTab,
-} from '../selectors';
+import { selectActiveActionsTab, selectArmedActionId, selectCurrentView } from '../selectors';
+import uiReducer, {
+    armAction,
+    setActiveActionsTab,
+    setCurrentView,
+    setHistoryOpen,
+    setLayout,
+    setSidebarCollapsed,
+    setThemeEffective,
+    setThemeMode,
+    toggleHistory,
+    toggleSidebar,
+} from '../slice';
 import type { UIState } from '../types';
-import type { RootState } from '../../../index';
 
 const initialState: UIState = {
     layout: 'side',
@@ -51,10 +49,7 @@ const initialState: UIState = {
     buildMode: false,
     editingStackId: null,
     activeSettingsTab: 0,
-    theme: {
-        mode: 'auto',
-        effective: 'light',
-    },
+    theme: { mode: 'auto', effective: 'light' },
 };
 
 describe('ui slice reducer', () => {
@@ -112,11 +107,7 @@ describe('ui slice reducer', () => {
     });
 
     it('processPromptChain.pending sets inferenceRunning to true', () => {
-        const action = {
-            type: processPromptChain.pending.type,
-            meta: { requestId: 'x', arg: {} },
-            payload: undefined,
-        };
+        const action = { type: processPromptChain.pending.type, meta: { requestId: 'x', arg: {} }, payload: undefined };
 
         const state = uiReducer(initialState, action);
 
@@ -125,10 +116,7 @@ describe('ui slice reducer', () => {
 
     it('processPromptChain.fulfilled sets inferenceRunning to false', () => {
         const runningState: UIState = { ...initialState, inferenceRunning: true };
-        const action = {
-            type: processPromptChain.fulfilled.type,
-            payload: { data: null, error: null },
-        };
+        const action = { type: processPromptChain.fulfilled.type, payload: { data: null, error: null } };
 
         const state = uiReducer(runningState, action);
 
@@ -137,11 +125,7 @@ describe('ui slice reducer', () => {
 
     it('processPromptChain.rejected sets inferenceRunning to false', () => {
         const runningState: UIState = { ...initialState, inferenceRunning: true };
-        const action = {
-            type: processPromptChain.rejected.type,
-            payload: 'error',
-            error: { message: 'Rejected' },
-        };
+        const action = { type: processPromptChain.rejected.type, payload: 'error', error: { message: 'Rejected' } };
 
         const state = uiReducer(runningState, action);
 
@@ -149,11 +133,7 @@ describe('ui slice reducer', () => {
     });
 
     it('testProviderInference.pending sets inferenceRunning to true', () => {
-        const action = {
-            type: testProviderInference.pending.type,
-            meta: { requestId: 'x', arg: 'provider-1' },
-            payload: undefined,
-        };
+        const action = { type: testProviderInference.pending.type, meta: { requestId: 'x', arg: 'provider-1' }, payload: undefined };
 
         const state = uiReducer(initialState, action);
 
@@ -162,10 +142,7 @@ describe('ui slice reducer', () => {
 
     it('testProviderInference.fulfilled sets inferenceRunning to false', () => {
         const runningState: UIState = { ...initialState, inferenceRunning: true };
-        const action = {
-            type: testProviderInference.fulfilled.type,
-            payload: { success: true },
-        };
+        const action = { type: testProviderInference.fulfilled.type, payload: { success: true } };
 
         const state = uiReducer(runningState, action);
 
@@ -174,11 +151,7 @@ describe('ui slice reducer', () => {
 
     it('testProviderInference.rejected sets inferenceRunning to false', () => {
         const runningState: UIState = { ...initialState, inferenceRunning: true };
-        const action = {
-            type: testProviderInference.rejected.type,
-            payload: 'inference error',
-            error: { message: 'Rejected' },
-        };
+        const action = { type: testProviderInference.rejected.type, payload: 'inference error', error: { message: 'Rejected' } };
 
         const state = uiReducer(runningState, action);
 
@@ -232,18 +205,14 @@ describe('ui slice reducer', () => {
 });
 
 describe('ui selectors', () => {
-    const mockRootState = {
-        ui: initialState,
-    } as unknown as RootState;
+    const mockRootState = { ui: initialState } as unknown as RootState;
 
     it('selectCurrentView returns the currentView from state', () => {
         expect(selectCurrentView(mockRootState)).toBe('main');
     });
 
     it('selectCurrentView returns updated currentView after state change', () => {
-        const changedState = {
-            ui: { ...initialState, currentView: 'settings' },
-        } as unknown as RootState;
+        const changedState = { ui: { ...initialState, currentView: 'settings' } } as unknown as RootState;
 
         expect(selectCurrentView(changedState)).toBe('settings');
     });
@@ -253,9 +222,7 @@ describe('ui selectors', () => {
     });
 
     it('selectArmedActionId returns the action id when armed', () => {
-        const armedState = {
-            ui: { ...initialState, armedActionId: 'action-id-456' },
-        } as unknown as RootState;
+        const armedState = { ui: { ...initialState, armedActionId: 'action-id-456' } } as unknown as RootState;
 
         expect(selectArmedActionId(armedState)).toBe('action-id-456');
     });
@@ -265,9 +232,7 @@ describe('ui selectors', () => {
     });
 
     it('selectActiveActionsTab returns the tab name when set', () => {
-        const tabState = {
-            ui: { ...initialState, activeActionsTab: 'tab-2' },
-        } as unknown as RootState;
+        const tabState = { ui: { ...initialState, activeActionsTab: 'tab-2' } } as unknown as RootState;
 
         expect(selectActiveActionsTab(tabState)).toBe('tab-2');
     });

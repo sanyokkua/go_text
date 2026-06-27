@@ -34,18 +34,15 @@ export const deleteHistoryEntry = createAsyncThunk<string, string, { rejectValue
     },
 );
 
-export const clearHistory = createAsyncThunk<void, void, { rejectValue: string }>(
-    'history/clearHistory',
-    async (_, { rejectWithValue }) => {
-        try {
-            unwrap(await HistoryHandlerAdapter.clearHistory());
-        } catch (error: unknown) {
-            const err = parseError(error);
-            logger.logError(`clearHistory failed: ${err.message}`);
-            return rejectWithValue(err.message);
-        }
-    },
-);
+export const clearHistory = createAsyncThunk<void, void, { rejectValue: string }>('history/clearHistory', async (_, { rejectWithValue }) => {
+    try {
+        unwrap(await HistoryHandlerAdapter.clearHistory());
+    } catch (error: unknown) {
+        const err = parseError(error);
+        logger.logError(`clearHistory failed: ${err.message}`);
+        return rejectWithValue(err.message);
+    }
+});
 
 export const getHistoryEntry = createAsyncThunk<apperr.HistoryEntry, string, { rejectValue: string }>(
     'history/getHistoryEntry',

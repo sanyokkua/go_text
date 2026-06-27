@@ -28,43 +28,32 @@ export interface FamilyGroup {
     groupMergeable: boolean;
 }
 
-export const selectBuilderFamilyGroups = createSelector(
-    [selectBuilderSteps, selectBuilderCatalog],
-    (steps, catalog): FamilyGroup[] => {
-        const metaById = new Map<string, apperr.ActionMeta>(catalog.map((m) => [m.id, m]));
-        const groups: FamilyGroup[] = [];
+export const selectBuilderFamilyGroups = createSelector([selectBuilderSteps, selectBuilderCatalog], (steps, catalog): FamilyGroup[] => {
+    const metaById = new Map<string, apperr.ActionMeta>(catalog.map((m) => [m.id, m]));
+    const groups: FamilyGroup[] = [];
 
-        steps.forEach((stepId, flatIndex) => {
-            const meta = metaById.get(stepId);
-            const last = groups.at(-1);
+    steps.forEach((stepId, flatIndex) => {
+        const meta = metaById.get(stepId);
+        const last = groups.at(-1);
 
-            const canExtend =
-                last !== undefined &&
-                meta !== undefined &&
-                last.family === meta.family &&
-                meta.mergeable &&
-                last.groupMergeable &&
-                !meta.terminal;
+        const canExtend =
+            last !== undefined && meta !== undefined && last.family === meta.family && meta.mergeable && last.groupMergeable && !meta.terminal;
 
-            if (canExtend) {
-                last?.steps.push({ id: stepId, name: meta?.name ?? stepId, family: meta?.family ?? '', flatIndex });
-            } else {
-                groups.push({
-                    family: meta?.family ?? 'unknown',
-                    steps: [{ id: stepId, name: meta?.name ?? stepId, family: meta?.family ?? '', flatIndex }],
-                    groupMergeable: meta?.mergeable === true && meta.terminal !== true,
-                });
-            }
-        });
+        if (canExtend) {
+            last?.steps.push({ id: stepId, name: meta?.name ?? stepId, family: meta?.family ?? '', flatIndex });
+        } else {
+            groups.push({
+                family: meta?.family ?? 'unknown',
+                steps: [{ id: stepId, name: meta?.name ?? stepId, family: meta?.family ?? '', flatIndex }],
+                groupMergeable: meta?.mergeable === true && meta.terminal !== true,
+            });
+        }
+    });
 
-        return groups;
-    },
-);
+    return groups;
+});
 
-export const selectBuilderInferenceCount = createSelector(
-    [selectBuilderFamilyGroups],
-    (groups) => groups.length,
-);
+export const selectBuilderInferenceCount = createSelector([selectBuilderFamilyGroups], (groups) => groups.length);
 
 export const selectBuilderIsValid = createSelector(
     [selectBuilderStepCount, selectBuilderInferenceCount],
@@ -85,9 +74,7 @@ export const selectBuilderActionAvailability = createSelector(
     (steps, catalog, groups, stepCount, inferenceCount): ActionAvailabilityMap => {
         const metaById = new Map<string, apperr.ActionMeta>(catalog.map((m) => [m.id, m]));
         const selectedIds = new Set(steps);
-        const usedExclusivity = new Set<string>(
-            steps.map((id) => metaById.get(id)?.exclusivityGroup ?? '').filter(Boolean),
-        );
+        const usedExclusivity = new Set<string>(steps.map((id) => metaById.get(id)?.exclusivityGroup ?? '').filter(Boolean));
         const hasPromptEng = steps.some((id) => metaById.get(id)?.family === 'prompteng');
         const hasNonPromptEng = steps.some((id) => {
             const family = metaById.get(id)?.family;
@@ -100,11 +87,7 @@ export const selectBuilderActionAvailability = createSelector(
         for (const meta of catalog) {
             const selected = selectedIds.has(meta.id);
 
-            const wouldExtend =
-                lastGroup?.family === meta.family &&
-                meta.mergeable &&
-                !!lastGroup?.groupMergeable &&
-                !meta.terminal;
+            const wouldExtend = lastGroup?.family === meta.family && meta.mergeable && !!lastGroup?.groupMergeable && !meta.terminal;
 
             const projectedInferences = wouldExtend ? inferenceCount : inferenceCount + 1;
             const addsNewInference = !wouldExtend;
@@ -122,12 +105,7 @@ export const selectBuilderActionAvailability = createSelector(
                 disabledReason = 'Prompt Engineering must be the sole step';
             }
 
-            result[meta.id] = {
-                selected,
-                disabled: !selected && disabledReason !== '',
-                disabledReason,
-                addsNewInference,
-            };
+            result[meta.id] = { selected, disabled: !selected && disabledReason !== '', disabledReason, addsNewInference };
         }
 
         return result;

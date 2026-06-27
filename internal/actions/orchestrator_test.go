@@ -379,7 +379,6 @@ func TestActionHandler_ProcessPromptChain_Success(t *testing.T) {
 		gate.New(),
 	)
 
-
 	actionID := oneFamilyStep(t, svc)
 	res := h.ProcessPromptChain(apperr.ChainRequest{
 		RunID:     "h-success",
@@ -403,7 +402,6 @@ func TestActionHandler_ProcessPromptChain_BusyWhenGateHeld(t *testing.T) {
 		&mockVerificationService{},
 		g,
 	)
-
 
 	acquired := g.TryAcquire()
 	require.True(t, acquired)
@@ -429,7 +427,6 @@ func TestActionHandler_ProcessPromptChain_GateReleasedAfterCompletion(t *testing
 	svc := newTestChainService(t, server.URL)
 	g := gate.New()
 	h := NewActionHandler(logger.NewDefaultLogger(), zerolog.Nop(), svc, &mockVerificationService{}, g)
-
 
 	actionID := oneFamilyStep(t, svc)
 	req := apperr.ChainRequest{RunID: "h-gate-release", InputText: "hello", Steps: []apperr.ChainStep{{ActionID: actionID}}}
@@ -469,7 +466,6 @@ func TestActionHandler_ProcessPromptChain_GateReleasedAfterStepFailure(t *testin
 	svc := newTestChainService(t, server.URL)
 	g := gate.New()
 	h := NewActionHandler(logger.NewDefaultLogger(), zerolog.Nop(), svc, &mockVerificationService{}, g)
-
 
 	res := h.ProcessPromptChain(apperr.ChainRequest{
 		RunID:     "h-fail",
@@ -511,7 +507,6 @@ func TestActionHandler_CancelChain_StopsAfterCurrentGroup(t *testing.T) {
 	svc2 := newTestChainService(t, slowServer.URL)
 	h2 := NewActionHandler(logger.NewDefaultLogger(), zerolog.Nop(), svc2, &mockVerificationService{}, g)
 
-
 	runID := "h-cancel"
 	resultCh := make(chan apperr.ChainResultEnv, 1)
 	go func() {
@@ -546,7 +541,6 @@ func TestActionHandler_CancelChain_UnknownIDIsNoOp(t *testing.T) {
 	svc := newTestChainService(t, "http://unused")
 	h := NewActionHandler(logger.NewDefaultLogger(), zerolog.Nop(), svc, &mockVerificationService{}, gate.New())
 
-
 	res := h.CancelChain("non-existent-run-id")
 	assert.Nil(t, res.Error)
 }
@@ -560,7 +554,6 @@ func TestActionHandler_RunAndTestInference_MutuallyExclusive(t *testing.T) {
 	defer g.Release()
 
 	h := NewActionHandler(logger.NewDefaultLogger(), zerolog.Nop(), svc, &mockVerificationService{}, g)
-
 
 	actionID := oneFamilyStep(t, svc)
 	res := h.ProcessPromptChain(apperr.ChainRequest{

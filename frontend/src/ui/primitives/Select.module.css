@@ -15,9 +15,17 @@
     white-space: nowrap;
 }
 
-.trigger:hover { background: var(--surface); }
-.trigger:focus-visible { outline: none; box-shadow: var(--focus-ring); }
-.trigger[data-disabled] { opacity: 0.45; cursor: not-allowed; }
+.trigger:hover {
+    background: var(--surface);
+}
+.trigger:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+.trigger[data-disabled] {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
 
 .accent {
     background: var(--teal-50);
@@ -25,7 +33,9 @@
     color: var(--teal-dark);
 }
 
-:global(.dark) .accent { color: var(--teal-light); }
+:global(.dark) .accent {
+    color: var(--teal-light);
+}
 
 .keyLabel {
     font-size: 10px;
@@ -35,7 +45,11 @@
     font-weight: 600;
 }
 
-.caret { font-size: 10px; color: var(--ink-3); margin-left: 2px; }
+.caret {
+    font-size: 10px;
+    color: var(--ink-3);
+    margin-left: 2px;
+}
 
 /* Portaled content */
 .content {
@@ -49,7 +63,9 @@
     z-index: var(--z-overlay);
 }
 
-.viewport { padding: var(--space-1); }
+.viewport {
+    padding: var(--space-1);
+}
 
 .item {
     display: flex;
@@ -63,12 +79,26 @@
     color: var(--ink);
 }
 
-.item[data-highlighted] { background: var(--surface-2); }
-.item[data-state='checked'] { background: var(--teal-50); color: var(--teal-dark); }
-:global(.dark) .item[data-state='checked'] { color: var(--teal-light); }
-.item[data-disabled] { opacity: 0.45; pointer-events: none; }
+.item[data-highlighted] {
+    background: var(--surface-2);
+}
+.item[data-state='checked'] {
+    background: var(--teal-50);
+    color: var(--teal-dark);
+}
+:global(.dark) .item[data-state='checked'] {
+    color: var(--teal-light);
+}
+.item[data-disabled] {
+    opacity: 0.45;
+    pointer-events: none;
+}
 
-.indicator { font-size: 8px; color: var(--teal); flex-shrink: 0; }
+.indicator {
+    font-size: 8px;
+    color: var(--teal);
+    flex-shrink: 0;
+}
 
 .tag {
     margin-left: auto;
@@ -76,7 +106,11 @@
     color: var(--ink-3);
 }
 
-.separator { height: 1px; background: var(--line); margin: var(--space-1) 0; }
+.separator {
+    height: 1px;
+    background: var(--line);
+    margin: var(--space-1) 0;
+}
 
 .scrollBtn {
     display: flex;

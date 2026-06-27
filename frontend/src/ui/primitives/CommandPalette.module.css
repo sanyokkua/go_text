@@ -7,7 +7,9 @@
     animation: fadeIn 150ms ease-out;
 }
 
-:global(.dark) .overlay { background: rgba(0, 0, 0, 0.55); }
+:global(.dark) .overlay {
+    background: rgba(0, 0, 0, 0.55);
+}
 
 .content {
     position: fixed;
@@ -25,7 +27,10 @@
     animation: slideDown 150ms ease-out;
 }
 
-.command { display: flex; flex-direction: column; }
+.command {
+    display: flex;
+    flex-direction: column;
+}
 
 .searchRow {
     display: flex;
@@ -35,7 +40,11 @@
     border-bottom: 1px solid var(--line);
 }
 
-.searchIcon { font-size: 16px; color: var(--ink-3); flex-shrink: 0; }
+.searchIcon {
+    font-size: 16px;
+    color: var(--ink-3);
+    flex-shrink: 0;
+}
 
 .input {
     flex: 1;
@@ -47,7 +56,9 @@
     padding: 14px 0;
 }
 
-.input::placeholder { color: var(--ink-3); }
+.input::placeholder {
+    color: var(--ink-3);
+}
 
 .escBadge {
     font-size: 10px;
@@ -98,7 +109,9 @@
     color: var(--teal-light);
 }
 
-.itemLabel { flex: 1; }
+.itemLabel {
+    flex: 1;
+}
 
 .enterHint {
     font-size: 11px;
@@ -107,7 +120,9 @@
 }
 
 .item[data-selected='true'] .enterHint,
-.item[aria-selected='true'] .enterHint { opacity: 1; }
+.item[aria-selected='true'] .enterHint {
+    opacity: 1;
+}
 
 .empty {
     padding: 20px;
@@ -126,15 +141,28 @@
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
 @keyframes slideDown {
-    from { opacity: 0; transform: translateX(-50%) translateY(-8px); }
-    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .overlay, .content { animation: none; }
+    .overlay,
+    .content {
+        animation: none;
+    }
 }

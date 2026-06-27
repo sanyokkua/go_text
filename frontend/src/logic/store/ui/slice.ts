@@ -17,10 +17,7 @@ const initialState: UIState = {
     activeSettingsTab: 0,
     buildMode: false,
     editingStackId: null,
-    theme: {
-        mode: 'auto',
-        effective: 'light',
-    },
+    theme: { mode: 'auto', effective: 'light' },
 };
 
 const uiSlice = createSlice({
@@ -98,11 +95,20 @@ const uiSlice = createSlice({
 });
 
 export const {
-    setLayout, toggleSidebar, setSidebarCollapsed,
-    toggleHistory, setHistoryOpen,
-    setThemeMode, setThemeEffective,
-    setCurrentView, armAction, setActiveActionsTab, setActiveSettingsTab,
-    enterBuildMode, exitBuildMode, setEditingStackId,
+    setLayout,
+    toggleSidebar,
+    setSidebarCollapsed,
+    toggleHistory,
+    setHistoryOpen,
+    setThemeMode,
+    setThemeEffective,
+    setCurrentView,
+    armAction,
+    setActiveActionsTab,
+    setActiveSettingsTab,
+    enterBuildMode,
+    exitBuildMode,
+    setEditingStackId,
 } = uiSlice.actions;
 
 // Navigation helpers — each navigates to the named view

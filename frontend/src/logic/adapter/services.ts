@@ -1,4 +1,23 @@
 import {
+    CancelAllRuns,
+    CancelChain,
+    GetActionCatalog,
+    GetModels,
+    PreviewPrompt,
+    ProcessPromptChain,
+    TestConnection,
+    TestInference,
+    TestModels,
+} from '../../../wailsjs/go/actions/ActionHandler';
+import {
+    LogError as AppLogError,
+    BrowserOpenURL,
+    ClipboardGetText,
+    ClipboardSetText,
+} from '../../../wailsjs/go/application/ApplicationContextHolder';
+import { ClearHistory, DeleteHistoryEntry, GetHistoryEntry, ListHistory } from '../../../wailsjs/go/history/HistoryHandler';
+import { apperr } from '../../../wailsjs/go/models';
+import {
     AddLanguage,
     CreateProviderConfig,
     DeleteProviderConfig,
@@ -20,42 +39,11 @@ import {
     UpdateModelConfig,
     UpdateProviderConfig,
 } from '../../../wailsjs/go/settings/SettingsHandler';
-import {
-    CancelAllRuns,
-    CancelChain,
-    GetActionCatalog,
-    GetModels,
-    PreviewPrompt,
-    ProcessPromptChain,
-    TestConnection,
-    TestInference,
-    TestModels,
-} from '../../../wailsjs/go/actions/ActionHandler';
-import {
-    ClearHistory,
-    DeleteHistoryEntry,
-    GetHistoryEntry,
-    ListHistory,
-} from '../../../wailsjs/go/history/HistoryHandler';
-import {
-    CreateStack,
-    DeleteStack,
-    DuplicateStack,
-    GetStack,
-    ListStacks,
-    UpdateStack,
-} from '../../../wailsjs/go/stacks/StackHandler';
-import {
-    BrowserOpenURL,
-    ClipboardGetText,
-    ClipboardSetText,
-    LogError as AppLogError,
-} from '../../../wailsjs/go/application/ApplicationContextHolder';
-import { apperr } from '../../../wailsjs/go/models';
+import { CreateStack, DeleteStack, DuplicateStack, GetStack, ListStacks, UpdateStack } from '../../../wailsjs/go/stacks/StackHandler';
 import { LogDebug, LogError, LogFatal, LogInfo, LogPrint, LogTrace, LogWarning } from '../../../wailsjs/runtime';
 import { IActionHandler, IAppHandler, IClipboardService, IHistoryHandler, ILoggerService, ISettingsHandler, IStackHandler } from './interfaces';
-import { AppBehaviorConfig, InferenceBaseConfig, ModelConfig, ProviderConfig } from './models';
 import { toWireBehavior, toWireProvider } from './mappers';
+import { AppBehaviorConfig, InferenceBaseConfig, ModelConfig, ProviderConfig } from './models';
 
 function formatLogMessage(message: string, serviceName?: string): string {
     if (serviceName && serviceName.trim().length > 0) {
@@ -79,13 +67,27 @@ export class LoggerService implements ILoggerService {
         return new LoggerService(serviceName);
     }
 
-    logDebug(message: string): void { logMessage(message, LogDebug, this.loggerServiceName); }
-    logError(message: string): void { logMessage(message, LogError, this.loggerServiceName); }
-    logFatal(message: string): void { logMessage(message, LogFatal, this.loggerServiceName); }
-    logInfo(message: string): void { logMessage(message, LogInfo, this.loggerServiceName); }
-    logPrint(message: string): void { logMessage(message, LogPrint, this.loggerServiceName); }
-    logTrace(message: string): void { logMessage(message, LogTrace, this.loggerServiceName); }
-    logWarning(message: string): void { logMessage(message, LogWarning, this.loggerServiceName); }
+    logDebug(message: string): void {
+        logMessage(message, LogDebug, this.loggerServiceName);
+    }
+    logError(message: string): void {
+        logMessage(message, LogError, this.loggerServiceName);
+    }
+    logFatal(message: string): void {
+        logMessage(message, LogFatal, this.loggerServiceName);
+    }
+    logInfo(message: string): void {
+        logMessage(message, LogInfo, this.loggerServiceName);
+    }
+    logPrint(message: string): void {
+        logMessage(message, LogPrint, this.loggerServiceName);
+    }
+    logTrace(message: string): void {
+        logMessage(message, LogTrace, this.loggerServiceName);
+    }
+    logWarning(message: string): void {
+        logMessage(message, LogWarning, this.loggerServiceName);
+    }
 }
 
 export class AppHandler implements IAppHandler {

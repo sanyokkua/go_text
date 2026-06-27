@@ -46,17 +46,7 @@ const ProviderList: React.FC<ProviderListProps> = ({ providers, currentId, selec
             </button>
         </div>
 
-        <ul
-            role="listbox"
-            aria-label="Providers"
-            style={{
-                flex: 1,
-                overflowY: 'auto',
-                margin: 0,
-                padding: 0,
-                listStyle: 'none',
-            }}
-        >
+        <ul role="listbox" aria-label="Providers" style={{ flex: 1, overflowY: 'auto', margin: 0, padding: 0, listStyle: 'none' }}>
             {providers.length === 0 ? (
                 <li
                     style={{

@@ -1,10 +1,10 @@
 import React from 'react';
-import { selectCurrentProvider, selectCurrentTask, selectModelConfig, useAppSelector } from '../../../logic/store';
+import { selectCurrentProvider, selectInferenceRunning, selectModelConfig, useAppSelector } from '../../../logic/store';
 
 const StatusBar: React.FC = () => {
     const provider = useAppSelector(selectCurrentProvider)?.providerName || 'N/A';
     const model = useAppSelector(selectModelConfig)?.name || 'N/A';
-    const task = useAppSelector(selectCurrentTask);
+    const running = useAppSelector(selectInferenceRunning);
 
     return (
         <div
@@ -23,7 +23,7 @@ const StatusBar: React.FC = () => {
         >
             <span>Provider: {provider}</span>
             <span>Model: {model}</span>
-            <span>Task: {task}</span>
+            <span>Status: {running ? 'Running…' : 'Idle'}</span>
         </div>
     );
 };

@@ -34,11 +34,7 @@ const langRow: React.CSSProperties = {
     borderBottom: '1px solid var(--line)',
 };
 
-const langName: React.CSSProperties = {
-    flex: 1,
-    fontSize: '0.875rem',
-    color: 'var(--ink-1)',
-};
+const langName: React.CSSProperties = { flex: 1, fontSize: '0.875rem', color: 'var(--ink-1)' };
 
 const triggerButton: React.CSSProperties = {
     background: 'none',
@@ -99,9 +95,7 @@ const LanguageConfigTab: React.FC<Props> = ({ settings }) => {
 
             <div style={{ border: '1px solid var(--line)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
                 {languages.length === 0 && (
-                    <p style={{ padding: 'var(--space-4)', color: 'var(--ink-3)', fontSize: '0.875rem', margin: 0 }}>
-                        No languages configured.
-                    </p>
+                    <p style={{ padding: 'var(--space-4)', color: 'var(--ink-3)', fontSize: '0.875rem', margin: 0 }}>No languages configured.</p>
                 )}
                 {languages.map((lang) => (
                     <div key={lang} style={langRow}>
@@ -126,11 +120,7 @@ const LanguageConfigTab: React.FC<Props> = ({ settings }) => {
                                     disabled: lang === defaultOutputLanguage,
                                 },
                                 { type: 'separator' },
-                                {
-                                    label: 'Remove',
-                                    variant: 'danger',
-                                    onClick: () => dispatch(removeLanguage(lang)),
-                                },
+                                { label: 'Remove', variant: 'danger', onClick: () => dispatch(removeLanguage(lang)) },
                             ]}
                         />
                     </div>

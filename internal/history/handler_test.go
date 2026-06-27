@@ -19,12 +19,14 @@ type mockHistoryService struct {
 	clrErr  error
 }
 
-func (m *mockHistoryService) Record(_ apperr.HistoryEntry)                   {}
-func (m *mockHistoryService) List(l, o int64) ([]apperr.HistoryEntry, error)  { return m.listRet, m.listErr }
-func (m *mockHistoryService) Get(id string) (*apperr.HistoryEntry, error)     { return m.getRet, m.getErr }
-func (m *mockHistoryService) Delete(id string) error                          { return m.delErr }
-func (m *mockHistoryService) Clear() error                                    { return m.clrErr }
-func (m *mockHistoryService) Count() (int64, error)                           { return 0, nil }
+func (m *mockHistoryService) Record(_ apperr.HistoryEntry) {}
+func (m *mockHistoryService) List(l, o int64) ([]apperr.HistoryEntry, error) {
+	return m.listRet, m.listErr
+}
+func (m *mockHistoryService) Get(id string) (*apperr.HistoryEntry, error) { return m.getRet, m.getErr }
+func (m *mockHistoryService) Delete(id string) error                      { return m.delErr }
+func (m *mockHistoryService) Clear() error                                { return m.clrErr }
+func (m *mockHistoryService) Count() (int64, error)                       { return 0, nil }
 
 func newTestHandler(svc HistoryServiceAPI) *HistoryHandler {
 	return NewHistoryHandler(&fakeLogger{}, zlog.Logger, svc)

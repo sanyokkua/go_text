@@ -1,15 +1,17 @@
 // Mock the adapter before any imports so module-level calls to getLogger and
 // the Wails bridge (ActionHandlerAdapter.previewPrompt) don't reach native code.
 jest.mock('../../../../logic/adapter', () => ({
-    getLogger: jest.fn().mockReturnValue({
-        logDebug: jest.fn(),
-        logInfo: jest.fn(),
-        logError: jest.fn(),
-        logWarning: jest.fn(),
-        logTrace: jest.fn(),
-        logPrint: jest.fn(),
-        logFatal: jest.fn(),
-    }),
+    getLogger: jest
+        .fn()
+        .mockReturnValue({
+            logDebug: jest.fn(),
+            logInfo: jest.fn(),
+            logError: jest.fn(),
+            logWarning: jest.fn(),
+            logTrace: jest.fn(),
+            logPrint: jest.fn(),
+            logFatal: jest.fn(),
+        }),
     unwrap: jest.fn((res: { data?: unknown; error?: unknown }) => {
         if (res.error) throw res.error;
         return res.data;
@@ -20,11 +22,11 @@ jest.mock('../../../../logic/adapter', () => ({
     StackHandler: {},
 }));
 
+import { configureStore } from '@reduxjs/toolkit';
+import '@testing-library/jest-dom';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import '@testing-library/jest-dom';
 import { Provider } from 'react-redux';
-import { configureStore } from '@reduxjs/toolkit';
 import aboutReducer from '../../../../logic/store/about/slice';
 import actionsReducer from '../../../../logic/store/actions/slice';
 import CatalogList from './CatalogList';

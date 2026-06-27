@@ -1,5 +1,5 @@
-import { applyTheme, initTheme, resolveEffectiveTheme, THEME_STORAGE_KEY, watchSystemTheme } from '../init';
 import type { ThemeEffective } from '../../store/theme/types';
+import { applyTheme, initTheme, resolveEffectiveTheme, THEME_STORAGE_KEY, watchSystemTheme } from '../init';
 
 // ── matchMedia mock helpers ──────────────────────────────────────────────────
 
@@ -33,10 +33,7 @@ function createMQMock(isDark: boolean): MockMQ {
 
 function setMQMock(isDark: boolean): MockMQ {
     const mq = createMQMock(isDark);
-    Object.defineProperty(window, 'matchMedia', {
-        writable: true,
-        value: jest.fn(() => mq),
-    });
+    Object.defineProperty(window, 'matchMedia', { writable: true, value: jest.fn(() => mq) });
     return mq;
 }
 

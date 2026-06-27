@@ -1,11 +1,9 @@
 // frontend/src/ui/primitives/Select.tsx
-import React from 'react';
 import { Select as RadixSelect } from 'radix-ui';
+import React from 'react';
 import styles from './Select.module.css';
 
-export type SelectItem =
-    | { type?: 'item'; value: string; label: string; tag?: string; disabled?: boolean }
-    | { type: 'separator' };
+export type SelectItem = { type?: 'item'; value: string; label: string; tag?: string; disabled?: boolean } | { type: 'separator' };
 
 export interface SelectProps {
     value: string;
@@ -19,10 +17,7 @@ export interface SelectProps {
 
 export const Select: React.FC<SelectProps> = ({ value, onValueChange, items, placeholder, keyLabel, accent, disabled }) => (
     <RadixSelect.Root value={value} onValueChange={onValueChange} disabled={disabled ?? false}>
-        <RadixSelect.Trigger
-            className={`${styles.trigger} ${accent ? styles.accent : ''}`}
-            aria-label={keyLabel ?? placeholder ?? 'Select'}
-        >
+        <RadixSelect.Trigger className={`${styles.trigger} ${accent ? styles.accent : ''}`} aria-label={keyLabel ?? placeholder ?? 'Select'}>
             {keyLabel && <span className={styles.keyLabel}>{keyLabel}</span>}
             <RadixSelect.Value placeholder={placeholder} />
             <RadixSelect.Icon className={styles.caret}>▾</RadixSelect.Icon>

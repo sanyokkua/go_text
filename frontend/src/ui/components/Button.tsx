@@ -6,13 +6,13 @@ type ButtonVariant = 'primary' | 'default' | 'ghost' | 'danger';
 type ButtonSize = 'default' | 'sm';
 
 export interface ButtonProps {
-    variant?: ButtonVariant;
-    size?: ButtonSize;
-    disabled?: boolean;
-    type?: 'button' | 'submit' | 'reset';
-    onClick?: () => void;
-    children: React.ReactNode;
-    className?: string;
+    'variant'?: ButtonVariant;
+    'size'?: ButtonSize;
+    'disabled'?: boolean;
+    'type'?: 'button' | 'submit' | 'reset';
+    'onClick'?: () => void;
+    'children': React.ReactNode;
+    'className'?: string;
     'aria-label'?: string;
 }
 

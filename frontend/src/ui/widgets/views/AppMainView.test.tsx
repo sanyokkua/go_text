@@ -20,21 +20,21 @@ jest.mock('./MainContent', () => {
     return { __esModule: true, default: MockMainContent };
 });
 
+import { configureStore } from '@reduxjs/toolkit';
+import '@testing-library/jest-dom';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import '@testing-library/jest-dom';
 import { Provider } from 'react-redux';
-import { configureStore } from '@reduxjs/toolkit';
-import uiReducer from '../../../logic/store/ui/slice';
 import aboutReducer from '../../../logic/store/about/slice';
 import actionsReducer from '../../../logic/store/actions/slice';
-import stacksBuilderReducer from '../../../logic/store/stacks/builder/slice';
-import stacksSavedReducer from '../../../logic/store/stacks/saved/slice';
-import settingsReducer from '../../../logic/store/settings/slice';
 import editorReducer from '../../../logic/store/editor/slice';
-import runReducer from '../../../logic/store/run/slice';
 import historyReducer from '../../../logic/store/history/slice';
 import notificationsReducer from '../../../logic/store/notifications/slice';
+import runReducer from '../../../logic/store/run/slice';
+import settingsReducer from '../../../logic/store/settings/slice';
+import stacksBuilderReducer from '../../../logic/store/stacks/builder/slice';
+import stacksSavedReducer from '../../../logic/store/stacks/saved/slice';
+import uiReducer from '../../../logic/store/ui/slice';
 import AppMainView from './AppMainView';
 
 const MOCK_SUMMARISE_ACTION = {
@@ -66,14 +66,25 @@ jest.mock('../../../logic/adapter', () => ({
     }),
     ActionHandlerAdapter: {
         processPromptChain: jest.fn().mockResolvedValue({ data: { steps: [], finalText: '' }, error: undefined }),
-        getActionCatalog: jest.fn().mockResolvedValue({
-            data: [{
-                id: 'act-1', name: 'Summarise', category: 'Writing',
-                family: 'single', directive: '', orderRank: 0,
-                exclusivityGroup: '', mergeable: false, terminal: true, requires: [],
-            }],
-            error: undefined,
-        }),
+        getActionCatalog: jest
+            .fn()
+            .mockResolvedValue({
+                data: [
+                    {
+                        id: 'act-1',
+                        name: 'Summarise',
+                        category: 'Writing',
+                        family: 'single',
+                        directive: '',
+                        orderRank: 0,
+                        exclusivityGroup: '',
+                        mergeable: false,
+                        terminal: true,
+                        requires: [],
+                    },
+                ],
+                error: undefined,
+            }),
         cancelChain: jest.fn().mockResolvedValue({ data: undefined, error: undefined }),
         cancelAllRuns: jest.fn().mockResolvedValue(undefined),
     },
@@ -81,29 +92,16 @@ jest.mock('../../../logic/adapter', () => ({
         getAppSettingsMetadata: jest.fn().mockResolvedValue({ data: null, error: undefined }),
         getSettings: jest.fn().mockResolvedValue({ data: null, error: undefined }),
     },
-    StackHandlerAdapter: {
-        listStacks: jest.fn().mockResolvedValue({ data: [], error: undefined }),
-    },
-    ClipboardServiceAdapter: {
-        getText: jest.fn().mockResolvedValue(''),
-        setText: jest.fn().mockResolvedValue(true),
-    },
-    HistoryHandlerAdapter: {
-        listHistory: jest.fn().mockResolvedValue({ data: { entries: [], hasMore: false }, error: undefined }),
-    },
+    StackHandlerAdapter: { listStacks: jest.fn().mockResolvedValue({ data: [], error: undefined }) },
+    ClipboardServiceAdapter: { getText: jest.fn().mockResolvedValue(''), setText: jest.fn().mockResolvedValue(true) },
+    HistoryHandlerAdapter: { listHistory: jest.fn().mockResolvedValue({ data: { entries: [], hasMore: false }, error: undefined }) },
     unwrap: jest.fn((r: { data?: unknown }) => r?.data),
     tryUnwrap: jest.fn((r: unknown) => r),
 }));
 
 jest.mock('../../../logic/store/run/thunks', () => {
     const actual = jest.requireActual('../../../logic/store/run/thunks');
-    return {
-        ...actual,
-        runSingleAction: jest.fn(() => ({
-            type: 'run/runSingleAction/pending',
-            unwrap: () => Promise.resolve(),
-        })),
-    };
+    return { ...actual, runSingleAction: jest.fn(() => ({ type: 'run/runSingleAction/pending', unwrap: () => Promise.resolve() })) };
 });
 
 function buildStore() {
@@ -121,19 +119,18 @@ function buildStore() {
             notifications: notificationsReducer,
         },
         preloadedState: {
-            actions: {
-                catalog: [MOCK_SUMMARISE_ACTION],
-                catalogStatus: 'success' as const,
-                availableModels: [],
-                modelsStatus: 'idle' as const,
-            },
+            actions: { catalog: [MOCK_SUMMARISE_ACTION], catalogStatus: 'success' as const, availableModels: [], modelsStatus: 'idle' as const },
         },
     });
 }
 
 describe('AppMainView ⌘K palette', () => {
     it('opens CommandPalette when ⌘K is pressed', async () => {
-        render(<Provider store={buildStore()}><AppMainView /></Provider>);
+        render(
+            <Provider store={buildStore()}>
+                <AppMainView />
+            </Provider>,
+        );
 
         await userEvent.keyboard('{Meta>}k{/Meta}');
 
@@ -141,7 +138,11 @@ describe('AppMainView ⌘K palette', () => {
     });
 
     it('opens CommandPalette when Ctrl+K is pressed', async () => {
-        render(<Provider store={buildStore()}><AppMainView /></Provider>);
+        render(
+            <Provider store={buildStore()}>
+                <AppMainView />
+            </Provider>,
+        );
 
         await userEvent.keyboard('{Control>}k{/Control}');
 
@@ -149,7 +150,11 @@ describe('AppMainView ⌘K palette', () => {
     });
 
     it('lists action names in the palette', async () => {
-        render(<Provider store={buildStore()}><AppMainView /></Provider>);
+        render(
+            <Provider store={buildStore()}>
+                <AppMainView />
+            </Provider>,
+        );
 
         await userEvent.keyboard('{Meta>}k{/Meta}');
 

@@ -1,8 +1,8 @@
 import React from 'react';
 import { selectLayout, useAppSelector } from '../../../../logic/store';
+import styles from './EditorArea.module.css';
 import InputPane from './InputPane';
 import OutputPane from './OutputPane';
-import styles from './EditorArea.module.css';
 
 const EditorArea: React.FC = () => {
     const layout = useAppSelector(selectLayout);

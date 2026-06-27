@@ -16,4 +16,8 @@
     user-select: none;
 }
 
-.ok { background: var(--ok-bg); color: var(--ok); border-color: transparent; }
+.ok {
+    background: var(--ok-bg);
+    color: var(--ok);
+    border-color: transparent;
+}

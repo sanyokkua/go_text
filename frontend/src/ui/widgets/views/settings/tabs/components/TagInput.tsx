@@ -43,12 +43,7 @@ const textInputStyle: React.CSSProperties = {
     padding: '2px',
 };
 
-export const TagInput: React.FC<TagInputProps> = ({
-    value,
-    onChange,
-    placeholder = 'Add model…',
-    disabled = false,
-}) => {
+export const TagInput: React.FC<TagInputProps> = ({ value, onChange, placeholder = 'Add model…', disabled = false }) => {
     const [inputText, setInputText] = useState('');
     const [focused, setFocused] = useState(false);
 
@@ -100,13 +95,7 @@ export const TagInput: React.FC<TagInputProps> = ({
     };
 
     return (
-        <div
-            style={containerStyle}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            role="group"
-            aria-label="Model names"
-        >
+        <div style={containerStyle} onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} role="group" aria-label="Model names">
             {value.map((tag) => (
                 <span key={tag} style={chipStyle}>
                     {tag}

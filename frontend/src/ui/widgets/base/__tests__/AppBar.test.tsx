@@ -1,15 +1,12 @@
 jest.mock('../../../../logic/adapter', () => ({
-    getLogger: () => ({
-        logDebug: jest.fn(), logInfo: jest.fn(), logError: jest.fn(), logWarning: jest.fn(),
-    }),
+    getLogger: () => ({ logDebug: jest.fn(), logInfo: jest.fn(), logError: jest.fn(), logWarning: jest.fn() }),
 }));
 
+import { configureStore } from '@reduxjs/toolkit';
+import '@testing-library/jest-dom';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import '@testing-library/jest-dom';
 import { Provider } from 'react-redux';
-import { configureStore } from '@reduxjs/toolkit';
-import { TooltipProvider } from '../../../primitives/Tooltip';
 import actionsReducer from '../../../../logic/store/actions/slice';
 import editorReducer from '../../../../logic/store/editor/slice';
 import historyReducer from '../../../../logic/store/history/slice';
@@ -17,13 +14,10 @@ import notificationsReducer from '../../../../logic/store/notifications/slice';
 import runReducer from '../../../../logic/store/run/slice';
 import settingsReducer from '../../../../logic/store/settings/slice';
 import uiReducer from '../../../../logic/store/ui/slice';
+import { TooltipProvider } from '../../../primitives/Tooltip';
 import AppBar from '../AppBar';
 
-function makeStore(opts: {
-    historyEnabled?: boolean;
-    historyOpen?: boolean;
-    currentView?: 'main' | 'settings' | 'info' | 'stacks';
-} = {}) {
+function makeStore(opts: { historyEnabled?: boolean; historyOpen?: boolean; currentView?: 'main' | 'settings' | 'info' | 'stacks' } = {}) {
     return configureStore({
         reducer: {
             ui: uiReducer,
@@ -49,9 +43,7 @@ function makeStore(opts: {
                 theme: { mode: 'auto' as const, effective: 'light' as const },
             },
             settings: {
-                allSettings: {
-                    appBehaviorConfig: { historyEnabled: opts.historyEnabled ?? true, historyMaxEntries: 100 },
-                } as never,
+                allSettings: { appBehaviorConfig: { historyEnabled: opts.historyEnabled ?? true, historyMaxEntries: 100 } } as never,
                 metadata: null,
             },
         },

@@ -1,25 +1,24 @@
+import { configureStore } from '@reduxjs/toolkit';
+import '@testing-library/jest-dom';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import '@testing-library/jest-dom';
 import { Provider } from 'react-redux';
-import { configureStore } from '@reduxjs/toolkit';
-import uiReducer from '../../../../../../logic/store/ui/slice';
-import settingsReducer from '../../../../../../logic/store/settings/slice';
 import notificationsReducer from '../../../../../../logic/store/notifications/slice';
+import settingsReducer from '../../../../../../logic/store/settings/slice';
+import uiReducer from '../../../../../../logic/store/ui/slice';
 import AppearanceTab from '../AppearanceTab';
 
 jest.mock('../../../../../../logic/adapter', () => ({
     getLogger: () => ({ logInfo: jest.fn(), logDebug: jest.fn(), logError: jest.fn(), logWarn: jest.fn() }),
-    unwrap: jest.fn((r) => { if (r?.error) throw new Error(r.error.message); return r?.data; }),
+    unwrap: jest.fn((r) => {
+        if (r?.error) throw new Error(r.error.message);
+        return r?.data;
+    }),
 }));
 
 function makeStore(uiOverride = {}) {
     return configureStore({
-        reducer: {
-            settings: settingsReducer,
-            ui: uiReducer,
-            notifications: notificationsReducer,
-        },
+        reducer: { settings: settingsReducer, ui: uiReducer, notifications: notificationsReducer },
         preloadedState: {
             ui: {
                 layout: 'side' as const,

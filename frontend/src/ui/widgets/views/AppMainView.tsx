@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { apperr } from '../../../../wailsjs/go/models';
 import { getLogger } from '../../../logic/adapter';
+import { useChainEvents } from '../../../logic/hooks/useChainEvents';
 import {
     selectActionCatalog,
     selectCurrentView,
@@ -10,16 +12,14 @@ import {
     useAppSelector,
 } from '../../../logic/store';
 import { loadActionCatalog } from '../../../logic/store/actions';
+import { enqueueNotification } from '../../../logic/store/notifications/slice';
 import { processPromptChain, runSingleAction } from '../../../logic/store/run';
 import { initializeSettingsState, selectAllSettings } from '../../../logic/store/settings';
-import { apperr } from '../../../../wailsjs/go/models';
 import { addStep } from '../../../logic/store/stacks/builder/slice';
-import { enqueueNotification } from '../../../logic/store/notifications/slice';
 import { enterBuildMode, navigateToMain, setActiveActionsTab } from '../../../logic/store/ui/slice';
-import { useChainEvents } from '../../../logic/hooks/useChainEvents';
 import { parseError } from '../../../logic/utils/error_utils';
-import { CommandPalette, CommandPaletteItem } from '../../primitives/CommandPalette';
 import FlexContainer from '../../components/FlexContainer';
+import { CommandPalette, CommandPaletteItem } from '../../primitives/CommandPalette';
 import { UI_HEIGHTS } from '../../styles/constants';
 import AppBar from '../base/AppBar';
 import StatusBar from '../base/StatusBar';

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { apperr } from '../../../../../wailsjs/go/models';
 import { getLogger } from '../../../../logic/adapter';
 import {
     selectBuilderIcon,
@@ -11,12 +12,11 @@ import {
     useAppDispatch,
     useAppSelector,
 } from '../../../../logic/store';
+import { enqueueNotification } from '../../../../logic/store/notifications/slice';
 import { clearBuilder, setBuilderIcon, setBuilderName } from '../../../../logic/store/stacks/builder/slice';
 import { createStack, listStacks, updateStack } from '../../../../logic/store/stacks/saved/thunks';
 import { exitBuildMode } from '../../../../logic/store/ui';
-import { enqueueNotification } from '../../../../logic/store/notifications/slice';
 import { parseError } from '../../../../logic/utils/error_utils';
-import { apperr } from '../../../../../wailsjs/go/models';
 import { Dialog } from '../../../../ui/primitives/Dialog';
 import styles from './SaveStackDialog.module.css';
 
@@ -54,9 +54,7 @@ const SaveStackDialog: React.FC<SaveStackDialogProps> = ({ open, onOpenChange })
         }
     }, [open, builderName, builderIcon, stepCount]);
 
-    const isDuplicate = savedStacks.some(
-        (s) => s.name.trim() === name.trim() && s.id !== editingStackId,
-    );
+    const isDuplicate = savedStacks.some((s) => s.name.trim() === name.trim() && s.id !== editingStackId);
     const canSave = name.trim().length > 0 && !isDuplicate && !saving;
 
     const handleIconSelect = (ic: string) => {
@@ -110,7 +108,9 @@ const SaveStackDialog: React.FC<SaveStackDialogProps> = ({ open, onOpenChange })
     return (
         <Dialog open={open} onOpenChange={onOpenChange} title="⊕ Save custom stack">
             <div className={styles.body}>
-                <label className={styles.fieldLabel} htmlFor="stack-name">Name</label>
+                <label className={styles.fieldLabel} htmlFor="stack-name">
+                    Name
+                </label>
                 <input
                     id="stack-name"
                     className={`${styles.nameInput} ${isDuplicate ? styles.nameInputError : ''}`}
@@ -121,9 +121,7 @@ const SaveStackDialog: React.FC<SaveStackDialogProps> = ({ open, onOpenChange })
                     autoFocus
                     autoComplete="off"
                 />
-                {isDuplicate && (
-                    <p className={styles.errorMsg}>Name already exists — choose a unique name.</p>
-                )}
+                {isDuplicate && <p className={styles.errorMsg}>Name already exists — choose a unique name.</p>}
 
                 <label className={styles.fieldLabel}>Icon</label>
                 <div className={styles.iconPicker}>
@@ -141,20 +139,16 @@ const SaveStackDialog: React.FC<SaveStackDialogProps> = ({ open, onOpenChange })
                     ))}
                 </div>
 
-                <p className={styles.summary}>▤ {stepLabel} · {inferenceLabel}</p>
+                <p className={styles.summary}>
+                    ▤ {stepLabel} · {inferenceLabel}
+                </p>
             </div>
 
             <div className={styles.footer}>
                 <button className={styles.cancelBtn} onClick={handleCancel} type="button" aria-label="Cancel">
                     Cancel
                 </button>
-                <button
-                    className={styles.saveBtn}
-                    onClick={handleSave}
-                    disabled={!canSave}
-                    type="button"
-                    aria-label="Save"
-                >
+                <button className={styles.saveBtn} onClick={handleSave} disabled={!canSave} type="button" aria-label="Save">
                     {saving ? 'Saving…' : 'Save'}
                 </button>
             </div>

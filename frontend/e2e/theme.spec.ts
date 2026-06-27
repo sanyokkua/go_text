@@ -7,9 +7,7 @@ test.describe('Theme: no-FOUC and live OS follow', () => {
         const response = await page.goto('/');
         expect(response?.ok()).toBe(true);
 
-        const hasDarkClass = await page.evaluate(
-            () => document.documentElement.classList.contains('dark')
-        );
+        const hasDarkClass = await page.evaluate(() => document.documentElement.classList.contains('dark'));
         expect(hasDarkClass, '.dark class not present after navigation with dark OS').toBe(true);
     });
 
@@ -19,9 +17,7 @@ test.describe('Theme: no-FOUC and live OS follow', () => {
         await page.goto('/');
         await page.waitForLoadState('networkidle');
 
-        const hasDarkClass = await page.evaluate(
-            () => document.documentElement.classList.contains('dark')
-        );
+        const hasDarkClass = await page.evaluate(() => document.documentElement.classList.contains('dark'));
         expect(hasDarkClass).toBe(false);
     });
 
@@ -31,18 +27,14 @@ test.describe('Theme: no-FOUC and live OS follow', () => {
         await page.goto('/');
         await page.waitForLoadState('networkidle');
 
-        const hasDarkInitially = await page.evaluate(
-            () => document.documentElement.classList.contains('dark')
-        );
+        const hasDarkInitially = await page.evaluate(() => document.documentElement.classList.contains('dark'));
         expect(hasDarkInitially, 'should start without .dark in light OS').toBe(false);
 
         await page.emulateMedia({ colorScheme: 'dark' });
 
         await page.waitForFunction(() => document.documentElement.classList.contains('dark'), { timeout: 3000 });
 
-        const hasDarkAfterFlip = await page.evaluate(
-            () => document.documentElement.classList.contains('dark')
-        );
+        const hasDarkAfterFlip = await page.evaluate(() => document.documentElement.classList.contains('dark'));
         expect(hasDarkAfterFlip, '.dark class not applied after OS flip to dark').toBe(true);
     });
 
@@ -52,9 +44,7 @@ test.describe('Theme: no-FOUC and live OS follow', () => {
         await page.goto('/');
         await page.waitForLoadState('networkidle');
 
-        const hasDarkClass = await page.evaluate(
-            () => document.documentElement.classList.contains('dark')
-        );
+        const hasDarkClass = await page.evaluate(() => document.documentElement.classList.contains('dark'));
         expect(hasDarkClass, 'stored dark preference should override light OS').toBe(true);
     });
 });

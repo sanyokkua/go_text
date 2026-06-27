@@ -54,10 +54,12 @@ const HistoryRail: React.FC = () => {
             if (existsInCatalog) {
                 dispatch(armAction(actionId));
             } else {
-                dispatch(enqueueNotification({
-                    message: `Action "${entry.applied[0].name}" is no longer available — content restored without re-arming.`,
-                    severity: 'warning',
-                }));
+                dispatch(
+                    enqueueNotification({
+                        message: `Action "${entry.applied[0].name}" is no longer available — content restored without re-arming.`,
+                        severity: 'warning',
+                    }),
+                );
             }
         }
     };
@@ -92,7 +94,9 @@ const HistoryRail: React.FC = () => {
         if (!historyEnabled) {
             return (
                 <p className={styles.empty}>
-                    History is disabled.<br />Enable it in Settings → Logging.
+                    History is disabled.
+                    <br />
+                    Enable it in Settings → Logging.
                 </p>
             );
         }
@@ -131,9 +135,7 @@ const HistoryRail: React.FC = () => {
 
             <div className={styles.listArea}>
                 <ScrollArea style={{ height: '100%' }}>
-                    <div aria-label="History entries">
-                        {renderList()}
-                    </div>
+                    <div aria-label="History entries">{renderList()}</div>
                 </ScrollArea>
             </div>
 

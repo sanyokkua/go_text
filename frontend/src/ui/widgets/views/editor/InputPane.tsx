@@ -1,9 +1,6 @@
 import React from 'react';
 import { ClipboardServiceAdapter, getLogger } from '../../../../logic/adapter';
-import {
-    selectInputContent, selectInferenceRunning,
-    useAppDispatch, useAppSelector,
-} from '../../../../logic/store';
+import { selectInferenceRunning, selectInputContent, useAppDispatch, useAppSelector } from '../../../../logic/store';
 import { clearInput, setInputContent } from '../../../../logic/store/editor';
 import { enqueueNotification } from '../../../../logic/store/notifications/slice';
 import { parseError } from '../../../../logic/utils/error_utils';
@@ -11,8 +8,7 @@ import styles from './InputPane.module.css';
 
 const logger = getLogger('InputPane');
 
-const wordCount = (text: string): number =>
-    text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+const wordCount = (text: string): number => (text.trim() === '' ? 0 : text.trim().split(/\s+/).length);
 
 const InputPane: React.FC = () => {
     const dispatch = useAppDispatch();
@@ -55,20 +51,10 @@ const InputPane: React.FC = () => {
                 />
             </div>
             <div className={styles.footer}>
-                <button
-                    className={styles.btn}
-                    onClick={handlePaste}
-                    disabled={inferenceRunning}
-                    aria-label="Paste from clipboard"
-                >
+                <button className={styles.btn} onClick={handlePaste} disabled={inferenceRunning} aria-label="Paste from clipboard">
                     Paste
                 </button>
-                <button
-                    className={styles.btn}
-                    onClick={handleClear}
-                    disabled={inferenceRunning || !content}
-                    aria-label="Clear input"
-                >
+                <button className={styles.btn} onClick={handleClear} disabled={inferenceRunning || !content} aria-label="Clear input">
                     Clear
                 </button>
             </div>

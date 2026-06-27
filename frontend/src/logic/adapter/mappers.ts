@@ -63,12 +63,7 @@ export function fromWireMetadata(v: apperr.AppSettingsMetadata): AppSettingsMeta
 }
 
 export function fromWireBehavior(v: apperr.AppBehaviorConfig): AppBehaviorConfig {
-    return {
-        enableTaskLogging: v.enableTaskLogging,
-        logDirectory: '',
-        historyEnabled: v.historyEnabled,
-        historyMaxEntries: v.historyMaxEntries,
-    };
+    return { enableTaskLogging: v.enableTaskLogging, logDirectory: '', historyEnabled: v.historyEnabled, historyMaxEntries: v.historyMaxEntries };
 }
 
 export function toWireBehavior(v: AppBehaviorConfig): apperr.AppBehaviorConfig {

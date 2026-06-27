@@ -143,12 +143,7 @@ function buildNotification(wire: apperr.WireError): Omit<Notification, 'id'> {
             };
         case apperr.ErrorCode.CodeInternal:
         default:
-            return {
-                severity: 'error',
-                surface: 'toast',
-                title: 'Something went wrong',
-                message: 'An unexpected error occurred. Please try again.',
-            };
+            return { severity: 'error', surface: 'toast', title: 'Something went wrong', message: 'An unexpected error occurred. Please try again.' };
     }
 }
 
@@ -169,7 +164,6 @@ const notificationsSlice = createSlice({
 
 export const { enqueueNotification, removeNotification } = notificationsSlice.actions;
 
-export const notifyError = (wire: apperr.WireError) =>
-    enqueueNotification(buildNotification(wire));
+export const notifyError = (wire: apperr.WireError) => enqueueNotification(buildNotification(wire));
 
 export default notificationsSlice.reducer;

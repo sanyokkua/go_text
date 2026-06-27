@@ -13,9 +13,7 @@ const models = [
 
 describe('Combobox', () => {
     it('has no accessibility violations when closed', async () => {
-        const { container } = render(
-            <Combobox items={models} value="llama3" onValueChange={() => {}} keyLabel="Model" />,
-        );
+        const { container } = render(<Combobox items={models} value="llama3" onValueChange={() => {}} keyLabel="Model" />);
         expect(await axe(container)).toHaveNoViolations();
     });
 
@@ -51,18 +49,14 @@ const actions = [
 
 describe('CommandPalette', () => {
     it('has no accessibility violations when open', async () => {
-        const { container } = render(
-            <CommandPalette open items={actions} onOpenChange={() => {}} onSelect={() => {}} />,
-        );
+        const { container } = render(<CommandPalette open items={actions} onOpenChange={() => {}} onSelect={() => {}} />);
         expect(await axe(container)).toHaveNoViolations();
     });
 
     it('calls onSelect and closes when an item is clicked', async () => {
         const onSelect = jest.fn();
         const onOpenChange = jest.fn();
-        render(
-            <CommandPalette open items={actions} onOpenChange={onOpenChange} onSelect={onSelect} />,
-        );
+        render(<CommandPalette open items={actions} onOpenChange={onOpenChange} onSelect={onSelect} />);
         await userEvent.click(screen.getByText('Rewrite text'));
         expect(onSelect).toHaveBeenCalledWith('rewrite');
         expect(onOpenChange).toHaveBeenCalledWith(false);

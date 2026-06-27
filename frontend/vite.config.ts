@@ -1,5 +1,5 @@
 import path from 'path';
-// @ts-ignore
+// @ts-expect-error — @vitejs/plugin-react has no default-export type declaration in this version
 import react from '@vitejs/plugin-react';
 import { defineConfig, type Plugin } from 'vite';
 

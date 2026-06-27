@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { apperr } from '../../../../../../../wailsjs/go/models';
 import { ActionHandlerAdapter } from '../../../../../../logic/adapter';
 import { ProviderConfig } from '../../../../../../logic/adapter/models';
 import { AlertDialog } from '../../../../../primitives/AlertDialog';
-import { Select } from '../../../../../primitives/Select';
 import type { SelectItem } from '../../../../../primitives/Select';
+import { Select } from '../../../../../primitives/Select';
 import { Switch } from '../../../../../primitives/Switch';
-import { apperr } from '../../../../../../../wailsjs/go/models';
 import KvEditor from './KvEditor';
 import TagInput from './TagInput';
 import VerificationPanel from './VerificationPanel';
@@ -42,23 +42,11 @@ interface ProviderFormProps {
     onCancel: () => void;
 }
 
-const LABEL_STYLE: React.CSSProperties = {
-    fontSize: '0.8rem',
-    color: 'var(--ink-2)',
-    fontWeight: 500,
-    marginBottom: '2px',
-    display: 'block',
-};
+const LABEL_STYLE: React.CSSProperties = { fontSize: '0.8rem', color: 'var(--ink-2)', fontWeight: 500, marginBottom: '2px', display: 'block' };
 
-const FIELD_STYLE: React.CSSProperties = {
-    marginBottom: 'var(--space-3)',
-};
+const FIELD_STYLE: React.CSSProperties = { marginBottom: 'var(--space-3)' };
 
-const ERROR_STYLE: React.CSSProperties = {
-    color: 'var(--err)',
-    fontSize: '0.75rem',
-    marginTop: '2px',
-};
+const ERROR_STYLE: React.CSSProperties = { color: 'var(--err)', fontSize: '0.75rem', marginTop: '2px' };
 
 const TEXT_INPUT_STYLE: React.CSSProperties = {
     width: '100%',
@@ -75,10 +63,14 @@ const TEXT_INPUT_STYLE: React.CSSProperties = {
 
 const prettifyAuthType = (raw: string): string => {
     switch (raw) {
-        case 'none': return 'None';
-        case 'bearer': return 'Bearer';
-        case 'api-key': return 'Api-Key';
-        default: return raw.charAt(0).toUpperCase() + raw.slice(1);
+        case 'none':
+            return 'None';
+        case 'bearer':
+            return 'Bearer';
+        case 'api-key':
+            return 'Api-Key';
+        default:
+            return raw.charAt(0).toUpperCase() + raw.slice(1);
     }
 };
 
@@ -154,7 +146,9 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                 setDiscoveredModels(result.data ?? []);
             }
         }
-        return () => { cancelled = true; };
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     // Auto-fetch models when the saved provider is loaded (only for existing providers).
@@ -171,7 +165,9 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
             }
         });
 
-        return () => { cancelled = true; };
+        return () => {
+            cancelled = true;
+        };
     }, [form.providerId]);
 
     const patch = <K extends keyof ProviderConfig>(key: K, value: ProviderConfig[K]) => {
@@ -188,14 +184,8 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
 
     // Build model select items, prepending the current selectedModel if it's not in the discovered list.
     const modelItems: SelectItem[] = useMemo(() => {
-        const items: SelectItem[] = discoveredModels.map((m) => ({
-            value: m.id,
-            label: m.label,
-        }));
-        if (
-            form.selectedModel !== '' &&
-            !discoveredModels.some((m) => m.id === form.selectedModel)
-        ) {
+        const items: SelectItem[] = discoveredModels.map((m) => ({ value: m.id, label: m.label }));
+        if (form.selectedModel !== '' && !discoveredModels.some((m) => m.id === form.selectedModel)) {
             items.unshift({ value: form.selectedModel, label: form.selectedModel });
         }
         return items;
@@ -232,18 +222,12 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
     }
 
     return (
-        <div
-            style={{
-                flex: 1,
-                overflowY: 'auto',
-                padding: 'var(--space-4)',
-                display: 'flex',
-                flexDirection: 'column',
-            }}
-        >
+        <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-4)', display: 'flex', flexDirection: 'column' }}>
             {/* Name */}
             <div style={FIELD_STYLE}>
-                <label htmlFor="pf-name" style={LABEL_STYLE}>Name</label>
+                <label htmlFor="pf-name" style={LABEL_STYLE}>
+                    Name
+                </label>
                 <input
                     id="pf-name"
                     type="text"
@@ -255,13 +239,17 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                     style={TEXT_INPUT_STYLE}
                 />
                 {errors.nameError !== '' && (
-                    <span id="pf-name-err" role="alert" style={ERROR_STYLE}>{errors.nameError}</span>
+                    <span id="pf-name-err" role="alert" style={ERROR_STYLE}>
+                        {errors.nameError}
+                    </span>
                 )}
             </div>
 
             {/* Kind */}
             <div style={FIELD_STYLE}>
-                <span id="pf-kind-label" style={LABEL_STYLE}>Kind</span>
+                <span id="pf-kind-label" style={LABEL_STYLE}>
+                    Kind
+                </span>
                 <Select
                     value={form.providerType}
                     onValueChange={(v) => patch('providerType', v)}
@@ -273,14 +261,7 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
             </div>
 
             {/* Auth segment */}
-            <fieldset
-                style={{
-                    ...FIELD_STYLE,
-                    border: 'none',
-                    margin: 0,
-                    padding: 0,
-                }}
-            >
+            <fieldset style={{ ...FIELD_STYLE, border: 'none', margin: 0, padding: 0 }}>
                 <legend style={{ ...LABEL_STYLE, float: 'left', width: '100%' }}>Auth</legend>
                 <div style={{ display: 'flex', gap: 'var(--space-1)', clear: 'both' }}>
                     {authTypes.map((authType) => {
@@ -295,9 +276,7 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                                     padding: '4px var(--space-3)',
                                     border: `1px solid ${isActive ? 'var(--teal)' : 'var(--line)'}`,
                                     borderRadius: 'var(--radius-sm)',
-                                    background: isActive
-                                        ? 'color-mix(in srgb, var(--teal) 15%, transparent)'
-                                        : 'transparent',
+                                    background: isActive ? 'color-mix(in srgb, var(--teal) 15%, transparent)' : 'transparent',
                                     color: isActive ? 'var(--teal)' : 'var(--ink)',
                                     cursor: 'pointer',
                                     fontSize: '0.8125rem',
@@ -329,14 +308,18 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                         style={TEXT_INPUT_STYLE}
                     />
                     {errors.envVarError !== '' && (
-                        <span id="pf-env-err" role="alert" style={ERROR_STYLE}>{errors.envVarError}</span>
+                        <span id="pf-env-err" role="alert" style={ERROR_STYLE}>
+                            {errors.envVarError}
+                        </span>
                     )}
                 </div>
             )}
 
             {/* Base URL */}
             <div style={FIELD_STYLE}>
-                <label htmlFor="pf-base-url" style={LABEL_STYLE}>Base URL</label>
+                <label htmlFor="pf-base-url" style={LABEL_STYLE}>
+                    Base URL
+                </label>
                 <input
                     id="pf-base-url"
                     type="text"
@@ -348,7 +331,9 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                     style={TEXT_INPUT_STYLE}
                 />
                 {errors.baseUrlError !== '' && (
-                    <span id="pf-url-err" role="alert" style={ERROR_STYLE}>{errors.baseUrlError}</span>
+                    <span id="pf-url-err" role="alert" style={ERROR_STYLE}>
+                        {errors.baseUrlError}
+                    </span>
                 )}
             </div>
 
@@ -385,7 +370,9 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
             {/* API version — azure only */}
             {form.providerType === 'azure' && (
                 <div style={FIELD_STYLE}>
-                    <label htmlFor="pf-api-version" style={LABEL_STYLE}>API version</label>
+                    <label htmlFor="pf-api-version" style={LABEL_STYLE}>
+                        API version
+                    </label>
                     <input
                         id="pf-api-version"
                         type="text"
@@ -399,7 +386,9 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
 
             {/* Model picker */}
             <div style={FIELD_STYLE}>
-                <span id="pf-model-label" style={LABEL_STYLE}>Model</span>
+                <span id="pf-model-label" style={LABEL_STYLE}>
+                    Model
+                </span>
                 <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
                     <div style={{ flex: 1 }}>
                         <Select
@@ -456,12 +445,7 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                         Use custom headers
                     </label>
                 </div>
-                {form.useCustomHeaders && (
-                    <KvEditor
-                        value={form.headers}
-                        onChange={(v) => patch('headers', v)}
-                    />
-                )}
+                {form.useCustomHeaders && <KvEditor value={form.headers} onChange={(v) => patch('headers', v)} />}
             </div>
 
             {/* Custom models */}
@@ -484,12 +468,7 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                         Use custom models
                     </label>
                 </div>
-                {form.useCustomModels && (
-                    <TagInput
-                        value={form.customModels}
-                        onChange={(v) => patch('customModels', v)}
-                    />
-                )}
+                {form.useCustomModels && <TagInput value={form.customModels} onChange={(v) => patch('customModels', v)} />}
             </div>
 
             {/* Verification panel — only for saved providers */}
@@ -500,15 +479,7 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
             )}
 
             {/* Action bar */}
-            <div
-                style={{
-                    display: 'flex',
-                    gap: 'var(--space-2)',
-                    marginTop: 'auto',
-                    paddingTop: 'var(--space-4)',
-                    flexWrap: 'wrap',
-                }}
-            >
+            <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'auto', paddingTop: 'var(--space-4)', flexWrap: 'wrap' }}>
                 {!isCurrent && provider !== null && (
                     <button
                         type="button"

@@ -1,12 +1,12 @@
+import { configureStore } from '@reduxjs/toolkit';
+import '@testing-library/jest-dom';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import '@testing-library/jest-dom';
 import { Provider } from 'react-redux';
-import { configureStore } from '@reduxjs/toolkit';
+import { Settings } from '../../../../../../logic/adapter/models';
+import notificationsReducer from '../../../../../../logic/store/notifications/slice';
 import settingsReducer from '../../../../../../logic/store/settings/slice';
 import uiReducer from '../../../../../../logic/store/ui/slice';
-import notificationsReducer from '../../../../../../logic/store/notifications/slice';
-import { Settings } from '../../../../../../logic/adapter/models';
 import InferenceConfigTab from '../InferenceConfigTab';
 
 jest.mock('../../../../../../logic/adapter', () => ({
@@ -15,17 +15,31 @@ jest.mock('../../../../../../logic/adapter', () => ({
         getSettings: jest.fn().mockResolvedValue({ data: null, error: null }),
     },
     getLogger: () => ({ logInfo: jest.fn(), logDebug: jest.fn(), logError: jest.fn(), logWarn: jest.fn() }),
-    unwrap: (r: { data: unknown; error: { message: string } | null }) => { if (r?.error) throw new Error(r.error.message); return r?.data; },
+    unwrap: (r: { data: unknown; error: { message: string } | null }) => {
+        if (r?.error) throw new Error(r.error.message);
+        return r?.data;
+    },
     fromWireSettings: (v: unknown) => v,
     fromWireInferenceBaseConfig: (v: unknown) => v,
 }));
 
 const MOCK_PROVIDER = {
-    providerId: 'p1', providerName: 'Test Provider', providerType: 'openai',
-    baseUrl: 'http://localhost:1234', modelsEndpoint: '', completionEndpoint: '',
-    authType: 'api-key', authToken: '', useAuthTokenFromEnv: true, envVarTokenName: 'TEST_KEY',
-    apiVersion: '', selectedModel: 'gpt-4o',
-    useCustomHeaders: false, headers: {}, useCustomModels: false, customModels: [],
+    providerId: 'p1',
+    providerName: 'Test Provider',
+    providerType: 'openai',
+    baseUrl: 'http://localhost:1234',
+    modelsEndpoint: '',
+    completionEndpoint: '',
+    authType: 'api-key',
+    authToken: '',
+    useAuthTokenFromEnv: true,
+    envVarTokenName: 'TEST_KEY',
+    apiVersion: '',
+    selectedModel: 'gpt-4o',
+    useCustomHeaders: false,
+    headers: {},
+    useCustomModels: false,
+    customModels: [],
 };
 
 const MOCK_SETTINGS: Settings = {
@@ -43,9 +57,16 @@ function makeStore() {
         preloadedState: {
             settings: { allSettings: MOCK_SETTINGS, metadata: null },
             ui: {
-                layout: 'side' as const, sidebarCollapsed: false, historyOpen: false,
-                inferenceRunning: false, currentView: 'settings' as const, armedActionId: null,
-                activeActionsTab: null, buildMode: false, editingStackId: null, activeSettingsTab: 0,
+                layout: 'side' as const,
+                sidebarCollapsed: false,
+                historyOpen: false,
+                inferenceRunning: false,
+                currentView: 'settings' as const,
+                armedActionId: null,
+                activeActionsTab: null,
+                buildMode: false,
+                editingStackId: null,
+                activeSettingsTab: 0,
                 theme: { mode: 'auto' as const, effective: 'light' as const },
             },
         },
@@ -54,27 +75,47 @@ function makeStore() {
 
 describe('InferenceConfigTab', () => {
     it('renders timeout field with current value 120', () => {
-        render(<Provider store={makeStore()}><InferenceConfigTab settings={MOCK_SETTINGS} /></Provider>);
+        render(
+            <Provider store={makeStore()}>
+                <InferenceConfigTab settings={MOCK_SETTINGS} />
+            </Provider>,
+        );
         expect(screen.getByRole('spinbutton', { name: /request timeout/i })).toHaveValue(120);
     });
 
     it('renders max retries field with value 3', () => {
-        render(<Provider store={makeStore()}><InferenceConfigTab settings={MOCK_SETTINGS} /></Provider>);
+        render(
+            <Provider store={makeStore()}>
+                <InferenceConfigTab settings={MOCK_SETTINGS} />
+            </Provider>,
+        );
         expect(screen.getByRole('spinbutton', { name: /maximum number of retries/i })).toHaveValue(3);
     });
 
     it('renders markdown output switch in checked state', () => {
-        render(<Provider store={makeStore()}><InferenceConfigTab settings={MOCK_SETTINGS} /></Provider>);
+        render(
+            <Provider store={makeStore()}>
+                <InferenceConfigTab settings={MOCK_SETTINGS} />
+            </Provider>,
+        );
         expect(screen.getByRole('switch', { name: /request markdown output/i })).toBeChecked();
     });
 
     it('Save button is initially disabled when form is not dirty', () => {
-        render(<Provider store={makeStore()}><InferenceConfigTab settings={MOCK_SETTINGS} /></Provider>);
+        render(
+            <Provider store={makeStore()}>
+                <InferenceConfigTab settings={MOCK_SETTINGS} />
+            </Provider>,
+        );
         expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled();
     });
 
     it('enables Save button when user changes the timeout value', async () => {
-        render(<Provider store={makeStore()}><InferenceConfigTab settings={MOCK_SETTINGS} /></Provider>);
+        render(
+            <Provider store={makeStore()}>
+                <InferenceConfigTab settings={MOCK_SETTINGS} />
+            </Provider>,
+        );
         const timeout = screen.getByRole('spinbutton', { name: /request timeout/i });
         await userEvent.clear(timeout);
         await userEvent.type(timeout, '60');
@@ -83,7 +124,11 @@ describe('InferenceConfigTab', () => {
 
     it('dispatches updateInferenceBaseConfig when Save is clicked after a change', async () => {
         const store = makeStore();
-        render(<Provider store={store}><InferenceConfigTab settings={MOCK_SETTINGS} /></Provider>);
+        render(
+            <Provider store={store}>
+                <InferenceConfigTab settings={MOCK_SETTINGS} />
+            </Provider>,
+        );
         const timeout = screen.getByRole('spinbutton', { name: /request timeout/i });
         await userEvent.clear(timeout);
         await userEvent.type(timeout, '60');

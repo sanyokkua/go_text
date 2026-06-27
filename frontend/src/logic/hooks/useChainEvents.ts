@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { EventsOff, EventsOn } from '../../../wailsjs/runtime';
-import { progressReceived } from '../store/run';
 import { useAppDispatch } from '../store';
+import { progressReceived } from '../store/run';
 import type { StepProgress } from '../store/run/types';
 
 const EVENT_CHAIN_PROGRESS = 'chain:progress';

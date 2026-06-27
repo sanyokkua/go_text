@@ -1,11 +1,6 @@
 // Mock the adapter before any imports so module-level getLogger calls in thunks succeed.
 jest.mock('../../../adapter', () => ({
-    getLogger: jest.fn().mockReturnValue({
-        logDebug: jest.fn(),
-        logInfo: jest.fn(),
-        logError: jest.fn(),
-        logWarning: jest.fn(),
-    }),
+    getLogger: jest.fn().mockReturnValue({ logDebug: jest.fn(), logInfo: jest.fn(), logError: jest.fn(), logWarning: jest.fn() }),
     unwrap: jest.fn((res: { data?: unknown; error?: unknown }) => {
         if (res.error) throw res.error;
         return res.data;
@@ -17,15 +12,9 @@ import historyReducer, { clearHistorySelection, selectHistoryEntry } from '../sl
 import { clearHistory, deleteHistoryEntry, listHistory } from '../thunks';
 import type { HistoryState } from '../types';
 
-const initialState: HistoryState = {
-    entries: [],
-    selectedId: null,
-    loading: false,
-    hasMore: true,
-    total: 0,
-};
+const initialState: HistoryState = { entries: [], selectedId: null, loading: false, hasMore: true, total: 0 };
 
-const makeEntry = (id: string) => ({ id, timestamp: '2026-01-01T00:00:00Z', prompt: 'p', result: 'r' } as unknown as HistoryState['entries'][0]);
+const makeEntry = (id: string) => ({ id, timestamp: '2026-01-01T00:00:00Z', prompt: 'p', result: 'r' }) as unknown as HistoryState['entries'][0];
 
 describe('history slice reducer', () => {
     it('returns initial state for unknown action', () => {
@@ -56,10 +45,7 @@ describe('history slice reducer', () => {
 
     it('listHistory.fulfilled populates entries, updates hasMore, and sets total', () => {
         const entries = [makeEntry('e-1'), makeEntry('e-2')];
-        const action = {
-            type: listHistory.fulfilled.type,
-            payload: { entries, hasMore: true },
-        };
+        const action = { type: listHistory.fulfilled.type, payload: { entries, hasMore: true } };
 
         const state = historyReducer(initialState, action);
 
@@ -81,10 +67,7 @@ describe('history slice reducer', () => {
     it('deleteHistoryEntry.fulfilled removes the entry with the matching id and updates total', () => {
         const entries = [makeEntry('e-1'), makeEntry('e-2'), makeEntry('e-3')];
         const stateWithEntries: HistoryState = { ...initialState, entries, total: 3 };
-        const action = {
-            type: deleteHistoryEntry.fulfilled.type,
-            payload: 'e-2',
-        };
+        const action = { type: deleteHistoryEntry.fulfilled.type, payload: 'e-2' };
 
         const state = historyReducer(stateWithEntries, action);
 
@@ -94,13 +77,7 @@ describe('history slice reducer', () => {
     });
 
     it('clearHistory.fulfilled resets entries, total, selectedId, and hasMore to false', () => {
-        const populatedState: HistoryState = {
-            entries: [makeEntry('e-1')],
-            selectedId: 'e-1',
-            loading: false,
-            hasMore: true,
-            total: 1,
-        };
+        const populatedState: HistoryState = { entries: [makeEntry('e-1')], selectedId: 'e-1', loading: false, hasMore: true, total: 1 };
         const action = { type: clearHistory.fulfilled.type };
 
         const state = historyReducer(populatedState, action);

@@ -23,7 +23,11 @@ describe('Button', () => {
 
     it('does not fire onClick when disabled', async () => {
         const onClick = jest.fn();
-        render(<Button disabled onClick={onClick}>Disabled</Button>);
+        render(
+            <Button disabled onClick={onClick}>
+                Disabled
+            </Button>,
+        );
         await userEvent.click(screen.getByRole('button', { name: 'Disabled' }));
         expect(onClick).not.toHaveBeenCalled();
     });
@@ -36,7 +40,11 @@ describe('IconButton', () => {
     });
 
     it('exposes aria-pressed=true when on', () => {
-        render(<IconButton aria-label="Sidebar" on>☰</IconButton>);
+        render(
+            <IconButton aria-label="Sidebar" on>
+                ☰
+            </IconButton>,
+        );
         expect(screen.getByRole('button', { name: 'Sidebar' })).toHaveAttribute('aria-pressed', 'true');
     });
 
@@ -79,7 +87,11 @@ describe('Card', () => {
     });
 
     it('renders children', () => {
-        render(<Card><p>Hello</p></Card>);
+        render(
+            <Card>
+                <p>Hello</p>
+            </Card>,
+        );
         expect(screen.getByText('Hello')).toBeInTheDocument();
     });
 });

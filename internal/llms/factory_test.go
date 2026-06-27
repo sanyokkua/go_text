@@ -41,9 +41,9 @@ func makeMockBuilder(kind ProviderKind) ProviderBuilder {
 func makeCfgWithKind(kind string) ResolvedProviderConfig {
 	return ResolvedProviderConfig{
 		Config: settings.ProviderConfig{
-			Kind:      kind,
-			BaseURL:   "http://localhost:11434",
-			Name:      "test-provider",
+			Kind:       kind,
+			BaseURL:    "http://localhost:11434",
+			Name:       "test-provider",
 			AuthScheme: "none",
 		},
 		Secret: "",
@@ -161,11 +161,11 @@ func TestProviderFactory_Register_CustomKind(t *testing.T) {
 	customKind := ProviderKind("custom_provider")
 	mockBuilder := makeMockBuilder(customKind)
 	customProfile := ProviderProfile{
-		Kind:               customKind,
-		DefaultBaseURL:     "http://custom:8000",
-		DefaultAuthScheme:  AuthNone,
+		Kind:                   customKind,
+		DefaultBaseURL:         "http://custom:8000",
+		DefaultAuthScheme:      AuthNone,
 		CompletionPathTemplate: "v1/chat/completions",
-		ModelsPathTemplate: "v1/models",
+		ModelsPathTemplate:     "v1/models",
 		Capabilities: ProviderCapabilities{
 			SupportsDiscovery: false,
 		},
@@ -200,12 +200,12 @@ func TestProviderFactory_Register_OverridesExisting(t *testing.T) {
 	factory := NewProviderFactory(nil)
 	mockBuilder := makeMockBuilder(KindOllama)
 	customProfile := ProviderProfile{
-		Kind:               KindOllama,
-		DefaultBaseURL:     "http://custom:8000",
-		DefaultAuthScheme:  AuthNone,
+		Kind:                   KindOllama,
+		DefaultBaseURL:         "http://custom:8000",
+		DefaultAuthScheme:      AuthNone,
 		CompletionPathTemplate: "v1/chat/completions",
-		ModelsPathTemplate: "v1/models",
-		Capabilities: ProviderCapabilities{},
+		ModelsPathTemplate:     "v1/models",
+		Capabilities:           ProviderCapabilities{},
 	}
 
 	// Act

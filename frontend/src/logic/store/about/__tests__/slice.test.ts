@@ -1,14 +1,16 @@
 // Mock the adapter before any imports so module-level getLogger calls succeed.
 jest.mock('../../../adapter', () => ({
-    getLogger: jest.fn().mockReturnValue({
-        logDebug: jest.fn(),
-        logInfo: jest.fn(),
-        logError: jest.fn(),
-        logWarning: jest.fn(),
-        logTrace: jest.fn(),
-        logPrint: jest.fn(),
-        logFatal: jest.fn(),
-    }),
+    getLogger: jest
+        .fn()
+        .mockReturnValue({
+            logDebug: jest.fn(),
+            logInfo: jest.fn(),
+            logError: jest.fn(),
+            logWarning: jest.fn(),
+            logTrace: jest.fn(),
+            logPrint: jest.fn(),
+            logFatal: jest.fn(),
+        }),
     unwrap: jest.fn((res: { data?: unknown; error?: unknown }) => {
         if (res.error) throw res.error;
         return res.data;
@@ -18,13 +20,7 @@ jest.mock('../../../adapter', () => ({
     SettingsHandlerAdapter: {},
 }));
 
-import aboutReducer, {
-    clearAboutSelection,
-    selectAboutItem,
-    setAboutSection,
-    setInspectorOpen,
-    togglePreviewInput,
-} from '../slice';
+import aboutReducer, { clearAboutSelection, selectAboutItem, setAboutSection, setInspectorOpen, togglePreviewInput } from '../slice';
 import { previewPromptForInspector } from '../thunks';
 import { AboutState } from '../types';
 
@@ -81,10 +77,7 @@ describe('aboutSlice', () => {
     });
 
     it('sets inspectorError on previewPromptForInspector rejected', () => {
-        const action = {
-            type: previewPromptForInspector.rejected.type,
-            payload: 'Preview failed',
-        };
+        const action = { type: previewPromptForInspector.rejected.type, payload: 'Preview failed' };
         const state = aboutReducer(initialState, action);
         expect(state.inspectorError).toBe('Preview failed');
         expect(state.inspectorLoading).toBe(false);
@@ -108,12 +101,7 @@ describe('aboutSlice', () => {
     });
 
     it('clears inspectorError when clearAboutSelection is dispatched', () => {
-        const stateWithError: AboutState = {
-            ...initialState,
-            selectedItemId: 'a1',
-            selectedItemType: 'action',
-            inspectorError: 'stale error',
-        };
+        const stateWithError: AboutState = { ...initialState, selectedItemId: 'a1', selectedItemType: 'action', inspectorError: 'stale error' };
         const state = aboutReducer(stateWithError, clearAboutSelection());
         expect(state.inspectorError).toBeNull();
         expect(state.selectedItemId).toBeNull();

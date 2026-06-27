@@ -2,24 +2,23 @@
 // We do NOT spread jest.requireActual here — it would pull in services.ts which imports
 // wailsjs ESM files that Jest cannot transform.
 jest.mock('../../adapter', () => ({
-    getLogger: jest.fn().mockReturnValue({
-        logPrint: jest.fn(),
-        logTrace: jest.fn(),
-        logDebug: jest.fn(),
-        logInfo: jest.fn(),
-        logWarning: jest.fn(),
-        logError: jest.fn(),
-        logFatal: jest.fn(),
-    }),
+    getLogger: jest
+        .fn()
+        .mockReturnValue({
+            logPrint: jest.fn(),
+            logTrace: jest.fn(),
+            logDebug: jest.fn(),
+            logInfo: jest.fn(),
+            logWarning: jest.fn(),
+            logError: jest.fn(),
+            logFatal: jest.fn(),
+        }),
     unwrap: jest.fn((res: { data?: unknown; error?: unknown }) => {
         if (res.error) throw res.error;
         return res.data;
     }),
     // Inline implementation mirrors mappers.ts fromWireBehavior — avoids wailsjs ESM import
-    fromWireBehavior: jest.fn((v: { enableTaskLogging: boolean }) => ({
-        enableTaskLogging: v.enableTaskLogging,
-        logDirectory: '',
-    })),
+    fromWireBehavior: jest.fn((v: { enableTaskLogging: boolean }) => ({ enableTaskLogging: v.enableTaskLogging, logDirectory: '' })),
     SettingsHandlerAdapter: {
         getAppBehaviorConfig: jest.fn().mockResolvedValue({ data: { enableTaskLogging: false } }),
         updateAppBehaviorConfig: jest.fn().mockResolvedValue({ data: { enableTaskLogging: true } }),

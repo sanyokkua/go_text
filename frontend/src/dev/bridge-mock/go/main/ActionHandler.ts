@@ -8,33 +8,39 @@ export function CancelChain(_runId: string): Promise<VoidResult> {
     return Promise.resolve(voidOk());
 }
 
+export function CancelAllRuns(): Promise<void> {
+    return Promise.resolve();
+}
+
 export function GetActionCatalog(): Promise<AnyResult> {
-    return Promise.resolve(ok([
-        {
-            id: 'mock-summarise',
-            name: 'Summarise',
-            category: 'Writing',
-            family: 'single',
-            directive: 'Summarise the text.',
-            orderRank: 0,
-            exclusivityGroup: '',
-            mergeable: false,
-            terminal: true,
-            requires: [],
-        },
-        {
-            id: 'mock-translate',
-            name: 'Translate',
-            category: 'Language',
-            family: 'single',
-            directive: 'Translate the text.',
-            orderRank: 1,
-            exclusivityGroup: '',
-            mergeable: false,
-            terminal: true,
-            requires: [],
-        },
-    ]));
+    return Promise.resolve(
+        ok([
+            {
+                id: 'mock-summarise',
+                name: 'Summarise',
+                category: 'Writing',
+                family: 'single',
+                directive: 'Summarise the text.',
+                orderRank: 0,
+                exclusivityGroup: '',
+                mergeable: false,
+                terminal: true,
+                requires: [],
+            },
+            {
+                id: 'mock-translate',
+                name: 'Translate',
+                category: 'Language',
+                family: 'single',
+                directive: 'Translate the text.',
+                orderRank: 1,
+                exclusivityGroup: '',
+                mergeable: false,
+                terminal: true,
+                requires: [],
+            },
+        ]),
+    );
 }
 
 export function GetModels(_providerId: string): Promise<AnyResult> {
@@ -42,26 +48,23 @@ export function GetModels(_providerId: string): Promise<AnyResult> {
 }
 
 export function PreviewPrompt(_req: unknown): Promise<AnyResult> {
-    return Promise.resolve(ok({
-        kind: 'single',
-        inferences: 1,
-        groups: [
-            {
-                index: 0,
-                family: 'single',
-                appliedActions: [{ id: 'mock-summarise', name: 'Summarise', category: 'Writing' }],
-                systemPrompt: 'You are a helpful assistant that summarises text.',
-                userPrompt: 'Summarise the following:\n\n{{user_text}}',
-                parameters: {
-                    model: 'mock-model',
-                    format: 'text',
-                    tokenParam: 'max_tokens',
-                    stream: false,
+    return Promise.resolve(
+        ok({
+            kind: 'single',
+            inferences: 1,
+            groups: [
+                {
+                    index: 0,
+                    family: 'single',
+                    appliedActions: [{ id: 'mock-summarise', name: 'Summarise', category: 'Writing' }],
+                    systemPrompt: 'You are a helpful assistant that summarises text.',
+                    userPrompt: 'Summarise the following:\n\n{{user_text}}',
+                    parameters: { model: 'mock-model', format: 'text', tokenParam: 'max_tokens', stream: false },
                 },
-            },
-        ],
-        summary: 'Summarise action preview',
-    }));
+            ],
+            summary: 'Summarise action preview',
+        }),
+    );
 }
 
 export function TestConnection(_providerId: string): Promise<AnyResult> {

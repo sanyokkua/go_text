@@ -1,11 +1,6 @@
 // Mock the adapter before any imports so module-level getLogger calls in thunks succeed.
 jest.mock('../../../adapter', () => ({
-    getLogger: jest.fn().mockReturnValue({
-        logDebug: jest.fn(),
-        logInfo: jest.fn(),
-        logError: jest.fn(),
-        logWarning: jest.fn(),
-    }),
+    getLogger: jest.fn().mockReturnValue({ logDebug: jest.fn(), logInfo: jest.fn(), logError: jest.fn(), logWarning: jest.fn() }),
     unwrap: jest.fn((res: { data?: unknown; error?: unknown }) => {
         if (res.error) throw res.error;
         return res.data;
@@ -64,11 +59,7 @@ describe('run slice reducer', () => {
     });
 
     it('processPromptChain.pending sets status to running and stores runId from meta.arg', () => {
-        const action = {
-            type: processPromptChain.pending.type,
-            meta: { arg: { runId: 'run-42' } },
-            payload: undefined,
-        };
+        const action = { type: processPromptChain.pending.type, meta: { arg: { runId: 'run-42' } }, payload: undefined };
 
         const state = runReducer(initialState, action);
 
@@ -84,10 +75,7 @@ describe('run slice reducer', () => {
     });
 
     it('processPromptChain.fulfilled with data and no error sets status to done', () => {
-        const action = {
-            type: processPromptChain.fulfilled.type,
-            payload: { data: { finalText: 'result text', failedIndex: null }, error: null },
-        };
+        const action = { type: processPromptChain.fulfilled.type, payload: { data: { finalText: 'result text', failedIndex: null }, error: null } };
 
         const state = runReducer(initialState, action);
 
@@ -98,10 +86,7 @@ describe('run slice reducer', () => {
     it('processPromptChain.fulfilled with data and non-cancelled error sets status to partial', () => {
         const action = {
             type: processPromptChain.fulfilled.type,
-            payload: {
-                data: { finalText: 'partial text', failedIndex: 2 },
-                error: { code: 'step_failed', message: 'Step 2 failed' },
-            },
+            payload: { data: { finalText: 'partial text', failedIndex: 2 }, error: { code: 'step_failed', message: 'Step 2 failed' } },
         };
 
         const state = runReducer(initialState, action);
@@ -114,13 +99,7 @@ describe('run slice reducer', () => {
     });
 
     it('processPromptChain.fulfilled with error only and code=cancelled sets status to cancelled', () => {
-        const action = {
-            type: processPromptChain.fulfilled.type,
-            payload: {
-                data: null,
-                error: { code: 'cancelled', message: 'User cancelled' },
-            },
-        };
+        const action = { type: processPromptChain.fulfilled.type, payload: { data: null, error: { code: 'cancelled', message: 'User cancelled' } } };
 
         const state = runReducer(initialState, action);
 
@@ -130,10 +109,7 @@ describe('run slice reducer', () => {
     });
 
     it('processPromptChain.rejected sets status to error and stores errorMessage from payload', () => {
-        const action = {
-            type: processPromptChain.rejected.type,
-            payload: 'Network timeout',
-        };
+        const action = { type: processPromptChain.rejected.type, payload: 'Network timeout' };
 
         const state = runReducer(initialState, action);
 

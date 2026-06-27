@@ -2,11 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 import { createStack, deleteStack, duplicateStack, listStacks, updateStack } from './thunks';
 import { StacksSavedState } from './types';
 
-const initialState: StacksSavedState = {
-    stacks: [],
-    status: 'idle',
-    error: null,
-};
+const initialState: StacksSavedState = { stacks: [], status: 'idle', error: null };
 
 const stacksSavedSlice = createSlice({
     name: 'stacksSaved',

@@ -1,16 +1,12 @@
 // jest.mock calls are hoisted before imports — place them first
-jest.mock('../../store', () => ({
-    useAppDispatch: jest.fn(),
-}));
+jest.mock('../../store', () => ({ useAppDispatch: jest.fn() }));
 
-jest.mock('../../store/run', () => ({
-    progressReceived: jest.fn((data: unknown) => ({ type: 'run/progressReceived', payload: data })),
-}));
+jest.mock('../../store/run', () => ({ progressReceived: jest.fn((data: unknown) => ({ type: 'run/progressReceived', payload: data })) }));
 
 import { renderHook } from '@testing-library/react';
-import { useChainEvents } from '../useChainEvents';
 import { useAppDispatch } from '../../store';
 import { progressReceived } from '../../store/run';
+import { useChainEvents } from '../useChainEvents';
 // 4-level path resolves to frontend/wailsjs/runtime/ (has runtime.d.ts); moduleNameMapper
 // maps this same pattern to wailsRuntime.js — same instance that useChainEvents.ts uses
 import { EventsOff, EventsOn } from '../../../../wailsjs/runtime';
@@ -34,13 +30,7 @@ describe('useChainEvents', () => {
         // Arrange
         renderHook(() => useChainEvents());
         const handler = (EventsOn as unknown as jest.Mock).mock.calls[0][1] as (data: unknown) => void;
-        const progress = {
-            runId: 'run-1',
-            groupIndex: 1,
-            totalGroups: 3,
-            family: 'single',
-            status: 'running' as const,
-        };
+        const progress = { runId: 'run-1', groupIndex: 1, totalGroups: 3, family: 'single', status: 'running' as const };
 
         // Act
         handler(progress);

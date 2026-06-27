@@ -1,10 +1,7 @@
 import { apperr } from '../../../../wailsjs/go/models';
 import { enqueueNotification, notifyError } from './slice';
 
-function wire(
-    code: apperr.ErrorCode,
-    details?: Record<string, string>,
-): apperr.WireError {
+function wire(code: apperr.ErrorCode, details?: Record<string, string>): apperr.WireError {
     return apperr.WireError.createFrom({ code, title: '', message: '', retryable: false, details });
 }
 

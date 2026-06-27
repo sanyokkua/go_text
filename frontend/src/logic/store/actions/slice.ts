@@ -5,12 +5,7 @@ import { ActionsCatalogState } from './types';
 
 const logger = getLogger('ActionsSlice');
 
-const initialState: ActionsCatalogState = {
-    catalog: [],
-    catalogStatus: 'idle',
-    availableModels: [],
-    modelsStatus: 'idle',
-};
+const initialState: ActionsCatalogState = { catalog: [], catalogStatus: 'idle', availableModels: [], modelsStatus: 'idle' };
 
 const actionsSlice = createSlice({
     name: 'actions',

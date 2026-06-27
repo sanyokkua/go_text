@@ -1,5 +1,5 @@
-import { DropdownMenu } from '../../../../ui/primitives/DropdownMenu';
 import { apperr } from '../../../../../wailsjs/go/models';
+import { DropdownMenu } from '../../../../ui/primitives/DropdownMenu';
 import styles from './StackCard.module.css';
 
 export interface StackCardProps {
@@ -13,9 +13,7 @@ export interface StackCardProps {
     onDelete: () => void;
 }
 
-const StackCard: React.FC<StackCardProps> = ({
-    stack, inferenceCount, actionNames, inferenceRunning, onRun, onEdit, onDuplicate, onDelete,
-}) => {
+const StackCard: React.FC<StackCardProps> = ({ stack, inferenceCount, actionNames, inferenceRunning, onRun, onEdit, onDuplicate, onDelete }) => {
     const stepsSummary = actionNames.join(' · ');
     const stepLabel = stack.steps.length === 1 ? '1 step' : `${stack.steps.length} steps`;
     const infLabel = inferenceCount === 1 ? '1 inference' : `${inferenceCount} inferences`;
@@ -26,27 +24,18 @@ const StackCard: React.FC<StackCardProps> = ({
                 <span className={styles.icon}>{stack.icon}</span>
                 <span className={styles.name}>{stack.name}</span>
             </div>
-            <p className={styles.summary} title={stepsSummary}>{stepsSummary || '—'}</p>
+            <p className={styles.summary} title={stepsSummary}>
+                {stepsSummary || '—'}
+            </p>
             <div className={styles.badges}>
                 <span className={styles.badge}>{stepLabel}</span>
                 <span className={styles.badge}>{infLabel}</span>
             </div>
             <div className={styles.actions}>
-                <button
-                    className={styles.runBtn}
-                    onClick={onRun}
-                    disabled={inferenceRunning}
-                    type="button"
-                    aria-label={`Run ${stack.name}`}
-                >
+                <button className={styles.runBtn} onClick={onRun} disabled={inferenceRunning} type="button" aria-label={`Run ${stack.name}`}>
                     ▶ Run
                 </button>
-                <button
-                    className={styles.editBtn}
-                    onClick={onEdit}
-                    type="button"
-                    aria-label={`Edit ${stack.name}`}
-                >
+                <button className={styles.editBtn} onClick={onEdit} type="button" aria-label={`Edit ${stack.name}`}>
                     ✎ Edit
                 </button>
                 <DropdownMenu
