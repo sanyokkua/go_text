@@ -10,8 +10,9 @@ import {
     useAppSelector,
 } from '../../../logic/store';
 import { loadActionCatalog } from '../../../logic/store/actions';
-import { runSingleAction } from '../../../logic/store/run';
+import { processPromptChain, runSingleAction } from '../../../logic/store/run';
 import { initializeSettingsState, selectAllSettings } from '../../../logic/store/settings';
+import { apperr } from '../../../../wailsjs/go/models';
 import { addStep } from '../../../logic/store/stacks/builder/slice';
 import { enqueueNotification } from '../../../logic/store/notifications/slice';
 import { enterBuildMode, navigateToMain, setActiveActionsTab } from '../../../logic/store/ui/slice';
@@ -79,7 +80,23 @@ const AppMainView: React.FC = () => {
         async (value: string) => {
             dispatch(navigateToMain());
             if (value.startsWith('stack:')) {
-                // Stack execution to be wired in T26
+                const stackId = value.slice(6);
+                const stack = savedStacks.find((s) => s.id === stackId);
+                if (!stack) return;
+                try {
+                    const req = new apperr.ChainRequest({
+                        runId: crypto.randomUUID(),
+                        inputText: inputContent,
+                        steps: stack.steps.map((id) => new apperr.ChainStep({ actionId: id })),
+                        inputLanguageId: settings?.languageConfig?.defaultInputLanguage ?? 'auto',
+                        outputLanguageId: settings?.languageConfig?.defaultOutputLanguage ?? 'auto',
+                        useMarkdown: settings?.inferenceBaseConfig?.useMarkdownForOutput ?? false,
+                    });
+                    await dispatch(processPromptChain(req)).unwrap();
+                } catch (error: unknown) {
+                    const err = parseError(error);
+                    dispatch(enqueueNotification({ message: `Run failed: ${err.message}`, severity: 'error' }));
+                }
                 return;
             }
             try {
@@ -89,7 +106,7 @@ const AppMainView: React.FC = () => {
                 dispatch(enqueueNotification({ message: `Run failed: ${err.message}`, severity: 'error' }));
             }
         },
-        [dispatch, inputContent, settings],
+        [dispatch, inputContent, savedStacks, settings],
     );
 
     const handlePaletteAddToStack = useCallback(

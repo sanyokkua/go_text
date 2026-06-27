@@ -5,7 +5,7 @@ import { axe } from 'jest-axe';
 import { ToastProvider, ToastRegion } from '../Toast';
 import type { ToastItem } from '../Toast';
 
-function Wrapper({ items, onDismiss }: { items: ToastItem[]; onDismiss: (id: string) => void }) {
+function Wrapper({ items, onDismiss }: { readonly items: ToastItem[]; readonly onDismiss: (id: string) => void }) {
     return (
         <ToastProvider>
             <ToastRegion items={items} onDismiss={onDismiss} />
@@ -36,5 +36,21 @@ describe('Toast', () => {
     it('renders nothing when items list is empty', () => {
         render(<Wrapper items={[]} onDismiss={() => {}} />);
         expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    });
+
+    it('renders title when provided', () => {
+        render(
+            <Wrapper
+                items={[{ id: '1', variant: 'error', title: 'Authentication failed', message: 'Check your API key.' }]}
+                onDismiss={() => {}}
+            />,
+        );
+        expect(screen.getByText('Authentication failed')).toBeInTheDocument();
+        expect(screen.getByText('Check your API key.')).toBeInTheDocument();
+    });
+
+    it('renders warning info variant without title', () => {
+        render(<Wrapper items={[{ id: '2', variant: 'info', message: 'Run cancelled after step 1.' }]} onDismiss={() => {}} />);
+        expect(screen.getByText('Run cancelled after step 1.')).toBeInTheDocument();
     });
 });

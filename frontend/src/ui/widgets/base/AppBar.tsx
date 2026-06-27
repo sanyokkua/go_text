@@ -15,6 +15,7 @@ import {
 import { setViewMode } from '../../../logic/store/editor';
 import { setCurrentView, setLayout, toggleHistory, toggleSidebar } from '../../../logic/store/ui';
 import { Segmented } from '../../primitives/Segmented';
+import { Tooltip } from '../../primitives/Tooltip';
 
 const logger = getLogger('AppBar');
 
@@ -47,14 +48,16 @@ const AppBar: React.FC = () => {
         >
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexShrink: 0 }}>
                 {isMain && (
-                    <button
-                        aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                        aria-pressed={!sidebarCollapsed}
-                        onClick={() => { dispatch(toggleSidebar()); logger.logInfo('Sidebar toggled'); }}
-                        style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '1.1rem' }}
-                    >
-                        ☰
-                    </button>
+                    <Tooltip content={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'} side="bottom">
+                        <button
+                            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                            aria-pressed={!sidebarCollapsed}
+                            onClick={() => { dispatch(toggleSidebar()); logger.logInfo('Sidebar toggled'); }}
+                            style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '1.1rem' }}
+                        >
+                            ☰
+                        </button>
+                    </Tooltip>
                 )}
                 {!isMain && (
                     <button
@@ -94,42 +97,50 @@ const AppBar: React.FC = () => {
 
             <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center', flexShrink: 0 }}>
                 {isMain && (
-                    <button
-                        aria-label="Toggle history rail"
-                        aria-pressed={historyOpen}
-                        disabled={!historyEnabled}
-                        onClick={() => { dispatch(toggleHistory()); logger.logInfo('History toggled'); }}
-                        style={{
-                            background: historyOpen ? 'rgba(255,255,255,0.15)' : 'none',
-                            border: 'none',
-                            color: 'inherit',
-                            cursor: historyEnabled ? 'pointer' : 'default',
-                            fontSize: '1rem',
-                            opacity: historyEnabled ? 1 : 0.45,
-                            borderRadius: 'var(--radius-sm)',
-                            padding: '2px 4px',
-                        }}
-                        title={historyEnabled ? 'Toggle history' : 'History is disabled in Settings'}
+                    <Tooltip
+                        content={historyEnabled ? 'Toggle history' : 'History is disabled in Settings'}
+                        side="bottom"
                     >
-                        🕘
-                    </button>
+                        <button
+                            aria-label="Toggle history rail"
+                            aria-pressed={historyOpen}
+                            disabled={!historyEnabled}
+                            onClick={() => { dispatch(toggleHistory()); logger.logInfo('History toggled'); }}
+                            style={{
+                                background: historyOpen ? 'rgba(255,255,255,0.15)' : 'none',
+                                border: 'none',
+                                color: 'inherit',
+                                cursor: historyEnabled ? 'pointer' : 'default',
+                                fontSize: '1rem',
+                                opacity: historyEnabled ? 1 : 0.45,
+                                borderRadius: 'var(--radius-sm)',
+                                padding: '2px 4px',
+                            }}
+                        >
+                            🕘
+                        </button>
+                    </Tooltip>
                 )}
                 {isMain && (
+                    <Tooltip content="About GoText" side="bottom">
+                        <button
+                            aria-label="About and info"
+                            onClick={() => { dispatch(setCurrentView('info')); logger.logInfo('Navigated to info'); }}
+                            style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '1rem' }}
+                        >
+                            ℹ
+                        </button>
+                    </Tooltip>
+                )}
+                <Tooltip content={isMain ? 'Settings' : 'Close'} side="bottom">
                     <button
-                        aria-label="About and info"
-                        onClick={() => { dispatch(setCurrentView('info')); logger.logInfo('Navigated to info'); }}
+                        aria-label={isMain ? 'Open settings' : 'Close'}
+                        onClick={() => { dispatch(setCurrentView(isMain ? 'settings' : 'main')); }}
                         style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '1rem' }}
                     >
-                        ℹ
+                        {isMain ? '⚙' : '✕'}
                     </button>
-                )}
-                <button
-                    aria-label={isMain ? 'Open settings' : 'Close'}
-                    onClick={() => { dispatch(setCurrentView(isMain ? 'settings' : 'main')); }}
-                    style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '1rem' }}
-                >
-                    {isMain ? '⚙' : '✕'}
-                </button>
+                </Tooltip>
             </div>
         </header>
     );

@@ -9,6 +9,7 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
+import { TooltipProvider } from '../../../primitives/Tooltip';
 import actionsReducer from '../../../../logic/store/actions/slice';
 import editorReducer from '../../../../logic/store/editor/slice';
 import historyReducer from '../../../../logic/store/history/slice';
@@ -44,7 +45,7 @@ function makeStore(opts: {
                 activeActionsTab: null,
                 buildMode: false,
                 editingStackId: null,
-                    activeSettingsTab: 0,
+                activeSettingsTab: 0,
                 theme: { mode: 'auto' as const, effective: 'light' as const },
             },
             settings: {
@@ -57,41 +58,69 @@ function makeStore(opts: {
     });
 }
 
+function renderAppBar(opts: Parameters<typeof makeStore>[0] = {}) {
+    const store = makeStore(opts);
+    render(
+        <Provider store={store}>
+            <TooltipProvider>
+                <AppBar />
+            </TooltipProvider>
+        </Provider>,
+    );
+    return store;
+}
+
 describe('AppBar — history toggle', () => {
     it('renders history toggle button in main view', () => {
-        render(<Provider store={makeStore()}><AppBar /></Provider>);
+        renderAppBar();
         expect(screen.getByRole('button', { name: /toggle history rail/i })).toBeInTheDocument();
     });
 
     it('history toggle button is enabled when historyEnabled is true', () => {
-        render(<Provider store={makeStore({ historyEnabled: true })}><AppBar /></Provider>);
+        renderAppBar({ historyEnabled: true });
         expect(screen.getByRole('button', { name: /toggle history rail/i })).toBeEnabled();
     });
 
     it('history toggle button is disabled when historyEnabled is false', () => {
-        render(<Provider store={makeStore({ historyEnabled: false })}><AppBar /></Provider>);
+        renderAppBar({ historyEnabled: false });
         expect(screen.getByRole('button', { name: /toggle history rail/i })).toBeDisabled();
     });
 
     it('toggle button has aria-pressed=false when history is closed', () => {
-        render(<Provider store={makeStore({ historyOpen: false })}><AppBar /></Provider>);
+        renderAppBar({ historyOpen: false });
         expect(screen.getByRole('button', { name: /toggle history rail/i })).toHaveAttribute('aria-pressed', 'false');
     });
 
     it('toggle button has aria-pressed=true when history is open', () => {
-        render(<Provider store={makeStore({ historyOpen: true })}><AppBar /></Provider>);
+        renderAppBar({ historyOpen: true });
         expect(screen.getByRole('button', { name: /toggle history rail/i })).toHaveAttribute('aria-pressed', 'true');
     });
 
     it('clicking toggle flips historyOpen in store', async () => {
-        const store = makeStore({ historyOpen: false });
-        render(<Provider store={store}><AppBar /></Provider>);
+        const store = renderAppBar({ historyOpen: false });
         await userEvent.click(screen.getByRole('button', { name: /toggle history rail/i }));
         expect(store.getState().ui.historyOpen).toBe(true);
     });
 
     it('toggle button does not render outside main view', () => {
-        render(<Provider store={makeStore({ currentView: 'settings' })}><AppBar /></Provider>);
+        renderAppBar({ currentView: 'settings' });
         expect(screen.queryByRole('button', { name: /toggle history rail/i })).not.toBeInTheDocument();
+    });
+});
+
+describe('AppBar — icon button tooltips', () => {
+    it('sidebar toggle button is present with accessible label', () => {
+        renderAppBar();
+        expect(screen.getByRole('button', { name: /expand sidebar|collapse sidebar/i })).toBeInTheDocument();
+    });
+
+    it('about button is present with accessible label', () => {
+        renderAppBar();
+        expect(screen.getByRole('button', { name: /about and info/i })).toBeInTheDocument();
+    });
+
+    it('settings button is present with accessible label', () => {
+        renderAppBar();
+        expect(screen.getByRole('button', { name: /open settings/i })).toBeInTheDocument();
     });
 });

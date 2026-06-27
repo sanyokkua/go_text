@@ -1,46 +1,38 @@
+// frontend/src/ui/widgets/base/NotificationContainer.tsx
 import React from 'react';
+import { ToastProvider, ToastRegion } from '../../primitives/Toast';
+import type { ToastItem, ToastVariant } from '../../primitives/Toast';
 import { selectNotificationsQueue, useAppDispatch, useAppSelector } from '../../../logic/store';
 import { removeNotification } from '../../../logic/store/notifications';
+import type { Severity } from '../../../logic/store/notifications/types';
 
-const colorMap: Record<string, string> = { error: 'var(--err)', warning: 'var(--warn)', success: 'var(--ok)', info: 'var(--teal)' };
+const SEVERITY_TO_VARIANT: Record<Severity, ToastVariant> = {
+    success: 'success',
+    error: 'error',
+    warning: 'warning',
+    info: 'info',
+};
+
+const LONG_DURATION_MS = 7000;
 
 const NotificationContainer: React.FC = () => {
     const dispatch = useAppDispatch();
-    const notifications = useAppSelector(selectNotificationsQueue);
-    const current = notifications[0];
+    const queue = useAppSelector(selectNotificationsQueue);
 
-    if (!current) {
-        return null;
-    }
+    const toastItems: ToastItem[] = queue
+        .filter((n) => n.surface !== 'inline')
+        .map((n): ToastItem => ({
+            id: n.id,
+            variant: SEVERITY_TO_VARIANT[n.severity],
+            ...(n.title === undefined ? {} : { title: n.title }),
+            message: n.message,
+            duration: n.severity === 'warning' || n.severity === 'info' ? LONG_DURATION_MS : 5000,
+        }));
 
     return (
-        <div
-            role="alert"
-            style={{
-                position: 'fixed',
-                bottom: 'var(--space-4)',
-                right: 'var(--space-4)',
-                zIndex: 'var(--z-toast)' as React.CSSProperties['zIndex'],
-                background: colorMap[current.severity] ?? 'var(--teal)',
-                color: '#fff',
-                padding: 'var(--space-3) var(--space-4)',
-                borderRadius: 'var(--radius-md)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 'var(--space-2)',
-                boxShadow: 'var(--shadow)',
-                maxWidth: 400,
-            }}
-        >
-            <span style={{ flex: 1 }}>{current.message}</span>
-            <button
-                aria-label="dismiss"
-                onClick={() => dispatch(removeNotification(current.id))}
-                style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontWeight: 700 }}
-            >
-                ✕
-            </button>
-        </div>
+        <ToastProvider>
+            <ToastRegion items={toastItems} onDismiss={(id) => dispatch(removeNotification(id))} />
+        </ToastProvider>
     );
 };
 

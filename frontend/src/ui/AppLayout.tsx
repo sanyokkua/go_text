@@ -1,15 +1,16 @@
 import React from 'react';
+import { TooltipProvider } from './primitives/Tooltip';
 import GlobalLoadingOverlay from './widgets/base/GlobalLoadingOverlay';
 import NotificationContainer from './widgets/base/NotificationContainer';
 import AppMainView from './widgets/views/AppMainView';
 
 const AppLayout: React.FC = () => {
     return (
-        <React.Fragment>
+        <TooltipProvider>
             <AppMainView />
             <GlobalLoadingOverlay />
             <NotificationContainer />
-        </React.Fragment>
+        </TooltipProvider>
     );
 };
 
