@@ -1,0 +1,24 @@
+.side {
+    display: grid;
+    grid-template-columns: 1fr 8px 1fr;
+    gap: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.stacked {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.splitter {
+    width: 8px;
+    background: var(--line);
+    cursor: default;
+    align-self: stretch;
+}
