@@ -11,6 +11,7 @@ const initialState: AboutState = {
     inspectorOpen: false,
     inspectorLoading: false,
     inspectorData: null,
+    inspectorError: null,
     previewInputEnabled: false,
 };
 
@@ -30,6 +31,7 @@ const aboutSlice = createSlice({
             state.selectedItemId = null;
             state.selectedItemType = null;
             state.inspectorData = null;
+            state.inspectorError = null;
             state.inspectorOpen = false;
         },
         togglePreviewInput(state) {
@@ -44,13 +46,16 @@ const aboutSlice = createSlice({
             .addCase(previewPromptForInspector.pending, (state) => {
                 state.inspectorLoading = true;
                 state.inspectorData = null;
+                state.inspectorError = null;
             })
             .addCase(previewPromptForInspector.fulfilled, (state, action: PayloadAction<apperr.PromptPreview>) => {
                 state.inspectorLoading = false;
                 state.inspectorData = action.payload;
+                state.inspectorError = null;
             })
-            .addCase(previewPromptForInspector.rejected, (state) => {
+            .addCase(previewPromptForInspector.rejected, (state, action) => {
                 state.inspectorLoading = false;
+                state.inspectorError = action.payload ?? 'Preview failed';
             });
     },
 });

@@ -10,5 +10,6 @@ export interface AboutState {
     inspectorOpen: boolean;
     inspectorLoading: boolean;
     inspectorData: apperr.PromptPreview | null;
+    inspectorError: string | null;
     previewInputEnabled: boolean;
 }
