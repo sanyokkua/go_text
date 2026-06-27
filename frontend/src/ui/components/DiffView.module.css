@@ -1,0 +1,82 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+.body {
+    flex: 1;
+    overflow: auto;
+    padding: var(--space-3);
+    font-family: var(--font);
+    font-size: 0.9rem;
+    line-height: 1.8;
+    color: var(--ink);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+:global(.ins) {
+    background: var(--add);
+    color: var(--ok);
+    border-radius: var(--radius-sm);
+    padding: 0 2px;
+}
+
+:global(.del) {
+    background: var(--del);
+    color: var(--err);
+    text-decoration: line-through;
+    opacity: 0.8;
+    border-radius: var(--radius-sm);
+    padding: 0 2px;
+}
+
+.footer {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border-top: 1px solid var(--line);
+    background: var(--surface);
+    flex-shrink: 0;
+}
+
+.added {
+    background: var(--add);
+    color: var(--ok);
+    border-radius: var(--radius-sm);
+    padding: 2px var(--space-2);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.removed {
+    background: var(--del);
+    color: var(--err);
+    border-radius: var(--radius-sm);
+    padding: 2px var(--space-2);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.copyClean {
+    margin-left: auto;
+    background: none;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    color: var(--ink-2);
+    cursor: pointer;
+    font-size: 0.75rem;
+    padding: 2px var(--space-2);
+}
+
+.copyClean:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.copyClean:hover:not(:disabled) {
+    background: var(--surface-2);
+}
