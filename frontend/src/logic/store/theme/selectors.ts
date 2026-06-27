@@ -1,6 +1,2 @@
-import type { RootState } from '../index';
-import type { ThemeEffective, ThemeMode } from './types';
-
-export const selectThemeMode = (state: RootState): ThemeMode => state.theme.mode;
-
-export const selectEffectiveTheme = (state: RootState): ThemeEffective => state.theme.effective;
+// backward-compat re-exports — theme is now part of the ui slice
+export { selectEffectiveTheme, selectThemeMode } from '../ui/selectors';

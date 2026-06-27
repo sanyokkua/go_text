@@ -16,7 +16,7 @@ import { EditorState } from './types';
 
 const logger = getLogger('EditorSlice');
 
-const initialState: EditorState = { inputContent: '', outputContent: '' };
+const initialState: EditorState = { inputContent: '', outputContent: '', viewMode: 'preview' };
 
 const editorSlice = createSlice({
     name: 'editor',
@@ -43,10 +43,13 @@ const editorSlice = createSlice({
             logger.logDebug('Clearing output content');
             state.outputContent = '';
         },
+        setViewMode: (state, action: PayloadAction<import('./types').EditorViewMode>) => {
+            state.viewMode = action.payload;
+        },
     },
     extraReducers: () => {},
 });
 
-export const { setInputContent, setOutputContent, useOutputAsInput, clearInput, clearOutput } = editorSlice.actions;
+export const { setInputContent, setOutputContent, useOutputAsInput, clearInput, clearOutput, setViewMode } = editorSlice.actions;
 
 export default editorSlice.reducer;

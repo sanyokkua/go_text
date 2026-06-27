@@ -1,5 +1,7 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
+import { apperr } from '../../../../wailsjs/go/models';
 import {
+    ActionHandlerAdapter,
     fromWireBehavior,
     fromWireMetadata,
     fromWireProvider,
@@ -269,6 +271,19 @@ export const updateAppBehaviorConfig = createAsyncThunk<AppBehaviorConfig, AppBe
         } catch (error: unknown) {
             const err = parseError(error);
             logger.logError(`updateAppBehaviorConfig failed: ${err.message}`);
+            return rejectWithValue(err.message);
+        }
+    },
+);
+
+export const testProviderInference = createAsyncThunk<apperr.VerifyOutcome, string, { rejectValue: string }>(
+    'settings/testProviderInference',
+    async (providerId, { rejectWithValue }) => {
+        try {
+            return unwrap(await ActionHandlerAdapter.testInference(providerId));
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logError(`testProviderInference failed: ${err.message}`);
             return rejectWithValue(err.message);
         }
     },

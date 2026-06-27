@@ -20,6 +20,7 @@ const config = {
         '^../../../wailsjs/go/actions/ActionHandler$': '<rootDir>/__mocks__/wailsActionHandler.js',
         '^../../../wailsjs/go/models$': '<rootDir>/__mocks__/wailsModels.js',
         '^../../../../wailsjs/go/models$': '<rootDir>/__mocks__/wailsModels.js',
+        '^../../../../../wailsjs/go/models$': '<rootDir>/__mocks__/wailsModels.js',
         '^../../../wailsjs/go/settings/SettingsHandler$': '<rootDir>/__mocks__/wailsSettingsHandler.js',
         '^../../../wailsjs/runtime$': '<rootDir>/__mocks__/wailsRuntime.js',
         '^../../wailsjs/runtime$': '<rootDir>/__mocks__/wailsRuntime.js',

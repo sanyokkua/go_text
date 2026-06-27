@@ -1,6 +1,10 @@
-import { Prompts } from '../../adapter';
+import { apperr } from '../../../../wailsjs/go/models';
 
-export interface ActionsState {
-    promptGroups: Prompts | null; // Structure for buttons/tabs
-    availableModels: string[]; // List of models for the current provider
+export type LoadStatus = 'idle' | 'loading' | 'success' | 'error';
+
+export interface ActionsCatalogState {
+    catalog: apperr.ActionMeta[];
+    catalogStatus: LoadStatus;
+    availableModels: apperr.ModelInfo[];
+    modelsStatus: LoadStatus;
 }
