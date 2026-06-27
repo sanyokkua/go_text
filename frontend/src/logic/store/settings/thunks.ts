@@ -289,6 +289,32 @@ export const testProviderInference = createAsyncThunk<apperr.VerifyOutcome, stri
     },
 );
 
+export const testConnection = createAsyncThunk<apperr.VerifyOutcome, string, { rejectValue: string }>(
+    'settings/testConnection',
+    async (providerId, { rejectWithValue }) => {
+        try {
+            return unwrap(await ActionHandlerAdapter.testConnection(providerId));
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logError(`testConnection failed: ${err.message}`);
+            return rejectWithValue(err.message);
+        }
+    },
+);
+
+export const testModels = createAsyncThunk<apperr.VerifyOutcome, string, { rejectValue: string }>(
+    'settings/testModels',
+    async (providerId, { rejectWithValue }) => {
+        try {
+            return unwrap(await ActionHandlerAdapter.testModels(providerId));
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logError(`testModels failed: ${err.message}`);
+            return rejectWithValue(err.message);
+        }
+    },
+);
+
 export const initializeSettingsState = createAsyncThunk<void, void, { rejectValue: string }>(
     'settings/initialize',
     async (_, { dispatch, rejectWithValue }) => {

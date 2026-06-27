@@ -14,6 +14,7 @@ const initialState: UIState = {
     currentView: 'main',
     armedActionId: null,
     activeActionsTab: null,
+    activeSettingsTab: 0,
     buildMode: false,
     editingStackId: null,
     theme: {
@@ -58,6 +59,9 @@ const uiSlice = createSlice({
         setActiveActionsTab: (state, action: PayloadAction<string | null>) => {
             state.activeActionsTab = action.payload;
         },
+        setActiveSettingsTab: (state, action: PayloadAction<number>) => {
+            state.activeSettingsTab = action.payload;
+        },
         enterBuildMode: (state) => {
             state.buildMode = true;
             state.editingStackId = null;
@@ -97,7 +101,7 @@ export const {
     setLayout, toggleSidebar, setSidebarCollapsed,
     toggleHistory, setHistoryOpen,
     setThemeMode, setThemeEffective,
-    setCurrentView, armAction, setActiveActionsTab,
+    setCurrentView, armAction, setActiveActionsTab, setActiveSettingsTab,
     enterBuildMode, exitBuildMode, setEditingStackId,
 } = uiSlice.actions;
 

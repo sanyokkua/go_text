@@ -6,14 +6,13 @@ interface SettingsTabsProps {
 }
 
 const TAB_LABELS = [
-    'Settings Info',
-    'Current Provider',
-    'Provider Management',
-    'Model Config',
-    'Inference Config',
-    'Language Config',
-    'Factory Reset',
-    'App Behavior',
+    'Providers',
+    'Model',
+    'Generation',
+    'Languages',
+    'Logging',
+    'About & data',
+    'Appearance',
 ];
 
 const SettingsTabs: React.FC<SettingsTabsProps> = ({ activeTab, onChange }) => {

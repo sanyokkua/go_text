@@ -1,0 +1,111 @@
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import '@testing-library/jest-dom';
+import { Provider } from 'react-redux';
+import { configureStore } from '@reduxjs/toolkit';
+import settingsReducer from '../../../../../../logic/store/settings/slice';
+import uiReducer from '../../../../../../logic/store/ui/slice';
+import notificationsReducer from '../../../../../../logic/store/notifications/slice';
+import { AppSettingsMetadata, Settings } from '../../../../../../logic/adapter/models';
+import MetadataTab from '../MetadataTab';
+
+jest.mock('../../../../../../logic/adapter', () => ({
+    ClipboardServiceAdapter: { setText: jest.fn().mockResolvedValue(undefined) },
+    SettingsHandlerAdapter: {
+        getSettings: jest.fn().mockResolvedValue({ data: null, error: null }),
+        resetSettingsToDefault: jest.fn().mockResolvedValue({ data: null, error: null }),
+    },
+    getLogger: () => ({ logInfo: jest.fn(), logDebug: jest.fn(), logError: jest.fn(), logWarn: jest.fn() }),
+    unwrap: (r: { data: unknown; error: { message: string } | null }) => { if (r?.error) throw new Error(r.error.message); return r?.data; },
+    fromWireSettings: (v: unknown) => v,
+    fromWireMetadata: (v: unknown) => v,
+}));
+
+const MOCK_PROVIDER = {
+    providerId: 'p1', providerName: 'Test Provider', providerType: 'openai',
+    baseUrl: 'http://localhost:1234', modelsEndpoint: '', completionEndpoint: '',
+    authType: 'api-key', authToken: '', useAuthTokenFromEnv: true, envVarTokenName: 'TEST_KEY',
+    apiVersion: '', selectedModel: 'gpt-4o',
+    useCustomHeaders: false, headers: {}, useCustomModels: false, customModels: [],
+};
+
+const MOCK_SETTINGS: Settings = {
+    availableProviderConfigs: [MOCK_PROVIDER],
+    currentProviderConfig: MOCK_PROVIDER,
+    inferenceBaseConfig: { timeout: 120, maxRetries: 3, useMarkdownForOutput: true },
+    modelConfig: { name: 'gpt-4o', useTemperature: true, temperature: 0.7, useContextWindow: false, contextWindow: 4096, useLegacyMaxTokens: false },
+    languageConfig: { languages: ['English'], defaultInputLanguage: 'English', defaultOutputLanguage: 'English' },
+    appBehaviorConfig: { enableTaskLogging: false, logDirectory: '/tmp/logs', historyEnabled: true, historyMaxEntries: 500 },
+};
+
+const MOCK_METADATA: AppSettingsMetadata = {
+    authTypes: ['none', 'bearer', 'api-key'], providerTypes: ['openai'],
+    settingsFolder: '/Users/test/.config/GoText', settingsFile: '/Users/test/.config/GoText/settings.db',
+    logsFolder: '/Users/test/.local/share/GoText/logs', appVersion: '3.0.0-test',
+};
+
+function makeStore() {
+    return configureStore({
+        reducer: { settings: settingsReducer, ui: uiReducer, notifications: notificationsReducer },
+        preloadedState: {
+            settings: { allSettings: MOCK_SETTINGS, metadata: MOCK_METADATA },
+            ui: {
+                layout: 'side' as const, sidebarCollapsed: false, historyOpen: false,
+                inferenceRunning: false, currentView: 'settings' as const, armedActionId: null,
+                activeActionsTab: null, buildMode: false, editingStackId: null, activeSettingsTab: 0,
+                theme: { mode: 'auto' as const, effective: 'light' as const },
+            },
+        },
+    });
+}
+
+describe('MetadataTab', () => {
+    it('shows app version from metadata', () => {
+        render(<Provider store={makeStore()}><MetadataTab /></Provider>);
+        expect(screen.getByText('3.0.0-test')).toBeInTheDocument();
+    });
+
+    it('shows GoText heading', () => {
+        render(<Provider store={makeStore()}><MetadataTab /></Provider>);
+        expect(screen.getByRole('heading', { name: /gotext/i })).toBeInTheDocument();
+    });
+
+    it('shows database path from metadata', () => {
+        render(<Provider store={makeStore()}><MetadataTab /></Provider>);
+        expect(screen.getByText('/Users/test/.config/GoText/settings.db')).toBeInTheDocument();
+    });
+
+    it('shows logs folder path from metadata', () => {
+        render(<Provider store={makeStore()}><MetadataTab /></Provider>);
+        expect(screen.getByText('/Users/test/.local/share/GoText/logs')).toBeInTheDocument();
+    });
+
+    it('renders copy buttons for database path and logs folder', () => {
+        render(<Provider store={makeStore()}><MetadataTab /></Provider>);
+        expect(screen.getByRole('button', { name: /copy database path/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /copy logs folder path/i })).toBeInTheDocument();
+    });
+
+    it('renders Factory reset button that opens a confirmation dialog', async () => {
+        render(<Provider store={makeStore()}><MetadataTab /></Provider>);
+        const resetBtn = screen.getByRole('button', { name: /factory reset/i });
+        await userEvent.click(resetBtn);
+        expect(screen.getByText(/all settings will be wiped/i)).toBeInTheDocument();
+    });
+
+    it('confirmation dialog has a Reset everything button', async () => {
+        render(<Provider store={makeStore()}><MetadataTab /></Provider>);
+        await userEvent.click(screen.getByRole('button', { name: /factory reset/i }));
+        expect(await screen.findByRole('button', { name: /reset everything/i })).toBeInTheDocument();
+    });
+
+    it('dialog closes when cancel is clicked', async () => {
+        render(<Provider store={makeStore()}><MetadataTab /></Provider>);
+        await userEvent.click(screen.getByRole('button', { name: /factory reset/i }));
+        await screen.findByRole('button', { name: /reset everything/i });
+        await userEvent.click(screen.getByRole('button', { name: /cancel/i }));
+        await waitFor(() => {
+            expect(screen.queryByRole('button', { name: /reset everything/i })).not.toBeInTheDocument();
+        });
+    });
+});

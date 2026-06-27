@@ -16,6 +16,7 @@ export interface UIState {
     currentView: CurrentView;
     armedActionId: string | null;
     activeActionsTab: string | null;
+    activeSettingsTab: number;
     buildMode: boolean;
     editingStackId: string | null;
     theme: ThemeSubState;

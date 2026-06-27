@@ -72,6 +72,7 @@ function makeStore(overrides: StoreOverrides = {}) {
                 inferenceRunning: overrides.inferenceRunning ?? false,
                 currentView: 'stacks' as const, armedActionId: null, activeActionsTab: null,
                 buildMode: false, editingStackId: null,
+                    activeSettingsTab: 0,
                 theme: { mode: 'auto' as const, effective: 'light' as const },
             },
             run: {

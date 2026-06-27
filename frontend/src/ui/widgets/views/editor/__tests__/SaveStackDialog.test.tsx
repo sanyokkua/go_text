@@ -49,6 +49,7 @@ function makeStore(overrides: StoreOverrides = {}) {
                 layout: 'side' as const, sidebarCollapsed: false, historyOpen: false,
                 inferenceRunning: false, currentView: 'main' as const, armedActionId: null, activeActionsTab: null,
                 buildMode: true, editingStackId: overrides.editingStackId ?? null,
+                    activeSettingsTab: 0,
                 theme: { mode: 'auto' as const, effective: 'light' as const },
             },
             notifications: { queue: [] },

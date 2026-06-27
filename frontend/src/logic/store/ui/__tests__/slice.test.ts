@@ -50,6 +50,7 @@ const initialState: UIState = {
     activeActionsTab: null,
     buildMode: false,
     editingStackId: null,
+    activeSettingsTab: 0,
     theme: {
         mode: 'auto',
         effective: 'light',

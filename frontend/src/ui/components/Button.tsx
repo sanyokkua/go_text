@@ -13,6 +13,7 @@ export interface ButtonProps {
     onClick?: () => void;
     children: React.ReactNode;
     className?: string;
+    'aria-label'?: string;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -23,12 +24,13 @@ export const Button: React.FC<ButtonProps> = ({
     onClick,
     children,
     className,
+    'aria-label': ariaLabel,
 }) => {
     const cls = [styles.btn, variant !== 'default' ? styles[variant] : undefined, size === 'sm' ? styles.sm : undefined, className]
         .filter(Boolean)
         .join(' ');
     return (
-        <button type={type} className={cls} disabled={disabled} onClick={onClick}>
+        <button type={type} className={cls} disabled={disabled} onClick={onClick} aria-label={ariaLabel}>
             {children}
         </button>
     );

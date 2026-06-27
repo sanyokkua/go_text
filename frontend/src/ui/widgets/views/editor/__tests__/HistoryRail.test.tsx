@@ -100,6 +100,7 @@ function makeStore(overrides: StoreOverrides = {}) {
                 inferenceRunning: false, currentView: 'main' as const,
                 armedActionId: null, activeActionsTab: null,
                 buildMode: false, editingStackId: null,
+                    activeSettingsTab: 0,
                 theme: { mode: 'auto' as const, effective: 'light' as const },
             },
             editor: { inputContent: '', outputContent: '', viewMode: 'preview' as const },

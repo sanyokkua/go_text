@@ -35,6 +35,7 @@ describe('UI slice — theme functionality', () => {
         activeActionsTab: null,
         buildMode: false,
         editingStackId: null,
+        activeSettingsTab: 0,
         theme: { mode: 'auto', effective: 'light' },
     };
 

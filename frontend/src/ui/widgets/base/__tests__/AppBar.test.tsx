@@ -44,6 +44,7 @@ function makeStore(opts: {
                 activeActionsTab: null,
                 buildMode: false,
                 editingStackId: null,
+                    activeSettingsTab: 0,
                 theme: { mode: 'auto' as const, effective: 'light' as const },
             },
             settings: {

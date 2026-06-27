@@ -13,6 +13,8 @@ export function fromWireProvider(v: apperr.ProviderConfig): ProviderConfig {
         authToken: '',
         useAuthTokenFromEnv: !!v.apiKeyEnvVar,
         envVarTokenName: v.apiKeyEnvVar ?? '',
+        apiVersion: v.apiVersion ?? '',
+        selectedModel: v.selectedModel ?? '',
         useCustomHeaders: Object.keys(v.headers ?? {}).length > 0,
         headers: v.headers ?? {},
         useCustomModels: v.useCustomModels,
@@ -28,6 +30,8 @@ export function toWireProvider(v: ProviderConfig): apperr.ProviderConfig {
         baseUrl: v.baseUrl,
         authScheme: v.authType,
         apiKeyEnvVar: v.envVarTokenName,
+        apiVersion: v.apiVersion,
+        selectedModel: v.selectedModel,
         completionPath: v.completionEndpoint,
         modelsPath: v.modelsEndpoint,
         useCustomModels: v.useCustomModels,
@@ -54,6 +58,7 @@ export function fromWireMetadata(v: apperr.AppSettingsMetadata): AppSettingsMeta
         settingsFolder: v.settingsFolder,
         settingsFile: v.databaseFile,
         logsFolder: v.logsFolder,
+        appVersion: v.appVersion ?? '',
     };
 }
 

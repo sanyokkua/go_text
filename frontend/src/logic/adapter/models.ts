@@ -25,6 +25,7 @@ export interface AppSettingsMetadata {
     settingsFolder: string;
     settingsFile: string;
     logsFolder: string;
+    appVersion: string;
 }
 
 /**
@@ -93,6 +94,8 @@ export interface ProviderConfig {
     authToken: string;
     useAuthTokenFromEnv: boolean;
     envVarTokenName: string;
+    apiVersion: string;
+    selectedModel: string;
     useCustomHeaders: boolean;
     headers: Record<string, string>;
     useCustomModels: boolean;
