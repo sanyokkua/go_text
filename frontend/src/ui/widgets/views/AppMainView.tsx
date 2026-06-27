@@ -16,6 +16,7 @@ import { apperr } from '../../../../wailsjs/go/models';
 import { addStep } from '../../../logic/store/stacks/builder/slice';
 import { enqueueNotification } from '../../../logic/store/notifications/slice';
 import { enterBuildMode, navigateToMain, setActiveActionsTab } from '../../../logic/store/ui/slice';
+import { useChainEvents } from '../../../logic/hooks/useChainEvents';
 import { parseError } from '../../../logic/utils/error_utils';
 import { CommandPalette, CommandPaletteItem } from '../../primitives/CommandPalette';
 import FlexContainer from '../../components/FlexContainer';
@@ -37,6 +38,8 @@ const AppMainView: React.FC = () => {
     const settings = useAppSelector(selectAllSettings);
 
     const [paletteOpen, setPaletteOpen] = useState(false);
+
+    useChainEvents();
 
     useEffect(() => {
         const initializeApp = async () => {

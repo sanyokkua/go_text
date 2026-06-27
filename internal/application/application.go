@@ -3,8 +3,10 @@ package application
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"go_text/internal/actions"
+	"go_text/internal/apperr"
 	"go_text/internal/db"
 	"go_text/internal/file"
 	"go_text/internal/gate"
@@ -21,6 +23,8 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"resty.dev/v3"
 )
+
+const panicFmt = "panic: %v"
 
 // ApplicationContextHolder is the DI root. All exported fields are Wails-bound.
 type ApplicationContextHolder struct {
@@ -150,4 +154,66 @@ func (a *ApplicationContextHolder) EnableLoggingForDev(ctx context.Context) {
 	if runtime.Environment(ctx).BuildType == "dev" {
 		a.RestyClient.EnableDebug()
 	}
+}
+
+func (a *ApplicationContextHolder) LogError(message string) (res apperr.VoidResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(zlog.Logger, ae)
+			res = apperr.VoidResult{Error: &wire}
+		}
+	}()
+	a.appLogger.Error(message)
+	return apperr.VoidResult{}
+}
+
+func (a *ApplicationContextHolder) ClipboardGetText() (res apperr.StringResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(zlog.Logger, ae)
+			res = apperr.StringResult{Error: &wire}
+		}
+	}()
+	text, err := runtime.ClipboardGetText(a.ctx)
+	if err != nil {
+		ae := apperr.Internal(fmt.Errorf("clipboard get: %w", err))
+		wire := apperr.ToWire(zlog.Logger, ae)
+		return apperr.StringResult{Error: &wire}
+	}
+	return apperr.StringResult{Data: text}
+}
+
+func (a *ApplicationContextHolder) ClipboardSetText(text string) (res apperr.VoidResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(zlog.Logger, ae)
+			res = apperr.VoidResult{Error: &wire}
+		}
+	}()
+	if err := runtime.ClipboardSetText(a.ctx, text); err != nil {
+		ae := apperr.Internal(fmt.Errorf("clipboard set: %w", err))
+		wire := apperr.ToWire(zlog.Logger, ae)
+		return apperr.VoidResult{Error: &wire}
+	}
+	return apperr.VoidResult{}
+}
+
+func (a *ApplicationContextHolder) BrowserOpenURL(url string) (res apperr.VoidResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(zlog.Logger, ae)
+			res = apperr.VoidResult{Error: &wire}
+		}
+	}()
+	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
+		ae := apperr.Validation("url", "http or https URL", url)
+		wire := apperr.ToWire(zlog.Logger, ae)
+		return apperr.VoidResult{Error: &wire}
+	}
+	runtime.BrowserOpenURL(a.ctx, url)
+	return apperr.VoidResult{}
 }

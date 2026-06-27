@@ -45,9 +45,15 @@ import {
     ListStacks,
     UpdateStack,
 } from '../../../wailsjs/go/stacks/StackHandler';
+import {
+    BrowserOpenURL,
+    ClipboardGetText,
+    ClipboardSetText,
+    LogError as AppLogError,
+} from '../../../wailsjs/go/application/ApplicationContextHolder';
 import { apperr } from '../../../wailsjs/go/models';
-import { ClipboardGetText, ClipboardSetText, LogDebug, LogError, LogFatal, LogInfo, LogPrint, LogTrace, LogWarning } from '../../../wailsjs/runtime';
-import { IActionHandler, IClipboardService, IHistoryHandler, ILoggerService, ISettingsHandler, IStackHandler } from './interfaces';
+import { LogDebug, LogError, LogFatal, LogInfo, LogPrint, LogTrace, LogWarning } from '../../../wailsjs/runtime';
+import { IActionHandler, IAppHandler, IClipboardService, IHistoryHandler, ILoggerService, ISettingsHandler, IStackHandler } from './interfaces';
 import { AppBehaviorConfig, InferenceBaseConfig, ModelConfig, ProviderConfig } from './models';
 import { toWireBehavior, toWireProvider } from './mappers';
 
@@ -80,6 +86,28 @@ export class LoggerService implements ILoggerService {
     logPrint(message: string): void { logMessage(message, LogPrint, this.loggerServiceName); }
     logTrace(message: string): void { logMessage(message, LogTrace, this.loggerServiceName); }
     logWarning(message: string): void { logMessage(message, LogWarning, this.loggerServiceName); }
+}
+
+export class AppHandler implements IAppHandler {
+    constructor(private readonly logger: ILoggerService) {}
+
+    logError(message: string): Promise<apperr.VoidResult> {
+        this.logger.logDebug(`AppHandler.logError: ${message}`);
+        return AppLogError(message);
+    }
+
+    clipboardGetText(): Promise<apperr.StringResult> {
+        return ClipboardGetText();
+    }
+
+    clipboardSetText(text: string): Promise<apperr.VoidResult> {
+        return ClipboardSetText(text);
+    }
+
+    browserOpenURL(url: string): Promise<apperr.VoidResult> {
+        this.logger.logDebug(`AppHandler.browserOpenURL: ${url}`);
+        return BrowserOpenURL(url);
+    }
 }
 
 export class ActionHandler implements IActionHandler {
@@ -294,11 +322,15 @@ export class StackHandler implements IStackHandler {
 }
 
 export class ClipboardService implements IClipboardService {
-    constructor(private readonly logger: ILoggerService) {}
+    constructor(
+        private readonly logger: ILoggerService,
+        private readonly appHandler: IAppHandler,
+    ) {}
 
     async getText(): Promise<string> {
         try {
-            return await ClipboardGetText();
+            const result = await this.appHandler.clipboardGetText();
+            return result.data ?? '';
         } catch (e) {
             this.logger.logError(`ClipboardGetText failed: ${String(e)}`);
             return '';
@@ -307,8 +339,8 @@ export class ClipboardService implements IClipboardService {
 
     async setText(text: string): Promise<boolean> {
         try {
-            await ClipboardSetText(text);
-            return true;
+            const result = await this.appHandler.clipboardSetText(text);
+            return !result.error;
         } catch (e) {
             this.logger.logError(`ClipboardSetText failed: ${String(e)}`);
             return false;

@@ -1,9 +1,9 @@
 import {
-    IActionHandler, IClipboardService, IHistoryHandler,
+    IActionHandler, IAppHandler, IClipboardService, IHistoryHandler,
     ILoggerService, ISettingsHandler, IStackHandler,
 } from './interfaces';
 import {
-    ActionHandler, ClipboardService, HistoryHandler,
+    ActionHandler, AppHandler, ClipboardService, HistoryHandler,
     LoggerService, SettingsHandler, StackHandler,
 } from './services';
 
@@ -16,5 +16,9 @@ export const ActionHandlerAdapter: IActionHandler = new ActionHandler(LoggerServ
 export const SettingsHandlerAdapter: ISettingsHandler = new SettingsHandler(LoggerService.getLogger('SettingsHandler'));
 export const HistoryHandlerAdapter: IHistoryHandler = new HistoryHandler(LoggerService.getLogger('HistoryHandler'));
 export const StackHandlerAdapter: IStackHandler = new StackHandler(LoggerService.getLogger('StackHandler'));
-export const ClipboardServiceAdapter: IClipboardService = new ClipboardService(LoggerService.getLogger('ClipboardService'));
+export const AppHandlerAdapter: IAppHandler = new AppHandler(LoggerService.getLogger('AppHandler'));
+export const ClipboardServiceAdapter: IClipboardService = new ClipboardService(
+    LoggerService.getLogger('ClipboardService'),
+    AppHandlerAdapter,
+);
 export const getLogger = (serviceName?: string): ILoggerService => LoggerService.getLogger(serviceName);

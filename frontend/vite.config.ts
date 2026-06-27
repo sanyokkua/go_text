@@ -8,6 +8,10 @@ function bridgeMockPlugin(): Plugin {
         name: 'vite-plugin-bridge-mock',
         enforce: 'pre',
         resolveId(id: string) {
+            // ApplicationContextHolder doesn't end in "Handler" but mocks as AppHandler
+            if (/wailsjs\/go\/application\/ApplicationContextHolder$/.test(id)) {
+                return path.resolve(__dirname, 'src/dev/bridge-mock/go/main/AppHandler.ts');
+            }
             // Redirect any wailsjs handler import to bridge mock
             const handlerMatch = id.match(/wailsjs\/go\/(?:[^/]+)\/(\w+Handler)$/);
             if (handlerMatch) {

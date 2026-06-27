@@ -67,3 +67,10 @@ export interface IClipboardService {
     getText(): Promise<string>;
     setText(text: string): Promise<boolean>;
 }
+
+export interface IAppHandler {
+    logError(message: string): Promise<apperr.VoidResult>;
+    clipboardGetText(): Promise<apperr.StringResult>;
+    clipboardSetText(text: string): Promise<apperr.VoidResult>;
+    browserOpenURL(url: string): Promise<apperr.VoidResult>;
+}
