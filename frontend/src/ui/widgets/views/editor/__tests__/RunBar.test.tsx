@@ -26,7 +26,7 @@ function makeStore(
     uiOverrides = {},
     editorOverrides = {},
     runOverrides = {},
-    catalog: Array<{ id: string; name: string; category: string; directive: string }> = [],
+    catalog: Array<{ id: string; name: string; category: string; family: string; directive: string; orderRank: number; exclusivityGroup: string; mergeable: boolean; terminal: boolean; requires: string[] }> = [],
 ) {
     return configureStore({
         reducer: {
@@ -42,7 +42,7 @@ function makeStore(
                 ...uiOverrides,
             },
             run: { status: 'idle' as const, runId: null, currentGroupIndex: null, totalGroups: null, currentGroupFamily: null, failedIndex: null, partialOutput: null, errorCode: null, errorMessage: null, ...runOverrides },
-            ...(catalog.length > 0 ? { actions: { catalog, catalogStatus: 'success' as const, availableModels: [], modelsStatus: 'idle' as const } } : {}),
+            actions: { catalog, catalogStatus: (catalog.length > 0 ? 'success' : 'idle') as 'success' | 'idle', availableModels: [], modelsStatus: 'idle' as const },
         },
     });
 }
@@ -91,7 +91,7 @@ describe('RunBar', () => {
                 { armedActionId: 'action1' },
                 { inputContent: 'hi' },
                 {},
-                [{ id: 'action1', name: 'Summarise', category: 'Writing', directive: '' }],
+                [{ id: 'action1', name: 'Summarise', category: 'Writing', family: 'text', directive: '', orderRank: 0, exclusivityGroup: '', mergeable: false, terminal: false, requires: [] }],
             )}>
                 <RunBar />
             </Provider>,
