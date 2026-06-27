@@ -245,3 +245,7 @@ GET  http://localhost:11434/api/tags
 ```
 
 All these endpoints are available on the current PC. If you need test inference, choose the smallest model available.
+
+# Finishing task
+
+Always in the end of the task use `wails dev` to verify that app is working

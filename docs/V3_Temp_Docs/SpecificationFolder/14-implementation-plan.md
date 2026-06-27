@@ -441,6 +441,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Scope:** Go unit/integration (`-race`, httptest, in-memory SQLite, goose round-trip); FE Jest + React Testing Library + jest-axe for **every** slice/helper/component/view (§2.3 matrix); **headless-Chromium UI verification (Playwright responsive×themes gates + interaction smoke flows incl. Markdown rendering, run against Target A and the bridge-dependent journeys against Target B, `13-testing-specification.md` §1.5/§4.1–4.2/§11)**; CI guards (`@mui`/`@emotion` absent; `sqlc generate --diff`; `wails doctor`; `govulncheck`; `npm audit`); coverage floor enforced.
 - **Acceptance criteria:** suites pass; coverage targets met; the §2.3 matrix is fully populated (no view lacking a unit **or** a UI test); the §11 pipeline is green end-to-end; CI guards enforced.
 - **References:** `13-testing-specification.md` (§1.5, §2.3, §4, §11).
+- Before doing changes, validate that app actually builds and runs via `wails dev`
 
 ### T30 · Final integration & acceptance pass
 - **Dependencies:** T00–T29 · **Complexity:** M
