@@ -1,0 +1,48 @@
+.root {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    background: var(--surface);
+    color: var(--ink);
+}
+
+.header {
+    flex-shrink: 0;
+    padding: var(--space-4) var(--space-6);
+    border-bottom: 1px solid var(--line);
+}
+
+.title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--ink);
+}
+
+.subtitle {
+    margin: var(--space-1) 0 0;
+    font-size: 0.875rem;
+    color: var(--ink-muted, var(--ink));
+    opacity: 0.7;
+}
+
+.tabsWrapper {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+}
+
+.guideContent {
+    padding: var(--space-4) var(--space-6);
+    overflow-y: auto;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.catalogAndInspector {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    height: 100%;
+    overflow: hidden;
+}
