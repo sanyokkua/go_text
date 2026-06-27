@@ -40,3 +40,30 @@ export const cancelChain = createAsyncThunk<void, string, { rejectValue: string 
         }
     },
 );
+
+interface RunSingleActionArgs {
+    actionId: string;
+    inputText: string;
+    settings: apperr.Settings | null;
+}
+
+export const runSingleAction = createAsyncThunk<
+    void,
+    RunSingleActionArgs,
+    { rejectValue: string; dispatch: AppDispatch }
+>('run/runSingleAction', async ({ actionId, inputText, settings }, { dispatch, rejectWithValue }) => {
+    try {
+        const req = new apperr.ChainRequest({
+            runId: crypto.randomUUID(),
+            inputText,
+            steps: [new apperr.ChainStep({ actionId })],
+            inputLanguageId: settings?.languageConfig?.defaultInputLanguage ?? 'auto',
+            outputLanguageId: settings?.languageConfig?.defaultOutputLanguage ?? 'auto',
+            useMarkdown: settings?.inferenceBaseConfig?.useMarkdownForOutput ?? false,
+        });
+        await dispatch(processPromptChain(req)).unwrap();
+    } catch (error: unknown) {
+        const err = parseError(error);
+        return rejectWithValue(err.message);
+    }
+});
