@@ -17,6 +17,7 @@ export interface CommandPaletteProps {
     placeholder?: string;
     onSelect: (value: string) => void;
     onShiftSelect?: (value: string) => void;
+    disabled?: boolean;
 }
 
 export const CommandPalette: React.FC<CommandPaletteProps> = ({
@@ -26,6 +27,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     placeholder = 'Type a command…',
     onSelect,
     onShiftSelect,
+    disabled = false,
 }) => {
     const [highlighted, setHighlighted] = React.useState('');
 
@@ -40,6 +42,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     }, [items]);
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (disabled) return;
         if (e.key === 'Enter' && e.shiftKey && onShiftSelect && highlighted) {
             e.preventDefault();
             onShiftSelect(highlighted);
@@ -47,11 +50,21 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         }
     };
 
+    const handleSelect = (value: string) => {
+        if (disabled) return;
+        onSelect(value);
+        onOpenChange(false);
+    };
+
     return (
         <Dialog.Root open={open} onOpenChange={onOpenChange}>
             <Dialog.Portal>
                 <Dialog.Overlay className={styles.overlay} />
-                <Dialog.Content className={styles.content} aria-label="Command palette">
+                <Dialog.Content
+                    className={styles.content}
+                    aria-label="Command palette"
+                    aria-disabled={disabled || undefined}
+                >
                     <Command
                         className={styles.command}
                         value={highlighted}
@@ -64,6 +77,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                                 placeholder={placeholder}
                                 className={styles.input}
                                 aria-label="Search commands"
+                                disabled={disabled}
                             />
                             <span className={styles.escBadge}>esc</span>
                         </div>
@@ -80,11 +94,9 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                                         <Command.Item
                                             key={item.value}
                                             value={item.value}
-                                            onSelect={() => {
-                                                onSelect(item.value);
-                                                onOpenChange(false);
-                                            }}
+                                            onSelect={() => handleSelect(item.value)}
                                             className={styles.item}
+                                            aria-disabled={disabled || undefined}
                                         >
                                             <span className={styles.itemLabel}>{item.label}</span>
                                             <span className={styles.enterHint} aria-hidden>↵</span>
@@ -95,9 +107,15 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                         </Command.List>
 
                         <div className={styles.footer}>
-                            <span>↑↓ navigate</span>
-                            <span>↵ run</span>
-                            <span>⇧↵ add to stack</span>
+                            {disabled ? (
+                                <span>Inference in progress…</span>
+                            ) : (
+                                <>
+                                    <span>↑↓ navigate</span>
+                                    <span>↵ run</span>
+                                    <span>⇧↵ add to stack</span>
+                                </>
+                            )}
                         </div>
                     </Command>
                 </Dialog.Content>
