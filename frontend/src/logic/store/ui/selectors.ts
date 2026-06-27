@@ -1,8 +1,15 @@
 import { RootState } from '../index';
-import { MainView } from './types';
+import { CurrentView, ThemeEffective, ThemeMode } from './types';
 
-export const selectCurrentView = (state: RootState): MainView => state.ui.view;
-export const selectActiveSettingsTab = (state: RootState): number => state.ui.activeSettingsTab;
-export const selectActiveActionsTab = (state: RootState): string => state.ui.activeActionsTab;
-export const selectIsAppBusy = (state: RootState): boolean => state.ui.isAppBusy;
-export const selectCurrentTask = (state: RootState): string => state.ui.currentTask;
+export const selectLayout = (state: RootState): 'side' | 'stacked' => state.ui.layout;
+export const selectSidebarCollapsed = (state: RootState): boolean => state.ui.sidebarCollapsed;
+export const selectHistoryOpen = (state: RootState): boolean => state.ui.historyOpen;
+export const selectInferenceRunning = (state: RootState): boolean => state.ui.inferenceRunning;
+export const selectThemeMode = (state: RootState): ThemeMode => state.ui.theme.mode;
+export const selectEffectiveTheme = (state: RootState): ThemeEffective => state.ui.theme.effective;
+export const selectCurrentView = (state: RootState): CurrentView => state.ui.currentView;
+export const selectArmedActionId = (state: RootState): string | null => state.ui.armedActionId;
+export const selectActiveActionsTab = (state: RootState): string | null => state.ui.activeActionsTab;
+
+// Backward-compat alias — replaces the v2 `selectIsAppBusy` across old components
+export const selectIsAppBusy = selectInferenceRunning;
