@@ -1,6 +1,7 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { apperr } from '../../../../wailsjs/go/models';
 import { ActionHandlerAdapter, getLogger, tryUnwrap, unwrap } from '../../adapter';
+import type { Settings } from '../../adapter/models';
 import { parseError } from '../../utils/error_utils';
 import { setOutputContent } from '../editor/slice';
 import { AppDispatch } from '../index';
@@ -44,7 +45,7 @@ export const cancelChain = createAsyncThunk<void, string, { rejectValue: string 
 interface RunSingleActionArgs {
     actionId: string;
     inputText: string;
-    settings: apperr.Settings | null;
+    settings: Settings | null;
 }
 
 export const runSingleAction = createAsyncThunk<
