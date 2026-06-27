@@ -9,7 +9,7 @@
 
 .header {
     flex-shrink: 0;
-    padding: var(--space-4) var(--space-6);
+    padding: var(--space-4);
     border-bottom: 1px solid var(--line);
 }
 
@@ -34,7 +34,7 @@
 }
 
 .guideContent {
-    padding: var(--space-4) var(--space-6);
+    padding: var(--space-4);
     overflow-y: auto;
     height: 100%;
     box-sizing: border-box;
