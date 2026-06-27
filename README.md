@@ -11,21 +11,18 @@
 
 ## Overview
 
-**Tired of switching between multiple tools for text processing? Tired of each time create a new prompt for text processing?** Suite brings all your
-AI-powered text transformation needs into one
-native desktop application.
+**Text Processing Suite** ("GoText") is a native desktop application that harnesses the power of
+Large Language Models to intelligently edit and transform text. It provides 60+ AI-powered actions
+across categories like grammar correction, style adaptation, multi-language translation, document
+structuring, and summarization — all directly on your desktop without browser or cloud dependency.
 
-**Text Processing Suite** is a powerful desktop application that harnesses the power of Large Language Models to intelligently edit and
-transform your text. Unlike simple text editors, it provides AI-powered operations like grammar correction, style adaptation, multi-language
-translation, document structuring, and summarization — all directly on your desktop.
+The application connects to **any OpenAI-compatible LLM provider**, giving you the freedom to choose:
 
-The application connects to **any OpenAI-compatible LLM provider**, giving you the freedom to choose between:
-
-- **Local privacy-first model providers**: Ollama, LM Studio, Llama.cpp
+- **Local privacy-first providers**: Ollama, LM Studio, Llama.cpp
 - **Cloud services**: OpenAI, OpenRouter, or any custom OpenAI-compatible API
 
-Built with Go for efficient backend processing and React for a modern, responsive UI, the application delivers native performance with a small
-distribution footprint.
+Built with Go for efficient backend processing and React for a responsive UI, GoText delivers native
+performance with a small distribution footprint.
 
 ![Application Screenshot](docs/screenshots/App_03.png)
 
@@ -35,66 +32,61 @@ distribution footprint.
 
 **60+ text processing actions across 10 categories**
 
-### 📝 Proofreading & Grammar
+### Proofreading & Grammar
 
 - Basic and enhanced proofreading
-- Style consistency checking
-- Readability improvements
-- Tone adjustments for clarity
+- Style consistency checking, readability improvements, tone adjustments
 
-### ✍️ Advanced Rewriting
+### Advanced Rewriting
 
-**Tone Adaptation** – Rewrite text to match your desired tone:
+**Tone Adaptation** – Friendly, Direct, Indirect, Professional, Enthusiastic, Neutral, Polite,
+Conflict-safe, Apology messages
 
-- Friendly, Direct, Indirect
-- Professional, Enthusiastic, Neutral
-- Conflict-safe rewrites, Polite requests, Apology messages
+**Style Transformation** – Formal, Semi-Formal, Casual, Academic, Technical, Journalistic,
+Creative, Marketing, SEO-Optimized, Simplified
 
-**Style Transformation** – Adapt writing style for different contexts:
-
-- Formal, Semi-Formal, Casual
-- Academic, Technical, Journalistic
-- Creative, Marketing, SEO-Optimized
-- Simplified for non-native speakers or children
-
-### 📄 Formatting & Templates
+### Formatting & Templates
 
 - Paragraph structuring and bullet conversion
 - Email, Report, Blog, and Resume templates
-- Social media post-formatting
-- Headline and tagline generation
+- Social media post-formatting, headline and tagline generation
 
-### 💼 Everyday Work
+### Everyday Work
 
 - Drafts for coworkers and management
-- Task and problem explanations
-- Professional communication templates
+- Task and problem explanations, professional communication templates
 
-### 📁 Document Structuring
+### Document Structuring
 
-- Markdown conversion
-- User story and FAQ generation
-- Specification document generation
-- Meeting notes formatting
-- Proposal structuring
+- Markdown conversion, user story and FAQ generation
+- Specification document generation, meeting notes formatting, proposal structuring
 
-### 📊 Summarization
+### Summarization
 
 - Concise summaries and key points extraction
-- Hashtag generation
-- Simple explanations for complex topics
+- Hashtag generation, simple explanations for complex topics
 
-### 🌍 Translation
+### Translation
 
 - Multi-language translation (depends on the chosen LLM)
-- Dictionary-style translations with context
-- Example sentence generation
+- Dictionary-style translations with context, example sentence generation
 
-### 🎨 Prompt Engineering
+### Prompt Engineering
 
 - Improve prompts for text LLMs
 - Optimize prompts for image and video generation models
 - Prompt compression and expansion
+
+### Stack Builder
+
+Compose **multi-step chains** of actions that run sequentially, each step feeding its output to the
+next. Save stacks for reuse and share them across sessions. Run progress is shown step-by-step via
+the built-in progress indicator.
+
+### Action History
+
+Every completed run is logged to the **history rail** with its applied actions and output preview.
+Restore any past result with a single click.
 
 ---
 
@@ -107,13 +99,13 @@ distribution footprint.
 ![Main Interface - result of the previous action](docs/screenshots/App_03.png)
 ![Main Interface - another result of the summary](docs/screenshots/App_04.png)
 
-### Main Application Interface – Prompt Change and Results
+### Prompt Change and Results
 
 ![Main Interface - improving prompt for image generation](docs/screenshots/App_05.png)
 
-Good Example how an improved prompt can produce the great result:
+Good example — an improved prompt can produce a great result:
 
-![Generated Image by Qwen using improved prompt](docs/screenshots/App_05_Res.png)
+![Generated Image using improved prompt](docs/screenshots/App_05_Res.png)
 
 ### Translation Example
 
@@ -134,107 +126,67 @@ Good Example how an improved prompt can produce the great result:
 
 ## System Requirements
 
-To run Text Processing Suite, your system should meet the following requirements:
+| Requirement | Minimum |
+|---|---|
+| Operating System | macOS 12+, Windows 10+, Linux (modern) |
+| RAM | 2 GB (8+ GB recommended for local models) |
+| Disk Space | 15 MB + space for local LLM models |
+| Network | Internet connection for cloud providers |
 
-| Requirement          | Minimum Specification                     |
-|----------------------|-------------------------------------------|
-| **Operating System** | macOS 12+, Windows 10+, Linux (modern)    |
-| **RAM**              | 2 GB (8+ GB recommended for local models) |
-| **Disk Space**       | 15 MB + space for local LLM models        |
-| **Network**          | Internet connection for cloud providers   |
-
-**Basically, if you can run a web browser, you can run this app.**  
-The only exception is when using a **local LLM**—in that case, you’ll need a powerful PC or laptop.
-
-For local LLM inference, is recommended:
-
-- **16 GB or more of system RAM**, and/or
-- A **powerful GPU with ample VRAM**.
-
-For example, **Ollama’s requirements vary by model**, but generally include:
-
-- At least **16 GB of RAM**,
-- A modern **4-core (or higher) CPU**,
-- **12 GB+ of free disk space** (base installation; significantly more for larger models).
-
-A **NVIDIA or AMD GPU with at least 6 GB of VRAM** is highly recommended for performance. While smaller models can run on CPU alone, larger models (
-e.g., 13B parameter variants) typically require **12 GB or more of VRAM** for smooth operation.
-
-The best results show models with 20b+ parameters.
+For local LLM inference: 16 GB+ RAM, modern 4-core CPU, and ideally a GPU with 6+ GB VRAM.
+Larger models (13B+ parameters) typically need 12 GB+ VRAM for smooth operation.
 
 ---
 
 ## Security & Privacy
 
-### Data Handling
-
-- **Local Processing**: When using local providers, your text never leaves your computer
+- **Local Processing**: When using local providers, text never leaves your computer
 - **Cloud Processing**: When using cloud providers, text is sent to the provider's API
-- **No Data Collection**: The application does not collect or transmit any usage data
+- **No Data Collection**: The application does not collect or transmit usage data
+- **Env-var credentials**: API keys are stored as environment-variable **names** only — the secret
+  is read with `os.Getenv` at request time and is never written to disk or logs
 
-### Privacy Features
-
-- Environment variable support for API keys (never stored in plain text)
-- Local-first design with privacy-focused providers
-- Clear indication of current provider type in UI
-
-## Performance Expectations
-
-Performance depends on:
-
-- Your hardware (especially for local models)
-- Model size and complexity
-- Input text length
-- Network conditions (for cloud providers)
-
-## Update Mechanism
-
-Text Processing Suite follows semantic versioning and provides updates through:
-
-- **GitHub Releases**: Download new versions from the [Releases Page](https://github.com/sanyokkua/go_text/releases)
-- **Manual Updates**: Replace the application binary with the new version
-- **Settings Preservation**: Your settings and configurations are preserved during updates
-
-It is recommendedto check for updates periodically, especially when new features or bug fixes are announced.
+---
 
 ## Installation
 
-### Download Pre-built Binaries
+### Download pre-built binaries
 
-Download the latest release for your platform from the [GitHub Releases Page](https://github.com/sanyokkua/go_text/releases).
+Download the latest release from the [GitHub Releases Page](https://github.com/sanyokkua/go_text/releases).
 
-| Platform                  | File                                            |
-|---------------------------|-------------------------------------------------|
-| **macOS** (Apple Silicon) | `TextProcessingSuite-2.0.0-linux-amd64.zip`     |
-| **macOS** (Intel)         | `TextProcessingSuite-2.0.0-macos-amd64.app.zip` |
-| **Windows** (64-bit)      | `TextProcessingSuite-2.0.0-windows-amd64.exe`   |
-| **Linux** (64-bit)        | `TextProcessingSuite-2.0.0-linux-amd64`         |
+| Platform | File |
+|---|---|
+| macOS (Apple Silicon) | `TextProcessingSuite-*-macos-arm64.app.zip` |
+| macOS (Intel) | `TextProcessingSuite-*-macos-amd64.app.zip` |
+| Windows (64-bit) | `TextProcessingSuite-*-windows-amd64.exe` |
+| Linux (64-bit) | `TextProcessingSuite-*-linux-amd64` |
 
 ![Release Page](docs/screenshots/ReleasePage_1.png)
 
 #### macOS Installation Notes
 
-macOS may block unsigned applications.
-![macOS - Block](docs/v1_docs/screens/06.Release_3.png)
-
-After downloading:
+macOS may block unsigned applications. After downloading:
 
 1. Extract the `.zip` file
-   ![macOS - Extracted](docs/v1_docs/screens/06.Release_2.png)
 2. Remove the quarantine flag:
    ```bash
    xattr -rd com.apple.quarantine TextProcessingSuite.app
    ```
-   ![macOS - Removed](docs/v1_docs/screens/06.Release_4.png)
 3. If still blocked, go to **System Settings → Privacy & Security** and allow the app to run
 
-### Build from Source
+### Build from source
 
 **Prerequisites:**
 
 - Go 1.25+
 - Node.js 20+
-- Wails CLI (`go install github.com/wailsapp/wails/v2/cmd/wails@latest`)
+- Wails CLI: `go install github.com/wailsapp/wails/v2/cmd/wails@latest`
+- macOS: Xcode Command Line Tools
+- Linux: `sudo apt-get install build-essential libgtk-3-dev libwebkit2gtk-4.1-dev`
+- Windows: C++ Build Tools + WebView2 Runtime
+
+> No SQLite system library needed — GoText uses `modernc.org/sqlite`, a pure-Go driver with no
+> CGO dependency. `wails build` cross-compiles cleanly on all platforms.
 
 **Steps:**
 
@@ -243,36 +195,16 @@ After downloading:
 git clone https://github.com/sanyokkua/go_text.git
 cd go_text
 
-# Install dependencies
+# Install frontend dependencies
 cd frontend && npm install && cd ..
-go get ./...
 
 # Run in development mode (hot reload)
 wails dev
 
 # Build production binary
 wails build
+# Output: build/bin/TextProcessingSuite
 ```
-
-The executable will be in `build/bin/`.
-
-### Dependency changes (v3)
-
-**Removed (frontend):**
-- `@mui/material`, `@mui/icons-material` — replaced by Radix Primitives
-- `@emotion/react`, `@emotion/styled` — replaced by CSS Modules + `tokens.css`
-- `@fontsource/roboto` — font family now declared via `--font` CSS token
-
-**Added (frontend):**
-- `radix-ui` — unstyled accessible UI primitives
-- `cmdk` — command palette / searchable lists
-- `react-markdown`, `remark-gfm`, `remark-math`, `rehype-katex`, `rehype-highlight`, `highlight.js`, `katex`, `mermaid` — Markdown rendering pipeline
-- `lucide-react` — icon set
-
-**Added (Go):**
-- `modernc.org/sqlite` — pure-Go SQLite driver (no C toolchain required)
-- `github.com/pressly/goose/v3` — database schema migrations
-- `gopkg.in/natefinch/lumberjack.v2` — rotating file logger
 
 ---
 
@@ -280,65 +212,70 @@ The executable will be in `build/bin/`.
 
 ### Multi-Provider Support
 
-The application supports **multiple provider configurations** that you can switch between. Each provider can have:
+The application supports multiple provider configurations that you can switch between. Each provider
+can have a custom base URL, authentication method, environment-variable-backed API key, custom model
+list, and inference settings.
 
-- Custom base URL and endpoints
-- Authentication headers (API keys, Bearer tokens)
-- Environment variable support for secrets
-- Custom model lists
-- Provider-specific settings
-
-**Built-in Provider Templates:**
+**Built-in provider templates:**
 
 - Ollama (local)
 - LM Studio (local)
 - Llama.cpp (local)
-- OpenRouter.ai (cloud)
 - OpenAI (cloud)
+- OpenRouter (cloud)
 
-### Settings File Location
+### Settings and data locations
 
-| Platform    | Path                                                                |
-|-------------|---------------------------------------------------------------------|
-| **macOS**   | `~/Library/Application Support/TextProcessingSuite/SettingsV2.json` |
-| **Linux**   | `~/.config/TextProcessingSuite/SettingsV2.json`                     |
-| **Windows** | `%APPDATA%\TextProcessingSuite\SettingsV2.json`                     |
+| Platform | Path |
+|---|---|
+| macOS | `~/Library/Application Support/TextProcessingSuite/` |
+| Linux | `~/.config/TextProcessingSuite/` |
+| Windows | `%APPDATA%\TextProcessingSuite\` |
 
-### Configuration Options
+Files inside that folder:
+- `SettingsV2.json` — provider and UI preferences
+- `gotext.db` — SQLite database (action history, saved stacks, provider configs)
+
+### Configuration options
 
 - **Provider Management**: Add, edit, delete, and switch between multiple LLM providers
-- **Model Selection**: Choose from available models or provide a custom list
-- **Inference Settings**: Configure timeout, retries, and output format (Markdown/Plain Text)
-- **Temperature Control**: Optional temperature setting with toggle
-- **Language Preferences**: Default input/output languages for translation
+- **Model Selection**: Choose from discovered models or provide a custom model list
+- **Inference Settings**: Timeout, retries, and output format (Markdown / Plain Text)
+- **Temperature Control**: Optional temperature setting with enable toggle
+- **Language Preferences**: Default input/output languages for translation actions
 - **Custom Languages**: Add/remove languages from the supported list
 
 ---
 
 ## Usage
 
-1. **Select Provider**: Choose your LLM provider from the settings (Ollama, OpenAI, etc.)
-2. **Choose Action**: Browse 10 categories with 60+ actions
+1. **Select Provider**: Choose your LLM provider from Settings
+2. **Choose Action**: Browse 10 categories with 60+ actions in the sidebar
 3. **Enter Text**: Paste or type your text in the input area
 4. **Process**: Click the action button and wait for the LLM response
-5. **Review Output**: The transformed text appears in the output area
-6. **Copy or Further Edit**: Use the output or continue processing
+5. **Review Output**: The transformed text appears with markdown / diff rendering
+6. **Use or Stack**: Copy the output, use it as new input, or add more steps to a stack
+
+**Command Palette (⌘K):** Quick-run any action or add it to the current stack.
 
 ---
 
 ## Technology Stack
 
-| Component             | Technology    | Version   |
-|-----------------------|---------------|-----------|
-| **Backend**           | Go            | 1.25.1    |
-| **Frontend**          | React         | 19.2.3    |
-| **Language**          | TypeScript    | 5.9.3     |
-| **State Management**  | Redux Toolkit | 2.11.2    |
-| **Desktop Framework** | Wails         | v2.11.0   |
-| **UI Library**        | Material-UI   | 7.3.6     |
-| **HTTP Client**       | Resty         | v3 (beta) |
-| **Build Tool**        | Vite          | 7.3.0     |
-| **Logging**           | zerolog       | 1.34.0    |
+| Component | Technology | Version |
+|---|---|---|
+| Backend | Go | 1.25.1 |
+| Desktop framework | Wails | v2.11.0 |
+| Frontend | React | 19.2.3 |
+| Language | TypeScript | 5.9.3 |
+| State management | Redux Toolkit | 2.11.2 |
+| UI primitives | Radix Primitives (`radix-ui`) | ~1.5.x |
+| Command palette | `cmdk` | latest |
+| HTTP client | Resty | v3 |
+| Build tool | Vite | 7.x |
+| Logging | zerolog | 1.34.0 |
+| SQLite driver | modernc.org/sqlite (pure Go) | latest |
+| Migrations | goose v3 | latest |
 
 ---
 
@@ -346,78 +283,33 @@ The application supports **multiple provider configurations** that you can switc
 
 ```
 go_text/
-├── README.md
-├── main.go                     # Application entry point
+├── main.go                     # Wails entry point
 ├── wails.json                  # Wails configuration
 ├── go.mod                      # Go dependencies
 ├── internal/                   # Go backend packages
-│   ├── application/            # Dependency injection
-│   ├── actions/                # Text processing logic
-│   ├── settings/               # Configuration management
+│   ├── application/            # DI container
+│   ├── actions/                # Chain orchestration (Planner, Composer, ChainOrchestrator)
+│   ├── apperr/                 # Typed errors and Result envelopes
+│   ├── db/                     # SQLite + migrations + sqlc-generated store
+│   ├── gate/                   # InferenceGate (single-flight)
+│   ├── history/                # Action history
 │   ├── llms/                   # LLM provider integration
-│   ├── prompts/                # Prompt templates
-│   ├── file/                   # File utilities
-│   └── logging/                # Custom logger
-├── frontend/                   # React frontend
+│   ├── prompts/                # Prompt library (60+ actions)
+│   ├── settings/               # Settings management
+│   ├── stacks/                 # Saved stacks
+│   ├── verification/           # Provider diagnostics
+│   ├── file/                   # OS-specific path resolution
+│   ├── logging/                # Structured logger + Wails bridge
+│   └── tasklog/                # JSONL diagnostic logging
+├── frontend/                   # React TypeScript SPA
 │   ├── src/
-│   │   ├── logic/              # State management & adapters
-│   │   └── ui/                 # Components & views
-│   ├── wailsjs/                # Auto-generated Wails bindings
-│   └── package.json
-├── build/                      # Build configuration
-└── docs/                       # Documentation
-    ├── architecture/           # Technical architecture docs
-    └── guides/                 # Developer guides
+│   │   ├── logic/              # Redux slices, adapters, hooks
+│   │   ├── ui/                 # Components, primitives, views, CSS tokens
+│   │   └── dev/                # Bridge mock for frontend-only dev
+│   └── wailsjs/                # Auto-generated Wails bindings (never edit manually)
+├── build/                      # Wails platform configs
+└── docs/                       # Architecture docs, guides, agent rules
 ```
-
----
-
-## Provider Config Examples
-
-### Ollama (Local)
-
-```json
-{
-    "baseUrl": "http://127.0.0.1:11434/",
-    "modelsEndpoint": "v1/models",
-    "completionEndpoint": "v1/chat/completions",
-    "authType": "none"
-}
-```
-
-### OpenAI (Cloud)
-
-```json
-{
-    "baseUrl": "https://api.openai.com/",
-    "modelsEndpoint": "v1/models",
-    "completionEndpoint": "v1/chat/completions",
-    "authType": "bearer",
-    "authToken": "sk-...",
-    "useAuthTokenFromEnv": true,
-    "envVarTokenName": "OPENAI_API_KEY"
-}
-```
-
-### OpenRouter (Cloud)
-
-```json
-{
-    "baseUrl": "https://openrouter.ai/api/",
-    "modelsEndpoint": "v1/models",
-    "completionEndpoint": "v1/chat/completions",
-    "authType": "bearer",
-    "useAuthTokenFromEnv": true,
-    "envVarTokenName": "OPENROUTER_API_KEY"
-}
-```
-
----
-
-## Documentation
-
-- **[Architecture Documentation](docs/architecture/README.md)** - Comprehensive technical architecture
-- **[Developer Guide](docs/guides/DEVELOPER_GUIDE.md)** - How to contribute and extend
 
 ---
 
@@ -427,24 +319,24 @@ go_text/
 - **Context Limits**: Large documents may exceed model context windows
 - **Response Time**: Complex operations may take several seconds depending on model and provider
 - **Model Dependency**: Translation quality and output format depend on the selected model's capabilities
+- **No streaming**: Responses appear in full on completion — intermediate output is not shown
+
+---
+
+## Documentation
+
+- **[Architecture Documentation](docs/architecture/README.md)** — Technical architecture
+- **[Developer Guide](docs/guides/DEVELOPER_GUIDE.md)** — How to extend the app
 
 ---
 
 ## Acknowledgments
 
-- Built with [Wails](https://wails.io/) – An amazing framework for building desktop apps using Go and Web technologies
+- Built with [Wails](https://wails.io/) — Go + WebView desktop framework
 - LLM provider templates inspired by the OpenAI API specification
-- Predecessor project: [llmedit](https://github.com/sanyokkua/llmedit) - Python-based app with similar functionality (proof of concept)
-- Some parts were generated by Mistral Vibe and Google Antigravity, which are excellent tools
-- Development and testing are primarily conducted on macOS 26 with verified providers: Ollama, LM Studio, custom OpenAI/Azure, and OpenRouter
-
-## Plans for Future
-
-- Fix bugs that will be found
-- Improve validation logic in the configuration
-- Improvements to the prompts
-- Potential migration to [Electrobun](https://blackboard.sh/electrobun/docs/)
+- Predecessor project: [llmedit](https://github.com/sanyokkua/llmedit) — Python proof-of-concept
+- Development and testing on macOS with verified providers: Ollama, LM Studio, OpenAI-compatible, OpenRouter
 
 ---
 
-*Version 2.0 – Complete rewrite with multi-provider support, 10 prompt categories, and 60+ text processing actions.*
+*Version 3.0 — Redesigned with SQLite persistence, stack builder, action history, Radix Primitives UI, and the ⌘K command palette.*
