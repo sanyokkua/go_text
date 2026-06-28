@@ -18,7 +18,7 @@ const GlobalLoadingOverlay: React.FC = () => {
                 zIndex: 'var(--z-modal)' as React.CSSProperties['zIndex'],
                 top: UI_HEIGHTS.APP_BAR,
                 right: 0,
-                bottom: UI_HEIGHTS.STATUS_BAR,
+                bottom: 0,
                 left: 0,
                 backdropFilter: 'blur(4px)',
                 display: 'flex',

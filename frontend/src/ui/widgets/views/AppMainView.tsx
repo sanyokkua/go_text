@@ -1,12 +1,12 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { apperr } from '../../../../wailsjs/go/models';
 import { getLogger } from '../../../logic/adapter';
 import { useChainEvents } from '../../../logic/hooks/useChainEvents';
 import {
     selectActionCatalog,
-    selectCurrentView,
     selectInferenceRunning,
     selectInputContent,
+    selectPaletteOpen,
     selectSavedStacks,
     useAppDispatch,
     useAppSelector,
@@ -17,28 +17,24 @@ import { processPromptChain, runSingleAction } from '../../../logic/store/run';
 import { initializeSettingsState, selectAllSettings } from '../../../logic/store/settings';
 import { addStep } from '../../../logic/store/stacks/builder/slice';
 import { listStacks } from '../../../logic/store/stacks/saved/thunks';
-import { enterBuildMode, navigateToMain, setActiveActionsTab } from '../../../logic/store/ui/slice';
+import { enterBuildMode, navigateToMain, setActiveActionsTab, setPaletteOpen, togglePalette } from '../../../logic/store/ui/slice';
 import { parseError } from '../../../logic/utils/error_utils';
 import FlexContainer from '../../components/FlexContainer';
 import { CommandPalette, CommandPaletteItem } from '../../primitives/CommandPalette';
 import { UI_HEIGHTS } from '../../styles/constants';
 import AppBar from '../base/AppBar';
-import StatusBar from '../base/StatusBar';
 import MainContent from './MainContent';
 
 const logger = getLogger('AppMainView');
 
 const AppMainView: React.FC = () => {
     const dispatch = useAppDispatch();
-    const view = useAppSelector(selectCurrentView);
-    const showSettings = view === 'settings';
     const inferenceRunning = useAppSelector(selectInferenceRunning);
     const catalog = useAppSelector(selectActionCatalog);
     const savedStacks = useAppSelector(selectSavedStacks);
     const inputContent = useAppSelector(selectInputContent);
     const settings = useAppSelector(selectAllSettings);
-
-    const [paletteOpen, setPaletteOpen] = useState(false);
+    const paletteOpen = useAppSelector(selectPaletteOpen);
 
     useChainEvents();
 
@@ -75,12 +71,12 @@ const AppMainView: React.FC = () => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
                 e.preventDefault();
-                setPaletteOpen((prev) => !prev);
+                dispatch(togglePalette());
             }
         };
         globalThis.addEventListener('keydown', handleKeyDown);
         return () => globalThis.removeEventListener('keydown', handleKeyDown);
-    }, []);
+    }, [dispatch]);
 
     const paletteItems = useMemo<CommandPaletteItem[]>(
         () => [
@@ -141,14 +137,9 @@ const AppMainView: React.FC = () => {
             <FlexContainer grow overflowHidden>
                 <MainContent />
             </FlexContainer>
-            {!showSettings && (
-                <div style={{ height: UI_HEIGHTS.STATUS_BAR }}>
-                    <StatusBar />
-                </div>
-            )}
             <CommandPalette
                 open={paletteOpen}
-                onOpenChange={setPaletteOpen}
+                onOpenChange={(open) => dispatch(setPaletteOpen(open))}
                 items={paletteItems}
                 placeholder="Run or add action to stack…"
                 onSelect={handlePaletteRun}

@@ -4,6 +4,7 @@ import { CurrentView, ThemeEffective, ThemeMode } from './types';
 export const selectLayout = (state: RootState): 'side' | 'stacked' => state.ui.layout;
 export const selectSidebarCollapsed = (state: RootState): boolean => state.ui.sidebarCollapsed;
 export const selectHistoryOpen = (state: RootState): boolean => state.ui.historyOpen;
+export const selectPaletteOpen = (state: RootState): boolean => state.ui.paletteOpen ?? false;
 export const selectInferenceRunning = (state: RootState): boolean => state.ui.inferenceRunning;
 export const selectThemeMode = (state: RootState): ThemeMode => state.ui.theme.mode;
 export const selectEffectiveTheme = (state: RootState): ThemeEffective => state.ui.theme.effective;

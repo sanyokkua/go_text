@@ -276,6 +276,11 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                             {errors.envVarError}
                         </span>
                     )}
+                    <p className={styles.envVarBanner}>
+                        🔑 <strong>API key — environment variable</strong>{' '}
+                        <code className={styles.envVarCode}>{form.envVarTokenName.trim() || 'YOUR_API_KEY'}</code> — the app reads the key from
+                        this variable at run time and <strong>never stores it</strong>.
+                    </p>
                 </div>
             )}
 
@@ -410,12 +415,9 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                 {form.useCustomModels && <TagInput value={form.customModels} onChange={(v) => patch('customModels', v)} />}
             </div>
 
-            {/* Verification panel — always shown; disabled with hint until provider is saved */}
+            {/* Verification panel — runs against the live draft, so diagnostics work before Save */}
             <div className={styles.verifyField}>
-                <VerificationPanel
-                    providerId={form.providerId}
-                    {...(form.providerId === '' ? { disabledReason: 'Save the provider first to run diagnostics' } : {})}
-                />
+                <VerificationPanel providerConfig={form} />
             </div>
 
             {/* Action bar */}

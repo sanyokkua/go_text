@@ -84,6 +84,10 @@ const settingsSlice = createSlice({
             .addCase(setAsCurrentProviderConfig.fulfilled, (state, action) => {
                 if (state.allSettings) {
                     state.allSettings.currentProviderConfig = action.payload;
+                    // Sync the active model to the newly-current provider's selected
+                    // model so the editor never shows a stale model from the previous
+                    // provider (which would make runs fail with a wrong/empty model).
+                    state.allSettings.modelConfig.name = action.payload.selectedModel;
                 }
             })
             .addCase(deleteProviderConfig.fulfilled, (state, action) => {

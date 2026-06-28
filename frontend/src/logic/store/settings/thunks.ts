@@ -281,11 +281,11 @@ export const updateAppBehaviorConfig = createAsyncThunk<AppBehaviorConfig, AppBe
     },
 );
 
-export const testProviderInference = createAsyncThunk<apperr.VerifyOutcome, string, { rejectValue: string }>(
+export const testProviderInference = createAsyncThunk<apperr.VerifyOutcome, ProviderConfig, { rejectValue: string }>(
     'settings/testProviderInference',
-    async (providerId, { rejectWithValue }) => {
+    async (providerConfig, { rejectWithValue }) => {
         try {
-            return unwrap(await ActionHandlerAdapter.testInference(providerId));
+            return unwrap(await ActionHandlerAdapter.testInference(providerConfig));
         } catch (error: unknown) {
             const err = parseError(error);
             logger.logError(`testProviderInference failed: ${err.message}`);
@@ -294,11 +294,11 @@ export const testProviderInference = createAsyncThunk<apperr.VerifyOutcome, stri
     },
 );
 
-export const testConnection = createAsyncThunk<apperr.VerifyOutcome, string, { rejectValue: string }>(
+export const testConnection = createAsyncThunk<apperr.VerifyOutcome, ProviderConfig, { rejectValue: string }>(
     'settings/testConnection',
-    async (providerId, { rejectWithValue }) => {
+    async (providerConfig, { rejectWithValue }) => {
         try {
-            return unwrap(await ActionHandlerAdapter.testConnection(providerId));
+            return unwrap(await ActionHandlerAdapter.testConnection(providerConfig));
         } catch (error: unknown) {
             const err = parseError(error);
             logger.logError(`testConnection failed: ${err.message}`);
@@ -307,11 +307,11 @@ export const testConnection = createAsyncThunk<apperr.VerifyOutcome, string, { r
     },
 );
 
-export const testModels = createAsyncThunk<apperr.VerifyOutcome, string, { rejectValue: string }>(
+export const testModels = createAsyncThunk<apperr.VerifyOutcome, ProviderConfig, { rejectValue: string }>(
     'settings/testModels',
-    async (providerId, { rejectWithValue }) => {
+    async (providerConfig, { rejectWithValue }) => {
         try {
-            return unwrap(await ActionHandlerAdapter.testModels(providerId));
+            return unwrap(await ActionHandlerAdapter.testModels(providerConfig));
         } catch (error: unknown) {
             const err = parseError(error);
             logger.logError(`testModels failed: ${err.message}`);

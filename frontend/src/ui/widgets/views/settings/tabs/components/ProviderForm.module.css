@@ -190,3 +190,23 @@
     color: var(--ink-3);
     cursor: not-allowed;
 }
+
+.envVarBanner {
+    margin: var(--space-2) 0 0;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--teal-light);
+    border-radius: var(--radius-sm);
+    background: var(--teal-50);
+    color: var(--ink-2);
+    font-size: 0.75rem;
+    line-height: 1.45;
+}
+
+.envVarCode {
+    padding: 1px 6px;
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    font-family: var(--mono);
+    color: var(--ink);
+}

@@ -15,8 +15,16 @@ const ProviderPicker: React.FC = () => {
         return null;
     }
 
+    const ready = currentProvider.baseUrl.trim() !== '';
+
     return (
         <div className={styles.root}>
+            <span
+                className={styles.readyDot}
+                data-ready={ready}
+                aria-label={ready ? 'Provider ready' : 'Provider not configured'}
+                title={ready ? 'Provider ready' : 'Provider not configured'}
+            />
             <Select
                 value={currentProvider.providerId}
                 onValueChange={(id) => void dispatch(setAsCurrentProviderConfig(id))}

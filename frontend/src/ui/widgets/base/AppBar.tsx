@@ -15,7 +15,7 @@ import {
 } from '../../../logic/store';
 import { setViewMode } from '../../../logic/store/editor';
 import { updateInferenceBaseConfig } from '../../../logic/store/settings/thunks';
-import { setCurrentView, setLayout, toggleHistory, toggleSidebar } from '../../../logic/store/ui';
+import { setCurrentView, setLayout, toggleHistory, togglePalette, toggleSidebar } from '../../../logic/store/ui';
 import { Segmented } from '../../primitives/Segmented';
 import { Tooltip } from '../../primitives/Tooltip';
 import LanguagePicker from './LanguagePicker';
@@ -76,6 +76,9 @@ const AppBar: React.FC = () => {
                     </button>
                 )}
 
+                <span className={styles.logo} aria-hidden="true">
+                    G
+                </span>
                 <span className={styles.wordmark}>GoText</span>
 
                 {isMain && (
@@ -121,6 +124,19 @@ const AppBar: React.FC = () => {
                             ]}
                             disabled={inferenceRunning}
                         />
+                        <Tooltip content="Command palette (⌘K)" side="bottom">
+                            <button
+                                aria-label="Open command palette"
+                                onClick={() => {
+                                    dispatch(togglePalette());
+                                    logger.logInfo('Command palette toggled');
+                                }}
+                                disabled={inferenceRunning}
+                                className={styles.cmdkBtn}
+                            >
+                                ⌘K
+                            </button>
+                        </Tooltip>
                         <Tooltip content={historyEnabled ? 'Toggle history' : 'History is disabled in Settings'} side="bottom">
                             <button
                                 aria-label="Toggle history rail"

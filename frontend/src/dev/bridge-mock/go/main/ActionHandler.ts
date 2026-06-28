@@ -97,15 +97,31 @@ export function PreviewPrompt(_req: unknown): Promise<AnyResult> {
     );
 }
 
-export function TestConnection(_providerId: string): Promise<AnyResult> {
-    return Promise.resolve(ok({ ok: true, latencyMs: 0 }));
+// DraftProviderConfig mirrors the wire settings.ProviderConfig the adapter now
+// passes — the mock honours the draft so pre-save verification can be exercised.
+interface DraftProviderConfig {
+    selectedModel?: string;
+    baseUrl?: string;
+    [key: string]: unknown;
 }
 
-export function TestModels(_providerId: string): Promise<AnyResult> {
-    return Promise.resolve(ok({ ok: true, models: ['mock-model'] }));
+export function TestConnection(_cfg: DraftProviderConfig): Promise<AnyResult> {
+    return Promise.resolve(ok({ check: 'connection', ok: true, durationMs: 12 }));
 }
 
-export function TestInference(_providerId: string): Promise<AnyResult> {
-    return Promise.resolve(ok({ ok: true, responseText: 'mock inference response' }));
+export function TestModels(_cfg: DraftProviderConfig): Promise<AnyResult> {
+    return Promise.resolve(ok({ check: 'models', ok: true, durationMs: 18, modelCount: 1, sample: 'mock-model' }));
+}
+
+export function TestInference(cfg: DraftProviderConfig): Promise<AnyResult> {
+    // Mirror the backend contract: an empty selected model is a validation error,
+    // even pre-save. A non-empty model returns a successful round-trip.
+    if (!cfg || !cfg.selectedModel) {
+        return Promise.resolve({
+            data: null,
+            error: { code: 'validation', message: 'selectedModel a non-empty model name; got .' },
+        } as AnyResult);
+    }
+    return Promise.resolve(ok({ check: 'inference', ok: true, durationMs: 240, sample: 'Hello! …' }));
 }
 

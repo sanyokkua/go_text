@@ -7,6 +7,7 @@ import (
 
 	"go_text/internal/apperr"
 	"go_text/internal/gate"
+	"go_text/internal/settings"
 	"go_text/internal/verification"
 
 	"github.com/rs/zerolog"
@@ -179,7 +180,7 @@ func (h *ActionHandler) CancelAllRuns() {
 // TestConnection verifies that the provider endpoint is reachable and
 // credentials are valid. Returns a partial VerifyResult on failure so the
 // frontend receives both the timing and the typed error code.
-func (h *ActionHandler) TestConnection(providerID string) (res apperr.VerifyResult) {
+func (h *ActionHandler) TestConnection(cfg settings.ProviderConfig) (res apperr.VerifyResult) {
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicMsgFmt, r))
@@ -187,7 +188,7 @@ func (h *ActionHandler) TestConnection(providerID string) (res apperr.VerifyResu
 			res = apperr.VerifyResult{Error: &wire}
 		}
 	}()
-	outcome, err := h.verificationService.TestConnection(providerID)
+	outcome, err := h.verificationService.TestConnection(cfg)
 	if err != nil {
 		wire := apperr.ToWire(h.zlog, err)
 		return apperr.VerifyResult{Data: outcome, Error: &wire}
@@ -197,7 +198,7 @@ func (h *ActionHandler) TestConnection(providerID string) (res apperr.VerifyResu
 
 // TestModels runs the provider's discovery strategy and reports the model
 // count and first model name.
-func (h *ActionHandler) TestModels(providerID string) (res apperr.VerifyResult) {
+func (h *ActionHandler) TestModels(cfg settings.ProviderConfig) (res apperr.VerifyResult) {
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicMsgFmt, r))
@@ -205,7 +206,7 @@ func (h *ActionHandler) TestModels(providerID string) (res apperr.VerifyResult) 
 			res = apperr.VerifyResult{Error: &wire}
 		}
 	}()
-	outcome, err := h.verificationService.TestModels(providerID)
+	outcome, err := h.verificationService.TestModels(cfg)
 	if err != nil {
 		wire := apperr.ToWire(h.zlog, err)
 		return apperr.VerifyResult{Data: outcome, Error: &wire}
@@ -216,7 +217,7 @@ func (h *ActionHandler) TestModels(providerID string) (res apperr.VerifyResult) 
 // TestInference sends a tiny completion to the selected model and acquires
 // the InferenceGate. Returns CodeBusy immediately if an inference is
 // already in progress.
-func (h *ActionHandler) TestInference(providerID string) (res apperr.VerifyResult) {
+func (h *ActionHandler) TestInference(cfg settings.ProviderConfig) (res apperr.VerifyResult) {
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicMsgFmt, r))
@@ -224,7 +225,7 @@ func (h *ActionHandler) TestInference(providerID string) (res apperr.VerifyResul
 			res = apperr.VerifyResult{Error: &wire}
 		}
 	}()
-	outcome, err := h.verificationService.TestInference(providerID)
+	outcome, err := h.verificationService.TestInference(cfg)
 	if err != nil {
 		wire := apperr.ToWire(h.zlog, err)
 		return apperr.VerifyResult{Data: outcome, Error: &wire}

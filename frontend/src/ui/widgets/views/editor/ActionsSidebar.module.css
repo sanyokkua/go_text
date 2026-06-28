@@ -242,3 +242,53 @@
     flex-shrink: 0;
     margin-left: auto;
 }
+
+.searchWrap {
+    padding: var(--space-2);
+    border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+}
+
+.searchBox {
+    width: 100%;
+    box-sizing: border-box;
+    padding: var(--space-1) var(--space-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: 0.8125rem;
+}
+
+.searchBox:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.scrollArea {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.group {
+    padding-top: var(--space-2);
+}
+
+.groupHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-1) var(--space-3);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--ink-3);
+}
+
+.groupCount {
+    color: var(--ink-3);
+    font-weight: 600;
+}

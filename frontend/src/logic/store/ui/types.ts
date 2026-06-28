@@ -12,6 +12,8 @@ export interface UIState {
     layout: 'side' | 'stacked';
     sidebarCollapsed: boolean;
     historyOpen: boolean;
+    /** Optional so partial test fixtures stay valid; the slice always seeds it. */
+    paletteOpen?: boolean;
     inferenceRunning: boolean;
     currentView: CurrentView;
     armedActionId: string | null;

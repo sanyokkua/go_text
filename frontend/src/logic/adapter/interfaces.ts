@@ -18,9 +18,9 @@ export interface IActionHandler {
     processPromptChain(req: apperr.ChainRequest): Promise<apperr.ChainResultEnv>;
     cancelChain(runId: string): Promise<apperr.VoidResult>;
     cancelAllRuns(): Promise<void>;
-    testConnection(providerId: string): Promise<apperr.VerifyResult>;
-    testInference(providerId: string): Promise<apperr.VerifyResult>;
-    testModels(providerId: string): Promise<apperr.VerifyResult>;
+    testConnection(providerConfig: ProviderConfig): Promise<apperr.VerifyResult>;
+    testInference(providerConfig: ProviderConfig): Promise<apperr.VerifyResult>;
+    testModels(providerConfig: ProviderConfig): Promise<apperr.VerifyResult>;
 }
 
 export interface IHistoryHandler {

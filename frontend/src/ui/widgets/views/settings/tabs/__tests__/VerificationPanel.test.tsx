@@ -3,10 +3,30 @@ import '@testing-library/jest-dom';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
+import { ProviderConfig } from '../../../../../../logic/adapter/models';
 import notificationsReducer from '../../../../../../logic/store/notifications/slice';
 import settingsReducer from '../../../../../../logic/store/settings/slice';
 import uiReducer from '../../../../../../logic/store/ui/slice';
 import VerificationPanel from '../components/VerificationPanel';
+
+const DRAFT: ProviderConfig = {
+    providerId: 'p1',
+    providerName: 'Test',
+    providerType: 'openai',
+    baseUrl: 'http://localhost:1234/',
+    modelsEndpoint: '',
+    completionEndpoint: '',
+    authType: 'none',
+    authToken: '',
+    useAuthTokenFromEnv: true,
+    envVarTokenName: '',
+    apiVersion: '',
+    selectedModel: 'gpt-4o',
+    useCustomHeaders: false,
+    headers: {},
+    useCustomModels: false,
+    customModels: [],
+};
 
 jest.mock('../../../../../../logic/adapter', () => ({
     ActionHandlerAdapter: {
@@ -53,7 +73,7 @@ describe('VerificationPanel', () => {
     it('renders three check rows: Test connection, Test models, Test inference', () => {
         render(
             <Provider store={makeStore()}>
-                <VerificationPanel providerId="p1" />
+                <VerificationPanel providerConfig={DRAFT} />
             </Provider>,
         );
         expect(screen.getByRole('button', { name: /test connection/i })).toBeInTheDocument();
@@ -64,7 +84,7 @@ describe('VerificationPanel', () => {
     it('all three check buttons are initially enabled', () => {
         render(
             <Provider store={makeStore()}>
-                <VerificationPanel providerId="p1" />
+                <VerificationPanel providerConfig={DRAFT} />
             </Provider>,
         );
         expect(screen.getByRole('button', { name: /test connection/i })).toBeEnabled();
@@ -75,7 +95,7 @@ describe('VerificationPanel', () => {
     it('Test inference button is disabled when inferenceRunning is true in the store', () => {
         render(
             <Provider store={makeStore({ inferenceRunning: true })}>
-                <VerificationPanel providerId="p1" />
+                <VerificationPanel providerConfig={DRAFT} />
             </Provider>,
         );
         expect(screen.getByRole('button', { name: /test inference/i })).toBeDisabled();
@@ -84,30 +104,30 @@ describe('VerificationPanel', () => {
     it('Test connection and Test models buttons remain enabled when inferenceRunning is true', () => {
         render(
             <Provider store={makeStore({ inferenceRunning: true })}>
-                <VerificationPanel providerId="p1" />
+                <VerificationPanel providerConfig={DRAFT} />
             </Provider>,
         );
         expect(screen.getByRole('button', { name: /test connection/i })).toBeEnabled();
         expect(screen.getByRole('button', { name: /test models/i })).toBeEnabled();
     });
 
-    it('calls testConnection with the providerId when Test connection is clicked', async () => {
+    it('calls testConnection with the draft provider config when Test connection is clicked', async () => {
         const { ActionHandlerAdapter } = jest.requireMock('../../../../../../logic/adapter');
         render(
             <Provider store={makeStore()}>
-                <VerificationPanel providerId="p1" />
+                <VerificationPanel providerConfig={DRAFT} />
             </Provider>,
         );
         await userEvent.click(screen.getByRole('button', { name: /test connection/i }));
         await waitFor(() => {
-            expect(ActionHandlerAdapter.testConnection).toHaveBeenCalledWith('p1');
+            expect(ActionHandlerAdapter.testConnection).toHaveBeenCalledWith(DRAFT);
         });
     });
 
     it('shows a success indicator after a successful connection test', async () => {
         render(
             <Provider store={makeStore()}>
-                <VerificationPanel providerId="p1" />
+                <VerificationPanel providerConfig={DRAFT} />
             </Provider>,
         );
         await userEvent.click(screen.getByRole('button', { name: /test connection/i }));

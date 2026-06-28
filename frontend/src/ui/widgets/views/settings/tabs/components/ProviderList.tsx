@@ -40,6 +40,9 @@ const ProviderList: React.FC<ProviderListProps> = ({ providers, currentId, selec
                                 aria-label={isCurrent ? `${provider.providerName} (current)` : provider.providerName}
                                 className={styles.item}
                             >
+                                <span aria-hidden="true" className={`${styles.dot} ${isCurrent ? styles.dotCurrent : ''}`}>
+                                    {isCurrent ? '●' : '○'}
+                                </span>
                                 <span className={styles.itemName}>{provider.providerName}</span>
 
                                 {isCurrent && (

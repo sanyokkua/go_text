@@ -1,4 +1,5 @@
 import { apperr } from '../../../../../wailsjs/go/models';
+import { StackGlyph } from '../../../../ui/components/StackGlyph';
 import { DropdownMenu } from '../../../../ui/primitives/DropdownMenu';
 import styles from './StackCard.module.css';
 
@@ -21,7 +22,7 @@ const StackCard: React.FC<StackCardProps> = ({ stack, inferenceCount, actionName
     return (
         <div className={styles.card}>
             <div className={styles.top}>
-                <span className={styles.icon}>{stack.icon}</span>
+                <StackGlyph icon={stack.icon} size={20} className={styles.icon} />
                 <span className={styles.name}>{stack.name}</span>
             </div>
             <p className={styles.summary} title={stepsSummary}>

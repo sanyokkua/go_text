@@ -1,17 +1,10 @@
 // Heavy shell sub-components are mocked to keep these tests focused on ⌘K palette wiring.
-// StatusBar has a pre-existing broken selector (selectCurrentTask missing from store);
 // AppBar and MainContent pull in many sub-trees irrelevant to this feature.
 jest.mock('../base/AppBar', () => {
     const React = require('react');
     const MockAppBar: React.FC = () => React.createElement('div', { 'data-testid': 'app-bar' });
     MockAppBar.displayName = 'MockAppBar';
     return { __esModule: true, default: MockAppBar };
-});
-jest.mock('../base/StatusBar', () => {
-    const React = require('react');
-    const MockStatusBar: React.FC = () => React.createElement('div', { 'data-testid': 'status-bar' });
-    MockStatusBar.displayName = 'MockStatusBar';
-    return { __esModule: true, default: MockStatusBar };
 });
 jest.mock('./MainContent', () => {
     const React = require('react');

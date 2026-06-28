@@ -15,18 +15,6 @@ import (
 	"resty.dev/v3"
 )
 
-// settingsMock implements settings.SettingsServiceAPI with only GetProviderConfig.
-// Any other method call panics — intentional: tests must not reach them.
-type settingsMock struct {
-	settings.SettingsServiceAPI
-	cfg *settings.ProviderConfig
-	err error
-}
-
-func (m *settingsMock) GetProviderConfig(_ string) (*settings.ProviderConfig, error) {
-	return m.cfg, m.err
-}
-
 // testLogger is a minimal logger.Logger that discards all output.
 type testLogger struct{}
 
@@ -38,23 +26,22 @@ func (l *testLogger) Warning(msg string) {}
 func (l *testLogger) Error(msg string)   {}
 func (l *testLogger) Fatal(msg string)   {}
 
-// newTestService builds a Service pointing at the given httptest server.
-func newTestService(t *testing.T, baseURL string, kind llms.ProviderKind, cfg *settings.ProviderConfig, g *gate.InferenceGate) *Service {
+// newTestService builds a stateless Service and finalizes the draft config to
+// point at the given httptest server. The returned config is what callers pass
+// to the check methods — the service reads no saved settings.
+func newTestService(t *testing.T, baseURL string, kind llms.ProviderKind, cfg settings.ProviderConfig, g *gate.InferenceGate) (*Service, settings.ProviderConfig) {
 	t.Helper()
 	cfg.BaseURL = baseURL
 	cfg.Kind = string(kind)
-	mock := &settingsMock{cfg: cfg}
-	factory := llms.NewProviderFactory(resty.New())
 	return &Service{
-		wlog:     &testLogger{},
-		settings: mock,
-		factory:  factory,
-		gate:     g,
-	}
+		wlog:    &testLogger{},
+		factory: llms.NewProviderFactory(resty.New()),
+		gate:    g,
+	}, cfg
 }
 
-func baseProviderCfg(name string) *settings.ProviderConfig {
-	return &settings.ProviderConfig{
+func baseProviderCfg(name string) settings.ProviderConfig {
+	return settings.ProviderConfig{
 		ID:         "p1",
 		Name:       name,
 		AuthScheme: string(llms.AuthNone),
@@ -71,9 +58,9 @@ func TestService_TestConnection_Success(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	svc := newTestService(t, srv.URL, llms.KindOpenAI, baseProviderCfg("TestProv"), gate.New())
+	svc, cfg := newTestService(t, srv.URL, llms.KindOpenAI, baseProviderCfg("TestProv"), gate.New())
 
-	outcome, err := svc.TestConnection("p1")
+	outcome, err := svc.TestConnection(cfg)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -95,9 +82,9 @@ func TestService_TestConnection_Auth401(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	svc := newTestService(t, srv.URL, llms.KindOpenAI, baseProviderCfg("TestProv"), gate.New())
+	svc, cfg := newTestService(t, srv.URL, llms.KindOpenAI, baseProviderCfg("TestProv"), gate.New())
 
-	outcome, err := svc.TestConnection("p1")
+	outcome, err := svc.TestConnection(cfg)
 	if err == nil {
 		t.Fatal("expected error for 401, got nil")
 	}
@@ -123,9 +110,9 @@ func TestService_TestConnection_Auth403(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	svc := newTestService(t, srv.URL, llms.KindOpenAI, baseProviderCfg("TestProv"), gate.New())
+	svc, cfg := newTestService(t, srv.URL, llms.KindOpenAI, baseProviderCfg("TestProv"), gate.New())
 
-	outcome, err := svc.TestConnection("p1")
+	outcome, err := svc.TestConnection(cfg)
 	if err == nil {
 		t.Fatal("expected error for 403")
 	}
@@ -145,18 +132,15 @@ func TestService_TestConnection_Unreachable(t *testing.T) {
 	t.Parallel()
 	// Point at a port that won't accept connections.
 	cfg := baseProviderCfg("TestProv")
-
-	mock := &settingsMock{cfg: cfg}
 	cfg.BaseURL = "http://127.0.0.1:19999"
 	cfg.Kind = string(llms.KindOpenAI)
 	svc := &Service{
-		wlog:     &testLogger{},
-		settings: mock,
-		factory:  llms.NewProviderFactory(resty.New()),
-		gate:     gate.New(),
+		wlog:    &testLogger{},
+		factory: llms.NewProviderFactory(resty.New()),
+		gate:    gate.New(),
 	}
 
-	outcome, err := svc.TestConnection("p1")
+	outcome, err := svc.TestConnection(cfg)
 	if err == nil {
 		t.Fatal("expected error for unreachable host")
 	}
@@ -179,7 +163,7 @@ func TestService_TestConnection_MissingCredential(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	cfg := &settings.ProviderConfig{
+	cfg := settings.ProviderConfig{
 		ID:           "p1",
 		Name:         "TestProv",
 		Kind:         string(llms.KindOpenAI),
@@ -187,15 +171,13 @@ func TestService_TestConnection_MissingCredential(t *testing.T) {
 		AuthScheme:   string(llms.AuthBearer),
 		APIKeyEnvVar: "TEST_T09_MISSING_KEY_XYZ_UNIQUE",
 	}
-	mock := &settingsMock{cfg: cfg}
 	svc := &Service{
-		wlog:     &testLogger{},
-		settings: mock,
-		factory:  llms.NewProviderFactory(resty.New()),
-		gate:     gate.New(),
+		wlog:    &testLogger{},
+		factory: llms.NewProviderFactory(resty.New()),
+		gate:    gate.New(),
 	}
 
-	outcome, err := svc.TestConnection("p1")
+	outcome, err := svc.TestConnection(cfg)
 	if err == nil {
 		t.Fatal("expected missing_credential error")
 	}
@@ -219,9 +201,9 @@ func TestService_TestConnection_404_IsReachable(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	svc := newTestService(t, srv.URL, llms.KindOpenAI, baseProviderCfg("TestProv"), gate.New())
+	svc, cfg := newTestService(t, srv.URL, llms.KindOpenAI, baseProviderCfg("TestProv"), gate.New())
 
-	outcome, err := svc.TestConnection("p1")
+	outcome, err := svc.TestConnection(cfg)
 	if err != nil {
 		t.Fatalf("unexpected error for 404 (server reachable): %v", err)
 	}
@@ -251,9 +233,9 @@ func TestService_TestModels_Success(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	svc := newTestService(t, srv.URL, llms.KindOpenAI, baseProviderCfg("TestProv"), gate.New())
+	svc, cfg := newTestService(t, srv.URL, llms.KindOpenAI, baseProviderCfg("TestProv"), gate.New())
 
-	outcome, err := svc.TestModels("p1")
+	outcome, err := svc.TestModels(cfg)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -279,9 +261,9 @@ func TestService_TestModels_EmptyList(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	svc := newTestService(t, srv.URL, llms.KindOpenAI, baseProviderCfg("TestProv"), gate.New())
+	svc, cfg := newTestService(t, srv.URL, llms.KindOpenAI, baseProviderCfg("TestProv"), gate.New())
 
-	outcome, err := svc.TestModels("p1")
+	outcome, err := svc.TestModels(cfg)
 	if err == nil {
 		t.Fatal("expected error for empty model list")
 	}
@@ -302,15 +284,13 @@ func TestService_TestModels_Unreachable(t *testing.T) {
 	cfg := baseProviderCfg("TestProv")
 	cfg.BaseURL = "http://127.0.0.1:19999"
 	cfg.Kind = string(llms.KindOpenAI)
-	mock := &settingsMock{cfg: cfg}
 	svc := &Service{
-		wlog:     &testLogger{},
-		settings: mock,
-		factory:  llms.NewProviderFactory(resty.New()),
-		gate:     gate.New(),
+		wlog:    &testLogger{},
+		factory: llms.NewProviderFactory(resty.New()),
+		gate:    gate.New(),
 	}
 
-	outcome, err := svc.TestModels("p1")
+	outcome, err := svc.TestModels(cfg)
 	if err == nil {
 		t.Fatal("expected error for unreachable host")
 	}
@@ -353,9 +333,9 @@ func TestService_TestInference_Success(t *testing.T) {
 
 	cfg := baseProviderCfg("TestProv")
 	cfg.SelectedModel = "gpt-4o"
-	svc := newTestService(t, srv.URL, llms.KindOpenAI, cfg, gate.New())
+	svc, cfg := newTestService(t, srv.URL, llms.KindOpenAI, cfg, gate.New())
 
-	outcome, err := svc.TestInference("p1")
+	outcome, err := svc.TestInference(cfg)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -380,15 +360,13 @@ func TestService_TestInference_GateBusy(t *testing.T) {
 
 	cfg := baseProviderCfg("TestProv")
 	cfg.SelectedModel = "gpt-4o"
-	mock := &settingsMock{cfg: cfg}
 	svc := &Service{
-		wlog:     &testLogger{},
-		settings: mock,
-		factory:  llms.NewProviderFactory(resty.New()),
-		gate:     g,
+		wlog:    &testLogger{},
+		factory: llms.NewProviderFactory(resty.New()),
+		gate:    g,
 	}
 
-	outcome, err := svc.TestInference("p1")
+	outcome, err := svc.TestInference(cfg)
 	if err == nil {
 		t.Fatal("expected busy error")
 	}
@@ -420,16 +398,14 @@ func TestService_TestInference_GateReleasedAfterBusy(t *testing.T) {
 
 	cfg := baseProviderCfg("TestProv")
 	cfg.SelectedModel = "gpt-4o"
-	mock := &settingsMock{cfg: cfg}
 	svc := &Service{
-		wlog:     &testLogger{},
-		settings: mock,
-		factory:  llms.NewProviderFactory(resty.New()),
-		gate:     g,
+		wlog:    &testLogger{},
+		factory: llms.NewProviderFactory(resty.New()),
+		gate:    g,
 	}
 
-	svc.TestInference("p1") //nolint:errcheck // we only care about the gate state here
-	g.Release()             // release the originally held lock
+	svc.TestInference(cfg) //nolint:errcheck // we only care about the gate state here
+	g.Release()            // release the originally held lock
 
 	// Gate should now be free.
 	if !g.TryAcquire() {
@@ -447,9 +423,9 @@ func TestService_TestInference_Auth401(t *testing.T) {
 
 	cfg := baseProviderCfg("TestProv")
 	cfg.SelectedModel = "gpt-4o"
-	svc := newTestService(t, srv.URL, llms.KindOpenAI, cfg, gate.New())
+	svc, cfg := newTestService(t, srv.URL, llms.KindOpenAI, cfg, gate.New())
 
-	outcome, err := svc.TestInference("p1")
+	outcome, err := svc.TestInference(cfg)
 	if err == nil {
 		t.Fatal("expected auth error")
 	}
@@ -473,10 +449,11 @@ func TestService_TestInference_MissingSelectedModel(t *testing.T) {
 	defer srv.Close()
 
 	cfg := baseProviderCfg("TestProv")
-	// cfg.SelectedModel intentionally empty
-	svc := newTestService(t, srv.URL, llms.KindOpenAI, cfg, gate.New())
+	// cfg.SelectedModel intentionally empty — verifies the draft-config contract
+	// still rejects an empty model even when called pre-save.
+	svc, cfg := newTestService(t, srv.URL, llms.KindOpenAI, cfg, gate.New())
 
-	outcome, err := svc.TestInference("p1")
+	outcome, err := svc.TestInference(cfg)
 	if err == nil {
 		t.Fatal("expected validation error for empty selectedModel")
 	}
@@ -503,9 +480,9 @@ func TestService_TestInference_GateReleasedOnError(t *testing.T) {
 	g := gate.New()
 	cfg := baseProviderCfg("TestProv")
 	cfg.SelectedModel = "gpt-4o"
-	svc := newTestService(t, srv.URL, llms.KindOpenAI, cfg, g)
+	svc, cfg := newTestService(t, srv.URL, llms.KindOpenAI, cfg, g)
 
-	svc.TestInference("p1") //nolint:errcheck
+	svc.TestInference(cfg) //nolint:errcheck
 
 	// After call the gate must be free again.
 	if !g.TryAcquire() {

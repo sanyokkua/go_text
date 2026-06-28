@@ -33,8 +33,16 @@ const ModelPicker: React.FC = () => {
         }
     };
 
+    const ready = modelConfig.name.trim() !== '';
+
     return (
         <div className={styles.root}>
+            <span
+                className={styles.readyDot}
+                data-ready={ready}
+                aria-label={ready ? 'Model selected' : 'No model selected'}
+                title={ready ? 'Model selected' : 'No model selected'}
+            />
             <Select
                 value={modelConfig.name}
                 onValueChange={handleModelChange}

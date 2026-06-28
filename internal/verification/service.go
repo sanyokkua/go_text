@@ -19,24 +19,28 @@ import (
 const verifyTimeout = 30 * time.Second
 
 // ServiceAPI is the verification service interface consumed by ActionHandler.
+//
+// All three checks take the in-flight draft ProviderConfig (not a saved
+// provider ID) so the user can verify edits — base URL, auth, selected model —
+// before saving. The config carries only the env-var name, never a secret.
 type ServiceAPI interface {
-	TestConnection(providerID string) (*apperr.VerifyOutcome, error)
-	TestModels(providerID string) (*apperr.VerifyOutcome, error)
-	TestInference(providerID string) (*apperr.VerifyOutcome, error)
+	TestConnection(cfg settings.ProviderConfig) (*apperr.VerifyOutcome, error)
+	TestModels(cfg settings.ProviderConfig) (*apperr.VerifyOutcome, error)
+	TestInference(cfg settings.ProviderConfig) (*apperr.VerifyOutcome, error)
 }
 
-// Service runs the three provider diagnostic checks.
+// Service runs the three provider diagnostic checks. It is stateless with
+// respect to saved settings — every check operates on the draft ProviderConfig
+// supplied by the caller, so verification works before a provider is saved.
 type Service struct {
-	wlog     logger.Logger
-	settings settings.SettingsServiceAPI
-	factory  *llms.ProviderFactory
-	gate     *gate.InferenceGate
+	wlog    logger.Logger
+	factory *llms.ProviderFactory
+	gate    *gate.InferenceGate
 }
 
 // NewService constructs a VerificationService. All arguments are required.
 func NewService(
 	wlog logger.Logger,
-	settings settings.SettingsServiceAPI,
 	factory *llms.ProviderFactory,
 	g *gate.InferenceGate,
 ) ServiceAPI {
@@ -44,33 +48,23 @@ func NewService(
 	if wlog == nil {
 		panic(fmt.Sprintf("%s: logger cannot be nil", op))
 	}
-	if settings == nil {
-		panic(fmt.Sprintf("%s: settings service cannot be nil", op))
-	}
 	if factory == nil {
 		panic(fmt.Sprintf("%s: provider factory cannot be nil", op))
 	}
 	if g == nil {
 		panic(fmt.Sprintf("%s: inference gate cannot be nil", op))
 	}
-	return &Service{wlog: wlog, settings: settings, factory: factory, gate: g}
+	return &Service{wlog: wlog, factory: factory, gate: g}
 }
 
 // TestConnection verifies that the provider endpoint is reachable and
 // credentials are valid. Failure codes: missing_credential, auth,
 // provider_unreachable.
-func (s *Service) TestConnection(providerID string) (*apperr.VerifyOutcome, error) {
+func (s *Service) TestConnection(cfg settings.ProviderConfig) (*apperr.VerifyOutcome, error) {
 	start := time.Now()
 	outcome := &apperr.VerifyOutcome{Check: "connection"}
 
-	cfg, err := s.getProviderConfig(providerID)
-	if err != nil {
-		outcome.DurationMs = time.Since(start).Milliseconds()
-		outcome.OK = false
-		return outcome, err
-	}
-
-	resolved, err := resolveSecret(cfg)
+	resolved, err := resolveSecret(&cfg)
 	if err != nil {
 		outcome.DurationMs = time.Since(start).Milliseconds()
 		outcome.OK = false
@@ -112,18 +106,11 @@ func (s *Service) TestConnection(providerID string) (*apperr.VerifyOutcome, erro
 // TestModels runs the provider's discovery strategy and reports the model
 // count and first model name. Failure codes: missing_credential,
 // provider_unreachable, model_not_found, internal.
-func (s *Service) TestModels(providerID string) (*apperr.VerifyOutcome, error) {
+func (s *Service) TestModels(cfg settings.ProviderConfig) (*apperr.VerifyOutcome, error) {
 	start := time.Now()
 	outcome := &apperr.VerifyOutcome{Check: "models"}
 
-	cfg, err := s.getProviderConfig(providerID)
-	if err != nil {
-		outcome.DurationMs = time.Since(start).Milliseconds()
-		outcome.OK = false
-		return outcome, err
-	}
-
-	resolved, err := resolveSecret(cfg)
+	resolved, err := resolveSecret(&cfg)
 	if err != nil {
 		outcome.DurationMs = time.Since(start).Milliseconds()
 		outcome.OK = false
@@ -163,7 +150,7 @@ func (s *Service) TestModels(providerID string) (*apperr.VerifyOutcome, error) {
 // released via defer — on success, failure, timeout, or panic.
 // Failure codes: busy, missing_credential, auth, model_not_found, timeout,
 // rate_limited, context_window, empty_completion.
-func (s *Service) TestInference(providerID string) (*apperr.VerifyOutcome, error) {
+func (s *Service) TestInference(cfg settings.ProviderConfig) (*apperr.VerifyOutcome, error) {
 	if !s.gate.TryAcquire() {
 		return &apperr.VerifyOutcome{Check: "inference", OK: false, DurationMs: 0},
 			apperr.Busy()
@@ -173,20 +160,13 @@ func (s *Service) TestInference(providerID string) (*apperr.VerifyOutcome, error
 	start := time.Now()
 	outcome := &apperr.VerifyOutcome{Check: "inference"}
 
-	cfg, err := s.getProviderConfig(providerID)
-	if err != nil {
-		outcome.DurationMs = time.Since(start).Milliseconds()
-		outcome.OK = false
-		return outcome, err
-	}
-
 	if cfg.SelectedModel == "" {
 		outcome.DurationMs = time.Since(start).Milliseconds()
 		outcome.OK = false
 		return outcome, apperr.Validation("selectedModel", "a non-empty model name", "")
 	}
 
-	resolved, err := resolveSecret(cfg)
+	resolved, err := resolveSecret(&cfg)
 	if err != nil {
 		outcome.DurationMs = time.Since(start).Milliseconds()
 		outcome.OK = false
@@ -222,18 +202,6 @@ func (s *Service) TestInference(providerID string) (*apperr.VerifyOutcome, error
 	}
 	outcome.Sample = sample
 	return outcome, nil
-}
-
-// getProviderConfig fetches and validates a provider config by ID.
-func (s *Service) getProviderConfig(providerID string) (*settings.ProviderConfig, error) {
-	cfg, err := s.settings.GetProviderConfig(providerID)
-	if err != nil {
-		return nil, apperr.Internal(fmt.Errorf("get provider config: %w", err))
-	}
-	if cfg == nil {
-		return nil, apperr.Validation("providerID", "a known provider ID", providerID)
-	}
-	return cfg, nil
 }
 
 // resolveSecret reads the API secret from the environment.

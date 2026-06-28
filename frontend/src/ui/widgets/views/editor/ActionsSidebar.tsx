@@ -1,7 +1,6 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { getLogger } from '../../../../logic/adapter';
 import {
-    selectActiveActionsTab,
     selectArmedActionId,
     selectBuildMode,
     selectBuilderActionAvailability,
@@ -13,7 +12,8 @@ import {
     useAppSelector,
 } from '../../../../logic/store';
 import { addStep } from '../../../../logic/store/stacks/builder/slice';
-import { armAction, enterBuildMode, setActiveActionsTab, setCurrentView } from '../../../../logic/store/ui';
+import { armAction, enterBuildMode, setCurrentView } from '../../../../logic/store/ui';
+import { StackGlyph } from '../../../components/StackGlyph';
 import styles from './ActionsSidebar.module.css';
 
 const logger = getLogger('ActionsSidebar');
@@ -23,31 +23,34 @@ const ActionsSidebar: React.FC = () => {
     const collapsed = useAppSelector(selectSidebarCollapsed);
     const categories = useAppSelector(selectCatalogByCategory);
     const armedId = useAppSelector(selectArmedActionId);
-    const activeTab = useAppSelector(selectActiveActionsTab);
     const inferenceRunning = useAppSelector(selectInferenceRunning);
     const buildMode = useAppSelector(selectBuildMode);
     const savedStacks = useAppSelector(selectSavedStacks);
     const actionAvailability = useAppSelector(selectBuilderActionAvailability);
 
-    if (collapsed) {
-        return (
-            <aside className={styles.iconStrip} aria-label="Actions sidebar (collapsed)">
-                {categories.map(({ category }) => (
-                    <button
-                        key={category}
-                        className={styles.iconBtn}
-                        onClick={() => dispatch(setActiveActionsTab(category))}
-                        aria-label={category}
-                        title={category}
-                    >
-                        {category.charAt(0).toUpperCase()}
-                    </button>
-                ))}
-            </aside>
-        );
-    }
+    const [query, setQuery] = useState('');
 
-    const activeGroup = categories.find((g) => g.category === activeTab) ?? categories[0] ?? null;
+    const normalizedQuery = query.trim().toLowerCase();
+
+    const filteredStacks = useMemo(() => {
+        if (normalizedQuery === '') return savedStacks;
+        return savedStacks.filter((s) => s.name.toLowerCase().includes(normalizedQuery));
+    }, [savedStacks, normalizedQuery]);
+
+    const filteredGroups = useMemo(() => {
+        if (normalizedQuery === '') return categories;
+        return categories
+            .map((group) => ({
+                ...group,
+                actions: group.actions.filter((a) => a.name.toLowerCase().includes(normalizedQuery)),
+            }))
+            .filter((group) => group.actions.length > 0);
+    }, [categories, normalizedQuery]);
+
+    // Collapsed: render nothing — the sidebar is fully hidden until reopened from the AppBar hamburger.
+    if (collapsed) {
+        return null;
+    }
 
     const handleEnterBuildMode = () => {
         dispatch(enterBuildMode());
@@ -60,83 +63,91 @@ const ActionsSidebar: React.FC = () => {
 
     return (
         <aside className={styles.sidebar} aria-label="Actions sidebar">
-            {/* My Stacks section */}
-            <div className={styles.stacksSection}>
-                <div className={styles.stacksHeader}>
-                    <span className={styles.stacksTitle}>My Stacks</span>
-                    {savedStacks.length > 0 && (
-                        <button className={styles.manageLink} onClick={handleManage} aria-label="Manage stacks">
-                            Manage ›
+            {/* Search */}
+            <div className={styles.searchWrap}>
+                <input
+                    type="search"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search actions & stacks…"
+                    aria-label="Search actions and stacks"
+                    className={styles.searchBox}
+                />
+            </div>
+
+            <div className={styles.scrollArea}>
+                {/* My Stacks section */}
+                <div className={styles.stacksSection}>
+                    <div className={styles.stacksHeader}>
+                        <span className={styles.stacksTitle}>My Stacks</span>
+                        {savedStacks.length > 0 && (
+                            <button className={styles.manageLink} onClick={handleManage} aria-label="Manage stacks">
+                                Manage ›
+                            </button>
+                        )}
+                    </div>
+                    {filteredStacks.map((stack) => (
+                        <div key={stack.id} className={styles.stackRow}>
+                            <StackGlyph icon={stack.icon} className={styles.stackIcon} />
+                            <span className={styles.stackName}>{stack.name}</span>
+                            <span className={styles.stackCount}>{stack.steps.length}</span>
+                        </div>
+                    ))}
+                    {normalizedQuery === '' && (
+                        <button className={styles.buildStackBtn} onClick={handleEnterBuildMode} disabled={inferenceRunning} aria-label="Build a stack">
+                            ＋ Build a stack
                         </button>
                     )}
                 </div>
-                {savedStacks.map((stack) => (
-                    <div key={stack.id} className={styles.stackRow}>
-                        <span className={styles.stackIcon}>{stack.icon}</span>
-                        <span className={styles.stackName}>{stack.name}</span>
-                        <span className={styles.stackCount}>{stack.steps.length}</span>
+
+                {/* Build mode hint */}
+                {buildMode && <div className={styles.buildHint}>⌕ click to add a step…</div>}
+
+                {/* Action groups — every family is shown as its own section */}
+                {filteredGroups.map((group) => (
+                    <div key={group.category} className={styles.group}>
+                        <div className={styles.groupHeader}>
+                            <span className={styles.groupTitle}>{group.category}</span>
+                            <span className={styles.groupCount}>{group.actions.length}</span>
+                        </div>
+                        <div className={styles.list}>
+                            {group.actions.map((action) => {
+                                const avail = buildMode
+                                    ? (actionAvailability[action.id] ?? { selected: false, disabled: false, disabledReason: '', addsNewInference: false })
+                                    : null;
+                                const isSelected = buildMode ? avail?.selected : armedId === action.id;
+                                const isDisabled = buildMode ? (avail?.disabled ?? false) || inferenceRunning : inferenceRunning;
+                                const titleText = buildMode && avail?.disabledReason ? avail.disabledReason : action.directive;
+
+                                return (
+                                    <button
+                                        key={action.id}
+                                        className={`${styles.actionRow} ${isSelected ? styles.actionArmed : ''} ${isDisabled && !isSelected ? styles.actionDisabled : ''}`}
+                                        onClick={() => {
+                                            if (isDisabled || isSelected) return;
+                                            if (buildMode) {
+                                                dispatch(addStep(action.id));
+                                                logger.logInfo(`Build: added step ${action.id}`);
+                                            } else {
+                                                dispatch(armAction(action.id));
+                                                logger.logInfo(`Armed action: ${action.id}`);
+                                            }
+                                        }}
+                                        disabled={isDisabled && !isSelected}
+                                        aria-pressed={isSelected ?? false}
+                                        title={titleText}
+                                    >
+                                        {isSelected && <span className={styles.check}>✓</span>}
+                                        <span className={styles.actionName}>{action.name}</span>
+                                        {buildMode && avail?.addsNewInference && !avail.selected && <span className={styles.inferenceHint}>+1</span>}
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
                 ))}
-                <button className={styles.buildStackBtn} onClick={handleEnterBuildMode} disabled={inferenceRunning} aria-label="Build a stack">
-                    ＋ Build a stack
-                </button>
-            </div>
 
-            {/* Build mode hint */}
-            {buildMode && <div className={styles.buildHint}>⌕ click to add a step…</div>}
-
-            {/* Category tabs */}
-            <div className={styles.tabs}>
-                {categories.map(({ category }) => (
-                    <button
-                        key={category}
-                        className={`${styles.tab} ${activeTab === category ? styles.tabActive : ''}`}
-                        onClick={() => {
-                            dispatch(setActiveActionsTab(category));
-                            logger.logInfo(`Sidebar tab: ${category}`);
-                        }}
-                        disabled={inferenceRunning}
-                    >
-                        {category}
-                    </button>
-                ))}
-            </div>
-
-            {/* Action rows */}
-            <div className={styles.list}>
-                {activeGroup?.actions.map((action) => {
-                    const avail = buildMode
-                        ? (actionAvailability[action.id] ?? { selected: false, disabled: false, disabledReason: '', addsNewInference: false })
-                        : null;
-                    const isSelected = buildMode ? avail?.selected : armedId === action.id;
-                    const isDisabled = buildMode ? (avail?.disabled ?? false) || inferenceRunning : inferenceRunning;
-                    const titleText = buildMode && avail?.disabledReason ? avail.disabledReason : action.directive;
-
-                    return (
-                        <button
-                            key={action.id}
-                            className={`${styles.actionRow} ${isSelected ? styles.actionArmed : ''} ${isDisabled && !isSelected ? styles.actionDisabled : ''}`}
-                            onClick={() => {
-                                if (isDisabled || isSelected) return;
-                                if (buildMode) {
-                                    dispatch(addStep(action.id));
-                                    logger.logInfo(`Build: added step ${action.id}`);
-                                } else {
-                                    dispatch(armAction(action.id));
-                                    logger.logInfo(`Armed action: ${action.id}`);
-                                }
-                            }}
-                            disabled={isDisabled && !isSelected}
-                            aria-pressed={isSelected ?? false}
-                            title={titleText}
-                        >
-                            {isSelected && <span className={styles.check}>✓</span>}
-                            <span className={styles.actionName}>{action.name}</span>
-                            {buildMode && avail?.addsNewInference && !avail.selected && <span className={styles.inferenceHint}>+1</span>}
-                        </button>
-                    );
-                })}
-                {(!activeGroup || activeGroup.actions.length === 0) && <div className={styles.emptyState}>No actions loaded</div>}
+                {filteredGroups.length === 0 && <div className={styles.emptyState}>No actions found</div>}
             </div>
         </aside>
     );

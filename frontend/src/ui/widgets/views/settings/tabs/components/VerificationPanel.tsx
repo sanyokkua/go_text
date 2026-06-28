@@ -1,6 +1,7 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 import { apperr } from '../../../../../../../wailsjs/go/models';
+import { ProviderConfig } from '../../../../../../logic/adapter/models';
 import { selectInferenceRunning, useAppDispatch, useAppSelector } from '../../../../../../logic/store';
 import { enqueueNotification } from '../../../../../../logic/store/notifications/slice';
 import { testConnection, testModels, testProviderInference } from '../../../../../../logic/store/settings/thunks';
@@ -67,21 +68,29 @@ const CheckRow: React.FC<CheckRowProps> = ({ label, state, disabled, onRun }) =>
 CheckRow.displayName = 'CheckRow';
 
 interface VerificationPanelProps {
-    providerId: string;
-    disabledReason?: string;
+    /** The live draft provider config — diagnostics run against this, even before Save. */
+    providerConfig: ProviderConfig;
 }
 
 const BUSY_PATTERN = /busy|already running/i;
 
 const SPIN_KEYFRAMES = `@keyframes vp-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`;
 
-const VerificationPanel: React.FC<VerificationPanelProps> = ({ providerId, disabledReason }) => {
+const VerificationPanel: React.FC<VerificationPanelProps> = ({ providerConfig }) => {
     const dispatch = useAppDispatch();
     const inferenceRunning = useAppSelector(selectInferenceRunning);
 
     const [connectionState, setConnectionState] = useState<CheckState>(INITIAL_CHECK);
     const [modelsState, setModelsState] = useState<CheckState>(INITIAL_CHECK);
     const [inferenceState, setInferenceState] = useState<CheckState>(INITIAL_CHECK);
+
+    // Reset all check results when the selected provider changes, so a previous
+    // provider's pass/fail never carries over to the next one.
+    useEffect(() => {
+        setConnectionState(INITIAL_CHECK);
+        setModelsState(INITIAL_CHECK);
+        setInferenceState(INITIAL_CHECK);
+    }, [providerConfig.providerId]);
 
     const applyOutcome = useCallback((outcome: apperr.VerifyOutcome, setState: React.Dispatch<React.SetStateAction<CheckState>>) => {
         if (outcome.ok) {
@@ -93,29 +102,29 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({ providerId, disab
 
     const handleTestConnection = useCallback(async () => {
         setConnectionState({ status: 'running', message: '', durationMs: 0 });
-        const result = await dispatch(testConnection(providerId));
+        const result = await dispatch(testConnection(providerConfig));
         if (testConnection.fulfilled.match(result)) {
             applyOutcome(result.payload, setConnectionState);
         } else {
             const message = result.payload ?? 'Connection test failed';
             setConnectionState({ status: 'fail', message, durationMs: 0 });
         }
-    }, [dispatch, providerId, applyOutcome]);
+    }, [dispatch, providerConfig, applyOutcome]);
 
     const handleTestModels = useCallback(async () => {
         setModelsState({ status: 'running', message: '', durationMs: 0 });
-        const result = await dispatch(testModels(providerId));
+        const result = await dispatch(testModels(providerConfig));
         if (testModels.fulfilled.match(result)) {
             applyOutcome(result.payload, setModelsState);
         } else {
             const message = result.payload ?? 'Models test failed';
             setModelsState({ status: 'fail', message, durationMs: 0 });
         }
-    }, [dispatch, providerId, applyOutcome]);
+    }, [dispatch, providerConfig, applyOutcome]);
 
     const handleTestInference = useCallback(async () => {
         setInferenceState({ status: 'running', message: '', durationMs: 0 });
-        const result = await dispatch(testProviderInference(providerId));
+        const result = await dispatch(testProviderInference(providerConfig));
         if (testProviderInference.fulfilled.match(result)) {
             applyOutcome(result.payload, setInferenceState);
         } else {
@@ -132,12 +141,11 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({ providerId, disab
             }
             setInferenceState({ status: 'fail', message, durationMs: 0 });
         }
-    }, [dispatch, providerId, applyOutcome]);
+    }, [dispatch, providerConfig, applyOutcome]);
 
     const isConnectionRunning = connectionState.status === 'running';
     const isModelsRunning = modelsState.status === 'running';
     const isInferenceRunning = inferenceState.status === 'running';
-    const allDisabled = !!disabledReason;
 
     return (
         <section aria-label="Provider diagnostics">
@@ -147,19 +155,13 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({ providerId, disab
             <h3 style={{ margin: 0, fontSize: '0.875rem', fontWeight: 600, color: 'var(--ink)', marginBottom: 'var(--space-1)' }}>
                 Provider diagnostics
             </h3>
-            {disabledReason ? (
-                <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--ink-3)', marginBottom: 'var(--space-3)' }}>
-                    ℹ {disabledReason}
-                </p>
-            ) : (
-                <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--ink-3)', marginBottom: 'var(--space-3)' }}>
-                    These checks do not affect your saved settings
-                </p>
-            )}
+            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--ink-3)', marginBottom: 'var(--space-3)' }}>
+                These checks do not affect your saved settings
+            </p>
 
-            <CheckRow label="Test connection" state={connectionState} disabled={allDisabled || isConnectionRunning} onRun={handleTestConnection} />
-            <CheckRow label="Test models" state={modelsState} disabled={allDisabled || isModelsRunning} onRun={handleTestModels} />
-            <CheckRow label="Test inference" state={inferenceState} disabled={allDisabled || isInferenceRunning || inferenceRunning} onRun={handleTestInference} />
+            <CheckRow label="Test connection" state={connectionState} disabled={isConnectionRunning} onRun={handleTestConnection} />
+            <CheckRow label="Test models" state={modelsState} disabled={isModelsRunning} onRun={handleTestModels} />
+            <CheckRow label="Test inference" state={inferenceState} disabled={isInferenceRunning || inferenceRunning} onRun={handleTestInference} />
         </section>
     );
 };

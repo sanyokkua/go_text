@@ -464,3 +464,78 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 | P5 FE Foundation | T17 tokens/theming · T18 primitives · T19 adapter/errors · T20 slices · T31 markdown rendering (`MarkdownView`/`MermaidBlock`) |
 | P6 FE Views | T21 editor+diff (Output Preview = `MarkdownView`) · T22 stack builder+manage · T23 history rail · T24 settings · T25 about+inspector+⌘K (Guide = `MarkdownView`) · T26 toasts/confirms |
 | P7 Completion | T27 bindings/events · T28 docs · T29 tests/CI · T30 acceptance |
+| P8 v3.1 Fidelity | T32 top-bar chrome · T33 remove StatusBar · T34 sidebar · T35 pane icon-controls · T36 diff parity · T37 run/builder parity · T38 settings left-tabs+theme · T39 provider form+test-inference full-stack · T40 provider-switch resets · T41 settings tabs parity · T42 about·info parity · T43 history rail parity · T44 unit+UI tests · T45 real-provider E2E |
+
+---
+
+## Phase 8 · v3.1 UI/UX fidelity remediation, provider/verification fixes & real-provider E2E
+
+> The v3 redesign shipped but the running app diverges from the canonical mockups
+> (`mockup.html` + `mockup_screens/`). The mockup is the **source of truth**. This phase fixes
+> targeted divergences (the skeleton — tokens, `.dark` on `documentElement`, AppBar pickers, cmdk
+> palette, RunBar, StackBuilderBar, HistoryRail, VerificationPanel — already exists), fixes three
+> provider/verification bugs full-stack, and adds a real-LLM E2E suite. Routing per top-of-repo
+> `CLAUDE.md`: `ts-engineer`/`ts-tester` for `frontend/src`, `go-engineer`/`go-tester` for `internal/`,
+> load `wails-dev` for any bound-signature change. **Sequence:** T39/T40 → T32–T37 → T38/T41–T43 → T44 → T45.
+
+### T32 · Top-bar / chrome fidelity
+- **Goal:** AppBar matches mockup §4.2.
+- **Scope:** `ui/widgets/base/AppBar.tsx` — add "G" gradient logo badge before "GoText"; add a visible **⌘K** button in the right cluster opening the existing `CommandPalette`; confirm right-cluster grouping (Format · View · Layout · ⌘K · 🕘 · ℹ · ⚙) in light & dark. Add **readiness dots** (● ready / ○ not) to `ProviderPicker.tsx`/`ModelPicker.tsx` triggers.
+- **Acceptance:** top bar matches mockup in both themes; ⌘K button opens palette; dots reflect provider/model readiness.
+
+### T33 · Remove StatusBar; relocate readiness
+- **Scope:** Remove `StatusBar.tsx` from `ui/widgets/views/AppMainView.tsx`; drop `STATUS_BAR` height in `ui/styles/constants.ts` so the editor reclaims space and the run bar sits only under the panes (not under the sidebar). Confirm no remaining consumer.
+- **Acceptance:** no bottom status bar; provider/model state visible only via top-bar dots; layout has no dead band.
+
+### T34 · Sidebar fidelity
+- **Scope:** `ui/widgets/views/editor/ActionsSidebar.tsx` — (1) collapsed ⇒ render nothing (remove category-initial strip, line ~43); reopen via hamburger. (2) Render `stack.icon` as a real glyph (map lucide name → icon or normalize seed to emoji), never raw text (line ~75). (3) Restructure actions into **family-grouped sections with headers+counts** + a **search box** filtering actions & stacks; reuse `selectCatalogByCategory`; preserve armed/disabled/`+1` states; ensure scroll.
+- **Acceptance:** collapse fully hides; stack glyphs render; grouped+searchable scrollable list per mockup.
+
+### T35 · Editor pane controls → icon buttons
+- **Scope:** `ui/widgets/views/editor/InputPane.tsx`, `OutputPane.tsx` — move paste/clear (input) and copy/restore/clear (output) to **top-right icon buttons** with tooltips; keep handlers/thunks; add word-count + "rendered"/"restored" sub-labels in headers.
+- **Acceptance:** controls match mockup placement; all actions still work.
+
+### T36 · Diff view parity
+- **Scope:** Diff mode of `OutputPane`/`DiffView` — add **+N added / −N removed** badges and a **"Copy clean"** button (mockup §6.2).
+- **Acceptance:** diff shows counts and copy-clean.
+
+### T37 · Run bar & stack builder parity
+- **Scope:** `RunBar.tsx` — armed-action chip + "· N inference" + **＋ Build a stack** + Run; empty-state only when nothing armed. `StackBuilderBar.tsx` — family-merge group chips, caps hints ("1 MAX"), live "N / 5 steps · M inferences" counter, Cancel/Save…/Run, dashed teal top border (mockup §6.1).
+- **Acceptance:** both bars match mockup; caps/merge/inference counts correct.
+
+### T39 · Provider form fidelity + test-inference full-stack fix  *(do first; blocking)*
+- **Backend (`go-engineer`, load `wails-dev`):** change `internal/verification` `TestInference` (and for consistency `TestConnection`/`TestModels`) bound signature to accept the **draft provider config (incl. selectedModel)** instead of reading saved config, so Verify works **before Save**. Per `ErrorEnvelopeRules.md`: concrete `*Result` envelope, `ToWire` only at handler. Update verification/actions handler; `wails generate module` (commit regenerated `frontend/wailsjs/`). Move/extend the empty-model validation test (`internal/verification/service_test.go:481`) to the new contract.
+- **Frontend (`ts-engineer`):** `ProviderForm.tsx`/`VerificationPanel.tsx` pass draft model/config to new bindings; add **API-key env-var banner**, **API version**, **Deployment/Selected-model** block; render Verify panel as **check-rows** with timings. `ProviderList.tsx`: kind **dot** markers + **CURRENT** badge.
+- **Acceptance:** Test inference succeeds with an in-form selected model before Save; provider form matches mockup; bindings in sync.
+
+### T40 · Provider-switch state resets
+- **Scope:** (b) `VerificationPanel.tsx` — `useEffect` keyed on `providerId` resets check states to `INITIAL_CHECK`. (c) `ui/widgets/base/ModelPicker.tsx` + `logic/store/settings/thunks.ts`/selectors — on provider switch (`setAsCurrentProviderConfig`) sync `modelConfig.name` to the new provider's `selectedModel` (or clear), fixing run failures.
+- **Acceptance:** switching providers clears prior test results and selects the right model; runs no longer fail with stale model.
+
+### T38 · Settings shell → LEFT tabs + theme fix
+- **Scope:** Convert `SettingsTabs.tsx`/`SettingsView.tsx` to a **left vertical Radix Tabs** nav with emoji glyphs + `‹ Editor` header. Fix settings surface tokens so panels use `--surface`/`--bg` in light & dark (resolves near-black regression).
+- **Acceptance:** settings match mockup layout/colors in both themes.
+
+### T41 · Remaining settings tabs parity
+- **Scope:** Model, Generation, Languages, Logging (rotation + task-logging + history), About & data (paths+copy+Factory reset), Appearance (Auto/Light/Dark + preview swatches) — align to mockup screens; theme applies instantly via `logic/theme/init.ts`.
+- **Acceptance:** each tab matches its mockup screen.
+
+### T42 · About·Info window parity
+- **Scope:** Prompt inspector — family chips, inference grouping note, parameter chips, **Copy all**, **"Use current editor input as a preview"** toggle, Guide/Actions&Stacks left nav.
+- **Acceptance:** inspector matches mockup About·Info screen.
+
+### T43 · History rail parity
+- **Scope:** Cards — INF badge, status (success/partial/PARTIAL), relative time, restore+delete icons, "100 MAX", Clear; rail coexists with panes without overlapping the run bar.
+- **Acceptance:** history rail matches mockup.
+
+### T44 · Unit + Target-A UI tests (deterministic, CI-safe)
+- **Scope:** For every fix add/extend tests. Jest/RTL (`ts-tester`): sidebar collapse-hides; stack icon renders glyph; pane icon buttons; VerificationPanel reset on switch; ModelPicker sync on switch; settings left-tabs; RunBar states. Go (`go-tester`): `TestInference` draft-config table tests (empty-model validation, busy gate, auth/unreachable). Playwright Target A (`frontend/e2e/verify-ui.spec.ts`, bridge-mock): responsive (narrow/tablet/wide × light/dark) — no horizontal overflow, no console errors; presence of each fixed element. Keep green: `go build ./...`, `wails generate module && git diff --exit-code frontend/wailsjs/`, `! grep -rq "@mui\|@emotion" frontend/src`, `go test -race ./...`.
+- **Acceptance:** all unit + Target-A UI tests pass; CI gates green.
+
+### T45 · Real-provider E2E (Target B: `wails dev` + real backend + LM Studio & Ollama)
+- **Isolation (blocking):** destructive specs (delete provider, factory reset, clear history) mutate the real DB/settings — run against a **throwaway config/data dir** (env override or backup/restore `GoTextApp` config+db around the suite). **Local-only / not in CI.** First do one smoke navigation confirming Playwright reaches the Wails bridge at `http://localhost:34115`. Smallest models: Ollama `qwen3:0.6b-q4_K_M`, LM Studio smallest loaded.
+- **Scenarios (both providers):** 1) provider CRUD + Test connection/models/inference(pre-save) + Save/Set current + headers add/edit/remove + auth switch; 2) model settings (temp/context/token-limit); 3) generation (timeout/retries/markdown); 4) logging + factory reset (isolated); 5) appearance Light/Dark/Auto; 6) editor proofread + switch provider/model/language + Format/View/Layout + History open/manage + sidebar toggle; 7) build/run/manage stacks.
+- **Acceptance:** all journeys pass on both providers; each failure produces a code fix + regression test; loop until green.
+
+### Final verification
+- Run `wails dev` and manually exercise the real app on this branch against LM Studio and Ollama; confirm UI/UX and provider flows match the mockups (per `CLAUDE.md` "Finishing task").

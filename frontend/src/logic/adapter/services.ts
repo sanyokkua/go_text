@@ -145,19 +145,19 @@ export class ActionHandler implements IActionHandler {
         return CancelAllRuns();
     }
 
-    async testConnection(providerId: string): Promise<apperr.VerifyResult> {
-        this.logger.logInfo(`testConnection: ${providerId}`);
-        return TestConnection(providerId);
+    async testConnection(providerConfig: ProviderConfig): Promise<apperr.VerifyResult> {
+        this.logger.logInfo(`testConnection: ${providerConfig.providerName}`);
+        return TestConnection(toWireProvider(providerConfig));
     }
 
-    async testInference(providerId: string): Promise<apperr.VerifyResult> {
-        this.logger.logInfo(`testInference: ${providerId}`);
-        return TestInference(providerId);
+    async testInference(providerConfig: ProviderConfig): Promise<apperr.VerifyResult> {
+        this.logger.logInfo(`testInference: ${providerConfig.providerName}`);
+        return TestInference(toWireProvider(providerConfig));
     }
 
-    async testModels(providerId: string): Promise<apperr.VerifyResult> {
-        this.logger.logInfo(`testModels: ${providerId}`);
-        return TestModels(providerId);
+    async testModels(providerConfig: ProviderConfig): Promise<apperr.VerifyResult> {
+        this.logger.logInfo(`testModels: ${providerConfig.providerName}`);
+        return TestModels(toWireProvider(providerConfig));
     }
 }
 

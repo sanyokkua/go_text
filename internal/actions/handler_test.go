@@ -24,13 +24,13 @@ type mockVerificationService struct {
 	inferErr      error
 }
 
-func (m *mockVerificationService) TestConnection(_ string) (*apperr.VerifyOutcome, error) {
+func (m *mockVerificationService) TestConnection(_ settings.ProviderConfig) (*apperr.VerifyOutcome, error) {
 	return m.connOutcome, m.connErr
 }
-func (m *mockVerificationService) TestModels(_ string) (*apperr.VerifyOutcome, error) {
+func (m *mockVerificationService) TestModels(_ settings.ProviderConfig) (*apperr.VerifyOutcome, error) {
 	return m.modelsOutcome, m.modelsErr
 }
-func (m *mockVerificationService) TestInference(_ string) (*apperr.VerifyOutcome, error) {
+func (m *mockVerificationService) TestInference(_ settings.ProviderConfig) (*apperr.VerifyOutcome, error) {
 	return m.inferOutcome, m.inferErr
 }
 
@@ -51,7 +51,7 @@ func TestActionHandler_TestConnection_Success(t *testing.T) {
 	outcome := &apperr.VerifyOutcome{Check: "connection", OK: true, DurationMs: 42}
 	h := newTestActionHandler(&mockVerificationService{connOutcome: outcome})
 
-	res := h.TestConnection("p1")
+	res := h.TestConnection(settings.ProviderConfig{ID: "p1"})
 	if res.Error != nil {
 		t.Fatalf("expected no error, got %v", res.Error)
 	}
@@ -72,7 +72,7 @@ func TestActionHandler_TestConnection_Failure_PartialResult(t *testing.T) {
 	}
 	h := newTestActionHandler(mock)
 
-	res := h.TestConnection("p1")
+	res := h.TestConnection(settings.ProviderConfig{ID: "p1"})
 	if res.Error == nil {
 		t.Fatal("expected error in result")
 	}
@@ -94,7 +94,7 @@ func TestActionHandler_TestModels_Success(t *testing.T) {
 	outcome := &apperr.VerifyOutcome{Check: "models", OK: true, ModelCount: 3, Sample: "gpt-4o"}
 	h := newTestActionHandler(&mockVerificationService{modelsOutcome: outcome})
 
-	res := h.TestModels("p1")
+	res := h.TestModels(settings.ProviderConfig{ID: "p1"})
 	if res.Error != nil {
 		t.Fatalf("unexpected error: %v", res.Error)
 	}
@@ -112,7 +112,7 @@ func TestActionHandler_TestModels_Failure_PartialResult(t *testing.T) {
 	}
 	h := newTestActionHandler(mock)
 
-	res := h.TestModels("p1")
+	res := h.TestModels(settings.ProviderConfig{ID: "p1"})
 	if res.Data == nil {
 		t.Fatal("expected partial Data")
 	}
@@ -131,7 +131,7 @@ func TestActionHandler_TestInference_Success(t *testing.T) {
 	outcome := &apperr.VerifyOutcome{Check: "inference", OK: true, Sample: "Hello"}
 	h := newTestActionHandler(&mockVerificationService{inferOutcome: outcome})
 
-	res := h.TestInference("p1")
+	res := h.TestInference(settings.ProviderConfig{ID: "p1"})
 	if res.Error != nil {
 		t.Fatalf("unexpected error: %v", res.Error)
 	}
@@ -149,7 +149,7 @@ func TestActionHandler_TestInference_Busy_PartialResult(t *testing.T) {
 	}
 	h := newTestActionHandler(mock)
 
-	res := h.TestInference("p1")
+	res := h.TestInference(settings.ProviderConfig{ID: "p1"})
 	if res.Error == nil {
 		t.Fatal("expected Error for busy")
 	}
@@ -172,7 +172,7 @@ func TestActionHandler_TestInference_PanicRecovery(t *testing.T) {
 	panicSvc := &panicVerifyService{}
 	h.verificationService = panicSvc
 
-	res := h.TestInference("p1")
+	res := h.TestInference(settings.ProviderConfig{ID: "p1"})
 	if res.Error == nil {
 		t.Fatal("expected error after panic recovery")
 	}
@@ -184,13 +184,13 @@ func TestActionHandler_TestInference_PanicRecovery(t *testing.T) {
 // panicVerifyService panics on any call — used to test panic recovery.
 type panicVerifyService struct{}
 
-func (p *panicVerifyService) TestConnection(_ string) (*apperr.VerifyOutcome, error) {
+func (p *panicVerifyService) TestConnection(_ settings.ProviderConfig) (*apperr.VerifyOutcome, error) {
 	panic("test panic in TestConnection")
 }
-func (p *panicVerifyService) TestModels(_ string) (*apperr.VerifyOutcome, error) {
+func (p *panicVerifyService) TestModels(_ settings.ProviderConfig) (*apperr.VerifyOutcome, error) {
 	panic("test panic in TestModels")
 }
-func (p *panicVerifyService) TestInference(_ string) (*apperr.VerifyOutcome, error) {
+func (p *panicVerifyService) TestInference(_ settings.ProviderConfig) (*apperr.VerifyOutcome, error) {
 	panic("test panic in TestInference")
 }
 

@@ -42,6 +42,7 @@ const initialState: UIState = {
     layout: 'side',
     sidebarCollapsed: false,
     historyOpen: false,
+    paletteOpen: false,
     inferenceRunning: false,
     currentView: 'main',
     armedActionId: null,

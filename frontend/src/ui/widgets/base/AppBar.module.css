@@ -137,3 +137,42 @@
     opacity: 0.45;
     cursor: default;
 }
+
+.logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 23px;
+    height: 23px;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, var(--teal-light), var(--teal-dark));
+    color: var(--white);
+    font-weight: 700;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+.cmdkBtn {
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--ink-2);
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+}
+
+.cmdkBtn:hover {
+    background: var(--surface-2);
+}
+
+.cmdkBtn:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.cmdkBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

@@ -7,6 +7,7 @@ const initialState: UIState = {
     layout: 'side',
     sidebarCollapsed: false,
     historyOpen: false,
+    paletteOpen: false,
     inferenceRunning: false,
     currentView: 'main',
     armedActionId: null,
@@ -35,6 +36,12 @@ const uiSlice = createSlice({
         },
         setHistoryOpen: (state, action: PayloadAction<boolean>) => {
             state.historyOpen = action.payload;
+        },
+        togglePalette: (state) => {
+            state.paletteOpen = !state.paletteOpen;
+        },
+        setPaletteOpen: (state, action: PayloadAction<boolean>) => {
+            state.paletteOpen = action.payload;
         },
         setThemeMode: (state, action: PayloadAction<ThemeMode>) => {
             state.theme.mode = action.payload;
@@ -95,6 +102,8 @@ export const {
     setSidebarCollapsed,
     toggleHistory,
     setHistoryOpen,
+    togglePalette,
+    setPaletteOpen,
     setThemeMode,
     setThemeEffective,
     setCurrentView,
