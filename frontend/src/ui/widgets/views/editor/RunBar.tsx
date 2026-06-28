@@ -14,6 +14,7 @@ import {
 } from '../../../../logic/store';
 import { enqueueNotification } from '../../../../logic/store/notifications/slice';
 import { cancelChain, processPromptChain } from '../../../../logic/store/run';
+import { enterBuildMode } from '../../../../logic/store/ui';
 import { parseError } from '../../../../logic/utils/error_utils';
 import styles from './RunBar.module.css';
 
@@ -78,6 +79,20 @@ const RunBar: React.FC = () => {
             </div>
 
             <div className={styles.actions}>
+                {!isRunning && (
+                    <button
+                        className={styles.buildBtn}
+                        onClick={() => {
+                            dispatch(enterBuildMode());
+                            logger.logInfo('Entered build mode from run bar');
+                        }}
+                        disabled={inferenceRunning}
+                        aria-label="Build a stack"
+                        type="button"
+                    >
+                        ＋ Build a stack
+                    </button>
+                )}
                 {isRunning ? (
                     <button className={`${styles.runBtn} ${styles.cancelBtn}`} onClick={handleCancel} aria-label="Cancel run" type="button">
                         ✕ Cancel

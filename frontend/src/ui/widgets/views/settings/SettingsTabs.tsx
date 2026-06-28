@@ -1,32 +1,42 @@
 import React from 'react';
 
+import styles from './SettingsTabs.module.css';
+
 interface SettingsTabsProps {
     activeTab: number;
     onChange: (event: React.SyntheticEvent, newValue: number) => void;
 }
 
-const TAB_LABELS = ['Providers', 'Model', 'Generation', 'Languages', 'Logging', 'About & data', 'Appearance'];
+interface TabDef {
+    label: string;
+    glyph: string;
+}
+
+const TABS: TabDef[] = [
+    { label: 'Providers', glyph: '🖌' },
+    { label: 'Model', glyph: '⚙' },
+    { label: 'Generation', glyph: '✍' },
+    { label: 'Languages', glyph: '🌐' },
+    { label: 'Logging', glyph: '🗒' },
+    { label: 'About & data', glyph: 'ℹ' },
+    { label: 'Appearance', glyph: '🎨' },
+];
 
 const SettingsTabs: React.FC<SettingsTabsProps> = ({ activeTab, onChange }) => {
     return (
-        <div style={{ width: '100%', display: 'flex', flexWrap: 'wrap', borderBottom: '1px solid var(--line)', marginBottom: 'var(--space-2)' }}>
-            {TAB_LABELS.map((label, index) => (
+        <div className={styles.nav} aria-label="Settings sections" role="tablist" aria-orientation="vertical">
+            {TABS.map((tab, index) => (
                 <button
-                    key={index}
+                    key={tab.label}
+                    role="tab"
+                    aria-selected={index === activeTab}
                     onClick={(e) => onChange(e, index)}
-                    style={{
-                        padding: 'var(--space-2) var(--space-3)',
-                        border: 'none',
-                        borderBottom: index === activeTab ? '2px solid var(--teal)' : '2px solid transparent',
-                        background: 'none',
-                        cursor: 'pointer',
-                        color: index === activeTab ? 'var(--teal)' : 'var(--ink-2)',
-                        fontWeight: index === activeTab ? 700 : 400,
-                        fontSize: '0.85rem',
-                        whiteSpace: 'nowrap',
-                    }}
+                    className={`${styles.tab} ${index === activeTab ? styles.tabActive : ''}`}
                 >
-                    {label}
+                    <span className={styles.glyph} aria-hidden="true">
+                        {tab.glyph}
+                    </span>
+                    {tab.label}
                 </button>
             ))}
         </div>

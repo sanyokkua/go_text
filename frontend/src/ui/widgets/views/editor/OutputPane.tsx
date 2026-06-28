@@ -75,47 +75,55 @@ const OutputPane: React.FC = () => {
         );
     };
 
+    const modeLabel = viewMode === 'preview' ? 'rendered' : viewMode;
+
     return (
         <div className={styles.pane}>
             <div className={styles.header}>
-                <span className={styles.title}>Output</span>
-                <div className={styles.viewTabs}>
-                    {(['preview', 'source', 'diff'] as const).map((mode) => (
-                        <button
-                            key={mode}
-                            className={`${styles.viewTab} ${viewMode === mode ? styles.viewTabActive : ''}`}
-                            onClick={() => dispatch(setViewMode(mode))}
-                            disabled={inferenceRunning || (mode === 'diff' && !hasDiff)}
-                            aria-disabled={inferenceRunning || (mode === 'diff' && !hasDiff)}
-                            aria-label={`${mode} view`}
-                        >
-                            {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                <span className={styles.title}>
+                    Output <span className={styles.subLabel}>· {modeLabel}</span>
+                </span>
+                <div className={styles.headerRight}>
+                    <div className={styles.viewTabs}>
+                        {(['preview', 'source', 'diff'] as const).map((mode) => (
+                            <button
+                                key={mode}
+                                className={`${styles.viewTab} ${viewMode === mode ? styles.viewTabActive : ''}`}
+                                onClick={() => dispatch(setViewMode(mode))}
+                                disabled={inferenceRunning || (mode === 'diff' && !hasDiff)}
+                                aria-disabled={inferenceRunning || (mode === 'diff' && !hasDiff)}
+                                aria-label={`${mode} view`}
+                            >
+                                {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                            </button>
+                        ))}
+                    </div>
+                    <div className={styles.headerActions}>
+                        <button className={styles.iconBtn} onClick={handleCopy} disabled={!output || inferenceRunning} aria-label="Copy output" title="Copy output">
+                            ⧉
                         </button>
-                    ))}
+                        <button
+                            className={styles.iconBtn}
+                            onClick={() => dispatch(useOutputAsInput())} // eslint-disable-line react-hooks/rules-of-hooks -- useOutputAsInput is a Redux action creator, not a React hook
+                            disabled={!output || inferenceRunning}
+                            aria-label="Use as input"
+                            title="Use as input"
+                        >
+                            ↺
+                        </button>
+                        <button
+                            className={styles.iconBtn}
+                            onClick={() => dispatch(clearOutput())}
+                            disabled={!output || inferenceRunning}
+                            aria-label="Clear output"
+                            title="Clear output"
+                        >
+                            ✕
+                        </button>
+                    </div>
                 </div>
             </div>
             <div className={styles.body}>{renderBody()}</div>
-            <div className={styles.footer}>
-                <button className={styles.btn} onClick={handleCopy} disabled={!output || inferenceRunning} aria-label="Copy output">
-                    Copy
-                </button>
-                <button
-                    className={styles.btn}
-                    onClick={() => dispatch(useOutputAsInput())} // eslint-disable-line react-hooks/rules-of-hooks -- useOutputAsInput is a Redux action creator, not a React hook
-                    disabled={!output || inferenceRunning}
-                    aria-label="Use as input"
-                >
-                    Use as input
-                </button>
-                <button
-                    className={styles.btn}
-                    onClick={() => dispatch(clearOutput())}
-                    disabled={!output || inferenceRunning}
-                    aria-label="Clear output"
-                >
-                    Clear
-                </button>
-            </div>
         </div>
     );
 };

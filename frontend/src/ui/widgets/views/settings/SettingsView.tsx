@@ -54,12 +54,9 @@ const SettingsView: React.FC = () => {
     }
 
     return (
-        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <hr style={{ margin: 'var(--space-2) 0', border: 'none', borderTop: '1px solid var(--line)' }} />
-            <div style={{ width: '100%', flexGrow: 1, padding: 'var(--space-2)', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-                <SettingsTabs activeTab={activeTab} onChange={handleTabChange} />
-                <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>{activeTabView}</div>
-            </div>
+        <div style={{ width: '100%', height: '100%', display: 'flex', overflow: 'hidden', background: 'var(--bg)' }}>
+            <SettingsTabs activeTab={activeTab} onChange={handleTabChange} />
+            <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 'var(--space-4)' }}>{activeTabView}</div>
         </div>
     );
 };

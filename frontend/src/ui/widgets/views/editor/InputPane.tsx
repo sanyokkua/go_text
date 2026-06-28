@@ -37,8 +37,29 @@ const InputPane: React.FC = () => {
     return (
         <div className={styles.pane}>
             <div className={styles.header}>
-                <span className={styles.title}>Input</span>
-                <span className={styles.wordCount}>{wordCount(content)} words</span>
+                <span className={styles.title}>
+                    Input <span className={styles.wordCount}>· {wordCount(content)} words</span>
+                </span>
+                <div className={styles.headerActions}>
+                    <button
+                        className={styles.iconBtn}
+                        onClick={handlePaste}
+                        disabled={inferenceRunning}
+                        aria-label="Paste from clipboard"
+                        title="Paste from clipboard"
+                    >
+                        📋
+                    </button>
+                    <button
+                        className={styles.iconBtn}
+                        onClick={handleClear}
+                        disabled={inferenceRunning || !content}
+                        aria-label="Clear input"
+                        title="Clear input"
+                    >
+                        ✕
+                    </button>
+                </div>
             </div>
             <div className={styles.body}>
                 <textarea
@@ -49,14 +70,6 @@ const InputPane: React.FC = () => {
                     disabled={inferenceRunning}
                     aria-label="Input text"
                 />
-            </div>
-            <div className={styles.footer}>
-                <button className={styles.btn} onClick={handlePaste} disabled={inferenceRunning} aria-label="Paste from clipboard">
-                    Paste
-                </button>
-                <button className={styles.btn} onClick={handleClear} disabled={inferenceRunning || !content} aria-label="Clear input">
-                    Clear
-                </button>
             </div>
         </div>
     );

@@ -83,3 +83,43 @@
 .btn:hover:not(:disabled) {
     background: var(--surface-2);
 }
+
+.wordCount {
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: 400;
+}
+
+.headerActions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.iconBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--ink-2);
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.iconBtn:hover:not(:disabled) {
+    background: var(--surface-2);
+}
+
+.iconBtn:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.iconBtn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
