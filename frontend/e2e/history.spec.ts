@@ -1,59 +1,11 @@
 import { expect, test } from '@playwright/test';
 
-const MOCK_ENTRY = {
-    id: 'e2e-entry-1',
-    createdAt: Math.floor(Date.now() / 1000) - 300,
-    kind: 'single',
-    title: 'Proofread run',
-    inputText: 'e2e input text',
-    outputText: 'e2e output text',
-    applied: [{ id: 'proofread', name: 'Proofread', category: 'Writing' }],
-    providerName: 'Local',
-    model: 'llama',
-    inputLang: 'en',
-    outputLang: 'en',
-    format: 'plain',
-    durationMs: 800,
-    inferences: 1,
-    status: 'success',
-    errorCode: '',
-    failedIndex: -1,
-};
-
+// Bridge mock HistoryHandler returns MOCK_E3_ENTRY when ?history-test is in the URL.
+// addInitScript(globalThis.go) has no effect in Vite dev mode — the bridge mock uses
+// ES module imports, not window.go — so we use a URL parameter instead.
 test.describe('History Rail: e2e flows', () => {
     test.beforeEach(async ({ page }) => {
-        await page.addInitScript((entry) => {
-            const ok = (d: unknown) => Promise.resolve({ data: d, error: undefined });
-            const historyHandler = new Proxy(
-                {},
-                {
-                    get(_, method) {
-                        if (method === 'ListHistory') return () => ok([entry]);
-                        if (method === 'GetHistoryEntry') return () => ok(entry);
-                        if (method === 'DeleteHistoryEntry') return () => ok(null);
-                        if (method === 'ClearHistory') return () => ok(null);
-                        return () => ok(null);
-                    },
-                },
-            );
-            (globalThis as unknown as Record<string, unknown>)['go'] = new Proxy(
-                {},
-                {
-                    get() {
-                        return new Proxy(
-                            {},
-                            {
-                                get() {
-                                    return historyHandler;
-                                },
-                            },
-                        );
-                    },
-                },
-            );
-        }, MOCK_ENTRY);
-
-        await page.goto('/');
+        await page.goto('/?history-test=1');
         await page.waitForLoadState('networkidle');
     });
 
@@ -74,12 +26,12 @@ test.describe('History Rail: e2e flows', () => {
     test('history rail shows a loaded entry after toggle', async ({ page }) => {
         await page.getByRole('button', { name: /toggle history rail/i }).click();
         await expect(page.getByRole('complementary', { name: /history/i })).toBeVisible();
-        await expect(page.getByText('Proofread run')).toBeVisible();
+        await expect(page.getByText('E3 Proofread run')).toBeVisible();
     });
 
     test('restore button is present for each history entry', async ({ page }) => {
         await page.getByRole('button', { name: /toggle history rail/i }).click();
-        await expect(page.getByRole('button', { name: /restore entry proofread run/i })).toBeVisible();
+        await expect(page.getByRole('button', { name: /restore entry e3 proofread run/i })).toBeVisible();
     });
 
     test('clicking restore does not crash the page', async ({ page }) => {
@@ -87,8 +39,8 @@ test.describe('History Rail: e2e flows', () => {
         page.on('pageerror', (err) => errors.push(err.message));
 
         await page.getByRole('button', { name: /toggle history rail/i }).click();
-        await expect(page.getByText('Proofread run')).toBeVisible();
-        await page.getByRole('button', { name: /restore entry proofread run/i }).click();
+        await expect(page.getByText('E3 Proofread run')).toBeVisible();
+        await page.getByRole('button', { name: /restore entry e3 proofread run/i }).click();
 
         expect(errors).toHaveLength(0);
     });

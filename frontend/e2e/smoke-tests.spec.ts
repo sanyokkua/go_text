@@ -182,12 +182,70 @@ test.describe('E9: Untrusted model output is inert', () => {
         await page.waitForTimeout(2_000);
 
         // No link should have a javascript: href
-        const badLinks = await page.$$eval('a[href]', (els) =>
-            els.filter((el) => el.getAttribute('href')?.startsWith('javascript:')).length,
-        );
+        const badLinks = await page.$$eval('a[href]', (els) => els.filter((el) => el.getAttribute('href')?.startsWith('javascript:')).length);
         expect(badLinks).toBe(0);
 
         await page.screenshot({ path: screenshotPath('e9-link-inert') });
+        expect(errors).toHaveLength(0);
+    });
+});
+
+// ── E7: Markdown rendering ────────────────────────────────────────────────────
+
+test.describe('E7: Markdown output renders correctly', () => {
+    // Bridge mock ActionHandler returns a GFM payload (table + code + mermaid) when ?markdown is in the URL.
+    test.beforeEach(async ({ page }) => {
+        await page.goto('/?markdown=1');
+        await page.waitForLoadState('networkidle');
+    });
+
+    test('table and fenced code block render in the output after running with Markdown payload', async ({ page }) => {
+        const errors: string[] = [];
+        page.on('pageerror', (err) => errors.push(err.message));
+
+        const expandBtn = page.getByRole('button', { name: /expand sidebar/i });
+        if (await expandBtn.isVisible()) await expandBtn.click();
+
+        await page.getByRole('textbox', { name: /input text/i }).fill('test');
+        await page.getByRole('button', { name: /summarise/i }).click();
+        await page.getByRole('button', { name: /^run$/i }).click();
+
+        await expect(page.locator('.markdown-body')).toBeVisible({ timeout: 10_000 });
+        await expect(page.locator('.markdown-body table')).toBeVisible();
+        await expect(page.locator('.markdown-body pre code')).toBeVisible();
+
+        await page.screenshot({ path: screenshotPath('e7-markdown-render') });
+        expect(errors).toHaveLength(0);
+    });
+});
+
+// ── E8: Markdown theme consistency ────────────────────────────────────────────
+
+test.describe('E8: Markdown output re-themes without breaking layout', () => {
+    test('switching OS to dark mode keeps Markdown table and code visible', async ({ page }) => {
+        const errors: string[] = [];
+        page.on('pageerror', (err) => errors.push(err.message));
+
+        await page.emulateMedia({ colorScheme: 'light' });
+        await page.goto('/?markdown=1');
+        await page.waitForLoadState('networkidle');
+
+        const expandBtn = page.getByRole('button', { name: /expand sidebar/i });
+        if (await expandBtn.isVisible()) await expandBtn.click();
+
+        await page.getByRole('textbox', { name: /input text/i }).fill('test');
+        await page.getByRole('button', { name: /summarise/i }).click();
+        await page.getByRole('button', { name: /^run$/i }).click();
+
+        await expect(page.locator('.markdown-body table')).toBeVisible({ timeout: 10_000 });
+
+        // Flip OS to dark — auto-mode should follow
+        await page.emulateMedia({ colorScheme: 'dark' });
+        await page.waitForFunction(() => document.documentElement.classList.contains('dark'), { timeout: 3_000 });
+
+        // Markdown must still be visible with no console errors
+        await expect(page.locator('.markdown-body table')).toBeVisible();
+        await page.screenshot({ path: screenshotPath('e8-markdown-dark') });
         expect(errors).toHaveLength(0);
     });
 });

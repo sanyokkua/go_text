@@ -9,12 +9,28 @@ function mockParam(name: string): boolean {
     }
 }
 
-const XSS_PAYLOAD =
-    '<script>window.__xssFired = true;</script> Safe text\n\n' +
-    '[evil link](javascript:alert(1))\n\nSafe paragraph.';
+const XSS_PAYLOAD = '<script>window.__xssFired = true;</script> Safe text\n\n' + '[evil link](javascript:alert(1))\n\nSafe paragraph.';
+
+const MARKDOWN_PAYLOAD = `# Output
+
+| Fruit  | Count |
+| ------ | ----- |
+| Apple  | 3     |
+| Pear   | 7     |
+
+\`\`\`js
+console.log("hello");
+\`\`\`
+
+\`\`\`mermaid
+graph TD
+  A-->B
+\`\`\`
+`;
 
 export function ProcessPromptChain(_req: unknown): Promise<AnyResult> {
     if (mockParam('xss')) return Promise.resolve(ok({ steps: [], finalText: XSS_PAYLOAD }));
+    if (mockParam('markdown')) return Promise.resolve(ok({ steps: [], finalText: MARKDOWN_PAYLOAD }));
     return Promise.resolve(ok({ steps: [], finalText: 'Mock output text.' }));
 }
 
