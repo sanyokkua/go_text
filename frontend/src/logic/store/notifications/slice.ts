@@ -97,7 +97,7 @@ function buildNotification(wire: apperr.WireError): Omit<Notification, 'id'> {
         case apperr.ErrorCode.CodeValidation:
             return {
                 severity: 'error',
-                surface: 'inline',
+                surface: 'toast',
                 title: `Invalid ${field}`,
                 message: `${field} ${expected}; got ${got}.`,
                 ...withDetails(wire),

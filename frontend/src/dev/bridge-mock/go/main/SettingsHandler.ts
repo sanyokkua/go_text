@@ -28,7 +28,7 @@ const defaultModel = {
 const defaultBehavior = { enableTaskLogging: false, historyEnabled: true, historyMaxEntries: 50 };
 const defaultLanguage = { defaultInputLanguage: 'English', defaultOutputLanguage: 'English', languages: ['English'] };
 const defaultMetadata = {
-    authSchemes: ['none', 'bearer', 'api-key'],
+    authSchemes: ['none', 'bearer', 'apiKey'],
     providerKinds: ['openai', 'azure', 'anthropic', 'google', 'ollama', 'lmstudio'],
     settingsFolder: '/mock/settings',
     databaseFile: '/mock/settings/gotext.db',

@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strings"
 
+	"go_text/internal/apperr"
 	"go_text/internal/file"
 
 	"github.com/wailsapp/wails/v2/pkg/logger"
@@ -227,7 +228,7 @@ func (s *SettingsService) CreateProviderConfig(cfg *ProviderConfig) (*ProviderCo
 	const op = "SettingsService.CreateProviderConfig"
 	s.logger.Info(fmt.Sprintf("%s: creating provider %q", op, cfg.Name))
 	if err := ValidateProviderConfig(cfg); err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+		return nil, apperr.Validation("provider config", "valid fields", err.Error())
 	}
 	return s.settingsRepo.CreateProvider(cfg)
 }
@@ -236,10 +237,10 @@ func (s *SettingsService) UpdateProviderConfig(cfg *ProviderConfig) (*ProviderCo
 	const op = "SettingsService.UpdateProviderConfig"
 	s.logger.Info(fmt.Sprintf("%s: updating provider %s", op, cfg.ID))
 	if cfg.ID == "" {
-		return nil, fmt.Errorf("%s: provider ID cannot be empty", op)
+		return nil, apperr.Validation("providerId", "non-empty UUID", "empty string")
 	}
 	if err := ValidateProviderConfig(cfg); err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+		return nil, apperr.Validation("provider config", "valid fields", err.Error())
 	}
 	return s.settingsRepo.UpdateProvider(cfg)
 }

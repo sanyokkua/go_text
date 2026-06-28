@@ -1,0 +1,10 @@
+.root {
+    display: flex;
+    height: 100%;
+    overflow: hidden;
+}
+
+.loading {
+    padding: var(--space-4);
+    color: var(--ink-3);
+}

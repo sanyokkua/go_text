@@ -55,6 +55,14 @@ const AppMainView: React.FC = () => {
             } catch (error: unknown) {
                 const err = parseError(error);
                 logger.logError(`Failed to initialize app: ${err.message}`);
+                dispatch(
+                    enqueueNotification({
+                        severity: 'error',
+                        surface: 'toast',
+                        title: 'App failed to start',
+                        message: `Settings could not load: ${err.message}. Try restarting the app.`,
+                    }),
+                );
             }
         };
         initializeApp();

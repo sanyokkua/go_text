@@ -16,6 +16,7 @@ import { setViewMode } from '../../../logic/store/editor';
 import { setCurrentView, setLayout, toggleHistory, toggleSidebar } from '../../../logic/store/ui';
 import { Segmented } from '../../primitives/Segmented';
 import { Tooltip } from '../../primitives/Tooltip';
+import styles from './AppBar.module.css';
 
 const logger = getLogger('AppBar');
 
@@ -33,20 +34,8 @@ const AppBar: React.FC = () => {
     const historyEnabled = appBehavior?.historyEnabled ?? true;
 
     return (
-        <header
-            style={{
-                width: '100%',
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '0 var(--space-3)',
-                background: 'var(--teal-dark)',
-                color: 'var(--white)',
-                gap: 'var(--space-2)',
-            }}
-        >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexShrink: 0 }}>
+        <header className={styles.bar}>
+            <div className={styles.left}>
                 {isMain && (
                     <Tooltip content={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'} side="bottom">
                         <button
@@ -56,7 +45,7 @@ const AppBar: React.FC = () => {
                                 dispatch(toggleSidebar());
                                 logger.logInfo('Sidebar toggled');
                             }}
-                            style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '1.1rem' }}
+                            className={styles.sidebarBtn}
                         >
                             ☰
                         </button>
@@ -69,16 +58,16 @@ const AppBar: React.FC = () => {
                             dispatch(setCurrentView('main'));
                             logger.logInfo('Navigated to main');
                         }}
-                        style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '0.875rem' }}
+                        className={styles.backBtn}
                     >
                         ‹ Editor
                     </button>
                 )}
-                <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>Text Processor</span>
+                <span className={styles.title}>Text Processor</span>
             </div>
 
             {isMain && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                <div className={styles.center}>
                     <Segmented
                         value={viewMode}
                         onValueChange={(v) => dispatch(setViewMode(v as typeof viewMode))}
@@ -101,27 +90,19 @@ const AppBar: React.FC = () => {
                 </div>
             )}
 
-            <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center', flexShrink: 0 }}>
+            <div className={styles.right}>
                 {isMain && (
                     <Tooltip content={historyEnabled ? 'Toggle history' : 'History is disabled in Settings'} side="bottom">
                         <button
                             aria-label="Toggle history rail"
                             aria-pressed={historyOpen}
                             disabled={!historyEnabled}
+                            data-active={historyOpen}
                             onClick={() => {
                                 dispatch(toggleHistory());
                                 logger.logInfo('History toggled');
                             }}
-                            style={{
-                                background: historyOpen ? 'rgba(255,255,255,0.15)' : 'none',
-                                border: 'none',
-                                color: 'inherit',
-                                cursor: historyEnabled ? 'pointer' : 'default',
-                                fontSize: '1rem',
-                                opacity: historyEnabled ? 1 : 0.45,
-                                borderRadius: 'var(--radius-sm)',
-                                padding: '2px 4px',
-                            }}
+                            className={styles.historyBtn}
                         >
                             🕘
                         </button>
@@ -135,7 +116,7 @@ const AppBar: React.FC = () => {
                                 dispatch(setCurrentView('info'));
                                 logger.logInfo('Navigated to info');
                             }}
-                            style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '1rem' }}
+                            className={styles.iconBtn}
                         >
                             ℹ
                         </button>
@@ -147,7 +128,7 @@ const AppBar: React.FC = () => {
                         onClick={() => {
                             dispatch(setCurrentView(isMain ? 'settings' : 'main'));
                         }}
-                        style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '1rem' }}
+                        className={styles.iconBtn}
                     >
                         {isMain ? '⚙' : '✕'}
                     </button>

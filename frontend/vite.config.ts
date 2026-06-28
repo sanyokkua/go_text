@@ -26,9 +26,10 @@ function bridgeMockPlugin(): Plugin {
     };
 }
 
-// Active when running plain `npm run dev` (Wails sets WAILS_BUILD_MODE when it drives the build)
-const isMockMode = !process.env.WAILS_BUILD_MODE;
-
-export default defineConfig({
-    plugins: [react(), ...(isMockMode ? [bridgeMockPlugin()] : [])],
+export default defineConfig(({ mode }) => {
+    // Bridge mock is active only when running plain `npm run dev` (not `npm run dev -- --mode wails`)
+    const isMockMode = mode !== 'wails' && mode !== 'production';
+    return {
+        plugins: [react(), ...(isMockMode ? [bridgeMockPlugin()] : [])],
+    };
 });

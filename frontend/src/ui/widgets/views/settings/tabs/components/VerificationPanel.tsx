@@ -68,13 +68,14 @@ CheckRow.displayName = 'CheckRow';
 
 interface VerificationPanelProps {
     providerId: string;
+    disabledReason?: string;
 }
 
 const BUSY_PATTERN = /busy|already running/i;
 
 const SPIN_KEYFRAMES = `@keyframes vp-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`;
 
-const VerificationPanel: React.FC<VerificationPanelProps> = ({ providerId }) => {
+const VerificationPanel: React.FC<VerificationPanelProps> = ({ providerId, disabledReason }) => {
     const dispatch = useAppDispatch();
     const inferenceRunning = useAppSelector(selectInferenceRunning);
 
@@ -136,6 +137,7 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({ providerId }) => 
     const isConnectionRunning = connectionState.status === 'running';
     const isModelsRunning = modelsState.status === 'running';
     const isInferenceRunning = inferenceState.status === 'running';
+    const allDisabled = !!disabledReason;
 
     return (
         <section aria-label="Provider diagnostics">
@@ -145,13 +147,19 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({ providerId }) => 
             <h3 style={{ margin: 0, fontSize: '0.875rem', fontWeight: 600, color: 'var(--ink)', marginBottom: 'var(--space-1)' }}>
                 Provider diagnostics
             </h3>
-            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--ink-3)', marginBottom: 'var(--space-3)' }}>
-                These checks do not affect your saved settings
-            </p>
+            {disabledReason ? (
+                <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--ink-3)', marginBottom: 'var(--space-3)' }}>
+                    ℹ {disabledReason}
+                </p>
+            ) : (
+                <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--ink-3)', marginBottom: 'var(--space-3)' }}>
+                    These checks do not affect your saved settings
+                </p>
+            )}
 
-            <CheckRow label="Test connection" state={connectionState} disabled={isConnectionRunning} onRun={handleTestConnection} />
-            <CheckRow label="Test models" state={modelsState} disabled={isModelsRunning} onRun={handleTestModels} />
-            <CheckRow label="Test inference" state={inferenceState} disabled={isInferenceRunning || inferenceRunning} onRun={handleTestInference} />
+            <CheckRow label="Test connection" state={connectionState} disabled={allDisabled || isConnectionRunning} onRun={handleTestConnection} />
+            <CheckRow label="Test models" state={modelsState} disabled={allDisabled || isModelsRunning} onRun={handleTestModels} />
+            <CheckRow label="Test inference" state={inferenceState} disabled={allDisabled || isInferenceRunning || inferenceRunning} onRun={handleTestInference} />
         </section>
     );
 };

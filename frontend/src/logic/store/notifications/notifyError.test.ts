@@ -24,9 +24,9 @@ describe('notifyError', () => {
         expect(action.payload.surface).toBe('toast');
     });
 
-    it('maps CodeValidation to inline severity with field details', () => {
+    it('maps CodeValidation to toast severity with field details', () => {
         const action = notifyError(wire(apperr.ErrorCode.CodeValidation, { field: 'temperature', expected: 'must be 0–2', got: '3.5' }));
-        expect(action.payload.surface).toBe('inline');
+        expect(action.payload.surface).toBe('toast');
         expect(action.payload.severity).toBe('error');
         expect(action.payload.message).toBe('temperature must be 0–2; got 3.5.');
     });

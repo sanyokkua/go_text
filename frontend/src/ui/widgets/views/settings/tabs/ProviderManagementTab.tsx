@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 
+import { getLogger } from '../../../../../logic/adapter';
 import { ProviderConfig } from '../../../../../logic/adapter/models';
 import { useAppDispatch, useAppSelector } from '../../../../../logic/store';
 import { selectAllSettings, selectSettingsMetadata } from '../../../../../logic/store/settings/selectors';
@@ -11,8 +12,10 @@ import {
 } from '../../../../../logic/store/settings/thunks';
 import ProviderForm, { BLANK_PROVIDER } from './components/ProviderForm';
 import ProviderList from './components/ProviderList';
+import styles from './ProviderManagementTab.module.css';
 
 const NEW_ID = '__new__';
+const logger = getLogger('ProviderManagementTab');
 
 const ProviderManagementTab: React.FC = () => {
     const dispatch = useAppDispatch();
@@ -22,12 +25,12 @@ const ProviderManagementTab: React.FC = () => {
     const [selectedId, setSelectedId] = useState<string | null>(null);
 
     if (!settings) {
-        return <div style={{ padding: 'var(--space-4)', color: 'var(--ink-3)' }}>Loading…</div>;
+        return <div className={styles.loading}>Loading…</div>;
     }
 
     const providers = settings.availableProviderConfigs;
     const currentId = settings.currentProviderConfig?.providerId ?? '';
-    const authTypes = metadata?.authTypes ?? ['none', 'bearer', 'api-key'];
+    const authTypes = metadata?.authTypes ?? ['none', 'bearer', 'apiKey'];
     const providerTypes = metadata?.providerTypes ?? ['openai', 'azure', 'anthropic', 'google', 'ollama', 'lmstudio'];
 
     const selectedProvider: ProviderConfig | null = (() => {
@@ -64,7 +67,7 @@ const ProviderManagementTab: React.FC = () => {
     };
 
     return (
-        <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
+        <div className={styles.root}>
             <ProviderList
                 providers={providers}
                 currentId={currentId}
@@ -79,13 +82,13 @@ const ProviderManagementTab: React.FC = () => {
                 existingNames={existingNames}
                 isCurrent={isCurrent}
                 onSave={(p) => {
-                    handleSave(p).catch(() => undefined);
+                    handleSave(p).catch((err: unknown) => logger.logError(`save failed: ${String(err)}`));
                 }}
                 onDelete={(id) => {
-                    handleDelete(id).catch(() => undefined);
+                    handleDelete(id).catch((err: unknown) => logger.logError(`delete failed: ${String(err)}`));
                 }}
                 onSetCurrent={(id) => {
-                    handleSetCurrent(id).catch(() => undefined);
+                    handleSetCurrent(id).catch((err: unknown) => logger.logError(`set-current failed: ${String(err)}`));
                 }}
                 onCancel={handleCancel}
             />

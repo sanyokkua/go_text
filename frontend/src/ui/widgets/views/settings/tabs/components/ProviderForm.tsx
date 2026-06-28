@@ -8,6 +8,7 @@ import type { SelectItem } from '../../../../../primitives/Select';
 import { Select } from '../../../../../primitives/Select';
 import { Switch } from '../../../../../primitives/Switch';
 import KvEditor from './KvEditor';
+import styles from './ProviderForm.module.css';
 import TagInput from './TagInput';
 import VerificationPanel from './VerificationPanel';
 
@@ -18,7 +19,7 @@ export const BLANK_PROVIDER: ProviderConfig = {
     baseUrl: '',
     modelsEndpoint: '',
     completionEndpoint: '',
-    authType: 'api-key',
+    authType: 'none',
     authToken: '',
     useAuthTokenFromEnv: true,
     envVarTokenName: '',
@@ -41,25 +42,6 @@ interface ProviderFormProps {
     onSetCurrent: (id: string) => void;
     onCancel: () => void;
 }
-
-const LABEL_STYLE: React.CSSProperties = { fontSize: '0.8rem', color: 'var(--ink-2)', fontWeight: 500, marginBottom: '2px', display: 'block' };
-
-const FIELD_STYLE: React.CSSProperties = { marginBottom: 'var(--space-3)' };
-
-const ERROR_STYLE: React.CSSProperties = { color: 'var(--err)', fontSize: '0.75rem', marginTop: '2px' };
-
-const TEXT_INPUT_STYLE: React.CSSProperties = {
-    width: '100%',
-    padding: '6px var(--space-2)',
-    fontSize: '0.875rem',
-    background: 'var(--surface)',
-    color: 'var(--ink)',
-    border: '1px solid var(--line)',
-    borderRadius: 'var(--radius-sm)',
-    outline: 'none',
-    fontFamily: 'var(--font)',
-    boxSizing: 'border-box',
-};
 
 const prettifyAuthType = (raw: string): string => {
     switch (raw) {
@@ -93,6 +75,8 @@ const validateForm = (form: ProviderConfig, existingNames: string[]): FormErrors
         baseUrlError = 'Base URL is required';
     } else if (!form.baseUrl.trim().startsWith('http')) {
         baseUrlError = 'Must start with http:// or https://';
+    } else if (!form.baseUrl.trim().endsWith('/')) {
+        baseUrlError = 'Must end with a trailing slash (e.g. http://localhost:1234/)';
     }
 
     let envVarError = '';
@@ -205,27 +189,17 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
 
     if (provider === null) {
         return (
-            <div
-                style={{
-                    flex: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'var(--ink-3)',
-                    fontSize: '0.875rem',
-                    padding: 'var(--space-4)',
-                }}
-            >
+            <div className={styles.empty}>
                 (Select a provider to edit or create a new one)
             </div>
         );
     }
 
     return (
-        <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-4)', display: 'flex', flexDirection: 'column' }}>
+        <div className={styles.root}>
             {/* Name */}
-            <div style={FIELD_STYLE}>
-                <label htmlFor="pf-name" style={LABEL_STYLE}>
+            <div className={styles.field}>
+                <label htmlFor="pf-name" className={styles.label}>
                     Name
                 </label>
                 <input
@@ -236,18 +210,18 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                     placeholder="Provider name"
                     aria-invalid={errors.nameError !== ''}
                     aria-describedby={errors.nameError === '' ? undefined : 'pf-name-err'}
-                    style={TEXT_INPUT_STYLE}
+                    className={styles.textInput}
                 />
                 {errors.nameError !== '' && (
-                    <span id="pf-name-err" role="alert" style={ERROR_STYLE}>
+                    <span id="pf-name-err" role="alert" className={styles.error}>
                         {errors.nameError}
                     </span>
                 )}
             </div>
 
             {/* Kind */}
-            <div style={FIELD_STYLE}>
-                <span id="pf-kind-label" style={LABEL_STYLE}>
+            <div className={styles.field}>
+                <span id="pf-kind-label" className={styles.label}>
                     Kind
                 </span>
                 <Select
@@ -261,9 +235,9 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
             </div>
 
             {/* Auth segment */}
-            <fieldset style={{ ...FIELD_STYLE, border: 'none', margin: 0, padding: 0 }}>
-                <legend style={{ ...LABEL_STYLE, float: 'left', width: '100%' }}>Auth</legend>
-                <div style={{ display: 'flex', gap: 'var(--space-1)', clear: 'both' }}>
+            <fieldset className={styles.authFieldset}>
+                <legend className={styles.authLegend}>Auth</legend>
+                <div className={styles.authRow}>
                     {authTypes.map((authType) => {
                         const isActive = form.authType === authType;
                         return (
@@ -272,17 +246,7 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                                 type="button"
                                 onClick={() => patch('authType', authType)}
                                 aria-pressed={isActive}
-                                style={{
-                                    padding: '4px var(--space-3)',
-                                    border: `1px solid ${isActive ? 'var(--teal)' : 'var(--line)'}`,
-                                    borderRadius: 'var(--radius-sm)',
-                                    background: isActive ? 'color-mix(in srgb, var(--teal) 15%, transparent)' : 'transparent',
-                                    color: isActive ? 'var(--teal)' : 'var(--ink)',
-                                    cursor: 'pointer',
-                                    fontSize: '0.8125rem',
-                                    fontFamily: 'var(--font)',
-                                    fontWeight: isActive ? 600 : 400,
-                                }}
+                                className={styles.authBtn}
                             >
                                 {prettifyAuthType(authType)}
                             </button>
@@ -293,8 +257,8 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
 
             {/* API key env var — shown when auth ≠ none */}
             {form.authType !== 'none' && (
-                <div style={FIELD_STYLE}>
-                    <label htmlFor="pf-env-var" style={LABEL_STYLE}>
+                <div className={styles.field}>
+                    <label htmlFor="pf-env-var" className={styles.label}>
                         API key environment variable
                     </label>
                     <input
@@ -305,10 +269,10 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                         placeholder="e.g. OPENAI_API_KEY"
                         aria-invalid={errors.envVarError !== ''}
                         aria-describedby={errors.envVarError === '' ? undefined : 'pf-env-err'}
-                        style={TEXT_INPUT_STYLE}
+                        className={styles.textInput}
                     />
                     {errors.envVarError !== '' && (
-                        <span id="pf-env-err" role="alert" style={ERROR_STYLE}>
+                        <span id="pf-env-err" role="alert" className={styles.error}>
                             {errors.envVarError}
                         </span>
                     )}
@@ -316,8 +280,8 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
             )}
 
             {/* Base URL */}
-            <div style={FIELD_STYLE}>
-                <label htmlFor="pf-base-url" style={LABEL_STYLE}>
+            <div className={styles.field}>
+                <label htmlFor="pf-base-url" className={styles.label}>
                     Base URL
                 </label>
                 <input
@@ -328,18 +292,18 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                     placeholder="https://api.example.com"
                     aria-invalid={errors.baseUrlError !== ''}
                     aria-describedby={errors.baseUrlError === '' ? undefined : 'pf-url-err'}
-                    style={TEXT_INPUT_STYLE}
+                    className={styles.textInput}
                 />
                 {errors.baseUrlError !== '' && (
-                    <span id="pf-url-err" role="alert" style={ERROR_STYLE}>
+                    <span id="pf-url-err" role="alert" className={styles.error}>
                         {errors.baseUrlError}
                     </span>
                 )}
             </div>
 
             {/* Models endpoint */}
-            <div style={FIELD_STYLE}>
-                <label htmlFor="pf-models-ep" style={LABEL_STYLE}>
+            <div className={styles.field}>
+                <label htmlFor="pf-models-ep" className={styles.label}>
                     Models endpoint (override)
                 </label>
                 <input
@@ -348,13 +312,13 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                     value={form.modelsEndpoint}
                     onChange={(e) => patch('modelsEndpoint', e.target.value)}
                     placeholder="/v1/models"
-                    style={TEXT_INPUT_STYLE}
+                    className={styles.textInput}
                 />
             </div>
 
             {/* Completion endpoint */}
-            <div style={FIELD_STYLE}>
-                <label htmlFor="pf-completion-ep" style={LABEL_STYLE}>
+            <div className={styles.field}>
+                <label htmlFor="pf-completion-ep" className={styles.label}>
                     Completion endpoint (override)
                 </label>
                 <input
@@ -363,14 +327,14 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                     value={form.completionEndpoint}
                     onChange={(e) => patch('completionEndpoint', e.target.value)}
                     placeholder="/v1/chat/completions"
-                    style={TEXT_INPUT_STYLE}
+                    className={styles.textInput}
                 />
             </div>
 
             {/* API version — azure only */}
             {form.providerType === 'azure' && (
-                <div style={FIELD_STYLE}>
-                    <label htmlFor="pf-api-version" style={LABEL_STYLE}>
+                <div className={styles.field}>
+                    <label htmlFor="pf-api-version" className={styles.label}>
                         API version
                     </label>
                     <input
@@ -379,18 +343,18 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                         value={form.apiVersion}
                         onChange={(e) => patch('apiVersion', e.target.value)}
                         placeholder="2024-02-01"
-                        style={TEXT_INPUT_STYLE}
+                        className={styles.textInput}
                     />
                 </div>
             )}
 
             {/* Model picker */}
-            <div style={FIELD_STYLE}>
-                <span id="pf-model-label" style={LABEL_STYLE}>
+            <div className={styles.field}>
+                <span id="pf-model-label" className={styles.label}>
                     Model
                 </span>
-                <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
-                    <div style={{ flex: 1 }}>
+                <div className={styles.modelRow}>
+                    <div className={styles.modelSelect}>
                         <Select
                             value={form.selectedModel}
                             onValueChange={(v) => patch('selectedModel', v)}
@@ -407,18 +371,7 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                         disabled={modelsLoading || form.providerId === ''}
                         aria-label="Refresh model list"
                         title="Refresh model list"
-                        style={{
-                            flexShrink: 0,
-                            padding: '6px var(--space-2)',
-                            border: '1px solid var(--line)',
-                            borderRadius: 'var(--radius-sm)',
-                            background: 'transparent',
-                            color: 'var(--ink)',
-                            cursor: modelsLoading || form.providerId === '' ? 'not-allowed' : 'pointer',
-                            fontSize: '1rem',
-                            lineHeight: 1,
-                            opacity: modelsLoading || form.providerId === '' ? 0.5 : 1,
-                        }}
+                        className={styles.refreshBtn}
                     >
                         ⟳
                     </button>
@@ -426,22 +379,15 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
             </div>
 
             {/* Custom headers */}
-            <div style={FIELD_STYLE}>
-                <div
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 'var(--space-2)',
-                        marginBottom: form.useCustomHeaders ? 'var(--space-2)' : 0,
-                    }}
-                >
+            <div className={styles.field}>
+                <div className={[styles.switchRow, form.useCustomHeaders ? styles.switchRowWithChild : ''].join(' ')}>
                     <Switch
                         id="pf-custom-headers"
                         checked={form.useCustomHeaders}
                         onCheckedChange={(v) => patch('useCustomHeaders', v)}
                         aria-label="Use custom headers"
                     />
-                    <label htmlFor="pf-custom-headers" style={{ ...LABEL_STYLE, marginBottom: 0, cursor: 'pointer' }}>
+                    <label htmlFor="pf-custom-headers" className={styles.labelInline}>
                         Use custom headers
                     </label>
                 </div>
@@ -449,51 +395,36 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
             </div>
 
             {/* Custom models */}
-            <div style={FIELD_STYLE}>
-                <div
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 'var(--space-2)',
-                        marginBottom: form.useCustomModels ? 'var(--space-2)' : 0,
-                    }}
-                >
+            <div className={styles.field}>
+                <div className={[styles.switchRow, form.useCustomModels ? styles.switchRowWithChild : ''].join(' ')}>
                     <Switch
                         id="pf-custom-models"
                         checked={form.useCustomModels}
                         onCheckedChange={(v) => patch('useCustomModels', v)}
                         aria-label="Use custom models"
                     />
-                    <label htmlFor="pf-custom-models" style={{ ...LABEL_STYLE, marginBottom: 0, cursor: 'pointer' }}>
+                    <label htmlFor="pf-custom-models" className={styles.labelInline}>
                         Use custom models
                     </label>
                 </div>
                 {form.useCustomModels && <TagInput value={form.customModels} onChange={(v) => patch('customModels', v)} />}
             </div>
 
-            {/* Verification panel — only for saved providers */}
-            {form.providerId !== '' && (
-                <div style={{ ...FIELD_STYLE, marginTop: 'var(--space-2)' }}>
-                    <VerificationPanel providerId={form.providerId} />
-                </div>
-            )}
+            {/* Verification panel — always shown; disabled with hint until provider is saved */}
+            <div className={styles.verifyField}>
+                <VerificationPanel
+                    providerId={form.providerId}
+                    {...(form.providerId === '' ? { disabledReason: 'Save the provider first to run diagnostics' } : {})}
+                />
+            </div>
 
             {/* Action bar */}
-            <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'auto', paddingTop: 'var(--space-4)', flexWrap: 'wrap' }}>
+            <div className={styles.actionBar}>
                 {!isCurrent && provider !== null && (
                     <button
                         type="button"
                         onClick={() => onSetCurrent(provider.providerId)}
-                        style={{
-                            padding: '6px var(--space-3)',
-                            border: '1px solid var(--line)',
-                            borderRadius: 'var(--radius-sm)',
-                            background: 'transparent',
-                            color: 'var(--ink)',
-                            cursor: 'pointer',
-                            fontSize: '0.8125rem',
-                            fontFamily: 'var(--font)',
-                        }}
+                        className={[styles.btnBase, styles.btnGhost].join(' ')}
                     >
                         Set as current
                     </button>
@@ -503,16 +434,7 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                     <button
                         type="button"
                         onClick={() => setDeleteOpen(true)}
-                        style={{
-                            padding: '6px var(--space-3)',
-                            border: '1px solid var(--err)',
-                            borderRadius: 'var(--radius-sm)',
-                            background: 'transparent',
-                            color: 'var(--err)',
-                            cursor: 'pointer',
-                            fontSize: '0.8125rem',
-                            fontFamily: 'var(--font)',
-                        }}
+                        className={[styles.btnBase, styles.btnDanger].join(' ')}
                     >
                         Delete…
                     </button>
@@ -521,17 +443,7 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                 <button
                     type="button"
                     onClick={onCancel}
-                    style={{
-                        padding: '6px var(--space-3)',
-                        border: '1px solid var(--line)',
-                        borderRadius: 'var(--radius-sm)',
-                        background: 'transparent',
-                        color: 'var(--ink-2)',
-                        cursor: 'pointer',
-                        fontSize: '0.8125rem',
-                        fontFamily: 'var(--font)',
-                        marginLeft: 'auto',
-                    }}
+                    className={[styles.btnBase, styles.btnCancel].join(' ')}
                 >
                     Cancel
                 </button>
@@ -540,17 +452,7 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                     type="button"
                     onClick={handleSave}
                     disabled={!dirty || !valid}
-                    style={{
-                        padding: '6px var(--space-3)',
-                        border: 'none',
-                        borderRadius: 'var(--radius-sm)',
-                        background: !dirty || !valid ? 'var(--surface-2)' : 'var(--teal)',
-                        color: !dirty || !valid ? 'var(--ink-3)' : '#fff',
-                        cursor: !dirty || !valid ? 'not-allowed' : 'pointer',
-                        fontSize: '0.8125rem',
-                        fontFamily: 'var(--font)',
-                        fontWeight: 600,
-                    }}
+                    className={[styles.btnBase, styles.btnSave].join(' ')}
                 >
                     Save
                 </button>
