@@ -1,0 +1,13 @@
+/* Compact dual language picker for AppBar */
+.root {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.arrow {
+    color: var(--ink-3);
+    font-size: 0.7rem;
+    flex-shrink: 0;
+    line-height: 1;
+}

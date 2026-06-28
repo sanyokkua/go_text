@@ -7,7 +7,7 @@ import store from './logic/store';
 import { notifyError } from './logic/store/notifications/slice';
 import { setEffective, setMode } from './logic/store/theme/slice';
 import type { ThemeMode } from './logic/store/theme/types';
-import { THEME_STORAGE_KEY, initTheme, watchSystemTheme } from './logic/theme/init';
+import { THEME_STORAGE_KEY, initTheme } from './logic/theme/init';
 import AppLayout from './ui/AppLayout';
 import RootErrorBoundary from './ui/RootErrorBoundary';
 import './ui/styles/base.css';
@@ -19,7 +19,6 @@ const storedMode: ThemeMode = raw === 'dark' || raw === 'light' ? raw : 'auto';
 const effective = initTheme(storedMode);
 store.dispatch(setMode(storedMode));
 store.dispatch(setEffective(effective));
-watchSystemTheme(storedMode, (eff) => store.dispatch(setEffective(eff)));
 
 // Global catch-all for uncaught errors — must sit before render
 const internalWire = (): apperr.WireError =>

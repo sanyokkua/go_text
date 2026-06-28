@@ -3,6 +3,23 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 
+// The wails dev server runs with --mode wails (no bridge mock plugin), so
+// window.runtime is undefined. Stub all Wails runtime methods before the page
+// loads so they become safe no-ops instead of throwing.
+const WAILS_RUNTIME_STUB = `
+(function () {
+    if (window.runtime) return;
+    var noop = function () {};
+    var noopReturn = function () { return function () {}; };
+    window.runtime = {
+        LogDebug: noop, LogInfo: noop, LogWarning: noop,
+        LogError: noop, LogFatal: noop, LogTrace: noop, LogPrint: noop,
+        EventsOnMultiple: noopReturn, EventsOff: noop,
+        EventsOffAll: noop, EventsEmit: noop, WindowReload: noop,
+    };
+})();
+`;
+
 const ROUTES = ['/'];
 
 const VIEWPORTS = [
@@ -22,6 +39,9 @@ for (const route of ROUTES) {
             test(`${route} @ ${vp.name}(${vp.width}px)/${theme} — no overflow, no errors, sans-serif`, async ({ page }) => {
                 await page.setViewportSize({ width: vp.width, height: vp.height });
                 await page.emulateMedia({ colorScheme: theme === 'dark' ? 'dark' : 'light' });
+                // Stub window.runtime so the Wails JS doesn't throw when running
+                // outside the Wails WebView (e.g. against the --mode wails dev server).
+                await page.addInitScript(WAILS_RUNTIME_STUB);
 
                 const consoleErrors: string[] = [];
                 page.on('console', (msg) => {

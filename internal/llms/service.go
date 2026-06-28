@@ -2,6 +2,7 @@ package llms
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -12,6 +13,8 @@ import (
 
 	"github.com/wailsapp/wails/v2/pkg/logger"
 )
+
+var errNilProvider = errors.New("provider configuration cannot be nil")
 
 type LLMServiceAPI interface {
 	GetModelsList() ([]string, error)
@@ -75,7 +78,7 @@ func (l *LLMService) GetCompletionResponse(request *ChatCompletionRequest) (stri
 func (l *LLMService) GetModelsListForProvider(provider *settings.ProviderConfig) ([]string, error) {
 	const op = "LLMService.GetModelsListForProvider"
 	if provider == nil {
-		return nil, fmt.Errorf("%s: provider configuration cannot be nil", op)
+		return nil, fmt.Errorf("%s: %w", op, errNilProvider)
 	}
 
 	if provider.UseCustomModels && len(provider.CustomModels) > 0 {
@@ -123,7 +126,7 @@ func (l *LLMService) GetModelsListForProvider(provider *settings.ProviderConfig)
 func (l *LLMService) GetModelsInfoForProvider(provider *settings.ProviderConfig) ([]apperr.ModelInfo, error) {
 	const op = "LLMService.GetModelsInfoForProvider"
 	if provider == nil {
-		return nil, fmt.Errorf("%s: provider configuration cannot be nil", op)
+		return nil, fmt.Errorf("%s: %w", op, errNilProvider)
 	}
 
 	if provider.UseCustomModels && len(provider.CustomModels) > 0 {
@@ -152,6 +155,9 @@ func (l *LLMService) GetModelsInfoForProvider(provider *settings.ProviderConfig)
 
 	models, err := p.ListModels(ctx)
 	if err != nil {
+		if p.Capabilities().SupportsDiscovery && !provider.UseCustomModels {
+			return nil, err
+		}
 		return l.customModelsInfoFallback(provider, op, err)
 	}
 
@@ -165,7 +171,7 @@ func (l *LLMService) GetModelsInfoForProvider(provider *settings.ProviderConfig)
 func (l *LLMService) GetCompletionResponseForProvider(provider *settings.ProviderConfig, request *ChatCompletionRequest) (string, error) {
 	const op = "LLMService.GetCompletionResponseForProvider"
 	if provider == nil {
-		return "", fmt.Errorf("%s: provider configuration cannot be nil", op)
+		return "", fmt.Errorf("%s: %s", op, errNilProvider)
 	}
 	if request == nil {
 		return "", fmt.Errorf("%s: completion request cannot be nil", op)

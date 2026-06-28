@@ -270,15 +270,15 @@ func TestOpenAICompatibleProvider_Chat_NoChoices(t *testing.T) {
 
 // --- ListModels: ollama tags ---
 
-func TestOpenAICompatibleProvider_ListModels_OllamaTags(t *testing.T) {
+func TestOpenAICompatibleProvider_ListModels_OllamaV1Models(t *testing.T) {
 	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/tags" {
+		if r.URL.Path != "/v1/models" {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		b, _ := json.Marshal(OllamaTagsResponse{
-			Models: []OllamaTagsEntry{{Name: "llama3:8b"}, {Name: "mistral:7b"}},
+		b, _ := json.Marshal(ModelsListResponse{
+			Data: []ModelsResponse{{ID: "llama3:8b"}, {ID: "mistral:7b"}},
 		})
 		w.Write(b)
 	}))

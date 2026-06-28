@@ -1,5 +1,10 @@
 package llms
 
+const (
+	pathV1Chat   = "v1/chat/completions"
+	pathV1Models = "v1/models"
+)
+
 // ProviderProfile holds the static per-kind data that drives OpenAICompatibleProvider.
 // Fields with a non-empty value override any user-configured override.
 type ProviderProfile struct {
@@ -28,9 +33,9 @@ var ollamaProfile = ProviderProfile{
 	Kind:                   KindOllama,
 	DefaultAuthScheme:      AuthNone,
 	DefaultBaseURL:         "http://127.0.0.1:11434/",
-	CompletionPathTemplate: "v1/chat/completions",
-	ModelsPathTemplate:     "api/tags",
-	DiscoveryStrategy:      parseOllamaTags,
+	CompletionPathTemplate: pathV1Chat,
+	ModelsPathTemplate:     pathV1Models,
+	DiscoveryStrategy:      parseStandardModels,
 	Capabilities: ProviderCapabilities{
 		SupportsDiscovery:     true,
 		SupportsRichModelMeta: false,
@@ -43,8 +48,8 @@ var lmStudioProfile = ProviderProfile{
 	Kind:                   KindLMStudio,
 	DefaultAuthScheme:      AuthNone,
 	DefaultBaseURL:         "http://127.0.0.1:1234/",
-	CompletionPathTemplate: "v1/chat/completions",
-	ModelsPathTemplate:     "v1/models",
+	CompletionPathTemplate: pathV1Chat,
+	ModelsPathTemplate:     pathV1Models,
 	DiscoveryStrategy:      parseStandardModels,
 	Capabilities: ProviderCapabilities{
 		SupportsDiscovery:     true,
@@ -58,8 +63,8 @@ var llamaCppProfile = ProviderProfile{
 	Kind:                   KindLlamaCpp,
 	DefaultAuthScheme:      AuthNone,
 	DefaultBaseURL:         "http://127.0.0.1:8080/",
-	CompletionPathTemplate: "v1/chat/completions",
-	ModelsPathTemplate:     "v1/models",
+	CompletionPathTemplate: pathV1Chat,
+	ModelsPathTemplate:     pathV1Models,
 	DiscoveryStrategy:      parseStandardModels,
 	Capabilities: ProviderCapabilities{
 		SupportsDiscovery:     true,
@@ -73,8 +78,8 @@ var openAIProfile = ProviderProfile{
 	Kind:                   KindOpenAI,
 	DefaultAuthScheme:      AuthBearer,
 	DefaultBaseURL:         "https://api.openai.com/",
-	CompletionPathTemplate: "v1/chat/completions",
-	ModelsPathTemplate:     "v1/models",
+	CompletionPathTemplate: pathV1Chat,
+	ModelsPathTemplate:     pathV1Models,
 	DiscoveryStrategy:      parseStandardModels,
 	Capabilities: ProviderCapabilities{
 		SupportsDiscovery:     true,

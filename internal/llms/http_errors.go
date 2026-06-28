@@ -12,7 +12,7 @@ import (
 
 // mapTransportError converts a resty transport-level error (no HTTP response) to an apperr.
 // Call only when resty.Execute returns a non-nil error.
-func mapTransportError(provider string, err error) *apperr.AppError {
+func mapTransportError(provider, baseURL string, err error) *apperr.AppError {
 	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
 		return apperr.Timeout(provider, 0, err)
 	}
@@ -20,7 +20,7 @@ func mapTransportError(provider string, err error) *apperr.AppError {
 	if errors.As(err, &netErr) && netErr.Timeout() {
 		return apperr.Timeout(provider, 0, err)
 	}
-	return apperr.Unreachable(provider, "", err)
+	return apperr.Unreachable(provider, baseURL, err)
 }
 
 // mapHTTPStatus converts a non-2xx HTTP status to an apperr.

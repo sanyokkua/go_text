@@ -64,14 +64,14 @@ func TestBuildCompletionURL_AzureDeploymentInPath(t *testing.T) {
 	}
 }
 
-func TestBuildModelsURL_OllamaUsesApiTags(t *testing.T) {
+func TestBuildModelsURL_OllamaUsesV1Models(t *testing.T) {
 	t.Parallel()
 	p := &OpenAICompatibleProvider{
 		cfg:     makeCfg("ollama", "", "", "", "", "", "", "", nil),
 		profile: ollamaProfile,
 	}
 	got := p.buildModelsURL()
-	if got != "http://127.0.0.1:11434/api/tags" {
+	if got != "http://127.0.0.1:11434/v1/models" {
 		t.Errorf("unexpected URL: %q", got)
 	}
 }

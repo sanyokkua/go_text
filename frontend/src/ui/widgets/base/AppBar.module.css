@@ -3,10 +3,10 @@
     height: 100%;
     display: flex;
     align-items: center;
-    justify-content: space-between;
     padding: 0 var(--space-3);
-    background: var(--teal-dark);
-    color: var(--white);
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+    color: var(--ink);
     gap: var(--space-2);
 }
 
@@ -17,62 +17,120 @@
     flex-shrink: 0;
 }
 
-.center {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
+.spacer {
+    flex: 1;
 }
 
 .right {
     display: flex;
-    gap: var(--space-2);
+    gap: var(--space-1);
     align-items: center;
     flex-shrink: 0;
 }
 
-.title {
-    font-weight: 600;
-    font-size: 0.9rem;
+.separator {
+    width: 1px;
+    height: 20px;
+    background: var(--line);
+    flex-shrink: 0;
 }
 
-/* Icon buttons inherit color from the bar */
+.wordmark {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--teal);
+    white-space: nowrap;
+}
+
+/* Icon buttons use muted ink so they don't compete with brand color */
 .iconBtn {
     background: none;
     border: none;
-    color: inherit;
+    color: var(--ink-3);
     cursor: pointer;
     font-size: 1rem;
+    padding: 2px 4px;
+    border-radius: var(--radius-sm);
+}
+
+.iconBtn:hover {
+    color: var(--ink);
+    background: var(--surface-2);
+}
+
+.iconBtn:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
 }
 
 .sidebarBtn {
     background: none;
     border: none;
-    color: inherit;
+    color: var(--ink-3);
     cursor: pointer;
     font-size: 1.1rem;
+    padding: 2px 4px;
+    border-radius: var(--radius-sm);
+}
+
+.sidebarBtn:hover {
+    color: var(--ink);
+    background: var(--surface-2);
+}
+
+.sidebarBtn:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
 }
 
 .backBtn {
     background: none;
     border: none;
-    color: inherit;
+    color: var(--ink-3);
     cursor: pointer;
     font-size: 0.875rem;
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
 }
 
-/* History button: active state when historyOpen */
+.backBtn:hover {
+    color: var(--ink);
+    background: var(--surface-2);
+}
+
+.backBtn:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+/* History button: active state signals the rail is open */
 .historyBtn {
     background: none;
     border: none;
-    color: inherit;
+    color: var(--ink-3);
     cursor: pointer;
     font-size: 1rem;
     border-radius: var(--radius-sm);
     padding: 2px 4px;
 }
 
+.historyBtn:hover {
+    color: var(--ink);
+    background: var(--surface-2);
+}
+
+.historyBtn:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
 .historyBtn[data-active='true'] {
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--teal-50);
+    color: var(--teal-dark);
+}
+
+:global(.dark) .historyBtn[data-active='true'] {
+    color: var(--teal-light);
 }
 
 .historyBtn:disabled {

@@ -203,9 +203,10 @@ func TestGetModelsInfoForProvider_PlainCatalog_NilCaps(t *testing.T) {
 	}
 }
 
-func TestGetModelsInfoForProvider_DiscoveryFails_FallsBackToCustom(t *testing.T) {
+func TestGetModelsInfoForProvider_DiscoveryFails_PropagatesError(t *testing.T) {
 	t.Parallel()
-	// Server returns 500 to simulate discovery failure
+	// Server returns 500 to simulate discovery failure on a discovery-capable provider.
+	// UseCustomModels is false, so the error must propagate rather than silently fall back.
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "server error", http.StatusInternalServerError)
 	}))
@@ -221,20 +222,16 @@ func TestGetModelsInfoForProvider_DiscoveryFails_FallsBackToCustom(t *testing.T)
 		CustomModels: []string{"fallback-model"},
 	}
 
-	got, err := svc.GetModelsInfoForProvider(provider)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(got) != 1 || got[0].ID != "fallback-model" {
-		t.Errorf("want fallback-model, got %v", got)
-	}
-	if got[0].Caps != nil {
-		t.Error("want Caps=nil for fallback custom model")
+	_, err := svc.GetModelsInfoForProvider(provider)
+	if err == nil {
+		t.Fatal("want error when discovery is supported but fails; got nil")
 	}
 }
 
-func TestGetModelsInfoForProvider_DiscoveryFails_NoCustomModels_ReturnsEmpty(t *testing.T) {
+func TestGetModelsInfoForProvider_DiscoveryFails_NoCustomModels_PropagatesError(t *testing.T) {
 	t.Parallel()
+	// Discovery-capable provider (openai) with no CustomModels and no UseCustomModels flag.
+	// A server-side failure must propagate — there is no fallback to swallow it into.
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "server error", http.StatusInternalServerError)
 	}))
@@ -249,15 +246,9 @@ func TestGetModelsInfoForProvider_DiscoveryFails_NoCustomModels_ReturnsEmpty(t *
 		ModelsPath: "/v1/models",
 	}
 
-	got, err := svc.GetModelsInfoForProvider(provider)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if got == nil {
-		t.Error("want non-nil empty slice, got nil")
-	}
-	if len(got) != 0 {
-		t.Errorf("want empty slice, got %v", got)
+	_, err := svc.GetModelsInfoForProvider(provider)
+	if err == nil {
+		t.Fatal("want error when discovery is supported but fails and no custom fallback exists; got nil")
 	}
 }
 

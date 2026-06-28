@@ -126,7 +126,7 @@ func (p *OpenAICompatibleProvider) Chat(ctx context.Context, req ChatRequest) (C
 		Post(url)
 
 	if err != nil {
-		return ChatResponse{}, mapTransportError(p.cfg.Config.Name, err)
+		return ChatResponse{}, mapTransportError(p.cfg.Config.Name, p.buildBaseURL(), err)
 	}
 	if resp.IsError() {
 		return ChatResponse{}, mapHTTPStatus(p.cfg.Config.Name, req.Model, resp)
@@ -168,7 +168,7 @@ func (p *OpenAICompatibleProvider) ListModels(ctx context.Context) ([]apperr.Mod
 		Get(url)
 
 	if err != nil {
-		return nil, mapTransportError(p.cfg.Config.Name, err)
+		return nil, mapTransportError(p.cfg.Config.Name, p.buildBaseURL(), err)
 	}
 	if resp.IsError() {
 		return nil, mapHTTPStatus(p.cfg.Config.Name, "", resp)

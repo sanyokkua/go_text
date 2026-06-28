@@ -1,10 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { getLogger } from '../../adapter';
 import { processPromptChain } from '../run/thunks';
 import { testProviderInference } from '../settings/thunks';
 import { CurrentView, ThemeEffective, ThemeMode, UIState } from './types';
-
-const logger = getLogger('UISlice');
 
 const initialState: UIState = {
     layout: 'side',
@@ -40,11 +37,9 @@ const uiSlice = createSlice({
             state.historyOpen = action.payload;
         },
         setThemeMode: (state, action: PayloadAction<ThemeMode>) => {
-            logger.logDebug(`Setting theme mode: ${action.payload}`);
             state.theme.mode = action.payload;
         },
         setThemeEffective: (state, action: PayloadAction<ThemeEffective>) => {
-            logger.logDebug(`Setting effective theme: ${action.payload}`);
             state.theme.effective = action.payload;
         },
         setCurrentView: (state, action: PayloadAction<CurrentView>) => {

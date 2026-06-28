@@ -16,6 +16,7 @@ import { enqueueNotification } from '../../../logic/store/notifications/slice';
 import { processPromptChain, runSingleAction } from '../../../logic/store/run';
 import { initializeSettingsState, selectAllSettings } from '../../../logic/store/settings';
 import { addStep } from '../../../logic/store/stacks/builder/slice';
+import { listStacks } from '../../../logic/store/stacks/saved/thunks';
 import { enterBuildMode, navigateToMain, setActiveActionsTab } from '../../../logic/store/ui/slice';
 import { parseError } from '../../../logic/utils/error_utils';
 import FlexContainer from '../../components/FlexContainer';
@@ -52,6 +53,8 @@ const AppMainView: React.FC = () => {
                 if (catalogItems.length > 0) {
                     dispatch(setActiveActionsTab(catalogItems[0].category));
                 }
+                await dispatch(listStacks()).unwrap();
+                logger.logInfo('Saved stacks loaded');
             } catch (error: unknown) {
                 const err = parseError(error);
                 logger.logError(`Failed to initialize app: ${err.message}`);

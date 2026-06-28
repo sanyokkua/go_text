@@ -1,0 +1,5 @@
+/* Compact provider picker for the AppBar left cluster */
+.root {
+    display: flex;
+    align-items: center;
+}
