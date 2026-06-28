@@ -13,15 +13,17 @@ const EditorView: React.FC = () => {
     const [saveDialogOpen, setSaveDialogOpen] = useState(false);
 
     return (
-        <div style={{ display: 'flex', width: '100%', height: '100%', overflow: 'hidden', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-                <ActionsSidebar />
+        <div style={{ display: 'flex', width: '100%', height: '100%', overflow: 'hidden' }}>
+            <ActionsSidebar />
+            {/* Editor column: panes on top, run/builder bar directly beneath them
+                (only as wide as the panes — never under the sidebar). */}
+            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', minWidth: 0 }}>
                 <div style={{ flex: 1, overflow: 'hidden', padding: 'var(--space-2)' }}>
                     <EditorArea />
                 </div>
-                {historyOpen && <HistoryRail />}
+                {buildMode ? <StackBuilderBar onSave={() => setSaveDialogOpen(true)} /> : <RunBar />}
             </div>
-            {buildMode ? <StackBuilderBar onSave={() => setSaveDialogOpen(true)} /> : <RunBar />}
+            {historyOpen && <HistoryRail />}
             <SaveStackDialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen} />
         </div>
     );
