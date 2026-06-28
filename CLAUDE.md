@@ -222,6 +222,7 @@ go test -race ./...                                   # race-free
 - **Wails bindings missing**: run `wails generate module`
 - **Context missing error**: verify `app.SetContext(ctx)` in `OnStartup` in `main.go`
 - **History not recording**: check history service wiring in `internal/application/application.go`
+- - **For each found bug or reported issue**: create new test case or adopt existing to cover the issue and write tests for this found bug or reported issue
 
 ## Temporary Files
 
@@ -248,4 +249,4 @@ All these endpoints are available on the current PC. If you need test inference,
 
 # Finishing task
 
-Always in the end of the task use `wails dev` to verify that app is working
+Always in the end of the task use `wails dev` to verify that app is working. Do the manual like testing of the real app instance to verify created functionality in the current session/branch/commit/last change.
