@@ -6,23 +6,44 @@ const defaultProvider = {
     kind: 'openai',
     baseUrl: 'http://localhost:11434',
     apiKeyEnvVar: '',
-    isCurrent: true,
+    authScheme: 'none',
+    modelsPath: '/v1/models',
+    completionPath: '/v1/chat/completions',
+    apiVersion: '',
+    selectedModel: 'mock-model',
+    headers: {},
+    useCustomModels: false,
+    customModels: [],
+};
+
+const defaultInference = { timeout: 30, maxRetries: 3, useMarkdownForOutput: false };
+const defaultModel = {
+    name: 'mock-model',
+    useTemperature: false,
+    temperature: 0.7,
+    useContextWindow: false,
+    contextWindow: 4096,
+    useLegacyMaxTokens: false,
+};
+const defaultBehavior = { enableTaskLogging: false, historyEnabled: true, historyMaxEntries: 50 };
+const defaultLanguage = { defaultInputLanguage: 'English', defaultOutputLanguage: 'English', languages: ['English'] };
+const defaultMetadata = {
+    authSchemes: ['none', 'bearer', 'api-key'],
+    providerKinds: ['openai', 'azure', 'anthropic', 'google', 'ollama', 'lmstudio'],
+    settingsFolder: '/mock/settings',
+    databaseFile: '/mock/settings/gotext.db',
+    logsFolder: '/mock/logs',
+    appVersion: '3.0.0',
 };
 
 const defaultSettings = {
     availableProviderConfigs: [defaultProvider],
     currentProviderConfig: defaultProvider,
-    inferenceBaseConfig: { temperature: 0.7, maxTokens: 2048, topP: 1.0 },
-    modelConfig: { model: 'mock-model' },
-    languageConfig: { inputLanguage: 'English', outputLanguage: 'English', languages: ['English'] },
-    appBehaviorConfig: { saveTaskLog: false },
+    inferenceBaseConfig: defaultInference,
+    modelConfig: defaultModel,
+    languageConfig: defaultLanguage,
+    appBehaviorConfig: defaultBehavior,
 };
-
-const defaultInference = { temperature: 0.7, maxTokens: 2048, topP: 1 };
-const defaultModel = { model: 'mock-model' };
-const defaultBehavior = { enableTaskLogging: false, historyEnabled: true, historyMaxEntries: 50 };
-const defaultLogging = { level: 'info' };
-const defaultLanguage = { inputLanguage: 'English', outputLanguage: 'English', languages: ['English'] };
 
 export function GetSettings(): Promise<AnyResult> {
     return Promise.resolve(ok(defaultSettings));
@@ -31,7 +52,7 @@ export function ResetSettingsToDefault(): Promise<AnyResult> {
     return Promise.resolve(ok(defaultSettings));
 }
 export function GetAppSettingsMetadata(): Promise<AnyResult> {
-    return Promise.resolve(ok({ version: '3.0.0' }));
+    return Promise.resolve(ok(defaultMetadata));
 }
 export function GetAllProviderConfigs(): Promise<AnyResult> {
     return Promise.resolve(ok([defaultProvider]));
@@ -71,12 +92,6 @@ export function GetAppBehaviorConfig(): Promise<AnyResult> {
 }
 export function UpdateAppBehaviorConfig(_cfg: unknown): Promise<AnyResult> {
     return Promise.resolve(ok(defaultBehavior));
-}
-export function GetLoggingConfig(): Promise<AnyResult> {
-    return Promise.resolve(ok(defaultLogging));
-}
-export function UpdateLoggingConfig(_cfg: unknown): Promise<AnyResult> {
-    return Promise.resolve(ok(defaultLogging));
 }
 export function GetLanguageConfig(): Promise<AnyResult> {
     return Promise.resolve(ok(defaultLanguage));

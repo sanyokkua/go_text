@@ -1,6 +1,20 @@
 import { AnyResult, VoidResult, ok, voidOk } from '../../types';
 
+function mockParam(name: string): boolean {
+    if (globalThis.window === undefined) return false;
+    try {
+        return new URL(globalThis.window.location.href).searchParams.has(name);
+    } catch {
+        return false;
+    }
+}
+
+const XSS_PAYLOAD =
+    '<script>window.__xssFired = true;</script> Safe text\n\n' +
+    '[evil link](javascript:alert(1))\n\nSafe paragraph.';
+
 export function ProcessPromptChain(_req: unknown): Promise<AnyResult> {
+    if (mockParam('xss')) return Promise.resolve(ok({ steps: [], finalText: XSS_PAYLOAD }));
     return Promise.resolve(ok({ steps: [], finalText: 'Mock output text.' }));
 }
 

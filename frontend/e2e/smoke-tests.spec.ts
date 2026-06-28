@@ -61,9 +61,8 @@ test.describe('E1: Run a single action end-to-end', () => {
         // 4 — click Run
         await page.getByRole('button', { name: /^run$/i }).click();
 
-        // 5 — output pane should contain the mock output text
-        const outputContent = page.locator('.markdown-body, [aria-label="source view"]').first();
-        await expect(outputContent).toContainText('Mock output text.', { timeout: 10_000 });
+        // 5 — output pane: .markdown-body appears after run (absent until output is set)
+        await expect(page.locator('.markdown-body')).toContainText('Mock output text.', { timeout: 10_000 });
 
         await page.screenshot({ path: screenshotPath('e1-run-single') });
         expect(errors).toHaveLength(0);
@@ -73,59 +72,11 @@ test.describe('E1: Run a single action end-to-end', () => {
 // ── E3: History restore ───────────────────────────────────────────────────────
 
 test.describe('E3: History restore', () => {
-    const MOCK_ENTRY = {
-        id: 'e3-entry-1',
-        createdAt: Math.floor(Date.now() / 1000) - 60,
-        kind: 'single',
-        title: 'E3 Proofread run',
-        inputText: 'E3 input text',
-        outputText: 'E3 output text',
-        applied: [{ id: 'proofread', name: 'Proofread', category: 'Writing' }],
-        providerName: 'Local',
-        model: 'llama',
-        inputLang: 'en',
-        outputLang: 'en',
-        format: 'plain',
-        durationMs: 800,
-        inferences: 1,
-        status: 'success',
-        errorCode: '',
-        failedIndex: -1,
-    };
-
+    // Bridge mock HistoryHandler returns MOCK_E3_ENTRY when ?history-test is in the URL.
+    // addInitScript(globalThis.go) has no effect in Vite dev mode — the bridge mock uses
+    // ES module imports, not window.go — so we use a URL parameter instead.
     test.beforeEach(async ({ page }) => {
-        await page.addInitScript((entry) => {
-            const ok = (d: unknown) => Promise.resolve({ data: d, error: undefined });
-            const historyHandler = new Proxy(
-                {},
-                {
-                    get(_: unknown, method: string) {
-                        if (method === 'ListHistory') return () => ok([entry]);
-                        if (method === 'GetHistoryEntry') return () => ok(entry);
-                        if (method === 'DeleteHistoryEntry') return () => ok(null);
-                        if (method === 'ClearHistory') return () => ok(null);
-                        return () => ok(null);
-                    },
-                },
-            );
-            (globalThis as unknown as Record<string, unknown>)['go'] = new Proxy(
-                {},
-                {
-                    get() {
-                        return new Proxy(
-                            {},
-                            {
-                                get() {
-                                    return historyHandler;
-                                },
-                            },
-                        );
-                    },
-                },
-            );
-        }, MOCK_ENTRY);
-
-        await page.goto('/');
+        await page.goto('/?history-test=1');
         await page.waitForLoadState('networkidle');
     });
 
@@ -164,6 +115,8 @@ test.describe('E5: Prompt Inspector opens in Info view', () => {
 
         // 1 — open Info view
         await page.getByRole('button', { name: /about and info/i }).click();
+        // Info view opens on "Guide" tab by default; switch to "Actions & Stacks" tab for the catalog
+        await page.getByRole('tab', { name: /actions & stacks/i }).click();
         await expect(page.getByRole('textbox', { name: /filter actions/i })).toBeVisible({ timeout: 5_000 });
 
         // 2 — click first recognisable action in the catalog (bridge mock: Summarise or Translate)
@@ -182,46 +135,17 @@ test.describe('E5: Prompt Inspector opens in Info view', () => {
 // ── E9: Untrusted output stays inert ─────────────────────────────────────────
 
 test.describe('E9: Untrusted model output is inert', () => {
-    test('script tags injected via ProcessPromptChain response are not executed', async ({ page }) => {
-        // Inject a mock that returns XSS payload as the chain output
-        await page.addInitScript(() => {
-            const xssPayload = '<script>window.__xssFired = true;</script> Safe text';
-            const ok = (d: unknown) => Promise.resolve({ data: d, error: undefined });
-            const actionHandler = new Proxy(
-                {},
-                {
-                    get(_: unknown, method: string) {
-                        if (method === 'ProcessPromptChain') {
-                            return () => ok({ steps: [], finalText: xssPayload });
-                        }
-                        return () => ok(null);
-                    },
-                },
-            );
-            (globalThis as unknown as Record<string, unknown>)['go'] = new Proxy(
-                {},
-                {
-                    get() {
-                        return new Proxy(
-                            {},
-                            {
-                                get() {
-                                    return actionHandler;
-                                },
-                            },
-                        );
-                    },
-                },
-            );
-        });
+    // Bridge mock ActionHandler returns an XSS payload when ?xss is in the URL.
+    // addInitScript(globalThis.go) has no effect in Vite dev mode — the bridge mock uses
+    // ES module imports, not window.go — so we use a URL parameter instead.
 
+    test('script tags injected via ProcessPromptChain response are not executed', async ({ page }) => {
         const errors: string[] = [];
         page.on('pageerror', (err) => errors.push(err.message));
 
-        await page.goto('/');
+        await page.goto('/?xss=1');
         await page.waitForLoadState('networkidle');
 
-        // Arm Summarise and run
         const expandBtn = page.getByRole('button', { name: /expand sidebar/i });
         if (await expandBtn.isVisible()) await expandBtn.click();
 
@@ -241,42 +165,10 @@ test.describe('E9: Untrusted model output is inert', () => {
     });
 
     test('javascript: links from model output do not have an href attribute', async ({ page }) => {
-        // Inject markdown with a javascript: link
-        await page.addInitScript(() => {
-            const markdownOutput = '[evil link](javascript:alert(1))\n\nSafe paragraph.';
-            const ok = (d: unknown) => Promise.resolve({ data: d, error: undefined });
-            const actionHandler = new Proxy(
-                {},
-                {
-                    get(_: unknown, method: string) {
-                        if (method === 'ProcessPromptChain') {
-                            return () => ok({ steps: [], finalText: markdownOutput });
-                        }
-                        return () => ok(null);
-                    },
-                },
-            );
-            (globalThis as unknown as Record<string, unknown>)['go'] = new Proxy(
-                {},
-                {
-                    get() {
-                        return new Proxy(
-                            {},
-                            {
-                                get() {
-                                    return actionHandler;
-                                },
-                            },
-                        );
-                    },
-                },
-            );
-        });
-
         const errors: string[] = [];
         page.on('pageerror', (err) => errors.push(err.message));
 
-        await page.goto('/');
+        await page.goto('/?xss=1');
         await page.waitForLoadState('networkidle');
 
         const expandBtn = page.getByRole('button', { name: /expand sidebar/i });
@@ -290,7 +182,9 @@ test.describe('E9: Untrusted model output is inert', () => {
         await page.waitForTimeout(2_000);
 
         // No link should have a javascript: href
-        const badLinks = await page.$$eval('a[href]', (els) => els.filter((el) => el.getAttribute('href')?.startsWith('javascript:')).length);
+        const badLinks = await page.$$eval('a[href]', (els) =>
+            els.filter((el) => el.getAttribute('href')?.startsWith('javascript:')).length,
+        );
         expect(badLinks).toBe(0);
 
         await page.screenshot({ path: screenshotPath('e9-link-inert') });
