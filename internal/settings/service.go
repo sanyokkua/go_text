@@ -266,6 +266,15 @@ func (s *SettingsService) SetAsCurrentProviderConfig(providerId string) (*Provid
 	if err := s.settingsRepo.SetCurrentProvider(providerId); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
+	// Sync the active model to the newly-current provider's selected model so a
+	// run never uses a stale model carried over from the previous provider.
+	modelCfg, mErr := s.settingsRepo.GetModelConfig()
+	if mErr == nil && modelCfg != nil && modelCfg.Name != p.SelectedModel {
+		modelCfg.Name = p.SelectedModel
+		if uErr := s.settingsRepo.UpdateModelConfig(modelCfg); uErr != nil {
+			return nil, fmt.Errorf("%s: sync model to provider: %w", op, uErr)
+		}
+	}
 	return p, nil
 }
 
