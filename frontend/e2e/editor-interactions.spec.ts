@@ -21,18 +21,26 @@ test.describe('Editor UI interactions', () => {
         expect(jsErrors).toHaveLength(0);
     });
 
-    test('collapsing the sidebar hides action names and shows icon strip', async ({ page }) => {
+    test('collapsing the sidebar hides it entirely (no icon strip)', async ({ page }) => {
         // Arrange
         const jsErrors: string[] = [];
         page.on('pageerror', (err) => jsErrors.push(err.message));
 
         await loadEditor(page);
 
+        // Sidebar starts expanded.
+        await expect(page.getByRole('complementary', { name: 'Actions sidebar' })).toBeVisible({ timeout: 5000 });
+
         // Act – collapse
         await page.getByRole('button', { name: /collapse sidebar/i }).click();
 
-        // Assert – collapsed sidebar has a different aria-label
-        await expect(page.getByRole('complementary', { name: /actions sidebar \(collapsed\)/i })).toBeVisible({ timeout: 5000 });
+        // Assert – the sidebar is fully removed; no collapsed icon strip remains.
+        await expect(page.getByRole('complementary', { name: 'Actions sidebar' })).toHaveCount(0);
+        await expect(page.getByRole('complementary', { name: /collapsed/i })).toHaveCount(0);
+
+        // Re-expanding restores it.
+        await page.getByRole('button', { name: /expand sidebar/i }).click();
+        await expect(page.getByRole('complementary', { name: 'Actions sidebar' })).toBeVisible({ timeout: 5000 });
 
         expect(jsErrors).toHaveLength(0);
     });

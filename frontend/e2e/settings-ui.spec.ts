@@ -16,9 +16,9 @@ test.describe('Settings UI – all tabs accessible', () => {
 
         await openSettings(page);
 
-        // Assert – SettingsTabs renders plain <button> elements, NOT role="tab"
+        // Assert – SettingsTabs renders a left vertical nav of role="tab" items
         for (const label of ['Providers', 'Model', 'Generation', 'Languages', 'Logging', 'About & data', 'Appearance']) {
-            await expect(page.getByRole('button', { name: new RegExp(label, 'i') })).toBeVisible({ timeout: 5000 });
+            await expect(page.getByRole('tab', { name: new RegExp(label, 'i') })).toBeVisible({ timeout: 5000 });
         }
 
         expect(jsErrors).toHaveLength(0);
@@ -32,7 +32,7 @@ test.describe('Settings UI – all tabs accessible', () => {
         await openSettings(page);
 
         // Act
-        await page.getByRole('button', { name: /^providers$/i }).click();
+        await page.getByRole('tab', { name: /^providers$/i }).click();
 
         // Assert – ProviderList nav is present
         await expect(page.locator('nav[aria-label="Provider list"]')).toBeVisible({ timeout: 5000 });
@@ -50,7 +50,7 @@ test.describe('Settings UI – all tabs accessible', () => {
         await openSettings(page);
 
         // Ensure Providers tab is active
-        await page.getByRole('button', { name: /^providers$/i }).click();
+        await page.getByRole('tab', { name: /^providers$/i }).click();
 
         // Act
         await page.getByRole('button', { name: /new provider/i }).click();
@@ -68,7 +68,7 @@ test.describe('Settings UI – all tabs accessible', () => {
         page.on('pageerror', (err) => jsErrors.push(err.message));
 
         await openSettings(page);
-        await page.getByRole('button', { name: /^providers$/i }).click();
+        await page.getByRole('tab', { name: /^providers$/i }).click();
         await page.getByRole('button', { name: /new provider/i }).click();
         await expect(page.getByLabel('Name')).toBeVisible({ timeout: 5000 });
 
@@ -93,7 +93,7 @@ test.describe('Settings UI – all tabs accessible', () => {
         await openSettings(page);
 
         // Act
-        await page.getByRole('button', { name: /^languages$/i }).click();
+        await page.getByRole('tab', { name: /^languages$/i }).click();
 
         // Assert – "English" is in the language list (bridge mock default)
         await expect(page.getByText('English')).toBeVisible({ timeout: 5000 });
@@ -110,7 +110,7 @@ test.describe('Settings UI – all tabs accessible', () => {
         await openSettings(page);
 
         // Act
-        await page.getByRole('button', { name: /appearance/i }).click();
+        await page.getByRole('tab', { name: /appearance/i }).click();
 
         // Assert – theme Segmented items are present (role="radio" from Radix ToggleGroup)
         await expect(page.getByRole('radio', { name: 'Follow OS setting' })).toBeVisible({ timeout: 5000 });
@@ -128,7 +128,7 @@ test.describe('Settings UI – all tabs accessible', () => {
         await openSettings(page);
 
         // Act
-        await page.getByRole('button', { name: /about & data/i }).click();
+        await page.getByRole('tab', { name: /about & data/i }).click();
 
         // Assert – bridge mock returns appVersion '3.0.0'
         await expect(page.getByText('3.0.0')).toBeVisible({ timeout: 5000 });
@@ -144,7 +144,7 @@ test.describe('Settings UI – all tabs accessible', () => {
         await openSettings(page);
 
         // Act
-        await page.getByRole('button', { name: /about & data/i }).click();
+        await page.getByRole('tab', { name: /about & data/i }).click();
 
         // Assert
         await expect(page.getByRole('heading', { name: /gotext/i })).toBeVisible({ timeout: 5000 });
@@ -175,7 +175,7 @@ test.describe('Settings UI – all tabs accessible', () => {
 
         // Act – visit every tab
         for (const label of tabLabels) {
-            await page.getByRole('button', { name: new RegExp(`^${label}$`, 'i') }).click();
+            await page.getByRole('tab', { name: new RegExp(`^${label}$`, 'i') }).click();
             // Brief pause to let each tab render
             await page.waitForTimeout(300);
         }

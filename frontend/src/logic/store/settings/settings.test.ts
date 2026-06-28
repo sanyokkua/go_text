@@ -29,7 +29,7 @@ import { AppBehaviorConfig, Settings, SettingsHandlerAdapter } from '../../adapt
 import { RootState } from '../index';
 import { selectAppBehaviorConfig } from './selectors';
 import settingsReducer from './slice';
-import { getAppBehaviorConfig, updateAppBehaviorConfig } from './thunks';
+import { getAppBehaviorConfig, setAsCurrentProviderConfig, updateAppBehaviorConfig } from './thunks';
 import { SettingsState } from './types';
 
 // ---------------------------------------------------------------------------
@@ -213,5 +213,35 @@ describe('updateAppBehaviorConfig thunk', () => {
         expect(action.type).toBe('settings/updateAppBehaviorConfig/rejected');
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         expect((action as any).payload).toBe('bad path');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Part C: provider-switch model sync (regression for stale-model run failures)
+// ---------------------------------------------------------------------------
+
+describe('settingsReducer — setAsCurrentProviderConfig.fulfilled', () => {
+    it('syncs modelConfig.name to the newly current provider\'s selectedModel', () => {
+        const initialState: SettingsState = {
+            allSettings: {
+                ...fullSettings,
+                modelConfig: { ...fullSettings.modelConfig, name: 'stale-old-model' },
+            },
+            metadata: null,
+        };
+
+        const newProvider = {
+            ...fullSettings.currentProviderConfig,
+            providerId: 'ollama',
+            providerName: 'Ollama',
+            providerType: 'ollama',
+            selectedModel: 'qwen3:0.6b',
+        };
+        const action = setAsCurrentProviderConfig.fulfilled(newProvider, 'req', 'ollama');
+
+        const state = settingsReducer(initialState, action);
+
+        expect(state.allSettings?.currentProviderConfig.providerId).toBe('ollama');
+        expect(state.allSettings?.modelConfig.name).toBe('qwen3:0.6b');
     });
 });

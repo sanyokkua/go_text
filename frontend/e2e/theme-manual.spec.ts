@@ -5,7 +5,7 @@ async function openAppearanceTab(page: Page): Promise<void> {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     await page.getByRole('button', { name: /open settings/i }).click();
-    await page.getByRole('button', { name: /appearance/i }).click();
+    await page.getByRole('tab', { name: /appearance/i }).click();
 }
 
 test.describe('Manual theme switching – Appearance tab', () => {

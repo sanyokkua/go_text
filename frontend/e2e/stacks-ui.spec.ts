@@ -16,7 +16,7 @@ test.describe('Stack building UI', () => {
         // Assert – the "My Stacks" heading is always rendered and the build button is present.
         // Saved stacks are not loaded on startup (no initial fetch), so stack items are not visible yet.
         await expect(page.getByText('My Stacks')).toBeVisible({ timeout: 5000 });
-        await expect(page.getByRole('button', { name: /build a stack/i })).toBeVisible({ timeout: 5000 });
+        await expect(page.getByRole('complementary', { name: 'Actions sidebar' }).getByRole('button', { name: /build a stack/i })).toBeVisible({ timeout: 5000 });
 
         expect(jsErrors).toHaveLength(0);
     });
@@ -29,7 +29,7 @@ test.describe('Stack building UI', () => {
         await loadEditor(page);
 
         // Build and save a stack so the Manage button renders
-        await page.getByRole('button', { name: /build a stack/i }).click();
+        await page.getByRole('complementary', { name: 'Actions sidebar' }).getByRole('button', { name: /build a stack/i }).click();
         await page.getByRole('button', { name: /summarise/i }).click();
         await page.getByRole('button', { name: /save stack/i }).click();
         const nameInput = page.getByLabel('Name');
@@ -51,7 +51,7 @@ test.describe('Stack building UI', () => {
         await loadEditor(page);
 
         // Act
-        await page.getByRole('button', { name: /build a stack/i }).click();
+        await page.getByRole('complementary', { name: 'Actions sidebar' }).getByRole('button', { name: /build a stack/i }).click();
 
         // Assert – build mode hint appears in sidebar
         await expect(page.getByText(/click to add a step/i)).toBeVisible({ timeout: 5000 });
@@ -65,7 +65,7 @@ test.describe('Stack building UI', () => {
         page.on('pageerror', (err) => jsErrors.push(err.message));
 
         await loadEditor(page);
-        await page.getByRole('button', { name: /build a stack/i }).click();
+        await page.getByRole('complementary', { name: 'Actions sidebar' }).getByRole('button', { name: /build a stack/i }).click();
         await expect(page.getByText(/click to add a step/i)).toBeVisible({ timeout: 5000 });
 
         // Act – click the Summarise action
@@ -84,7 +84,7 @@ test.describe('Stack building UI', () => {
         page.on('pageerror', (err) => jsErrors.push(err.message));
 
         await loadEditor(page);
-        await page.getByRole('button', { name: /build a stack/i }).click();
+        await page.getByRole('complementary', { name: 'Actions sidebar' }).getByRole('button', { name: /build a stack/i }).click();
         await page.getByRole('button', { name: /summarise/i }).click();
         await expect(page.getByRole('button', { name: /save stack/i })).toBeEnabled({ timeout: 5000 });
 
@@ -104,7 +104,7 @@ test.describe('Stack building UI', () => {
         page.on('pageerror', (err) => jsErrors.push(err.message));
 
         await loadEditor(page);
-        await page.getByRole('button', { name: /build a stack/i }).click();
+        await page.getByRole('complementary', { name: 'Actions sidebar' }).getByRole('button', { name: /build a stack/i }).click();
         await page.getByRole('button', { name: /summarise/i }).click();
         await page.getByRole('button', { name: /save stack/i }).click();
         await expect(page.getByLabel('Name')).toBeVisible({ timeout: 5000 });
@@ -124,7 +124,7 @@ test.describe('Stack building UI', () => {
         page.on('pageerror', (err) => jsErrors.push(err.message));
 
         await loadEditor(page);
-        await page.getByRole('button', { name: /build a stack/i }).click();
+        await page.getByRole('complementary', { name: 'Actions sidebar' }).getByRole('button', { name: /build a stack/i }).click();
         await page.getByRole('button', { name: /summarise/i }).click();
         await page.getByRole('button', { name: /save stack/i }).click();
 
@@ -148,7 +148,7 @@ test.describe('Stack building UI', () => {
         page.on('pageerror', (err) => jsErrors.push(err.message));
 
         await loadEditor(page);
-        await page.getByRole('button', { name: /build a stack/i }).click();
+        await page.getByRole('complementary', { name: 'Actions sidebar' }).getByRole('button', { name: /build a stack/i }).click();
         await expect(page.getByText(/click to add a step/i)).toBeVisible({ timeout: 5000 });
 
         // Act
@@ -168,7 +168,7 @@ test.describe('Stack building UI', () => {
         await loadEditor(page);
 
         // Save a stack first so the Manage button renders
-        await page.getByRole('button', { name: /build a stack/i }).click();
+        await page.getByRole('complementary', { name: 'Actions sidebar' }).getByRole('button', { name: /build a stack/i }).click();
         await page.getByRole('button', { name: /summarise/i }).click();
         await page.getByRole('button', { name: /save stack/i }).click();
         const nameInput = page.getByLabel('Name');
@@ -196,7 +196,7 @@ test.describe('Stack building UI', () => {
         page.on('pageerror', (err) => jsErrors.push(err.message));
 
         await loadEditor(page);
-        await page.getByRole('button', { name: /build a stack/i }).click();
+        await page.getByRole('complementary', { name: 'Actions sidebar' }).getByRole('button', { name: /build a stack/i }).click();
         await expect(page.getByText(/click to add a step/i)).toBeVisible({ timeout: 5000 });
 
         // Assert – no steps added yet
@@ -211,15 +211,15 @@ test.describe('Stack building UI', () => {
         page.on('pageerror', (err) => jsErrors.push(err.message));
 
         await loadEditor(page);
-        await page.getByRole('button', { name: /build a stack/i }).click();
+        await page.getByRole('complementary', { name: 'Actions sidebar' }).getByRole('button', { name: /build a stack/i }).click();
         await expect(page.getByText(/click to add a step/i)).toBeVisible({ timeout: 5000 });
 
-        // Act – add Summarise then switch to Language tab and add Translate
-        await page.getByRole('button', { name: /summarise/i }).click();
-
-        // The Translate action is in a different category tab ("Language")
-        await page.getByRole('button', { name: /^language$/i }).click();
-        await page.getByRole('button', { name: /translate/i }).click();
+        // Act – add Summarise then add Translate. All families render as scrollable
+        // sections in the sidebar now (no category tabs), so both actions are directly
+        // clickable from the sidebar list.
+        const sidebar = page.getByRole('complementary', { name: 'Actions sidebar' });
+        await sidebar.getByRole('button', { name: /summarise/i }).click();
+        await sidebar.getByRole('button', { name: /translate/i }).click();
 
         // Assert – Save button is still enabled (2 steps, 2 inferences, within caps)
         await expect(page.getByRole('button', { name: /save stack/i })).toBeEnabled({ timeout: 5000 });
