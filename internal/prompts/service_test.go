@@ -243,7 +243,6 @@ func TestSanitizeReasoningBlock(t *testing.T) {
 		expected       string
 		expectError    bool
 		errorContains  string
-		expectInfoLog  bool
 		expectTraceLog bool
 	}{
 		{
@@ -251,7 +250,6 @@ func TestSanitizeReasoningBlock(t *testing.T) {
 			llmResponse:    "",
 			expected:       "",
 			expectError:    false,
-			expectInfoLog:  false,
 			expectTraceLog: true,
 		},
 		{
@@ -259,7 +257,6 @@ func TestSanitizeReasoningBlock(t *testing.T) {
 			llmResponse:    "   \t\n  ",
 			expected:       "",
 			expectError:    false,
-			expectInfoLog:  false,
 			expectTraceLog: true,
 		},
 		{
@@ -267,7 +264,6 @@ func TestSanitizeReasoningBlock(t *testing.T) {
 			llmResponse:    "This is a normal response without think blocks.",
 			expected:       "This is a normal response without think blocks.",
 			expectError:    false,
-			expectInfoLog:  true,
 			expectTraceLog: false,
 		},
 		{
@@ -275,7 +271,6 @@ func TestSanitizeReasoningBlock(t *testing.T) {
 			llmResponse:    "Response text <think>thinking content</think> more text",
 			expected:       "Response text  more text",
 			expectError:    false,
-			expectInfoLog:  true,
 			expectTraceLog: false,
 		},
 		{
@@ -283,7 +278,6 @@ func TestSanitizeReasoningBlock(t *testing.T) {
 			llmResponse:    "Start <think>block1</think> middle <think>block2</think> end",
 			expected:       "Start  middle  end",
 			expectError:    false,
-			expectInfoLog:  true,
 			expectTraceLog: false,
 		},
 		{
@@ -291,7 +285,6 @@ func TestSanitizeReasoningBlock(t *testing.T) {
 			llmResponse:    "Text\n<think>\n  thinking content\n</think>\nMore",
 			expected:       "Text\n\nMore",
 			expectError:    false,
-			expectInfoLog:  true,
 			expectTraceLog: false,
 		},
 		{
@@ -299,7 +292,6 @@ func TestSanitizeReasoningBlock(t *testing.T) {
 			llmResponse:    "<think>only thinking</think>",
 			expected:       "",
 			expectError:    false,
-			expectInfoLog:  true,
 			expectTraceLog: false,
 		},
 		{
@@ -307,7 +299,6 @@ func TestSanitizeReasoningBlock(t *testing.T) {
 			llmResponse:    "First line\n<think>\n  <?xml version=\"1.0\"?>\n  <think>\n    <reasoning>test</reasoning>\n  </think>\n</think>\nLast line",
 			expected:       "First line\n\n</think>\nLast line",
 			expectError:    false,
-			expectInfoLog:  true,
 			expectTraceLog: false,
 		},
 		{
@@ -315,7 +306,6 @@ func TestSanitizeReasoningBlock(t *testing.T) {
 			llmResponse:    "Text <think>outer <think>inner</think> content</think> end",
 			expected:       "Text  content</think> end",
 			expectError:    false,
-			expectInfoLog:  true,
 			expectTraceLog: false,
 		},
 		{
@@ -323,7 +313,6 @@ func TestSanitizeReasoningBlock(t *testing.T) {
 			llmResponse:    "Text <think>no closing",
 			expected:       "Text <think>no closing",
 			expectError:    false,
-			expectInfoLog:  true,
 			expectTraceLog: false,
 		},
 		{
@@ -331,7 +320,6 @@ func TestSanitizeReasoningBlock(t *testing.T) {
 			llmResponse:    "no opening</think>",
 			expected:       "no opening</think>",
 			expectError:    false,
-			expectInfoLog:  true,
 			expectTraceLog: false,
 		},
 	}
@@ -356,9 +344,6 @@ func TestSanitizeReasoningBlock(t *testing.T) {
 			} else {
 				if result != tt.expected {
 					t.Errorf("SanitizeReasoningBlock() = %q, want %q", result, tt.expected)
-				}
-				if tt.expectInfoLog && len(logger.InfoMessages) == 0 {
-					t.Error("Expected info logging to occur")
 				}
 				if tt.expectTraceLog && len(logger.TraceMessages) == 0 {
 					t.Error("Expected trace logging to occur")

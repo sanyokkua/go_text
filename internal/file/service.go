@@ -135,7 +135,7 @@ func (s *FileUtilsService) ResolveAppLogsFolderPath(customDir string) (string, e
 func (s *FileUtilsService) EnsureAppLogsFolderExists(customDir string) (string, error) {
 	const op = "FileUtilsService.EnsureAppLogsFolderExists"
 	startTime := time.Now()
-	s.logger.Info(fmt.Sprintf("%s: ensuring application logs folder exists", op))
+	s.logger.Debug(fmt.Sprintf("%s: ensuring application logs folder exists", op))
 
 	logsPath, err := s.ResolveAppLogsFolderPath(customDir)
 	if err != nil {
@@ -149,6 +149,6 @@ func (s *FileUtilsService) EnsureAppLogsFolderExists(customDir string) (string, 
 	}
 
 	duration := time.Since(startTime)
-	s.logger.Info(fmt.Sprintf("%s: successfully ensured logs folder exists in %v", op, duration))
+	s.logger.Debug(fmt.Sprintf("%s: successfully ensured logs folder exists in %v", op, duration))
 	return logsPath, nil
 }

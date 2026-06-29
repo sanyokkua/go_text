@@ -114,7 +114,7 @@ func (l *LLMService) GetModelsListForProvider(provider *settings.ProviderConfig)
 	for _, m := range models {
 		ids = append(ids, m.ID)
 	}
-	l.logger.Info(fmt.Sprintf("[%s] Retrieved %d models for provider %s", op, len(ids), provider.Name))
+	l.logger.Debug(fmt.Sprintf("[%s] Retrieved %d models for provider %s", op, len(ids), provider.Name))
 	return ids, nil
 }
 
@@ -161,7 +161,7 @@ func (l *LLMService) GetModelsInfoForProvider(provider *settings.ProviderConfig)
 		return l.customModelsInfoFallback(provider, op, err)
 	}
 
-	l.logger.Info(fmt.Sprintf("[%s] Retrieved %d models for provider %s", op, len(models), provider.Name))
+	l.logger.Debug(fmt.Sprintf("[%s] Retrieved %d models for provider %s", op, len(models), provider.Name))
 	if models == nil {
 		return []apperr.ModelInfo{}, nil
 	}

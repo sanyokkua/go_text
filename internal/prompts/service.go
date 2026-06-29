@@ -87,7 +87,7 @@ func (s *PromptService) SanitizeReasoningBlock(llmResponse string) (string, erro
 	const op = "PromptService.SanitizeReasoningBlock"
 	startTime := time.Now()
 
-	s.logger.Info(fmt.Sprintf("%s: starting LLM response sanitization", op))
+	s.logger.Debug(fmt.Sprintf("%s: starting LLM response sanitization", op))
 
 	if strings.TrimSpace(llmResponse) == "" {
 		s.logger.Trace(fmt.Sprintf("%s: response is empty, nothing to sanitize", op))
@@ -106,13 +106,15 @@ func (s *PromptService) SanitizeReasoningBlock(llmResponse string) (string, erro
 	originalLength := len(llmResponse)
 	cleaned := strings.TrimSpace(s.sanitizeRegexp.ReplaceAllString(llmResponse, ""))
 
-	s.logger.Info(fmt.Sprintf(
-		"%s: sanitization completed in %dms, original_length=%d, cleaned_length=%d",
-		op,
-		time.Since(startTime).Milliseconds(),
-		originalLength,
-		len(cleaned),
-	))
+	if originalLength != len(cleaned) {
+		s.logger.Debug(fmt.Sprintf(
+			"%s: sanitization completed in %dms, original_length=%d, cleaned_length=%d",
+			op,
+			time.Since(startTime).Milliseconds(),
+			originalLength,
+			len(cleaned),
+		))
+	}
 
 	return cleaned, nil
 }

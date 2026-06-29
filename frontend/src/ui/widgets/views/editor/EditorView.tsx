@@ -24,7 +24,7 @@ const EditorView: React.FC = () => {
 
     return (
         <div style={{ display: 'flex', width: '100%', height: '100%', overflow: 'hidden' }}>
-            {!historyOpen && <ActionsSidebar />}
+            <ActionsSidebar />
             {/* Editor column: panes fill the area; in side layout the run/builder bar sits directly
                 beneath the panes (only as wide as the panes — never under the sidebar). */}
             <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', minWidth: 0 }}>

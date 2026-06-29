@@ -27,7 +27,7 @@ export interface IHistoryHandler {
     clearHistory(): Promise<apperr.VoidResult>;
     deleteHistoryEntry(id: string): Promise<apperr.VoidResult>;
     getHistoryEntry(id: string): Promise<apperr.HistoryEntryResult>;
-    listHistory(page: number, pageSize: number): Promise<apperr.HistoryListResult>;
+    listHistory(limit: number, offset: number): Promise<apperr.HistoryListResult>;
 }
 
 export interface IStackHandler {

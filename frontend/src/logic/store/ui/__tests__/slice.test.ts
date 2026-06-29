@@ -79,6 +79,15 @@ describe('ui slice reducer', () => {
         expect(state.sidebarCollapsed).toBe(true);
     });
 
+    it('toggleSidebar leaves historyOpen untouched so both panels can be open together', () => {
+        const historyOpenCollapsed: UIState = { ...initialState, sidebarCollapsed: true, historyOpen: true };
+
+        const state = uiReducer(historyOpenCollapsed, toggleSidebar());
+
+        expect(state.sidebarCollapsed).toBe(false);
+        expect(state.historyOpen).toBe(true);
+    });
+
     it('toggleHistory flips historyOpen from false to true', () => {
         const state = uiReducer(initialState, toggleHistory());
 

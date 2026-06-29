@@ -8,10 +8,10 @@ const logger = getLogger('HistoryThunks');
 
 export const listHistory = createAsyncThunk<ListHistoryResult, ListHistoryArgs, { rejectValue: string }>(
     'history/listHistory',
-    async ({ page, pageSize }, { rejectWithValue }) => {
+    async ({ limit, offset }, { rejectWithValue }) => {
         try {
-            const entries = unwrap(await HistoryHandlerAdapter.listHistory(page, pageSize));
-            return { entries, hasMore: entries.length === pageSize };
+            const entries = unwrap(await HistoryHandlerAdapter.listHistory(limit, offset));
+            return { entries, hasMore: entries.length === limit };
         } catch (error: unknown) {
             const err = parseError(error);
             logger.logError(`listHistory failed: ${err.message}`);

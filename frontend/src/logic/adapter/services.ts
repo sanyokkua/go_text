@@ -295,9 +295,9 @@ export class HistoryHandler implements IHistoryHandler {
         return GetHistoryEntry(id);
     }
 
-    async listHistory(page: number, pageSize: number): Promise<apperr.HistoryListResult> {
-        this.logger.logInfo(`listHistory: page=${page} size=${pageSize}`);
-        return ListHistory(page, pageSize);
+    async listHistory(limit: number, offset: number): Promise<apperr.HistoryListResult> {
+        this.logger.logInfo(`listHistory: limit=${limit} offset=${offset}`);
+        return ListHistory(limit, offset);
     }
 }
 

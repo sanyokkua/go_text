@@ -154,13 +154,13 @@ describe('EditorView integration', () => {
         expect(screen.queryByRole('complementary', { name: /^history$/i })).not.toBeInTheDocument();
     });
 
-    it('hides the Actions sidebar and shows the History rail when history is open', () => {
+    it('shows both the Actions sidebar and the History rail when history is open', () => {
         render(
             <Provider store={makeStore({}, { historyOpen: true })}>
                 <EditorView />
             </Provider>,
         );
-        expect(screen.queryByRole('complementary', { name: /actions sidebar/i })).not.toBeInTheDocument();
+        expect(screen.getByRole('complementary', { name: /actions sidebar/i })).toBeInTheDocument();
         expect(screen.getByRole('complementary', { name: /^history$/i })).toBeInTheDocument();
     });
 

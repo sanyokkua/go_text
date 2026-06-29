@@ -9,8 +9,8 @@ export interface HistoryState {
 }
 
 export interface ListHistoryArgs {
-    page: number;
-    pageSize: number;
+    limit: number;
+    offset: number;
 }
 
 export interface ListHistoryResult {

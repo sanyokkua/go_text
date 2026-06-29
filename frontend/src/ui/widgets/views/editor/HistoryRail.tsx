@@ -38,7 +38,7 @@ const HistoryRail: React.FC = () => {
 
     useEffect(() => {
         logger.logInfo('HistoryRail mounted — loading history');
-        dispatch(listHistory({ page: PAGE_LIMIT, pageSize: 0 }));
+        dispatch(listHistory({ limit: PAGE_LIMIT, offset: 0 }));
     }, [dispatch]);
 
     const handleRestore = (entry: apperr.HistoryEntry) => {
