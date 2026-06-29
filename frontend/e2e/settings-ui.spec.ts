@@ -4,8 +4,7 @@ async function openSettings(page: Page): Promise<void> {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     await page.getByRole('button', { name: /open settings/i }).click();
-    // Wait for the settings view to be visible (first tab content loads).
-    await page.waitForSelector('nav[aria-label="Provider list"]', { timeout: 8000 });
+    await page.waitForSelector('[role="tablist"][aria-label="Settings sections"]', { timeout: 8000 });
 }
 
 async function openLoggingTab(page: Page): Promise<void> {
@@ -177,7 +176,7 @@ test.describe('Settings UI – all tabs accessible', () => {
 
         await openSettings(page);
 
-        const tabLabels = ['Providers', 'Model', 'Generation', 'Languages', 'Logging', 'About & data', 'Appearance'];
+        const tabLabels = ['Appearance', 'Logging', 'Providers', 'Model', 'Generation', 'Languages', 'About & data'];
 
         // Act – visit every tab
         for (const label of tabLabels) {
