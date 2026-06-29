@@ -135,10 +135,18 @@ func (s *SettingsService) GetAppSettingsMetadata() (*AppSettingsMetadata, error)
 	if logCfg, err := s.settingsRepo.GetLoggingConfig(); err == nil && logCfg != nil {
 		logDir = logCfg.LogDirectory
 	}
-	logsFolder, err := s.fileUtils.ResolveAppLogsFolderPath(logDir)
+	// Ensure (not just resolve) the folder so the path returned to the UI exists
+	// on disk; otherwise the "Open logs folder" action fails OpenPath's os.Stat
+	// check when file logging is disabled and startup never created it.
+	logsFolder, err := s.fileUtils.EnsureAppLogsFolderExists(logDir)
 	if err != nil {
-		s.logger.Warning(fmt.Sprintf("%s: could not resolve logs folder: %v", op, err))
-		logsFolder = ""
+		s.logger.Warning(fmt.Sprintf("%s: could not ensure logs folder: %v", op, err))
+		// Fall back to the resolved (possibly non-existent) path so it still displays.
+		if resolved, rErr := s.fileUtils.ResolveAppLogsFolderPath(logDir); rErr == nil {
+			logsFolder = resolved
+		} else {
+			logsFolder = ""
+		}
 	}
 
 	return &AppSettingsMetadata{
