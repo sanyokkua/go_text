@@ -47,3 +47,19 @@
     border-radius: var(--radius-sm);
     font-size: 12px;
 }
+
+.spinning {
+    animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .spinning {
+        animation: none;
+    }
+}

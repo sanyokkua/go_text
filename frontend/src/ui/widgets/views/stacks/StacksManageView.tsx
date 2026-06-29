@@ -16,30 +16,12 @@ import { addStep, clearBuilder, setBuilderIcon, setBuilderName } from '../../../
 import { deleteStack, duplicateStack } from '../../../../logic/store/stacks/saved/thunks';
 import { enterBuildMode, exitBuildMode, setCurrentView, setEditingStackId } from '../../../../logic/store/ui';
 import { parseError } from '../../../../logic/utils/error_utils';
+import { computeInferences } from '../../../../logic/utils/stack_utils';
 import { AlertDialog } from '../../../../ui/primitives/AlertDialog';
 import StackCard from './StackCard';
 import styles from './StacksManageView.module.css';
 
 const logger = getLogger('StacksManageView');
-
-function computeInferences(steps: string[], catalog: apperr.ActionMeta[]): number {
-    const metaById = new Map(catalog.map((m) => [m.id, m]));
-    let groups = 0;
-    let lastFamily = '';
-    let lastMergeable = false;
-
-    for (const stepId of steps) {
-        const meta = metaById.get(stepId);
-        const canExtend = groups > 0 && meta !== undefined && lastFamily === meta.family && meta.mergeable && lastMergeable && !meta.terminal;
-
-        if (!canExtend) {
-            groups++;
-            lastFamily = meta?.family ?? '';
-            lastMergeable = meta?.mergeable === true && meta.terminal !== true;
-        }
-    }
-    return groups;
-}
 
 const StacksManageView: React.FC = () => {
     const dispatch = useAppDispatch();

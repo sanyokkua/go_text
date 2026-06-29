@@ -8,6 +8,8 @@ export { Dialog } from './Dialog';
 export type { DialogProps } from './Dialog';
 export { DropdownMenu } from './DropdownMenu';
 export type { DropdownMenuItem, DropdownMenuProps } from './DropdownMenu';
+export { Popover } from './Popover';
+export type { PopoverProps } from './Popover';
 export { RadioGroup } from './RadioGroup';
 export type { RadioGroupItem, RadioGroupProps } from './RadioGroup';
 export { ScrollArea } from './ScrollArea';

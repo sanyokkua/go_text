@@ -20,12 +20,13 @@ jest.mock('../../../adapter', () => ({
     SettingsHandlerAdapter: {},
 }));
 
-import type { RootState } from '../../../index';
+import type { RootState } from '../../index';
 import { processPromptChain } from '../../run/thunks';
 import { testProviderInference } from '../../settings/thunks';
-import { selectActiveActionsTab, selectArmedActionId, selectCurrentView } from '../selectors';
+import { selectActiveActionsTab, selectArmedActionId, selectArmedStackId, selectArmedTarget, selectCurrentView } from '../selectors';
 import uiReducer, {
     armAction,
+    armStack,
     setActiveActionsTab,
     setCurrentView,
     setHistoryOpen,
@@ -46,6 +47,7 @@ const initialState: UIState = {
     inferenceRunning: false,
     currentView: 'main',
     armedActionId: null,
+    armedStackId: null,
     activeActionsTab: null,
     buildMode: false,
     editingStackId: null,
@@ -191,6 +193,22 @@ describe('ui slice reducer', () => {
         expect(state.armedActionId).toBeNull();
     });
 
+    it('armStack(stack-1) sets armedStackId and clears armedActionId', () => {
+        const armedActionState: UIState = { ...initialState, armedActionId: 'action-id-123' };
+        const state = uiReducer(armedActionState, armStack('stack-1'));
+
+        expect(state.armedStackId).toBe('stack-1');
+        expect(state.armedActionId).toBeNull();
+    });
+
+    it('armAction(action-id) clears a previously armed stack', () => {
+        const armedStackState: UIState = { ...initialState, armedStackId: 'stack-1' };
+        const state = uiReducer(armedStackState, armAction('action-id-123'));
+
+        expect(state.armedActionId).toBe('action-id-123');
+        expect(state.armedStackId).toBeNull();
+    });
+
     it('setActiveActionsTab("tab-1") sets activeActionsTab to tab-1', () => {
         const state = uiReducer(initialState, setActiveActionsTab('tab-1'));
 
@@ -226,6 +244,32 @@ describe('ui selectors', () => {
         const armedState = { ui: { ...initialState, armedActionId: 'action-id-456' } } as unknown as RootState;
 
         expect(selectArmedActionId(armedState)).toBe('action-id-456');
+    });
+
+    it('selectArmedStackId returns null when no stack is armed', () => {
+        expect(selectArmedStackId(mockRootState)).toBeNull();
+    });
+
+    it('selectArmedStackId returns the stack id when a stack is armed', () => {
+        const armedState = { ui: { ...initialState, armedStackId: 'stack-9' } } as unknown as RootState;
+
+        expect(selectArmedStackId(armedState)).toBe('stack-9');
+    });
+
+    it('selectArmedTarget returns kind "none" when nothing is armed', () => {
+        expect(selectArmedTarget(mockRootState)).toEqual({ kind: 'none' });
+    });
+
+    it('selectArmedTarget returns the stack target when a stack is armed', () => {
+        const armedState = { ui: { ...initialState, armedStackId: 'stack-9' } } as unknown as RootState;
+
+        expect(selectArmedTarget(armedState)).toEqual({ kind: 'stack', id: 'stack-9' });
+    });
+
+    it('selectArmedTarget returns the action target when an action is armed', () => {
+        const armedState = { ui: { ...initialState, armedActionId: 'action-7' } } as unknown as RootState;
+
+        expect(selectArmedTarget(armedState)).toEqual({ kind: 'action', id: 'action-7' });
     });
 
     it('selectActiveActionsTab returns the activeActionsTab from state', () => {

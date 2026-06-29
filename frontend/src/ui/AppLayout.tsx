@@ -4,7 +4,6 @@ import { selectEffectiveTheme, selectThemeMode } from '../logic/store/ui/selecto
 import { setThemeEffective } from '../logic/store/ui/slice';
 import { applyTheme, watchSystemTheme } from '../logic/theme/init';
 import { TooltipProvider } from './primitives/Tooltip';
-import GlobalLoadingOverlay from './widgets/base/GlobalLoadingOverlay';
 import NotificationContainer from './widgets/base/NotificationContainer';
 import AppMainView from './widgets/views/AppMainView';
 
@@ -27,7 +26,6 @@ const AppLayout: React.FC = () => {
     return (
         <TooltipProvider>
             <AppMainView />
-            <GlobalLoadingOverlay />
             <NotificationContainer />
         </TooltipProvider>
     );

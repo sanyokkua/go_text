@@ -164,6 +164,35 @@ class PromptPreviewRequest {
     }
 }
 
+class ChainStep {
+    constructor(source = {}) {
+        if (typeof source === 'string') source = JSON.parse(source);
+        this.actionId = source['actionId'];
+        this.targetModel = source['targetModel'];
+        this.goal = source['goal'];
+    }
+
+    static createFrom(source = {}) {
+        return new ChainStep(source);
+    }
+}
+
+class ChainRequest {
+    constructor(source = {}) {
+        if (typeof source === 'string') source = JSON.parse(source);
+        this.runId = source['runId'];
+        this.inputText = source['inputText'];
+        this.steps = source['steps'] ?? [];
+        this.inputLanguageId = source['inputLanguageId'];
+        this.outputLanguageId = source['outputLanguageId'];
+        this.useMarkdown = source['useMarkdown'] ?? false;
+    }
+
+    static createFrom(source = {}) {
+        return new ChainRequest(source);
+    }
+}
+
 class SavedStack {
     constructor(source = {}) {
         if (typeof source === 'string') source = JSON.parse(source);
@@ -197,5 +226,7 @@ module.exports = {
         Settings,
         PromptPreviewRequest,
         SavedStack,
+        ChainStep,
+        ChainRequest,
     },
 };

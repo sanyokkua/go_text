@@ -34,6 +34,7 @@ describe('UI slice — theme functionality', () => {
         inferenceRunning: false,
         currentView: 'main',
         armedActionId: null,
+        armedStackId: null,
         activeActionsTab: null,
         buildMode: false,
         editingStackId: null,

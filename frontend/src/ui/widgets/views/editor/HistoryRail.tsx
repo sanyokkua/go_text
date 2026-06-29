@@ -16,7 +16,6 @@ import { enqueueNotification } from '../../../../logic/store/notifications/slice
 import { armAction } from '../../../../logic/store/ui';
 import { parseError } from '../../../../logic/utils/error_utils';
 import { AlertDialog } from '../../../primitives/AlertDialog';
-import { ScrollArea } from '../../../primitives/ScrollArea';
 import HistoryEntryCard from './HistoryEntryCard';
 import styles from './HistoryRail.module.css';
 
@@ -121,7 +120,7 @@ const HistoryRail: React.FC = () => {
         <aside className={styles.rail} aria-label="History">
             <div className={styles.header}>
                 <strong className={styles.headerTitle}>History</strong>
-                <span className={styles.maxBadge}>{maxEntries} max</span>
+                <span className={styles.maxBadge}>{maxEntries} MAX</span>
                 <button
                     className={styles.clearBtn}
                     type="button"
@@ -133,10 +132,8 @@ const HistoryRail: React.FC = () => {
                 </button>
             </div>
 
-            <div className={styles.listArea}>
-                <ScrollArea style={{ height: '100%' }}>
-                    <div aria-label="History entries">{renderList()}</div>
-                </ScrollArea>
+            <div className={styles.listArea} aria-label="History entries">
+                {renderList()}
             </div>
 
             <AlertDialog

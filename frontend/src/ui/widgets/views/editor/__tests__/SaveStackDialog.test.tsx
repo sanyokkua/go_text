@@ -92,6 +92,7 @@ function makeStore(overrides: StoreOverrides = {}) {
                 inferenceRunning: false,
                 currentView: 'main' as const,
                 armedActionId: null,
+                armedStackId: null,
                 activeActionsTab: null,
                 buildMode: true,
                 editingStackId: overrides.editingStackId ?? null,

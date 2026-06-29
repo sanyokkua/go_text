@@ -1,12 +1,14 @@
 import { configureStore } from '@reduxjs/toolkit';
 import '@testing-library/jest-dom';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
 import actionsReducer from '../../../../../logic/store/actions/slice';
 import editorReducer from '../../../../../logic/store/editor/slice';
 import notificationsReducer from '../../../../../logic/store/notifications/slice';
 import runReducer from '../../../../../logic/store/run/slice';
 import settingsReducer from '../../../../../logic/store/settings/slice';
+import stacksSavedReducer from '../../../../../logic/store/stacks/saved/slice';
 import uiReducer from '../../../../../logic/store/ui/slice';
 import RunBar from '../RunBar';
 
@@ -36,6 +38,7 @@ function makeStore(
         terminal: boolean;
         requires: string[];
     }> = [],
+    stacks: object[] = [],
 ) {
     return configureStore({
         reducer: {
@@ -44,6 +47,7 @@ function makeStore(
             run: runReducer,
             actions: actionsReducer,
             settings: settingsReducer,
+            stacksSaved: stacksSavedReducer,
             notifications: notificationsReducer,
         },
         preloadedState: {
@@ -55,6 +59,7 @@ function makeStore(
                 inferenceRunning: false,
                 currentView: 'main' as const,
                 armedActionId: null,
+                armedStackId: null,
                 activeActionsTab: null,
                 buildMode: false,
                 editingStackId: null,
@@ -80,9 +85,49 @@ function makeStore(
                 availableModels: [],
                 modelsStatus: 'idle' as const,
             },
+            stacksSaved: { stacks: stacks as never, status: 'idle' as const, error: null },
         },
     });
 }
+
+const MOCK_STACK = {
+    id: 'stack-1',
+    name: 'My Pipeline',
+    icon: '📝',
+    steps: ['proofread', 'summarize'],
+    defaultFormat: 'PlainText',
+    defaultInLang: '',
+    defaultOutLang: '',
+    createdAt: 0,
+    updatedAt: 0,
+};
+
+const STACK_CATALOG = [
+    {
+        id: 'proofread',
+        name: 'Proofread',
+        category: 'Writing',
+        family: 'rewrite',
+        directive: '',
+        orderRank: 10,
+        exclusivityGroup: '',
+        mergeable: false,
+        terminal: false,
+        requires: [],
+    },
+    {
+        id: 'summarize',
+        name: 'Summarize',
+        category: 'Writing',
+        family: 'text',
+        directive: '',
+        orderRank: 20,
+        exclusivityGroup: '',
+        mergeable: false,
+        terminal: false,
+        requires: [],
+    },
+];
 
 describe('RunBar', () => {
     it('Run button is disabled when no action is armed', () => {
@@ -162,5 +207,39 @@ describe('RunBar', () => {
             </Provider>,
         );
         expect(screen.getByText(/select an action from the sidebar/i)).toBeInTheDocument();
+    });
+
+    it('shows the stack name and step/inference meta when a stack is armed', () => {
+        render(
+            <Provider store={makeStore({ armedStackId: 'stack-1' }, { inputContent: 'hi' }, {}, STACK_CATALOG, [MOCK_STACK])}>
+                <RunBar />
+            </Provider>,
+        );
+        expect(screen.getByText('My Pipeline')).toBeInTheDocument();
+        expect(screen.getByText('2 steps · 2 inferences')).toBeInTheDocument();
+    });
+
+    it('Run button is enabled when a stack is armed and input is non-empty', () => {
+        render(
+            <Provider store={makeStore({ armedStackId: 'stack-1' }, { inputContent: 'hello' }, {}, STACK_CATALOG, [MOCK_STACK])}>
+                <RunBar />
+            </Provider>,
+        );
+        expect(screen.getByRole('button', { name: /run/i })).toBeEnabled();
+    });
+
+    it('clicking Run with an armed stack dispatches a chain request with the stack steps', async () => {
+        const { ActionHandlerAdapter } = jest.requireMock('../../../../../logic/adapter');
+        render(
+            <Provider store={makeStore({ armedStackId: 'stack-1' }, { inputContent: 'hello' }, {}, STACK_CATALOG, [MOCK_STACK])}>
+                <RunBar />
+            </Provider>,
+        );
+
+        await userEvent.click(screen.getByRole('button', { name: /run/i }));
+
+        expect(ActionHandlerAdapter.processPromptChain).toHaveBeenCalledTimes(1);
+        const req = ActionHandlerAdapter.processPromptChain.mock.calls[0][0];
+        expect(req.steps.map((s: { actionId: string }) => s.actionId)).toEqual(['proofread', 'summarize']);
     });
 });

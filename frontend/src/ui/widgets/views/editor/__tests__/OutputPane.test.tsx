@@ -1,5 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit';
 import '@testing-library/jest-dom';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { render, screen } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import editorReducer from '../../../../../logic/store/editor/slice';
@@ -44,13 +46,16 @@ describe('OutputPane', () => {
         expect(screen.getByText(/Run to preview/i)).toBeInTheDocument();
     });
 
-    it('shows step progress spinner when run is in progress', () => {
+    it('shows the in-pane Generating step progress indicator when run is in progress', () => {
         render(
-            <Provider store={makeStore({}, { status: 'running', runId: 'r1' })}>
+            <Provider store={makeStore({}, { status: 'running', runId: 'r1', currentGroupIndex: 0, totalGroups: 2, currentGroupFamily: 'Proofreading' })}>
                 <OutputPane />
             </Provider>,
         );
-        expect(screen.getByRole('status')).toBeInTheDocument();
+        const status = screen.getByRole('status');
+        expect(status).toBeInTheDocument();
+        expect(status).toHaveTextContent(/Generating/i);
+        expect(status).toHaveTextContent(/Step 1 of 2/i);
     });
 
     it('renders output text in Source view mode', () => {
@@ -107,5 +112,26 @@ describe('OutputPane', () => {
             </Provider>,
         );
         expect(screen.getByText(/· source/i)).toBeInTheDocument();
+    });
+
+    it('renders the header label row above the editor body containing the output', () => {
+        render(
+            <Provider store={makeStore({ outputContent: 'some output', viewMode: 'source' })}>
+                <OutputPane />
+            </Provider>,
+        );
+        // Header label row (label + per-pane icon buttons) sits above the editor body.
+        expect(screen.getByText('Output')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /copy output/i })).toBeInTheDocument();
+        expect(screen.getByText('some output')).toBeInTheDocument();
+    });
+
+    it('uses only design tokens — no hardcoded hex colors — in its stylesheet', () => {
+        const cssPath = join(__dirname, '..', 'OutputPane.module.css');
+        const css = readFileSync(cssPath, 'utf8');
+
+        expect(css).not.toMatch(/#[0-9a-fA-F]{3,6}\b/);
+        expect(css).toMatch(/var\(--surface-2\)/);
+        expect(css).toMatch(/var\(--line\)/);
     });
 });

@@ -24,9 +24,11 @@ const logger = getLogger('StackBuilderBar');
 
 export interface StackBuilderBarProps {
     onSave: () => void;
+    /** When true (stacked layout), render as a fully-bordered rounded box between the panes. */
+    boxed?: boolean;
 }
 
-const StackBuilderBar: React.FC<StackBuilderBarProps> = ({ onSave }) => {
+const StackBuilderBar: React.FC<StackBuilderBarProps> = ({ onSave, boxed = false }) => {
     const dispatch = useAppDispatch();
     const familyGroups = useAppSelector(selectBuilderFamilyGroups);
     const stepCount = useAppSelector(selectBuilderStepCount);
@@ -77,9 +79,10 @@ const StackBuilderBar: React.FC<StackBuilderBarProps> = ({ onSave }) => {
     };
 
     const inferenceLabel = inferenceCount === 1 ? '1 inference' : `${inferenceCount} inferences`;
+    const barClass = [styles.bar, boxed ? styles.boxed : ''].filter(Boolean).join(' ');
 
     return (
-        <div className={styles.bar}>
+        <div className={barClass}>
             {/* Family group chip clusters */}
             <div className={styles.groups}>
                 {familyGroups.length === 0 ? (

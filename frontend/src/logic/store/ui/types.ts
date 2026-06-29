@@ -17,6 +17,7 @@ export interface UIState {
     inferenceRunning: boolean;
     currentView: CurrentView;
     armedActionId: string | null;
+    armedStackId: string | null;
     activeActionsTab: string | null;
     activeSettingsTab: number;
     buildMode: boolean;

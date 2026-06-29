@@ -10,6 +10,13 @@
     overflow: hidden;
 }
 
+/* Stacked layout: bordered rounded box between the panes (mockup `.stackbar` stacked override,
+   keeping the build bar's teal accent border). */
+.boxed {
+    border: 1px solid var(--teal-light);
+    border-radius: var(--radius-md);
+}
+
 .groups {
     display: flex;
     align-items: center;

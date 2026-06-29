@@ -13,16 +13,7 @@ interface ProviderListProps {
 
 const ProviderList: React.FC<ProviderListProps> = ({ providers, currentId, selectedId, onSelect, onNew }) => (
     <nav aria-label="Provider list" className={styles.nav}>
-        <div className={styles.newBtnWrap}>
-            <button
-                type="button"
-                onClick={onNew}
-                aria-label="New provider"
-                className={styles.newBtn}
-            >
-                + New provider
-            </button>
-        </div>
+        <h2 className={styles.header}>Providers</h2>
 
         <ul role="listbox" aria-label="Providers" className={styles.list}>
             {providers.length === 0 ? (
@@ -56,6 +47,17 @@ const ProviderList: React.FC<ProviderListProps> = ({ providers, currentId, selec
                 })
             )}
         </ul>
+
+        <div className={styles.newBtnWrap}>
+            <button
+                type="button"
+                onClick={onNew}
+                aria-label="New provider"
+                className={styles.newBtn}
+            >
+                + New provider
+            </button>
+        </div>
     </nav>
 );
 

@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { configureStore } from '@reduxjs/toolkit';
 import '@testing-library/jest-dom';
 import { render, screen } from '@testing-library/react';
@@ -111,6 +113,7 @@ function makeStore(overrides: StoreOverrides = {}) {
                 inferenceRunning: overrides.inferenceRunning ?? false,
                 currentView: 'stacks' as const,
                 armedActionId: null,
+                armedStackId: null,
                 activeActionsTab: null,
                 buildMode: false,
                 editingStackId: null,
@@ -216,5 +219,19 @@ describe('StacksManageView', () => {
         await userEvent.click(screen.getByRole('button', { name: /\+ new stack/i }));
         expect(store.getState().ui.buildMode).toBe(true);
         expect(store.getState().ui.currentView).toBe('main');
+    });
+});
+
+describe('StacksManageView responsive grid CSS', () => {
+    // jsdom cannot evaluate media queries, so assert the breakpoints exist in the module source.
+    const css = readFileSync(join(__dirname, '..', 'StacksManageView.module.css'), 'utf8');
+
+    it('reduces to two columns under 900px', () => {
+        expect(css).toMatch(/@media\s*\(max-width:\s*900px\)/);
+        expect(css).toMatch(/grid-template-columns:\s*repeat\(2,\s*1fr\)/);
+    });
+
+    it('reduces to one column under 600px', () => {
+        expect(css).toMatch(/@media\s*\(max-width:\s*600px\)/);
     });
 });

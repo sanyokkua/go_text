@@ -20,6 +20,7 @@ jest.mock('../../../../../../logic/adapter', () => ({
         deleteHistoryEntry: jest.fn().mockResolvedValue({ data: null, error: null }),
     },
     getLogger: () => ({ logInfo: jest.fn(), logDebug: jest.fn(), logError: jest.fn(), logWarn: jest.fn() }),
+    openExternal: jest.fn(),
     unwrap: (r: { data: unknown; error: { message: string } | null }) => {
         if (r?.error) throw new Error(r.error.message);
         return r?.data;
@@ -76,6 +77,7 @@ function makeStore() {
                 inferenceRunning: false,
                 currentView: 'settings' as const,
                 armedActionId: null,
+                armedStackId: null,
                 activeActionsTab: null,
                 buildMode: false,
                 editingStackId: null,
@@ -131,5 +133,14 @@ describe('AppBehaviorTab', () => {
             </Provider>,
         );
         expect(screen.getByRole('button', { name: /clear history/i })).toBeInTheDocument();
+    });
+
+    it('renders an Open logs folder button', () => {
+        render(
+            <Provider store={makeStore()}>
+                <AppBehaviorTab settings={MOCK_SETTINGS} metadata={MOCK_METADATA} />
+            </Provider>,
+        );
+        expect(screen.getByRole('button', { name: /open logs folder/i })).toBeInTheDocument();
     });
 });

@@ -169,10 +169,42 @@
 }
 
 .stackRow {
+    width: 100%;
+    background: none;
+    border: none;
+    border-left: 3px solid transparent;
+    border-radius: var(--radius-sm);
+    color: var(--ink);
+    cursor: pointer;
     display: flex;
     align-items: center;
     gap: var(--space-1);
-    padding: 3px 0;
+    padding: 3px var(--space-1);
+    text-align: left;
+}
+
+.stackRow:hover:not(:disabled) {
+    background: var(--surface);
+}
+
+.stackRow:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.stackRow:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.stackArmed {
+    background: var(--teal-50);
+    border-left-color: var(--teal);
+    font-weight: 600;
+}
+
+.stackArmed .stackName {
+    color: var(--teal-dark);
 }
 
 .stackIcon {

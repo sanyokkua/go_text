@@ -54,6 +54,7 @@ function makeStore(uiOverride = {}) {
                 inferenceRunning: false,
                 currentView: 'settings' as const,
                 armedActionId: null,
+                armedStackId: null,
                 activeActionsTab: null,
                 buildMode: false,
                 editingStackId: null,

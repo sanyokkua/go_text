@@ -36,7 +36,7 @@ export function MermaidBlock({ src }: MermaidBlockProps) {
 
     if (error) {
         return (
-            <div role="alert" style={{ color: 'var(--red, crimson)', fontSize: '0.875rem', padding: '0.5rem' }}>
+            <div role="alert" style={{ color: 'var(--err)', fontSize: '0.875rem', padding: '0.5rem' }}>
                 Diagram error: {error}
             </div>
         );

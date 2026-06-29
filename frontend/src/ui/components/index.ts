@@ -10,3 +10,4 @@ export type { ChipProps } from './Chip';
 export { default as FlexContainer } from './FlexContainer';
 export { IconButton } from './IconButton';
 export type { IconButtonProps } from './IconButton';
+export { NumberStepper } from './NumberStepper';

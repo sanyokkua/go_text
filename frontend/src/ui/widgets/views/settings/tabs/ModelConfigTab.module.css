@@ -1,0 +1,87 @@
+.root {
+    padding: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.sectionHeader {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    padding: 0 0 var(--space-2);
+    margin: 0;
+}
+
+/* Full-width model row: searchable dropdown + refresh, no left label. */
+.modelRow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 0 0 var(--space-4);
+}
+
+.selectWrap {
+    flex: 1;
+}
+
+/* Toggle block: [switch] label ........ value, then slider on its own line. */
+.toggleBlock {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-3) 0;
+    border-top: 1px solid var(--line);
+}
+
+.toggleHead {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.toggleLabel {
+    flex: 1;
+    color: var(--ink);
+    font-size: 0.9375rem;
+    font-weight: 500;
+}
+
+.numericDisplay {
+    color: var(--ink);
+    font-size: 0.9375rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.radioBlock {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-3) 0;
+    border-top: 1px solid var(--line);
+}
+
+.radioHeader {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0;
+}
+
+.caption {
+    font-size: 0.8125rem;
+    color: var(--ink-3);
+    line-height: 1.45;
+    margin: var(--space-3) 0 0;
+}
+
+.actions {
+    padding-top: var(--space-4);
+    display: flex;
+    justify-content: flex-end;
+}

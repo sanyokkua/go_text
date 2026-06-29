@@ -8,6 +8,16 @@
     overflow: hidden;
 }
 
+.header {
+    margin: 0;
+    padding: var(--space-3) var(--space-3) var(--space-2);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+}
+
 .newBtnWrap {
     padding: var(--space-2);
 }

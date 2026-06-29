@@ -17,7 +17,11 @@ export interface SelectProps {
 
 export const Select: React.FC<SelectProps> = ({ value, onValueChange, items, placeholder, keyLabel, accent, disabled }) => (
     <RadixSelect.Root value={value} onValueChange={onValueChange} disabled={disabled ?? false}>
-        <RadixSelect.Trigger className={`${styles.trigger} ${accent ? styles.accent : ''}`} aria-label={keyLabel ?? placeholder ?? 'Select'}>
+        <RadixSelect.Trigger
+            className={`${styles.trigger} ${accent ? styles.accent : ''}`}
+            data-accent={accent ? '' : undefined}
+            aria-label={keyLabel ?? placeholder ?? 'Select'}
+        >
             {keyLabel && <span className={styles.keyLabel}>{keyLabel}</span>}
             <RadixSelect.Value placeholder={placeholder} />
             <RadixSelect.Icon className={styles.caret}>▾</RadixSelect.Icon>

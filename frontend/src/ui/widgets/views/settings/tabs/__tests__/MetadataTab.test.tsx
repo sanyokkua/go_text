@@ -73,6 +73,7 @@ function makeStore() {
                 inferenceRunning: false,
                 currentView: 'settings' as const,
                 armedActionId: null,
+                armedStackId: null,
                 activeActionsTab: null,
                 buildMode: false,
                 editingStackId: null,
@@ -100,6 +101,15 @@ describe('MetadataTab', () => {
             </Provider>,
         );
         expect(screen.getByRole('heading', { name: /gotext/i })).toBeInTheDocument();
+    });
+
+    it('shows the technology stack line', () => {
+        render(
+            <Provider store={makeStore()}>
+                <MetadataTab />
+            </Provider>,
+        );
+        expect(screen.getByText(/Wails · Go · React \+ Radix/)).toBeInTheDocument();
     });
 
     it('shows database path from metadata', () => {

@@ -56,7 +56,7 @@ const SettingsView: React.FC = () => {
     return (
         <div style={{ width: '100%', height: '100%', display: 'flex', overflow: 'hidden', background: 'var(--bg)' }}>
             <SettingsTabs activeTab={activeTab} onChange={handleTabChange} />
-            <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 'var(--space-4)' }}>{activeTabView}</div>
+            <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 'var(--space-4)', background: 'var(--surface)' }}>{activeTabView}</div>
         </div>
     );
 };

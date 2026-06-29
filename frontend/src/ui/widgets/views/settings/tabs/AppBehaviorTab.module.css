@@ -1,0 +1,83 @@
+.root {
+    padding: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.switchRow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) 0;
+}
+
+.switchLabel {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--ink);
+}
+
+.switchHint {
+    font-size: 0.8125rem;
+    color: var(--ink-3);
+}
+
+.divider {
+    border: none;
+    border-top: 1px solid var(--line);
+    margin: var(--space-2) 0;
+}
+
+.sectionHeader {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    padding: var(--space-3) 0 var(--space-2);
+    margin: 0;
+}
+
+.dirRow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) 0;
+}
+
+.dirInput {
+    flex: 1;
+    padding: 6px 10px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 0.875rem;
+    font-family: var(--mono);
+}
+
+.resolvedPath {
+    font-size: 0.8125rem;
+    color: var(--ink-3);
+    margin: var(--space-1) 0 0;
+    word-break: break-all;
+}
+
+.resolvedPath code {
+    font-family: var(--mono);
+    color: var(--ink-2);
+}
+
+.entriesRow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) 0;
+}
+
+.entriesLabel {
+    color: var(--ink);
+    font-size: 0.875rem;
+    font-weight: 500;
+}

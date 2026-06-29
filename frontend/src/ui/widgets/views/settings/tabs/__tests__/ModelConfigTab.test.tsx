@@ -58,6 +58,7 @@ function makeStore() {
                 inferenceRunning: false,
                 currentView: 'settings' as const,
                 armedActionId: null,
+                armedStackId: null,
                 activeActionsTab: null,
                 buildMode: false,
                 editingStackId: null,
@@ -69,14 +70,14 @@ function makeStore() {
 }
 
 describe('ModelConfigTab', () => {
-    it('renders the Model label', () => {
+    it('renders the Model section header', () => {
         render(
             <Provider store={makeStore()}>
                 <ModelConfigTab settings={MOCK_SETTINGS} />
             </Provider>,
         );
 
-        expect(screen.getByText('Model')).toBeInTheDocument();
+        expect(screen.getByText(/Model — searchable/i)).toBeInTheDocument();
     });
 
     it('renders the Use temperature label', () => {
@@ -99,14 +100,14 @@ describe('ModelConfigTab', () => {
         expect(screen.getByText('Use context window')).toBeInTheDocument();
     });
 
-    it('renders the Token limit parameter label', () => {
+    it('renders the Token-limit parameter label', () => {
         render(
             <Provider store={makeStore()}>
                 <ModelConfigTab settings={MOCK_SETTINGS} />
             </Provider>,
         );
 
-        expect(screen.getByText('Token limit parameter')).toBeInTheDocument();
+        expect(screen.getByText('Token-limit parameter')).toBeInTheDocument();
     });
 
     it('Save button is initially disabled when form is not dirty', () => {

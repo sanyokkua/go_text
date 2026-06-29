@@ -4,7 +4,6 @@ import { useAppDispatch, useAppSelector } from '../../../logic/store';
 import { selectCurrentProvider, selectProviderItems } from '../../../logic/store/settings/selectors';
 import { setAsCurrentProviderConfig } from '../../../logic/store/settings/thunks';
 import { Select } from '../../primitives/Select';
-import styles from './ProviderPicker.module.css';
 
 const ProviderPicker: React.FC = () => {
     const dispatch = useAppDispatch();
@@ -15,24 +14,16 @@ const ProviderPicker: React.FC = () => {
         return null;
     }
 
-    const ready = currentProvider.baseUrl.trim() !== '';
-
+    // The active provider pill carries the teal accent treatment (mockup .sel.accent)
+    // so the toolbar signals which provider is live without a separate status dot.
     return (
-        <div className={styles.root}>
-            <span
-                className={styles.readyDot}
-                data-ready={ready}
-                aria-label={ready ? 'Provider ready' : 'Provider not configured'}
-                title={ready ? 'Provider ready' : 'Provider not configured'}
-            />
-            <Select
-                value={currentProvider.providerId}
-                onValueChange={(id) => void dispatch(setAsCurrentProviderConfig(id))}
-                items={providerItems}
-                keyLabel="Provider"
-                accent
-            />
-        </div>
+        <Select
+            value={currentProvider.providerId}
+            onValueChange={(id) => void dispatch(setAsCurrentProviderConfig(id))}
+            items={providerItems}
+            keyLabel="Provider"
+            accent
+        />
     );
 };
 

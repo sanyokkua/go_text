@@ -1,5 +1,6 @@
 import { createSelector } from '@reduxjs/toolkit';
 
+import { apperr } from '../../../../wailsjs/go/models';
 import { SelectItem } from '../../../ui/primitives/Select';
 import { Settings } from '../../adapter';
 import { RootState } from '../index';
@@ -15,7 +16,7 @@ export const selectAppBehaviorConfig = (state: RootState) => state.settings.allS
 export const selectInferenceBaseConfig = (state: RootState) => state.settings.allSettings?.inferenceBaseConfig ?? null;
 export const selectLanguageConfig = (state: RootState) => state.settings.allSettings?.languageConfig ?? null;
 export const selectAvailableProviders = (state: RootState) => state.settings.allSettings?.availableProviderConfigs ?? [];
-export const selectDiscoveredModels = (state: RootState): string[] => state.settings.discoveredModels ?? [];
+export const selectDiscoveredModels = (state: RootState): apperr.ModelInfo[] => state.settings.discoveredModels ?? [];
 
 // Derived SelectItem lists for compact pickers in AppBar
 export const selectProviderItems = createSelector([selectAvailableProviders], (providers): SelectItem[] =>
@@ -46,9 +47,23 @@ export const selectCurrentProviderModelItems = createSelector(
             return provider.customModels.filter(Boolean).map((m) => ({ value: m, label: m }));
         }
 
-        // Discovered models ∪ current model, current always included so the
-        // Select has a valid option for its bound value.
-        const deduped = [...new Set([...discovered, currentModel].filter(Boolean))];
-        return deduped.map((m) => ({ value: m, label: m }));
+        // Build label-by-id so a discovered model keeps its human label while the
+        // current model (which may not be among discovered) still gets an entry.
+        const labelById = new Map(discovered.map((m) => [m.id, m.label]));
+        const ids = [...new Set([...discovered.map((m) => m.id), currentModel].filter(Boolean))];
+        return ids.map((id) => ({ value: id, label: labelById.get(id) ?? id }));
+    },
+);
+
+/**
+ * Returns the capability flags for the currently-selected model, or null when it
+ * has not been discovered yet. Drives feature gating in the Settings Model tab
+ * (e.g. hiding the temperature control for models that reject it).
+ */
+export const selectCurrentModelCaps = createSelector(
+    [selectModelConfig, selectDiscoveredModels],
+    (modelCfg, discovered): apperr.ModelCaps | null => {
+        if (!modelCfg) return null;
+        return discovered.find((m) => m.id === modelCfg.name)?.caps ?? null;
     },
 );

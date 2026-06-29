@@ -567,3 +567,105 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 
 ### Final verification
 - Run `wails dev` and manually exercise the real app on this branch against LM Studio and Ollama; confirm UI/UX and provider flows match the mockups (per `CLAUDE.md` "Finishing task").
+
+---
+
+## Phase 9 · v3.1 UI/UX fidelity remediation — round 2
+
+> A prior remediation (T32–T48) claimed most divergences fixed in a 2026-06-29 audit, but fresh
+> same-day screenshots (`docs/V3_Temp_Docs/current_app_screens/`) show the problems persist, and code
+> exploration confirmed the root causes still exist in source. This round re-roots each reported issue
+> against the canonical mockup (`mockup.html` + `mockup_screens/`, the **source of truth**) and fixes
+> them at the component level with regression tests, verified by real-inference live testing.
+>
+> **Reframing finding:** `frontend/src/ui/styles/tokens.css` is a byte-perfect match to
+> `mockup.html`'s tokens. "Incorrect colors" is therefore **not** a token problem — it is components
+> referencing **undefined tokens** (`--surface-3`, `--text-muted`) or applying the **wrong defined
+> token / wrong structure** vs the mockup. Fixes are component-scoped.
+>
+> **Source-of-truth decisions:** AppBar pills (`.sel`) carry **no status dots** — active provider uses
+> the teal `.accent` style; `Lang` is a single combined `EN → UK` pill (not a separate IN/OUT row);
+> editor body (`.editor`) is `--surface-2` bordered card (a card-treatment fix, not a swap to white);
+> clicking a saved stack **arms** it (mutually exclusive with an armed action) and Run executes the
+> chain. **Sequence:** T49 → T50 → parallel { T51 · T52/T53 · T54 · T55/T56 } → T57.
+
+### T49 · Remove the double loading overlay  *(issue: double loading views)*
+- **Root cause:** `frontend/src/ui/AppLayout.tsx:30` mounts `<GlobalLoadingOverlay/>` (driven by
+  `ui.inferenceRunning`) on top of the correct per-pane `StepProgress` in `OutputPane.tsx`.
+- **Scope (`ts-engineer`):** remove `GlobalLoadingOverlay` from `AppLayout.tsx` + delete the dead
+  component; loading renders **only** inside the Output pane as `StepProgress` (mockup `21.22.03`).
+  Keep `inferenceRunning` button-disable gating intact.
+- **Tests (`ts-tester`):** OutputPane shows `StepProgress`+Cancel while running; no full-pane overlay node.
+- **Acceptance:** single output-only loader; no app-wide "Processing…" overlay.
+
+### T50 · Input/Output pane card treatment  *(issue: IO widgets/background not light)*
+- **Root cause:** panes read flat grey `--surface-2`; mockup renders header label on `--bg` above a
+  bordered `--surface-2` editor card.
+- **Scope (`ts-engineer`):** `InputPane/OutputPane/EditorArea` module CSS match `mockup.html` `.editor`
+  (line 153). Header row + per-pane icon buttons on top, editor body = bordered surface-2 card, wrapper
+  transparent. Verify vs `21.20.42` (light) / `21.21.05` (dark).
+- **Tests (`ts-tester`):** panes use token-driven classes (no hardcoded colors / undefined tokens).
+- **Acceptance:** panes match mockup card treatment in both themes.
+
+### T51 · Saved stacks armable + runnable from sidebar  *(issue: custom stacks not selectable)*
+- **Root cause:** `ActionsSidebar.tsx:89-95` stack rows are non-interactive `<div>`s; `ui` slice's
+  `armedActionId` tracks only a single action; `RunBar` only runs single actions.
+- **Scope (`ts-engineer`):** add `armedStackId` + `armStack(id)` to `ui` slice (mutually exclusive with
+  `armedActionId`); stack rows become `<button>` arming the stack; `RunBar` shows stack chip +
+  "N steps · M inferences" and Run executes via `processPromptChain` (reuse Manage/⌘K path).
+- **Tests (`ts-tester`):** click arms stack (clears action); RunBar runs the chain; mutual exclusivity.
+- **Acceptance:** clicking a saved stack arms it and Run executes the whole chain.
+
+### T52 · AppBar chrome fidelity  *(issues: inconsistent icon sizes, dot placement)*
+- **Root cause:** AppBar uses five ad-hoc icon-button classes; stray dots between brand/provider/model;
+  language is a separate IN/OUT row.
+- **Scope (`ts-engineer`):** route all top-bar icon buttons through one shared sized IconButton;
+  remove readiness dots from `ProviderPicker`/`ModelPicker` triggers, style active provider with teal
+  `.accent`; replace IN/OUT row with one combined `Lang EN → UK ▾` popover pill (existing language
+  state as single source).
+- **Tests (`ts-tester`):** no readiness-dot nodes; provider pill accent when current; single lang pill;
+  icon buttons share one size class.
+- **Acceptance:** top bar matches mockup in both themes.
+
+### T53 · Provider/Model single-source sync correctness  *(issue: appbar/settings not synced)*
+- **Root cause:** provider already shares Redux state; the real defect is model staleness — on provider
+  switch `modelConfig.name` can point to a model absent from the new provider, and AppBar discovery
+  lists only the saved name.
+- **Scope (`ts-engineer`):** on `setAsCurrentProviderConfig` sync `modelConfig.name` to the new
+  provider's `selectedModel` (or clear) + run discovery (`getModels`), store `discoveredModels` (reset
+  on provider change); AppBar ModelPicker lists discovered ∪ current; Settings Model tab reads same source.
+- **Tests (`ts-tester`):** reducer reset/repoint on switch; selector discovered ∪ current; ModelPicker
+  multi-option + persists.
+- **Acceptance:** changing provider/model in Settings reflects in AppBar; next run uses it.
+
+### T54 · History rail overflow + card fidelity  *(issue: history renders outside screen)*
+- **Root cause:** `HistoryEntryCard.module.css` `.preview` uses `white-space:nowrap` and flex children
+  lack `min-width:0`; rail uses `--surface-2`; cards reference undefined tokens; layout ≠ mockup `21.21.17`.
+- **Scope (`ts-engineer`):** two-line clamped preview + `min-width:0`; replace undefined tokens with real
+  ones; card = title + right-aligned **N INF** badge, `input… → output…`, footer `time · status · ↺ · 🗑`;
+  active card teal border + `--teal-50`; rail clips horizontally, no run-bar overlap.
+- **Tests (`ts-tester`):** entry renders badge/status/time/actions; long preview wraps to 2 lines, no overflow.
+- **Acceptance:** history rail matches mockup and never overflows the screen.
+
+### T55 · Settings shell + Providers tab parity  *(issue: settings don't reflect mockups)*
+- **Scope (`ts-engineer`):** Providers glyph 🔌; provider-list "PROVIDERS" header; move "+ New provider"
+  to the bottom; two-column grid for endpoint and api-version/deployment rows (mockup `21.22.28`);
+  confirm surfaces use `--surface`/`--bg` in both themes.
+- **Tests (`ts-tester`):** "+ New provider" is last child; header present; endpoint fields side-by-side.
+- **Acceptance:** Providers settings match mockup layout/colors.
+
+### T56 · Remaining settings tabs + Manage grid spot-fixes
+- **Scope (`ts-engineer`):** audit Model/Generation/Languages/Logging/About/Appearance vs mockup screens
+  (`21.22.40/21.22.51/21.23.02`), fix surface/background/token divergences + layout gaps; add Manage-grid
+  responsive breakpoint; replace any undefined-token usages.
+- **Tests (`ts-tester`):** RTL per touched tab asserting key elements + token-driven classes.
+- **Acceptance:** each tab matches its mockup screen.
+
+### T57 · Tests green + real-inference live testing
+- **Deterministic gates:** `go build ./...`; bindings in sync (if signatures changed — none expected);
+  `! grep -rq "@mui\|@emotion" frontend/src`; `cd frontend && npm run test`; `go test -race ./...`.
+- **Playwright Target A:** responsive (narrow/tablet/wide × light/dark) — no horizontal overflow, no
+  console errors; presence of each fixed element.
+- **Live (per `CLAUDE.md`):** `wails dev` + LM Studio/Ollama (reliable small model) — single-action run
+  (loader only in output), arm+run a saved stack from sidebar, provider/model switch sync, history wrap,
+  light/dark colors. Any new bug found → covering test + fix.

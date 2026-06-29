@@ -37,7 +37,9 @@ const PROVIDER = {
     customModels: [],
 };
 
-function makeStore(discoveredModels: string[]) {
+type DiscoveredModel = { id: string; label: string };
+
+function makeStore(discoveredModels: DiscoveredModel[]) {
     return configureStore({
         reducer: { settings: settingsReducer },
         preloadedState: {
@@ -58,13 +60,13 @@ function makeStore(discoveredModels: string[]) {
                     appBehaviorConfig: { enableTaskLogging: false, logDirectory: '' },
                 } as never,
                 metadata: null,
-                discoveredModels,
+                discoveredModels: discoveredModels as never,
             },
         },
     });
 }
 
-function renderPicker(discoveredModels: string[]) {
+function renderPicker(discoveredModels: DiscoveredModel[]) {
     const store = makeStore(discoveredModels);
     render(
         <Provider store={store}>
@@ -82,7 +84,7 @@ describe('ModelPicker', () => {
     });
 
     it('auto-discovers the current provider models on first mount', async () => {
-        renderPicker(['qwen3:0.6b']);
+        renderPicker([{ id: 'qwen3:0.6b', label: 'qwen3:0.6b' }]);
 
         await waitFor(() => {
             expect(ActionHandlerAdapter.getModels).toHaveBeenCalledWith('ollama');
@@ -94,7 +96,7 @@ describe('ModelPicker', () => {
             data: [{ id: 'qwen3:0.6b', label: 'qwen3:0.6b' }, { id: 'llama3', label: 'llama3' }],
             error: null,
         });
-        renderPicker(['qwen3:0.6b', 'llama3']);
+        renderPicker([{ id: 'qwen3:0.6b', label: 'qwen3:0.6b' }, { id: 'llama3', label: 'llama3' }]);
 
         await userEvent.click(screen.getByRole('combobox'));
 
@@ -107,7 +109,7 @@ describe('ModelPicker', () => {
             data: [{ id: 'qwen3:0.6b', label: 'qwen3:0.6b' }, { id: 'llama3', label: 'llama3' }],
             error: null,
         });
-        renderPicker(['qwen3:0.6b', 'llama3']);
+        renderPicker([{ id: 'qwen3:0.6b', label: 'qwen3:0.6b' }, { id: 'llama3', label: 'llama3' }]);
 
         await userEvent.click(screen.getByRole('combobox'));
         await userEvent.click(await screen.findByRole('option', { name: 'llama3' }));
@@ -119,7 +121,7 @@ describe('ModelPicker', () => {
 
     it('dispatches model discovery when the refresh button is clicked', async () => {
         (ActionHandlerAdapter.getModels as jest.Mock).mockClear();
-        renderPicker(['qwen3:0.6b']);
+        renderPicker([{ id: 'qwen3:0.6b', label: 'qwen3:0.6b' }]);
 
         await userEvent.click(screen.getByRole('button', { name: /refresh model list/i }));
 

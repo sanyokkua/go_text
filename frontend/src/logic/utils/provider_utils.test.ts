@@ -21,6 +21,8 @@ describe('testProviderModels', () => {
         authToken: 'test-token',
         useAuthTokenFromEnv: false,
         envVarTokenName: '',
+        apiVersion: '',
+        selectedModel: '',
         useCustomHeaders: false,
         headers: {},
         useCustomModels: false,

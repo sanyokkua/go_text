@@ -36,12 +36,12 @@ const LanguageConfigTab: React.FC<Props> = ({ settings }) => {
                     value={newLanguage}
                     onChange={(e) => setNewLanguage(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Add language…"
+                    placeholder="add a language…"
                     aria-label="New language"
                     className={styles.addInput}
                 />
                 <Button variant="primary" size="sm" onClick={handleAdd} disabled={!newLanguage.trim()}>
-                    Add
+                    + Add
                 </Button>
             </div>
 
@@ -78,6 +78,10 @@ const LanguageConfigTab: React.FC<Props> = ({ settings }) => {
                     </div>
                 ))}
             </div>
+
+            <p className={styles.helper}>
+                Row menu (⋮): set as default input · set as default output · remove. Defaults shown as badges.
+            </p>
         </section>
     );
 };

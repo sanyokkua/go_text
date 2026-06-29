@@ -4,7 +4,9 @@ import { Settings } from '../../../../../logic/adapter/models';
 import { useAppDispatch } from '../../../../../logic/store';
 import { updateInferenceBaseConfig } from '../../../../../logic/store/settings/thunks';
 import { Button } from '../../../../components/Button';
+import { NumberStepper } from '../../../../components/NumberStepper';
 import { Switch } from '../../../../primitives/Switch';
+import styles from './InferenceConfigTab.module.css';
 
 interface InferenceForm {
     timeout: number;
@@ -22,30 +24,6 @@ function isFormDirty(form: InferenceForm, original: Settings['inferenceBaseConfi
     );
 }
 
-const fieldRow: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 'var(--space-3)',
-    padding: 'var(--space-3) 0',
-    borderBottom: '1px solid var(--line)',
-};
-
-const fieldLabel: React.CSSProperties = { minWidth: 200, color: 'var(--ink-1)', fontSize: '0.875rem', fontWeight: 500 };
-
-const fieldValue: React.CSSProperties = { flex: 1, display: 'flex', alignItems: 'center', gap: 'var(--space-2)' };
-
-const numberInput: React.CSSProperties = {
-    width: 96,
-    padding: '4px 8px',
-    border: '1px solid var(--line)',
-    borderRadius: 'var(--radius)',
-    background: 'var(--surface)',
-    color: 'var(--ink-1)',
-    fontSize: '0.875rem',
-};
-
-const caption: React.CSSProperties = { fontSize: '0.75rem', color: 'var(--ink-3)', marginTop: 'var(--space-1)' };
-
 interface Props {
     settings: Settings;
 }
@@ -60,20 +38,6 @@ const InferenceConfigTab: React.FC<Props> = ({ settings }) => {
         setForm(toForm(settings.inferenceBaseConfig));
     }, [settings.inferenceBaseConfig]);
 
-    const handleTimeoutChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const parsed = Number.parseInt(e.target.value, 10);
-        if (!Number.isNaN(parsed)) {
-            setForm((prev) => ({ ...prev, timeout: parsed }));
-        }
-    };
-
-    const handleMaxRetriesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const parsed = Number.parseInt(e.target.value, 10);
-        if (!Number.isNaN(parsed)) {
-            setForm((prev) => ({ ...prev, maxRetries: parsed }));
-        }
-    };
-
     const handleSave = async () => {
         setSaving(true);
         try {
@@ -86,47 +50,38 @@ const InferenceConfigTab: React.FC<Props> = ({ settings }) => {
     const isDirty = isFormDirty(form, settings.inferenceBaseConfig);
 
     return (
-        <section style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 0 }}>
-            <div style={fieldRow}>
-                <span style={fieldLabel}>Request timeout (seconds)</span>
-                <div style={fieldValue}>
-                    <input
-                        type="number"
-                        style={numberInput}
+        <section className={styles.root}>
+            <div className={styles.fieldRow}>
+                <span className={styles.fieldLabel}>Request timeout (seconds)</span>
+                <div className={styles.fieldValue}>
+                    <NumberStepper
                         value={form.timeout}
+                        onChange={(timeout) => setForm((prev) => ({ ...prev, timeout }))}
                         min={10}
                         max={3600}
                         step={1}
-                        onChange={handleTimeoutChange}
                         aria-label="Request timeout in seconds"
                     />
                 </div>
             </div>
 
-            <div style={{ ...fieldRow, flexDirection: 'column', alignItems: 'flex-start' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', width: '100%' }}>
-                    <span style={fieldLabel}>Max retries</span>
-                    <div style={fieldValue}>
-                        <input
-                            type="number"
-                            style={numberInput}
-                            value={form.maxRetries}
-                            min={0}
-                            max={10}
-                            step={1}
-                            onChange={handleMaxRetriesChange}
-                            aria-label="Maximum number of retries"
-                        />
-                    </div>
+            <div className={styles.fieldRow}>
+                <span className={styles.fieldLabel}>Max retries (transient only)</span>
+                <div className={styles.fieldValue}>
+                    <NumberStepper
+                        value={form.maxRetries}
+                        onChange={(maxRetries) => setForm((prev) => ({ ...prev, maxRetries }))}
+                        min={0}
+                        max={10}
+                        step={1}
+                        aria-label="Maximum number of retries"
+                    />
                 </div>
-                <p style={{ ...caption, paddingLeft: 'calc(200px + var(--space-3))' }}>
-                    Applies to transient errors only (timeout, 429, 5xx). Automatic exponential back-off.
-                </p>
             </div>
 
-            <div style={{ ...fieldRow, borderBottom: 'none' }}>
-                <span style={fieldLabel}>Request Markdown output</span>
-                <div style={fieldValue}>
+            <div className={`${styles.fieldRow} ${styles.fieldRowLast}`}>
+                <span className={styles.fieldLabel}>Request Markdown output</span>
+                <div className={styles.fieldValue}>
                     <Switch
                         checked={form.useMarkdownForOutput}
                         onCheckedChange={(checked) => setForm((prev) => ({ ...prev, useMarkdownForOutput: checked }))}
@@ -135,7 +90,11 @@ const InferenceConfigTab: React.FC<Props> = ({ settings }) => {
                 </div>
             </div>
 
-            <div style={{ paddingTop: 'var(--space-4)', display: 'flex', justifyContent: 'flex-end' }}>
+            <p className={styles.caption}>
+                Retries apply to transient errors only (timeout, 429, 5xx) — never to auth or &ldquo;not found&rdquo;. Backoff is automatic.
+            </p>
+
+            <div className={styles.actions}>
                 <Button variant="primary" onClick={handleSave} disabled={!isDirty || saving}>
                     {saving ? 'Saving…' : 'Save'}
                 </Button>

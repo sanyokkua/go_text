@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { getLogger } from '../../../../logic/adapter';
 import {
     selectArmedActionId,
+    selectArmedStackId,
     selectBuildMode,
     selectBuilderActionAvailability,
     selectCatalogByCategory,
@@ -12,7 +13,7 @@ import {
     useAppSelector,
 } from '../../../../logic/store';
 import { addStep } from '../../../../logic/store/stacks/builder/slice';
-import { armAction, enterBuildMode, setCurrentView } from '../../../../logic/store/ui';
+import { armAction, armStack, enterBuildMode, setCurrentView } from '../../../../logic/store/ui';
 import { StackGlyph } from '../../../components/StackGlyph';
 import styles from './ActionsSidebar.module.css';
 
@@ -23,6 +24,7 @@ const ActionsSidebar: React.FC = () => {
     const collapsed = useAppSelector(selectSidebarCollapsed);
     const categories = useAppSelector(selectCatalogByCategory);
     const armedId = useAppSelector(selectArmedActionId);
+    const armedStackId = useAppSelector(selectArmedStackId);
     const inferenceRunning = useAppSelector(selectInferenceRunning);
     const buildMode = useAppSelector(selectBuildMode);
     const savedStacks = useAppSelector(selectSavedStacks);
@@ -86,13 +88,30 @@ const ActionsSidebar: React.FC = () => {
                             </button>
                         )}
                     </div>
-                    {filteredStacks.map((stack) => (
-                        <div key={stack.id} className={styles.stackRow}>
-                            <StackGlyph icon={stack.icon} className={styles.stackIcon} />
-                            <span className={styles.stackName}>{stack.name}</span>
-                            <span className={styles.stackCount}>{stack.steps.length}</span>
-                        </div>
-                    ))}
+                    {filteredStacks.map((stack) => {
+                        const isArmed = !buildMode && armedStackId === stack.id;
+
+                        return (
+                            <button
+                                key={stack.id}
+                                className={`${styles.stackRow} ${isArmed ? styles.stackArmed : ''}`}
+                                onClick={() => {
+                                    // Stacks are not addable as build-mode steps — they are only armable in normal mode.
+                                    if (buildMode || inferenceRunning || isArmed) return;
+                                    dispatch(armStack(stack.id));
+                                    logger.logInfo(`Armed stack: ${stack.id}`);
+                                }}
+                                disabled={inferenceRunning && !isArmed}
+                                aria-pressed={isArmed}
+                                title={stack.name}
+                                type="button"
+                            >
+                                <StackGlyph icon={stack.icon} className={styles.stackIcon} />
+                                <span className={styles.stackName}>{stack.name}</span>
+                                <span className={styles.stackCount}>{stack.steps.length}</span>
+                            </button>
+                        );
+                    })}
                     {normalizedQuery === '' && (
                         <button className={styles.buildStackBtn} onClick={handleEnterBuildMode} disabled={inferenceRunning} aria-label="Build a stack">
                             ＋ Build a stack

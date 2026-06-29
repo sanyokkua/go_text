@@ -109,6 +109,7 @@ function makeStore(overrides: StoreOverrides = {}) {
                 inferenceRunning: false,
                 currentView: 'main' as const,
                 armedActionId: null,
+                armedStackId: null,
                 activeActionsTab: null,
                 buildMode: false,
                 editingStackId: null,
@@ -280,6 +281,52 @@ describe('HistoryRail', () => {
         const notifications = store.getState().notifications.queue;
         expect(notifications.length).toBeGreaterThan(0);
         expect(notifications[0].message).toMatch(/no longer available/i);
+    });
+
+    it('renders the inference-count badge for an entry', async () => {
+        const entry = makeEntry({ inferences: 3 });
+        render(
+            <Provider store={makeStore({ entries: [entry] })}>
+                <HistoryRail />
+            </Provider>,
+        );
+        await waitFor(() => expect(screen.getByText('3 INF')).toBeInTheDocument());
+    });
+
+    it('renders the status word and relative time in the entry footer', async () => {
+        const entry = makeEntry({ status: 'success', createdAt: Math.floor(Date.now() / 1000) - 120 });
+        render(
+            <Provider store={makeStore({ entries: [entry] })}>
+                <HistoryRail />
+            </Provider>,
+        );
+        await waitFor(() => expect(screen.getByText('success')).toBeInTheDocument());
+        expect(screen.getByText('2m ago')).toBeInTheDocument();
+    });
+
+    it('renders both restore and delete controls on a non-selected entry', async () => {
+        const entry = makeEntry({ title: 'Proofread' });
+        render(
+            <Provider store={makeStore({ entries: [entry] })}>
+                <HistoryRail />
+            </Provider>,
+        );
+        await waitFor(() => expect(screen.getByRole('button', { name: /restore entry proofread/i })).toBeInTheDocument());
+        expect(screen.getByRole('button', { name: /delete entry proofread/i })).toBeInTheDocument();
+    });
+
+    it('renders entry cards directly in a native scroll container, not a Radix ScrollArea viewport', async () => {
+        // The rail must use a native overflow container so each card is a block-level
+        // child constrained to the rail width. A Radix ScrollArea viewport uses an
+        // inline display:table wrapper that would shrink-to-fit the widest card and clip it.
+        const { container } = render(
+            <Provider store={makeStore({ entries: [makeEntry({ id: 'e-1' })] })}>
+                <HistoryRail />
+            </Provider>,
+        );
+        const list = await screen.findByLabelText('History entries');
+        expect(list.closest('[data-radix-scroll-area-viewport]')).toBeNull();
+        expect(container.querySelector('[data-radix-scroll-area-viewport]')).toBeNull();
     });
 
     it('loads history on mount via listHistory adapter', async () => {

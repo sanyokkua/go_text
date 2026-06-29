@@ -1,17 +1,20 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
-import { apperr } from '../../../../../../wailsjs/go/models';
-import { ActionHandlerAdapter } from '../../../../../logic/adapter';
 import { Settings } from '../../../../../logic/adapter/models';
-import { selectCurrentProvider, useAppDispatch, useAppSelector } from '../../../../../logic/store';
-import { updateModelConfig } from '../../../../../logic/store/settings/thunks';
+import {
+    selectCurrentProvider,
+    selectCurrentProviderModelItems,
+    selectDiscoveredModels,
+    useAppDispatch,
+    useAppSelector,
+} from '../../../../../logic/store';
+import { discoverCurrentProviderModels, updateModelConfig } from '../../../../../logic/store/settings/thunks';
 import { Button } from '../../../../components/Button';
 import { RadioGroup } from '../../../../primitives/RadioGroup';
 import { Select } from '../../../../primitives/Select';
 import { Slider } from '../../../../primitives/Slider';
 import { Switch } from '../../../../primitives/Switch';
-
-type ModelDiscoveryState = 'idle' | 'loading' | 'error';
+import styles from './ModelConfigTab.module.css';
 
 interface ModelForm {
     name: string;
@@ -49,26 +52,6 @@ const TOKEN_PARAM_OPTIONS = [
     { value: 'true', label: 'max_tokens (legacy)' },
 ];
 
-const fieldRow: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 'var(--space-3)',
-    padding: 'var(--space-3) 0',
-    borderBottom: '1px solid var(--line)',
-};
-
-const fieldLabel: React.CSSProperties = { minWidth: 200, color: 'var(--ink-1)', fontSize: '0.875rem', fontWeight: 500 };
-
-const fieldValue: React.CSSProperties = { flex: 1, display: 'flex', alignItems: 'center', gap: 'var(--space-3)' };
-
-const numericDisplay: React.CSSProperties = {
-    minWidth: 48,
-    textAlign: 'right',
-    color: 'var(--ink-2)',
-    fontSize: '0.8125rem',
-    fontVariantNumeric: 'tabular-nums',
-};
-
 interface Props {
     settings: Settings;
 }
@@ -76,49 +59,56 @@ interface Props {
 const ModelConfigTab: React.FC<Props> = ({ settings }) => {
     const dispatch = useAppDispatch();
     const currentProvider = useAppSelector(selectCurrentProvider);
+    // Shared discovery source — same selector the AppBar ModelPicker consumes, so
+    // the two views never disagree about which models exist.
+    const modelSelectItems = useAppSelector(selectCurrentProviderModelItems);
+    const discoveredModels = useAppSelector(selectDiscoveredModels);
 
     const [form, setForm] = useState<ModelForm>(() => toForm(settings.modelConfig));
-    const [discoveredModels, setDiscoveredModels] = useState<apperr.ModelInfo[]>([]);
-    const [discoveryState, setDiscoveryState] = useState<ModelDiscoveryState>('idle');
+    const [refreshing, setRefreshing] = useState(false);
     const [saving, setSaving] = useState(false);
+
+    const providerId = currentProvider?.providerId ?? '';
 
     useEffect(() => {
         setForm(toForm(settings.modelConfig));
     }, [settings.modelConfig]);
 
-    const discoverModels = useCallback(async () => {
-        if (!currentProvider) return;
-        setDiscoveryState('loading');
-        try {
-            const res = await ActionHandlerAdapter.getModels(currentProvider.providerId);
-            if (res.error) {
-                setDiscoveryState('error');
-                return;
-            }
-            const models = res.data ?? [];
-            setDiscoveredModels(models);
-            setDiscoveryState('idle');
-
-            const matched = models.find((m) => m.id === form.name);
-            if (matched?.caps?.supportsTemperature === false) {
-                setForm((prev) => ({ ...prev, useTemperature: false }));
-            }
-        } catch {
-            setDiscoveryState('error');
-        }
-    }, [currentProvider, form.name]);
-
+    // Discover models on mount and whenever the provider changes. Discovery resolves
+    // even on failure (the thunk swallows errors), so the spinner is safe.
     useEffect(() => {
-        discoverModels();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentProvider?.providerId]);
+        if (providerId) {
+            void dispatch(discoverCurrentProviderModels(providerId));
+        }
+    }, [dispatch, providerId]);
 
-    const handleModelChange = (modelId: string) => {
-        const matched = discoveredModels.find((m) => m.id === modelId);
-        setForm((prev) => ({ ...prev, name: modelId, ...(matched?.caps?.supportsTemperature === false ? { useTemperature: false } : {}) }));
+    // Once discovery lands, force the temperature toggle off for the in-progress
+    // model selection if that model rejects temperature.
+    useEffect(() => {
+        const caps = discoveredModels.find((m) => m.id === form.name)?.caps;
+        if (caps?.supportsTemperature === false) {
+            setForm((prev) => (prev.useTemperature ? { ...prev, useTemperature: false } : prev));
+        }
+    }, [discoveredModels, form.name]);
+
+    const handleRefresh = async (): Promise<void> => {
+        if (!providerId) return;
+        setRefreshing(true);
+        try {
+            await dispatch(discoverCurrentProviderModels(providerId));
+        } finally {
+            setRefreshing(false);
+        }
     };
 
-    const handleSave = async () => {
+    // Switching to a model that rejects temperature clears the toggle immediately,
+    // before any save, matching the prior behaviour.
+    const handleModelChange = (modelId: string): void => {
+        const rejectsTemperature = discoveredModels.find((m) => m.id === modelId)?.caps?.supportsTemperature === false;
+        setForm((prev) => ({ ...prev, name: modelId, ...(rejectsTemperature ? { useTemperature: false } : {}) }));
+    };
+
+    const handleSave = async (): Promise<void> => {
         setSaving(true);
         try {
             await dispatch(updateModelConfig(form)).unwrap();
@@ -129,104 +119,77 @@ const ModelConfigTab: React.FC<Props> = ({ settings }) => {
 
     const isDirty = isFormDirty(form, settings.modelConfig);
 
-    const modelSelectItems = (() => {
-        const items = discoveredModels.map((m) => ({ value: m.id, label: m.label }));
-        const alreadyPresent = items.some((item) => item.value === form.name);
-        if (!alreadyPresent && form.name) {
-            items.unshift({ value: form.name, label: form.name });
-        }
-        return items;
-    })();
-
-    const modelSelectPlaceholder = (() => {
-        if (discoveryState === 'loading') return '(Loading models…)';
-        if (discoveryState === 'error') return '(Discovery failed — use custom models)';
-        return 'Select a model';
-    })();
-
     return (
-        <section style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 0 }}>
-            <div style={fieldRow}>
-                <span style={fieldLabel}>Model</span>
-                <div style={{ ...fieldValue, gap: 'var(--space-2)' }}>
-                    <div style={{ flex: 1 }}>
-                        <Select
-                            value={form.name}
-                            onValueChange={handleModelChange}
-                            items={modelSelectItems}
-                            placeholder={modelSelectPlaceholder}
-                            disabled={discoveryState === 'loading'}
-                        />
-                    </div>
-                    <Button variant="ghost" size="sm" onClick={discoverModels} disabled={discoveryState === 'loading' || !currentProvider}>
-                        ⟳ Refresh
-                    </Button>
+        <section className={styles.root}>
+            <p className={styles.sectionHeader}>Model — searchable (+ refresh from provider)</p>
+
+            <div className={styles.modelRow}>
+                <div className={styles.selectWrap}>
+                    <Select value={form.name} onValueChange={handleModelChange} items={modelSelectItems} placeholder="Select a model" />
                 </div>
+                <Button variant="ghost" size="sm" onClick={() => void handleRefresh()} disabled={refreshing || !currentProvider}>
+                    ⟳ Refresh
+                </Button>
             </div>
 
-            <div style={fieldRow}>
-                <span style={fieldLabel}>Use temperature</span>
-                <div style={fieldValue}>
+            <div className={styles.toggleBlock}>
+                <div className={styles.toggleHead}>
                     <Switch
                         checked={form.useTemperature}
                         onCheckedChange={(checked) => setForm((prev) => ({ ...prev, useTemperature: checked }))}
                         aria-label="Use temperature"
                     />
-                    {form.useTemperature && (
-                        <>
-                            <div style={{ flex: 1 }}>
-                                <Slider
-                                    value={[form.temperature]}
-                                    onValueChange={([v]) => setForm((prev) => ({ ...prev, temperature: v }))}
-                                    min={0}
-                                    max={2}
-                                    step={0.05}
-                                />
-                            </div>
-                            <span style={numericDisplay}>{form.temperature.toFixed(2)}</span>
-                        </>
-                    )}
+                    <span className={styles.toggleLabel}>Use temperature</span>
+                    {form.useTemperature && <span className={styles.numericDisplay}>{form.temperature.toFixed(2)}</span>}
                 </div>
+                {form.useTemperature && (
+                    <Slider
+                        value={[form.temperature]}
+                        onValueChange={([v]) => setForm((prev) => ({ ...prev, temperature: v }))}
+                        min={0}
+                        max={2}
+                        step={0.05}
+                    />
+                )}
             </div>
 
-            <div style={fieldRow}>
-                <span style={fieldLabel}>Use context window</span>
-                <div style={fieldValue}>
+            <div className={styles.toggleBlock}>
+                <div className={styles.toggleHead}>
                     <Switch
                         checked={form.useContextWindow}
                         onCheckedChange={(checked) => setForm((prev) => ({ ...prev, useContextWindow: checked }))}
                         aria-label="Use context window"
                     />
-                    {form.useContextWindow && (
-                        <>
-                            <div style={{ flex: 1 }}>
-                                <Slider
-                                    value={[form.contextWindow]}
-                                    onValueChange={([v]) => setForm((prev) => ({ ...prev, contextWindow: v }))}
-                                    min={512}
-                                    max={131072}
-                                    step={512}
-                                />
-                            </div>
-                            <span style={numericDisplay}>{form.contextWindow.toLocaleString()}</span>
-                        </>
-                    )}
+                    <span className={styles.toggleLabel}>Use context window</span>
+                    {form.useContextWindow && <span className={styles.numericDisplay}>{form.contextWindow.toLocaleString()}</span>}
                 </div>
-            </div>
-
-            <div style={{ ...fieldRow, borderBottom: 'none', alignItems: 'flex-start' }}>
-                <span style={{ ...fieldLabel, paddingTop: 'var(--space-1)' }}>Token limit parameter</span>
-                <div style={fieldValue}>
-                    <RadioGroup
-                        value={form.useLegacyMaxTokens ? 'true' : 'false'}
-                        onValueChange={(val) => setForm((prev) => ({ ...prev, useLegacyMaxTokens: val === 'true' }))}
-                        items={TOKEN_PARAM_OPTIONS}
+                {form.useContextWindow && (
+                    <Slider
+                        value={[form.contextWindow]}
+                        onValueChange={([v]) => setForm((prev) => ({ ...prev, contextWindow: v }))}
+                        min={512}
+                        max={131072}
+                        step={512}
                     />
-                </div>
+                )}
             </div>
 
-            <div style={{ paddingTop: 'var(--space-4)', display: 'flex', justifyContent: 'flex-end' }}>
-                <Button variant="primary" onClick={handleSave} disabled={!isDirty || saving}>
+            <div className={styles.radioBlock}>
+                <p className={styles.radioHeader}>Token-limit parameter</p>
+                <RadioGroup
+                    value={form.useLegacyMaxTokens ? 'true' : 'false'}
+                    onValueChange={(val) => setForm((prev) => ({ ...prev, useLegacyMaxTokens: val === 'true' }))}
+                    items={TOKEN_PARAM_OPTIONS}
+                />
+            </div>
+
+            <p className={styles.caption}>
+                Capability-aware: when the provider&apos;s catalog exposes it (Azure, LM Studio), the temperature toggle and context hint pre-fill from
+                the selected model.
+            </p>
+
+            <div className={styles.actions}>
+                <Button variant="primary" onClick={() => void handleSave()} disabled={!isDirty || saving}>
                     {saving ? 'Saving…' : 'Save'}
                 </Button>
             </div>

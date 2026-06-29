@@ -65,6 +65,7 @@ function makeStore() {
                 inferenceRunning: false,
                 currentView: 'settings' as const,
                 armedActionId: null,
+                armedStackId: null,
                 activeActionsTab: null,
                 buildMode: false,
                 editingStackId: null,
@@ -101,7 +102,7 @@ describe('LanguageConfigTab', () => {
                 <LanguageConfigTab settings={MOCK_SETTINGS} />
             </Provider>,
         );
-        expect(screen.getByRole('button', { name: /^add$/i })).toBeDisabled();
+        expect(screen.getByRole('button', { name: /add/i })).toBeDisabled();
     });
 
     it('enables Add button when user types a language name', async () => {
@@ -111,7 +112,7 @@ describe('LanguageConfigTab', () => {
             </Provider>,
         );
         await userEvent.type(screen.getByRole('textbox', { name: /new language/i }), 'Spanish');
-        expect(screen.getByRole('button', { name: /^add$/i })).toBeEnabled();
+        expect(screen.getByRole('button', { name: /add/i })).toBeEnabled();
     });
 
     it('renders options menu trigger for each language', () => {
@@ -122,5 +123,14 @@ describe('LanguageConfigTab', () => {
         );
         expect(screen.getByRole('button', { name: /options for english/i })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /options for french/i })).toBeInTheDocument();
+    });
+
+    it('renders the row-menu helper text', () => {
+        render(
+            <Provider store={makeStore()}>
+                <LanguageConfigTab settings={MOCK_SETTINGS} />
+            </Provider>,
+        );
+        expect(screen.getByText(/set as default input · set as default output · remove/i)).toBeInTheDocument();
     });
 });

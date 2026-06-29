@@ -9,6 +9,13 @@
     gap: var(--space-3);
 }
 
+/* Stacked layout: the control bar is a fully-bordered rounded box between the panes
+   (mockup `.stackbar` stacked override: border:1px solid var(--line); border-radius:11px). */
+.boxed {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+}
+
 .chip {
     display: flex;
     align-items: center;

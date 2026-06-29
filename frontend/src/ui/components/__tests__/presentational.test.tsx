@@ -48,9 +48,18 @@ describe('IconButton', () => {
         expect(screen.getByRole('button', { name: 'Sidebar' })).toHaveAttribute('aria-pressed', 'true');
     });
 
-    it('exposes aria-pressed=false when off', () => {
-        render(<IconButton aria-label="Sidebar">☰</IconButton>);
+    it('exposes aria-pressed=false when explicitly off', () => {
+        render(
+            <IconButton aria-label="Sidebar" on={false}>
+                ☰
+            </IconButton>,
+        );
         expect(screen.getByRole('button', { name: 'Sidebar' })).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    it('omits aria-pressed for non-toggle action buttons', () => {
+        render(<IconButton aria-label="Settings">⚙</IconButton>);
+        expect(screen.getByRole('button', { name: 'Settings' })).not.toHaveAttribute('aria-pressed');
     });
 });
 

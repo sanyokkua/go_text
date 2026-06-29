@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
 import actionsReducer from '../../../../../logic/store/actions/slice';
 import editorReducer from '../../../../../logic/store/editor/slice';
+import historyReducer from '../../../../../logic/store/history/slice';
 import notificationsReducer from '../../../../../logic/store/notifications/slice';
 import runReducer from '../../../../../logic/store/run/slice';
 import settingsReducer from '../../../../../logic/store/settings/slice';
@@ -25,7 +26,12 @@ jest.mock('../../../../../logic/adapter', () => ({
         updateStack: jest.fn().mockResolvedValue({ data: null, error: null }),
         listStacks: jest.fn().mockResolvedValue({ data: [], error: null }),
     },
-    getLogger: () => ({ logInfo: jest.fn(), logDebug: jest.fn(), logError: jest.fn(), logWarn: jest.fn() }),
+    HistoryHandlerAdapter: {
+        listHistory: jest.fn().mockResolvedValue({ data: [], error: null }),
+        deleteHistoryEntry: jest.fn().mockResolvedValue({ data: null, error: null }),
+        clearHistory: jest.fn().mockResolvedValue({ data: null, error: null }),
+    },
+    getLogger: () => ({ logInfo: jest.fn(), logDebug: jest.fn(), logError: jest.fn(), logWarn: jest.fn(), logWarning: jest.fn() }),
     tryUnwrap: jest.fn(),
     unwrap: jest.fn(),
 }));
@@ -41,6 +47,7 @@ function makeStore(editorOverrides = {}, uiOverrides = {}) {
             notifications: notificationsReducer,
             stacksBuilder: stacksBuilderReducer,
             stacksSaved: stacksSavedReducer,
+            history: historyReducer,
         },
         preloadedState: {
             editor: { inputContent: '', outputContent: '', viewMode: 'preview' as const, ...editorOverrides },
@@ -51,6 +58,7 @@ function makeStore(editorOverrides = {}, uiOverrides = {}) {
                 inferenceRunning: false,
                 currentView: 'main' as const,
                 armedActionId: null,
+                armedStackId: null,
                 activeActionsTab: null,
                 buildMode: false,
                 editingStackId: null,
@@ -72,6 +80,8 @@ function makeStore(editorOverrides = {}, uiOverrides = {}) {
             actions: { catalog: [], catalogStatus: 'idle' as const, availableModels: [], modelsStatus: 'idle' as const },
             stacksBuilder: { steps: [], name: '', icon: '' },
             stacksSaved: { stacks: [], status: 'idle' as const, error: null },
+            history: { entries: [], selectedId: null, loading: false, hasMore: false, total: 0 },
+            settings: { allSettings: { appBehaviorConfig: { historyEnabled: true, historyMaxEntries: 100 } } as never, metadata: null },
         },
     });
 }
@@ -132,5 +142,53 @@ describe('EditorView integration', () => {
             </Provider>,
         );
         expect(screen.getByRole('button', { name: /^run$/i })).toBeDisabled();
+    });
+
+    it('shows the Actions sidebar and hides the History rail when history is closed', () => {
+        render(
+            <Provider store={makeStore({}, { historyOpen: false })}>
+                <EditorView />
+            </Provider>,
+        );
+        expect(screen.getByRole('complementary', { name: /actions sidebar/i })).toBeInTheDocument();
+        expect(screen.queryByRole('complementary', { name: /^history$/i })).not.toBeInTheDocument();
+    });
+
+    it('hides the Actions sidebar and shows the History rail when history is open', () => {
+        render(
+            <Provider store={makeStore({}, { historyOpen: true })}>
+                <EditorView />
+            </Provider>,
+        );
+        expect(screen.queryByRole('complementary', { name: /actions sidebar/i })).not.toBeInTheDocument();
+        expect(screen.getByRole('complementary', { name: /^history$/i })).toBeInTheDocument();
+    });
+
+    it('places the run bar BETWEEN the input and output panes in stacked layout', () => {
+        render(
+            <Provider store={makeStore({}, { layout: 'stacked' })}>
+                <EditorView />
+            </Provider>,
+        );
+        const input = screen.getByRole('textbox', { name: /input text/i });
+        const runBtn = screen.getByRole('button', { name: /^run$/i });
+        const output = screen.getByText(/run to preview/i);
+        const follows = (a: Element, b: Element) => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+        // DOM order: input → run bar → output
+        expect(follows(input, runBtn)).toBe(true);
+        expect(follows(runBtn, output)).toBe(true);
+    });
+
+    it('places the run bar BELOW both panes in side layout', () => {
+        render(
+            <Provider store={makeStore({}, { layout: 'side' })}>
+                <EditorView />
+            </Provider>,
+        );
+        const runBtn = screen.getByRole('button', { name: /^run$/i });
+        const output = screen.getByText(/run to preview/i);
+        const follows = (a: Element, b: Element) => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+        // DOM order: output (last pane) → run bar
+        expect(follows(output, runBtn)).toBe(true);
     });
 });

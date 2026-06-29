@@ -27,6 +27,7 @@ function makeStore(uiOverride = {}) {
                 inferenceRunning: false,
                 currentView: 'settings' as const,
                 armedActionId: null,
+                armedStackId: null,
                 activeActionsTab: null,
                 buildMode: false,
                 editingStackId: null,
@@ -89,14 +90,16 @@ describe('AppearanceTab', () => {
         expect(store.getState().ui.theme.mode).toBe('light');
     });
 
-    it('renders light and dark preview cards', () => {
+    it('renders light and dark preview cards with accent text', () => {
         render(
             <Provider store={makeStore()}>
                 <AppearanceTab />
             </Provider>,
         );
 
-        expect(screen.getByLabelText('Light theme preview')).toBeInTheDocument();
-        expect(screen.getByLabelText('Dark theme preview')).toBeInTheDocument();
+        const lightCard = screen.getByLabelText('Light theme preview');
+        const darkCard = screen.getByLabelText('Dark theme preview');
+        expect(lightCard).toHaveTextContent(/Light · Aa accent/);
+        expect(darkCard).toHaveTextContent(/Dark · Aa accent/);
     });
 });

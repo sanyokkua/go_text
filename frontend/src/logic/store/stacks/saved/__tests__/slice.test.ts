@@ -27,8 +27,28 @@ import type { StacksSavedState } from '../types';
 
 const initialState: StacksSavedState = { stacks: [], status: 'idle', error: null };
 
-const stackA = { id: 'stack-1', name: 'My Stack', steps: [] };
-const stackB = { id: 'stack-2', name: 'Another Stack', steps: [] };
+const stackA = {
+    id: 'stack-1',
+    name: 'My Stack',
+    icon: '',
+    steps: [],
+    defaultFormat: '',
+    defaultInLang: '',
+    defaultOutLang: '',
+    createdAt: 0,
+    updatedAt: 0,
+};
+const stackB = {
+    id: 'stack-2',
+    name: 'Another Stack',
+    icon: '',
+    steps: [],
+    defaultFormat: '',
+    defaultInLang: '',
+    defaultOutLang: '',
+    createdAt: 0,
+    updatedAt: 0,
+};
 
 describe('stacks/saved slice reducer', () => {
     it('returns initial state for unknown action', () => {

@@ -120,6 +120,7 @@ function makeStore() {
                 inferenceRunning: false,
                 currentView: 'settings' as const,
                 armedActionId: null,
+                armedStackId: null,
                 activeActionsTab: null,
                 buildMode: false,
                 editingStackId: null,
@@ -187,5 +188,30 @@ describe('ProviderManagementTab', () => {
         await waitFor(() => {
             expect(screen.getByRole('textbox', { name: /provider name/i })).toBeInTheDocument();
         });
+    });
+
+    it('renders the "PROVIDERS" section header above the list', () => {
+        render(
+            <Provider store={makeStore()}>
+                <ProviderManagementTab />
+            </Provider>,
+        );
+
+        expect(screen.getByRole('heading', { name: /providers/i })).toBeInTheDocument();
+    });
+
+    it('places "+ New provider" after the provider items in the list', () => {
+        render(
+            <Provider store={makeStore()}>
+                <ProviderManagementTab />
+            </Provider>,
+        );
+
+        const providerItem = screen.getByRole('button', { name: /test provider/i });
+        const newBtn = screen.getByRole('button', { name: /new provider/i });
+
+        const newBtnFollowsItem =
+            providerItem.compareDocumentPosition(newBtn) & Node.DOCUMENT_POSITION_FOLLOWING;
+        expect(newBtnFollowsItem).toBeTruthy();
     });
 });

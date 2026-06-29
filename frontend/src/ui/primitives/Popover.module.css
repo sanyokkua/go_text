@@ -1,0 +1,42 @@
+/* frontend/src/ui/primitives/Popover.module.css */
+.content {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-popover);
+    padding: var(--space-3);
+    min-width: 200px;
+    z-index: var(--z-overlay);
+}
+
+.content[data-state='open'] {
+    animation: fadeIn 120ms ease-out;
+}
+
+.content[data-state='closed'] {
+    animation: fadeOut 100ms ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .content[data-state] {
+        animation: none;
+    }
+}

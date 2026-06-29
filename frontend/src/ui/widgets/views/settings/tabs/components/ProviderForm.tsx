@@ -306,80 +306,86 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                 )}
             </div>
 
-            {/* Models endpoint */}
-            <div className={styles.field}>
-                <label htmlFor="pf-models-ep" className={styles.label}>
-                    Models endpoint (override)
-                </label>
-                <input
-                    id="pf-models-ep"
-                    type="text"
-                    value={form.modelsEndpoint}
-                    onChange={(e) => patch('modelsEndpoint', e.target.value)}
-                    placeholder="/v1/models"
-                    className={styles.textInput}
-                />
-            </div>
-
-            {/* Completion endpoint */}
-            <div className={styles.field}>
-                <label htmlFor="pf-completion-ep" className={styles.label}>
-                    Completion endpoint (override)
-                </label>
-                <input
-                    id="pf-completion-ep"
-                    type="text"
-                    value={form.completionEndpoint}
-                    onChange={(e) => patch('completionEndpoint', e.target.value)}
-                    placeholder="/v1/chat/completions"
-                    className={styles.textInput}
-                />
-            </div>
-
-            {/* API version — azure only */}
-            {form.providerType === 'azure' && (
+            {/* Endpoint pair — two columns on wide widths, collapsing to one when narrow */}
+            <div className={styles.grid2}>
+                {/* Models endpoint */}
                 <div className={styles.field}>
-                    <label htmlFor="pf-api-version" className={styles.label}>
-                        API version
+                    <label htmlFor="pf-models-ep" className={styles.label}>
+                        Models endpoint (override)
                     </label>
                     <input
-                        id="pf-api-version"
+                        id="pf-models-ep"
                         type="text"
-                        value={form.apiVersion}
-                        onChange={(e) => patch('apiVersion', e.target.value)}
-                        placeholder="2024-02-01"
+                        value={form.modelsEndpoint}
+                        onChange={(e) => patch('modelsEndpoint', e.target.value)}
+                        placeholder="/v1/models"
                         className={styles.textInput}
                     />
                 </div>
-            )}
 
-            {/* Model picker */}
-            <div className={styles.field}>
-                <span id="pf-model-label" className={styles.label}>
-                    Model
-                </span>
-                <div className={styles.modelRow}>
-                    <div className={styles.modelSelect}>
-                        <Select
-                            value={form.selectedModel}
-                            onValueChange={(v) => patch('selectedModel', v)}
-                            items={modelItems}
-                            placeholder={modelsLoading ? '(loading…)' : '(none)'}
-                            keyLabel="Model"
-                            disabled={modelsLoading}
-                            aria-labelledby="pf-model-label"
+                {/* Completion endpoint */}
+                <div className={styles.field}>
+                    <label htmlFor="pf-completion-ep" className={styles.label}>
+                        Completion endpoint (override)
+                    </label>
+                    <input
+                        id="pf-completion-ep"
+                        type="text"
+                        value={form.completionEndpoint}
+                        onChange={(e) => patch('completionEndpoint', e.target.value)}
+                        placeholder="/v1/chat/completions"
+                        className={styles.textInput}
+                    />
+                </div>
+            </div>
+
+            {/* Version & model pair — API version is azure-only; auto-fit lets the
+                model field fill the row when API version is hidden. */}
+            <div className={styles.grid2}>
+                {form.providerType === 'azure' && (
+                    <div className={styles.field}>
+                        <label htmlFor="pf-api-version" className={styles.label}>
+                            API version
+                        </label>
+                        <input
+                            id="pf-api-version"
+                            type="text"
+                            value={form.apiVersion}
+                            onChange={(e) => patch('apiVersion', e.target.value)}
+                            placeholder="2024-02-01"
+                            className={styles.textInput}
                         />
                     </div>
-                    <button
-                        type="button"
-                        onClick={() => fetchModels(form.providerId)}
-                        disabled={modelsLoading || form.providerId === ''}
-                        aria-label="Refresh model list"
-                        title="Refresh model list"
-                        className={styles.refreshBtn}
-                    >
-                        ⟳
-                    </button>
+                )}
+
+                {/* Model picker */}
+                <div className={styles.field}>
+                    <span id="pf-model-label" className={styles.label}>
+                        Model
+                    </span>
+                    <div className={styles.modelRow}>
+                        <div className={styles.modelSelect}>
+                            <Select
+                                value={form.selectedModel}
+                                onValueChange={(v) => patch('selectedModel', v)}
+                                items={modelItems}
+                                placeholder={modelsLoading ? '(loading…)' : '(none)'}
+                                keyLabel="Model"
+                                disabled={modelsLoading}
+                                aria-labelledby="pf-model-label"
+                            />
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => fetchModels(form.providerId)}
+                            disabled={modelsLoading || form.providerId === ''}
+                            aria-label="Refresh model list"
+                            title="Refresh model list"
+                            className={styles.refreshBtn}
+                        >
+                            ⟳
+                        </button>
+                    </div>
                 </div>
             </div>
 

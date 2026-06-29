@@ -11,6 +11,7 @@ const initialState: UIState = {
     inferenceRunning: false,
     currentView: 'main',
     armedActionId: null,
+    armedStackId: null,
     activeActionsTab: null,
     activeSettingsTab: 0,
     buildMode: false,
@@ -52,8 +53,14 @@ const uiSlice = createSlice({
         setCurrentView: (state, action: PayloadAction<CurrentView>) => {
             state.currentView = action.payload;
         },
+        // Arming a single action and arming a stack are mutually exclusive run-targets.
         armAction: (state, action: PayloadAction<string | null>) => {
             state.armedActionId = action.payload;
+            state.armedStackId = null;
+        },
+        armStack: (state, action: PayloadAction<string | null>) => {
+            state.armedStackId = action.payload;
+            state.armedActionId = null;
         },
         setActiveActionsTab: (state, action: PayloadAction<string | null>) => {
             state.activeActionsTab = action.payload;
@@ -108,6 +115,7 @@ export const {
     setThemeEffective,
     setCurrentView,
     armAction,
+    armStack,
     setActiveActionsTab,
     setActiveSettingsTab,
     enterBuildMode,

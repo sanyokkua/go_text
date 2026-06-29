@@ -36,6 +36,7 @@ function makeStore(opts: { historyEnabled?: boolean; historyOpen?: boolean; curr
                 inferenceRunning: false,
                 currentView: opts.currentView ?? 'main',
                 armedActionId: null,
+                armedStackId: null,
                 activeActionsTab: null,
                 buildMode: false,
                 editingStackId: null,

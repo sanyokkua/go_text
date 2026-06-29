@@ -38,39 +38,11 @@
     justify-content: flex-end;
 }
 
-.separator {
-    width: 1px;
-    height: 20px;
-    background: var(--line);
-    flex-shrink: 0;
-}
-
 .wordmark {
     font-weight: 700;
     font-size: 0.9rem;
     color: var(--teal);
     white-space: nowrap;
-}
-
-/* Icon buttons use muted ink so they don't compete with brand color */
-.iconBtn {
-    background: none;
-    border: none;
-    color: var(--ink-3);
-    cursor: pointer;
-    font-size: 1rem;
-    padding: 2px 4px;
-    border-radius: var(--radius-sm);
-}
-
-.iconBtn:hover {
-    color: var(--ink);
-    background: var(--surface-2);
-}
-
-.iconBtn:focus-visible {
-    outline: none;
-    box-shadow: var(--focus-ring);
 }
 
 .sidebarBtn {
@@ -113,41 +85,6 @@
     box-shadow: var(--focus-ring);
 }
 
-/* History button: active state signals the rail is open */
-.historyBtn {
-    background: none;
-    border: none;
-    color: var(--ink-3);
-    cursor: pointer;
-    font-size: 1rem;
-    border-radius: var(--radius-sm);
-    padding: 2px 4px;
-}
-
-.historyBtn:hover {
-    color: var(--ink);
-    background: var(--surface-2);
-}
-
-.historyBtn:focus-visible {
-    outline: none;
-    box-shadow: var(--focus-ring);
-}
-
-.historyBtn[data-active='true'] {
-    background: var(--teal-50);
-    color: var(--teal-dark);
-}
-
-:global(.dark) .historyBtn[data-active='true'] {
-    color: var(--teal-light);
-}
-
-.historyBtn:disabled {
-    opacity: 0.45;
-    cursor: default;
-}
-
 .logo {
     display: inline-flex;
     align-items: center;
@@ -162,27 +99,10 @@
     flex-shrink: 0;
 }
 
-.cmdkBtn {
-    background: none;
-    border: 1px solid var(--line);
-    color: var(--ink-2);
-    cursor: pointer;
-    font-size: 0.75rem;
+/* ⌘K keeps its textual label but rides inside the shared IconButton box, so the
+   label must shrink to fit the uniform 31px square. */
+.cmdkLabel {
+    font-size: 0.7rem;
     font-weight: 600;
-    padding: 2px 8px;
-    border-radius: var(--radius-sm);
-}
-
-.cmdkBtn:hover {
-    background: var(--surface-2);
-}
-
-.cmdkBtn:focus-visible {
-    outline: none;
-    box-shadow: var(--focus-ring);
-}
-
-.cmdkBtn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+    letter-spacing: 0.02em;
 }

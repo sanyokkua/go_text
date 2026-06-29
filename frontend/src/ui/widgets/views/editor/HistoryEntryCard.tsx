@@ -21,21 +21,28 @@ function formatTimeAgo(createdAt: number): string {
 }
 
 function buildPreview(entry: apperr.HistoryEntry): string {
-    const input = entry.inputText.slice(0, 40).replace(/\s+/g, ' ').trim();
-    const output = entry.outputText.slice(0, 40).replace(/\s+/g, ' ').trim();
+    const input = entry.inputText.slice(0, 60).replace(/\s+/g, ' ').trim();
+    const output = entry.outputText.slice(0, 60).replace(/\s+/g, ' ').trim();
     if (!input && !output) return '—';
     if (!output) return input;
     return `${input}… → ${output}…`;
 }
 
-const chipClass = (status: string): string => {
-    if (status === 'success') return `${styles.chip} ${styles.success}`;
-    if (status === 'partial') return `${styles.chip} ${styles.partial}`;
-    return `${styles.chip} ${styles.error}`;
+const statusModifier = (status: string): string | null => {
+    if (status === 'partial') return styles.partial;
+    if (status !== 'success') return styles.error;
+    return null;
 };
 
+const badgeClass = (status: string): string => {
+    if (status === 'success') return `${styles.badge} ${styles.success}`;
+    return [styles.badge, statusModifier(status)].filter(Boolean).join(' ');
+};
+
+const metaTextClass = (status: string): string => [styles.metaText, statusModifier(status)].filter(Boolean).join(' ');
+
 const HistoryEntryCard: React.FC<HistoryEntryCardProps> = ({ entry, isSelected, onRestore, onDelete }) => {
-    const infLabel = `${entry.inferences} inf`;
+    const infLabel = `${entry.inferences} INF`;
     const cardClass = [styles.card, isSelected && styles.selected].filter(Boolean).join(' ');
 
     return (
@@ -44,13 +51,22 @@ const HistoryEntryCard: React.FC<HistoryEntryCardProps> = ({ entry, isSelected, 
                 <span className={styles.title} title={entry.title}>
                     {entry.title}
                 </span>
-                <span className={chipClass(entry.status)} aria-label={`${infLabel} · ${entry.status}`}>
-                    {infLabel} · {entry.status}
+                <span className={badgeClass(entry.status)} aria-label={`${infLabel} · ${entry.status}`}>
+                    {infLabel}
                 </span>
             </div>
+
             <p className={styles.preview}>{buildPreview(entry)}</p>
+
             <div className={styles.meta}>
-                <span>{formatTimeAgo(entry.createdAt)}</span>
+                <span className={styles.metaText}>{formatTimeAgo(entry.createdAt)}</span>
+                <span className={styles.metaSep} aria-hidden="true">
+                    ·
+                </span>
+                <span className={metaTextClass(entry.status)}>{entry.status}</span>
+                <span className={styles.metaSep} aria-hidden="true">
+                    ·
+                </span>
                 <button
                     className={styles.actionBtn}
                     type="button"
@@ -60,8 +76,11 @@ const HistoryEntryCard: React.FC<HistoryEntryCardProps> = ({ entry, isSelected, 
                         onRestore();
                     }}
                 >
-                    ↺ Restore
+                    ↺ restore
                 </button>
+                <span className={styles.metaSep} aria-hidden="true">
+                    ·
+                </span>
                 <button
                     className={styles.actionBtn}
                     type="button"

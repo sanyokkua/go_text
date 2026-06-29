@@ -13,7 +13,7 @@ interface TabDef {
 }
 
 const TABS: TabDef[] = [
-    { label: 'Providers', glyph: '🖌' },
+    { label: 'Providers', glyph: '🔌' },
     { label: 'Model', glyph: '⚙' },
     { label: 'Generation', glyph: '✍' },
     { label: 'Languages', glyph: '🌐' },

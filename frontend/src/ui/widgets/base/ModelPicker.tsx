@@ -3,8 +3,10 @@ import React, { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../logic/store';
 import { selectCurrentProvider, selectCurrentProviderModelItems, selectModelConfig } from '../../../logic/store/settings/selectors';
 import { discoverCurrentProviderModels, updateModelConfig } from '../../../logic/store/settings/thunks';
-import { Tooltip } from '../../primitives/Tooltip';
+import { IconButton } from '../../components/IconButton';
 import { Select } from '../../primitives/Select';
+import { Tooltip } from '../../primitives/Tooltip';
+import iconStyles from '../../components/IconButton.module.css';
 import styles from './ModelPicker.module.css';
 
 const ModelPicker: React.FC = () => {
@@ -46,33 +48,20 @@ const ModelPicker: React.FC = () => {
         }
     };
 
-    const ready = modelConfig.name.trim() !== '';
-
+    // The model pill stays plain (.sel look); only the active provider pill is accented.
     return (
         <div className={styles.root}>
-            <span
-                className={styles.readyDot}
-                data-ready={ready}
-                aria-label={ready ? 'Model selected' : 'No model selected'}
-                title={ready ? 'Model selected' : 'No model selected'}
-            />
-            <Select
-                value={modelConfig.name}
-                onValueChange={handleModelChange}
-                items={modelItems}
-                keyLabel="Model"
-                accent
-            />
+            <Select value={modelConfig.name} onValueChange={handleModelChange} items={modelItems} keyLabel="Model" />
             <Tooltip content="Refresh model list" side="bottom">
-                <button
+                <IconButton
                     aria-label="Refresh model list"
-                    className={styles.refreshBtn}
-                    data-spinning={refreshing}
+                    compact
                     disabled={refreshing}
                     onClick={() => void handleRefresh()}
+                    className={refreshing ? iconStyles.spinning : ''}
                 >
                     ⟳
-                </button>
+                </IconButton>
             </Tooltip>
         </div>
     );

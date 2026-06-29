@@ -4,13 +4,29 @@ import styles from './EditorArea.module.css';
 import InputPane from './InputPane';
 import OutputPane from './OutputPane';
 
-const EditorArea: React.FC = () => {
+interface EditorAreaProps {
+    /** Run/builder control bar. In stacked layout it renders between the panes (per mockup);
+        in side layout it is rendered by the parent below the panes and this is omitted. */
+    controlBar?: React.ReactNode;
+}
+
+const EditorArea: React.FC<EditorAreaProps> = ({ controlBar }) => {
     const layout = useAppSelector(selectLayout);
 
+    if (layout === 'side') {
+        return (
+            <div className={styles.side}>
+                <InputPane />
+                <div className={styles.splitter} aria-hidden="true" />
+                <OutputPane />
+            </div>
+        );
+    }
+
     return (
-        <div className={layout === 'side' ? styles.side : styles.stacked}>
+        <div className={styles.stacked}>
             <InputPane />
-            {layout === 'side' && <div className={styles.splitter} aria-hidden="true" />}
+            {controlBar}
             <OutputPane />
         </div>
     );

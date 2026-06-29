@@ -28,9 +28,11 @@ jest.mock('../../adapter', () => ({
     },
 }));
 
+import { apperr } from '../../../../wailsjs/go/models';
+import { SelectItem } from '../../../ui/primitives/Select';
 import { ActionHandlerAdapter, AppBehaviorConfig, Settings, SettingsHandlerAdapter } from '../../adapter';
 import { RootState } from '../index';
-import { selectAppBehaviorConfig, selectCurrentProviderModelItems } from './selectors';
+import { selectAppBehaviorConfig, selectCurrentModelCaps, selectCurrentProviderModelItems } from './selectors';
 import settingsReducer from './slice';
 import { discoverCurrentProviderModels, getAppBehaviorConfig, setAsCurrentProviderConfig, updateAppBehaviorConfig } from './thunks';
 import { SettingsState } from './types';
@@ -52,6 +54,8 @@ const fullSettings: Settings = {
         authToken: '',
         useAuthTokenFromEnv: false,
         envVarTokenName: '',
+        apiVersion: '',
+        selectedModel: '',
         useCustomHeaders: false,
         headers: {},
         useCustomModels: false,
@@ -63,8 +67,20 @@ const fullSettings: Settings = {
     appBehaviorConfig: { enableTaskLogging: false, logDirectory: '' },
 };
 
-const makeState = (allSettings: Settings | null, discoveredModels: string[] = []): RootState =>
+type DiscoveredModel = { id: string; label: string };
+
+// Builds a ModelInfo fixture list from bare ids (label defaults to id). The
+// production reducer/selector only read id/label/caps, so a plain object cast to
+// ModelInfo is sufficient — and avoids depending on the wailsjs class constructor
+// (the jest mock for the apperr namespace does not expose ModelInfo).
+const models = (...ids: string[]): apperr.ModelInfo[] => ids.map((id) => ({ id, label: id }) as apperr.ModelInfo);
+
+const makeState = (allSettings: Settings | null, discoveredModels: DiscoveredModel[] = []): RootState =>
     ({ settings: { allSettings, metadata: null, discoveredModels } }) as unknown as RootState;
+
+// Extracts the value of each non-separator SelectItem, narrowing away the
+// separator member so `.value` is type-safe.
+const itemValues = (items: SelectItem[]): string[] => items.flatMap((item) => ('value' in item ? [item.value] : []));
 
 // ---------------------------------------------------------------------------
 // Part A: Selectors
@@ -264,25 +280,25 @@ describe('settingsReducer — discoverCurrentProviderModels.fulfilled', () => {
             metadata: null,
             discoveredModels: [],
         };
-        const action = discoverCurrentProviderModels.fulfilled(['a', 'b'], 'req', 'ollama');
+        const action = discoverCurrentProviderModels.fulfilled(models('a', 'b'), 'req', 'ollama');
 
         const state = settingsReducer(initialState, action);
 
-        expect(state.discoveredModels).toEqual(['a', 'b']);
+        expect(state.discoveredModels).toEqual(models('a', 'b'));
     });
 
     it('ignores results for a provider that is no longer current', () => {
         const initialState: SettingsState = {
             allSettings: { ...fullSettings, currentProviderConfig: provider },
             metadata: null,
-            discoveredModels: ['existing'],
+            discoveredModels: models('existing'),
         };
         // arg names a different provider than the one currently active
-        const action = discoverCurrentProviderModels.fulfilled(['stale'], 'req', 'lmstudio');
+        const action = discoverCurrentProviderModels.fulfilled(models('stale'), 'req', 'lmstudio');
 
         const state = settingsReducer(initialState, action);
 
-        expect(state.discoveredModels).toEqual(['existing']);
+        expect(state.discoveredModels).toEqual(models('existing'));
     });
 });
 
@@ -291,7 +307,7 @@ describe('settingsReducer — discoveredModels reset on provider change', () => 
         const initialState: SettingsState = {
             allSettings: fullSettings,
             metadata: null,
-            discoveredModels: ['old-1', 'old-2'],
+            discoveredModels: models('old-1', 'old-2'),
         };
         const newProvider = { ...fullSettings.currentProviderConfig, providerId: 'ollama', selectedModel: 'm1' };
         const action = setAsCurrentProviderConfig.fulfilled(newProvider, 'req', 'ollama');
@@ -310,16 +326,14 @@ describe('discoverCurrentProviderModels thunk', () => {
         jest.clearAllMocks();
     });
 
-    it('dispatches fulfilled with the discovered model ids on success', async () => {
-        (ActionHandlerAdapter.getModels as jest.Mock).mockResolvedValue({
-            data: [{ id: 'qwen3:0.6b', label: 'Qwen3 0.6B' }, { id: 'llama3', label: 'Llama 3' }],
-            error: null,
-        });
+    it('dispatches fulfilled with the discovered ModelInfo records on success', async () => {
+        const discovered = [{ id: 'qwen3:0.6b', label: 'Qwen3 0.6B' }, { id: 'llama3', label: 'Llama 3' }];
+        (ActionHandlerAdapter.getModels as jest.Mock).mockResolvedValue({ data: discovered, error: null });
 
         const action = await discoverCurrentProviderModels('ollama')(dispatch, getState, undefined);
 
         expect(action.type).toBe('settings/discoverCurrentProviderModels/fulfilled');
-        expect(action.payload).toEqual(['qwen3:0.6b', 'llama3']);
+        expect(action.payload).toEqual(discovered);
     });
 
     it('rejects (not throws) with the message when discovery returns an error envelope', async () => {
@@ -349,13 +363,13 @@ describe('settingsReducer — discoverCurrentProviderModels.rejected', () => {
         const initialState: SettingsState = {
             allSettings: { ...fullSettings, currentProviderConfig: provider },
             metadata: null,
-            discoveredModels: ['kept-1', 'kept-2'],
+            discoveredModels: models('kept-1', 'kept-2'),
         };
         const action = discoverCurrentProviderModels.rejected(new Error('x'), 'req', 'ollama', 'unreachable');
 
         const state = settingsReducer(initialState, action);
 
-        expect(state.discoveredModels).toEqual(['kept-1', 'kept-2']);
+        expect(state.discoveredModels).toEqual(models('kept-1', 'kept-2'));
     });
 });
 
@@ -369,24 +383,24 @@ describe('selectCurrentProviderModelItems', () => {
     it('returns discovered models unioned with the current model, deduped', () => {
         const state = makeState(
             { ...fullSettings, currentProviderConfig: provider, modelConfig: { ...fullSettings.modelConfig, name: 'qwen3:0.6b' } },
-            ['qwen3:0.6b', 'llama3'],
+            models('qwen3:0.6b', 'llama3'),
         );
 
         const items = selectCurrentProviderModelItems(state);
 
-        expect(items.map((i) => i.value)).toEqual(['qwen3:0.6b', 'llama3']);
+        expect(itemValues(items)).toEqual(['qwen3:0.6b', 'llama3']);
     });
 
     it('always includes the current model even when it is not among discovered models', () => {
         const state = makeState(
             { ...fullSettings, currentProviderConfig: provider, modelConfig: { ...fullSettings.modelConfig, name: 'custom-local' } },
-            ['llama3'],
+            models('llama3'),
         );
 
         const items = selectCurrentProviderModelItems(state);
 
-        expect(items.map((i) => i.value)).toContain('custom-local');
-        expect(items.map((i) => i.value)).toContain('llama3');
+        expect(itemValues(items)).toContain('custom-local');
+        expect(itemValues(items)).toContain('llama3');
     });
 
     it('falls back to the current model when no models are discovered', () => {
@@ -397,18 +411,55 @@ describe('selectCurrentProviderModelItems', () => {
 
         const items = selectCurrentProviderModelItems(state);
 
-        expect(items.map((i) => i.value)).toEqual(['qwen3:0.6b']);
+        expect(itemValues(items)).toEqual(['qwen3:0.6b']);
     });
 
     it('uses custom models when useCustomModels is enabled', () => {
         const customProvider = { ...provider, useCustomModels: true, customModels: ['c1', 'c2'] };
         const state = makeState(
             { ...fullSettings, currentProviderConfig: customProvider, modelConfig: { ...fullSettings.modelConfig, name: 'c1' } },
-            ['discovered-ignored'],
+            models('discovered-ignored'),
         );
 
         const items = selectCurrentProviderModelItems(state);
 
-        expect(items.map((i) => i.value)).toEqual(['c1', 'c2']);
+        expect(itemValues(items)).toEqual(['c1', 'c2']);
+    });
+
+    it('preserves discovered labels distinct from ids', () => {
+        const state = makeState(
+            { ...fullSettings, currentProviderConfig: provider, modelConfig: { ...fullSettings.modelConfig, name: 'qwen3:0.6b' } },
+            [{ id: 'qwen3:0.6b', label: 'Qwen3 0.6B' }],
+        );
+
+        const items = selectCurrentProviderModelItems(state);
+
+        expect(items[0]).toEqual({ value: 'qwen3:0.6b', label: 'Qwen3 0.6B' });
+    });
+});
+
+describe('selectCurrentModelCaps', () => {
+    const provider = { ...fullSettings.currentProviderConfig, providerId: 'ollama', selectedModel: 'm1' };
+
+    it('returns the caps of the currently-selected model when discovered', () => {
+        const state = makeState(
+            { ...fullSettings, currentProviderConfig: provider, modelConfig: { ...fullSettings.modelConfig, name: 'm1' } },
+            [{ id: 'm1', label: 'm1', caps: { supportsTemperature: false } }] as never,
+        );
+
+        const caps = selectCurrentModelCaps(state);
+
+        expect(caps).toEqual({ supportsTemperature: false });
+    });
+
+    it('returns null when the current model has not been discovered', () => {
+        const state = makeState(
+            { ...fullSettings, currentProviderConfig: provider, modelConfig: { ...fullSettings.modelConfig, name: 'unknown' } },
+            [{ id: 'm1', label: 'm1' }],
+        );
+
+        const caps = selectCurrentModelCaps(state);
+
+        expect(caps).toBeNull();
     });
 });

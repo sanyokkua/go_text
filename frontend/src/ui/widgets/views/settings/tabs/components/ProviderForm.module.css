@@ -20,6 +20,20 @@
     margin-bottom: var(--space-3);
 }
 
+/* Two-column row for paired fields (endpoints, version/model).
+   auto-fit collapses to a single column on narrow widths and lets a
+   lone field fill the row when its pair is hidden (e.g. non-azure). */
+.grid2 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+}
+
+.grid2 .field {
+    margin-bottom: 0;
+}
+
 .label {
     font-size: 0.8rem;
     color: var(--ink-2);

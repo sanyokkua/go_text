@@ -16,6 +16,7 @@ import {
 import { setViewMode } from '../../../logic/store/editor';
 import { updateInferenceBaseConfig } from '../../../logic/store/settings/thunks';
 import { setCurrentView, setLayout, toggleHistory, togglePalette, toggleSidebar } from '../../../logic/store/ui';
+import { IconButton } from '../../components/IconButton';
 import { Segmented } from '../../primitives/Segmented';
 import { Tooltip } from '../../primitives/Tooltip';
 import LanguagePicker from './LanguagePicker';
@@ -83,7 +84,6 @@ const AppBar: React.FC = () => {
 
                 {isMain && (
                     <>
-                        <div className={styles.separator} aria-hidden="true" />
                         <ProviderPicker />
                         <ModelPicker />
                         <LanguagePicker />
@@ -125,57 +125,52 @@ const AppBar: React.FC = () => {
                             disabled={inferenceRunning}
                         />
                         <Tooltip content="Command palette (⌘K)" side="bottom">
-                            <button
+                            <IconButton
                                 aria-label="Open command palette"
+                                disabled={inferenceRunning}
                                 onClick={() => {
                                     dispatch(togglePalette());
                                     logger.logInfo('Command palette toggled');
                                 }}
-                                disabled={inferenceRunning}
-                                className={styles.cmdkBtn}
                             >
-                                ⌘K
-                            </button>
+                                <span className={styles.cmdkLabel}>⌘K</span>
+                            </IconButton>
                         </Tooltip>
                         <Tooltip content={historyEnabled ? 'Toggle history' : 'History is disabled in Settings'} side="bottom">
-                            <button
+                            <IconButton
                                 aria-label="Toggle history rail"
-                                aria-pressed={historyOpen}
+                                on={historyOpen}
                                 disabled={!historyEnabled}
-                                data-active={historyOpen}
                                 onClick={() => {
                                     dispatch(toggleHistory());
                                     logger.logInfo('History toggled');
                                 }}
-                                className={styles.historyBtn}
                             >
                                 🕘
-                            </button>
+                            </IconButton>
                         </Tooltip>
                         <Tooltip content="About GoText" side="bottom">
-                            <button
+                            <IconButton
                                 aria-label="About and info"
                                 onClick={() => {
                                     dispatch(setCurrentView('info'));
                                     logger.logInfo('Navigated to info');
                                 }}
-                                className={styles.iconBtn}
                             >
                                 ℹ
-                            </button>
+                            </IconButton>
                         </Tooltip>
                     </>
                 )}
                 <Tooltip content={isMain ? 'Settings' : 'Close'} side="bottom">
-                    <button
+                    <IconButton
                         aria-label={isMain ? 'Open settings' : 'Close'}
                         onClick={() => {
                             dispatch(setCurrentView(isMain ? 'settings' : 'main'));
                         }}
-                        className={styles.iconBtn}
                     >
                         {isMain ? '⚙' : '✕'}
-                    </button>
+                    </IconButton>
                 </Tooltip>
             </div>
         </header>

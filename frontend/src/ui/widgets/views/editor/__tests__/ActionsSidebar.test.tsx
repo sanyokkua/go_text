@@ -69,6 +69,7 @@ function makeStore(overrides: StoreOverrides = {}) {
                 inferenceRunning: false,
                 currentView: 'main' as const,
                 armedActionId: null,
+                armedStackId: null,
                 activeActionsTab: 'Writing',
                 buildMode: false,
                 editingStackId: null,
@@ -149,6 +150,38 @@ describe('ActionsSidebar — normal mode', () => {
         );
         await userEvent.click(screen.getByRole('button', { name: /manage/i }));
         expect(store.getState().ui.currentView).toBe('stacks');
+    });
+
+    it('clicking a saved stack arms it', async () => {
+        const store = makeStore({ stacks: [MOCK_STACK] });
+        render(
+            <Provider store={store}>
+                <ActionsSidebar />
+            </Provider>,
+        );
+        await userEvent.click(screen.getByRole('button', { name: /my pipeline/i }));
+        expect(store.getState().ui.armedStackId).toBe('stack-1');
+    });
+
+    it('an armed stack row is marked as pressed', () => {
+        render(
+            <Provider store={makeStore({ stacks: [MOCK_STACK], ui: { armedStackId: 'stack-1' } })}>
+                <ActionsSidebar />
+            </Provider>,
+        );
+        expect(screen.getByRole('button', { name: /my pipeline/i })).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('arming an action clears a previously armed stack', async () => {
+        const store = makeStore({ stacks: [MOCK_STACK], ui: { armedStackId: 'stack-1' } });
+        render(
+            <Provider store={store}>
+                <ActionsSidebar />
+            </Provider>,
+        );
+        await userEvent.click(screen.getByRole('button', { name: /proofread/i }));
+        expect(store.getState().ui.armedActionId).toBe('proofread');
+        expect(store.getState().ui.armedStackId).toBeNull();
     });
 });
 
