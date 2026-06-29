@@ -240,4 +240,31 @@ describe('AppBehaviorTab', () => {
         expect(screen.getByRole('switch', { name: /enable file logging/i })).not.toBeChecked();
         expect(screen.getByRole('spinbutton', { name: /max log file size mb/i })).toHaveValue(10);
     });
+
+    it('Log directory section appears before Task logging switch in the DOM', () => {
+        const { container } = render(
+            <Provider store={makeStore()}>
+                <AppBehaviorTab settings={MOCK_SETTINGS} metadata={MOCK_METADATA} />
+            </Provider>,
+        );
+        const logDirInput = container.querySelector('[aria-label="Log directory"]');
+        const taskSwitch = container.querySelector('[aria-label="Enable task logging"]');
+        expect(logDirInput).not.toBeNull();
+        expect(taskSwitch).not.toBeNull();
+        // Node.DOCUMENT_POSITION_FOLLOWING (4) means taskSwitch is after logDirInput
+        expect(logDirInput!.compareDocumentPosition(taskSwitch!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    });
+
+    it('App File Logging section appears before Task logging switch in the DOM', () => {
+        const { container } = render(
+            <Provider store={makeStore()}>
+                <AppBehaviorTab settings={MOCK_SETTINGS} metadata={MOCK_METADATA} />
+            </Provider>,
+        );
+        const fileLoggingSwitch = container.querySelector('[aria-label="Enable file logging"]');
+        const taskSwitch = container.querySelector('[aria-label="Enable task logging"]');
+        expect(fileLoggingSwitch).not.toBeNull();
+        expect(taskSwitch).not.toBeNull();
+        expect(fileLoggingSwitch!.compareDocumentPosition(taskSwitch!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    });
 });

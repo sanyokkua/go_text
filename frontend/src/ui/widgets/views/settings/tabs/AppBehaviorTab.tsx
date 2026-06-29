@@ -131,21 +131,6 @@ const AppBehaviorTab: React.FC<Props> = ({ settings, metadata }) => {
 
     return (
         <section className={styles.root}>
-            <div className={styles.switchRow}>
-                <Switch
-                    id="task-logging-switch"
-                    checked={config.enableTaskLogging}
-                    onCheckedChange={handleToggleTaskLogging}
-                    aria-label="Enable task logging"
-                />
-                <label htmlFor="task-logging-switch" className={styles.switchLabel}>
-                    Task logging
-                </label>
-                <span className={styles.switchHint}>— saves each run&apos;s prompts &amp; result to JSONL</span>
-            </div>
-
-            <hr className={styles.divider} />
-
             <p className={styles.sectionHeader}>Log directory (shared by task + app logs)</p>
 
             <div className={styles.dirRow}>
@@ -198,6 +183,21 @@ const AppBehaviorTab: React.FC<Props> = ({ settings, metadata }) => {
                     disabled={!loggingCfg.logFileEnabled}
                     aria-label="Max log file size MB"
                 />
+            </div>
+
+            <hr className={styles.divider} />
+
+            <div className={styles.switchRow}>
+                <Switch
+                    id="task-logging-switch"
+                    checked={config.enableTaskLogging}
+                    onCheckedChange={handleToggleTaskLogging}
+                    aria-label="Enable task logging"
+                />
+                <label htmlFor="task-logging-switch" className={styles.switchLabel}>
+                    Task logging
+                </label>
+                <span className={styles.switchHint}>— saves each run&apos;s prompts &amp; result to JSONL</span>
             </div>
 
             <hr className={styles.divider} />
