@@ -88,4 +88,24 @@ describe('OutputPane', () => {
         );
         expect(screen.getByRole('button', { name: /use as input/i })).toBeDisabled();
     });
+
+    it('does not render the Preview/Source/Diff view toggle (single source of truth lives in the AppBar)', () => {
+        render(
+            <Provider store={makeStore({ outputContent: 'some output' })}>
+                <OutputPane />
+            </Provider>,
+        );
+        expect(screen.queryByRole('button', { name: /source view/i })).toBeNull();
+        expect(screen.queryByRole('button', { name: /preview view/i })).toBeNull();
+        expect(screen.queryByRole('button', { name: /diff view/i })).toBeNull();
+    });
+
+    it('shows a read-only label reflecting the current view mode', () => {
+        render(
+            <Provider store={makeStore({ outputContent: 'some output', viewMode: 'source' })}>
+                <OutputPane />
+            </Provider>,
+        );
+        expect(screen.getByText(/· source/i)).toBeInTheDocument();
+    });
 });

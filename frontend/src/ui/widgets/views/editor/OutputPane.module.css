@@ -26,37 +26,6 @@
     letter-spacing: 0.05em;
 }
 
-.viewTabs {
-    display: flex;
-    gap: 2px;
-}
-
-.viewTab {
-    background: none;
-    border: 1px solid transparent;
-    border-radius: var(--radius-sm);
-    color: var(--ink-2);
-    cursor: pointer;
-    font-size: 0.7rem;
-    padding: 2px var(--space-2);
-}
-
-.viewTab:hover:not(:disabled) {
-    background: var(--surface-2);
-}
-
-.viewTabActive {
-    background: var(--teal-50);
-    color: var(--teal-dark);
-    border-color: var(--teal-light);
-    font-weight: 600;
-}
-
-.viewTab:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-
 .body {
     flex: 1;
     overflow: auto;

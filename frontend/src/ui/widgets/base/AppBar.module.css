@@ -1,31 +1,41 @@
 .bar {
     width: 100%;
-    height: 100%;
+    /* height: auto lets the bar grow as control groups wrap; the parent wrapper's
+       min-height floors it at the single-row app-bar height. */
+    height: auto;
+    min-height: 100%;
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    padding: 0 var(--space-3);
+    padding: var(--space-1) var(--space-3);
     background: var(--surface);
     border-bottom: 1px solid var(--line);
     color: var(--ink);
     gap: var(--space-2);
 }
 
+/* .left and .right are the wrap units: each stays intact and the right group
+   drops to a second row before any control is clipped. They may wrap internally
+   too, so the settings gear and ⌘K are always reachable down to ~375px. */
 .left {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--space-2);
-    flex-shrink: 0;
+    min-width: 0;
 }
 
+/* Collapses to zero when the right group wraps onto its own row. */
 .spacer {
-    flex: 1;
+    flex: 1 1 var(--space-2);
 }
 
 .right {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--space-1);
     align-items: center;
-    flex-shrink: 0;
+    justify-content: flex-end;
 }
 
 .separator {

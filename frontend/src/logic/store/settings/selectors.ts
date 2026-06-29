@@ -15,6 +15,7 @@ export const selectAppBehaviorConfig = (state: RootState) => state.settings.allS
 export const selectInferenceBaseConfig = (state: RootState) => state.settings.allSettings?.inferenceBaseConfig ?? null;
 export const selectLanguageConfig = (state: RootState) => state.settings.allSettings?.languageConfig ?? null;
 export const selectAvailableProviders = (state: RootState) => state.settings.allSettings?.availableProviderConfigs ?? [];
+export const selectDiscoveredModels = (state: RootState): string[] => state.settings.discoveredModels ?? [];
 
 // Derived SelectItem lists for compact pickers in AppBar
 export const selectProviderItems = createSelector([selectAvailableProviders], (providers): SelectItem[] =>
@@ -27,12 +28,27 @@ export const selectLanguageItems = createSelector([selectLanguageConfig], (cfg):
 });
 
 /**
- * Returns the list of model names available for the current provider.
- * When useCustomModels is enabled the provider ships its own list; otherwise
- * the picker falls back to the currently selected model so it is never empty.
+ * Returns the model names selectable for the current provider in the AppBar picker.
+ *
+ * When useCustomModels is enabled the provider ships its own list. Otherwise the
+ * list is the live-discovered models unioned with the currently selected model
+ * (deduped). The current model is always present so the Select value stays valid
+ * even before discovery has run, and the list is never empty.
  */
-export const selectCurrentProviderModelItems = createSelector([selectCurrentProvider, selectModelConfig], (provider, modelCfg): SelectItem[] => {
-    if (!provider) return [];
-    const models = provider.useCustomModels && provider.customModels.length > 0 ? provider.customModels : [modelCfg?.name ?? provider.selectedModel];
-    return models.filter(Boolean).map((m) => ({ value: m, label: m }));
-});
+export const selectCurrentProviderModelItems = createSelector(
+    [selectCurrentProvider, selectModelConfig, selectDiscoveredModels],
+    (provider, modelCfg, discovered): SelectItem[] => {
+        if (!provider) return [];
+
+        const currentModel = modelCfg?.name ?? provider.selectedModel;
+
+        if (provider.useCustomModels && provider.customModels.length > 0) {
+            return provider.customModels.filter(Boolean).map((m) => ({ value: m, label: m }));
+        }
+
+        // Discovered models ∪ current model, current always included so the
+        // Select has a valid option for its bound value.
+        const deduped = [...new Set([...discovered, currentModel].filter(Boolean))];
+        return deduped.map((m) => ({ value: m, label: m }));
+    },
+);

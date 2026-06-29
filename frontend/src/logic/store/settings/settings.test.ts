@@ -23,13 +23,16 @@ jest.mock('../../adapter', () => ({
         getAppBehaviorConfig: jest.fn().mockResolvedValue({ data: { enableTaskLogging: false } }),
         updateAppBehaviorConfig: jest.fn().mockResolvedValue({ data: { enableTaskLogging: true } }),
     },
+    ActionHandlerAdapter: {
+        getModels: jest.fn().mockResolvedValue({ data: [], error: null }),
+    },
 }));
 
-import { AppBehaviorConfig, Settings, SettingsHandlerAdapter } from '../../adapter';
+import { ActionHandlerAdapter, AppBehaviorConfig, Settings, SettingsHandlerAdapter } from '../../adapter';
 import { RootState } from '../index';
-import { selectAppBehaviorConfig } from './selectors';
+import { selectAppBehaviorConfig, selectCurrentProviderModelItems } from './selectors';
 import settingsReducer from './slice';
-import { getAppBehaviorConfig, setAsCurrentProviderConfig, updateAppBehaviorConfig } from './thunks';
+import { discoverCurrentProviderModels, getAppBehaviorConfig, setAsCurrentProviderConfig, updateAppBehaviorConfig } from './thunks';
 import { SettingsState } from './types';
 
 // ---------------------------------------------------------------------------
@@ -60,7 +63,8 @@ const fullSettings: Settings = {
     appBehaviorConfig: { enableTaskLogging: false, logDirectory: '' },
 };
 
-const makeState = (allSettings: Settings | null): RootState => ({ settings: { allSettings, metadata: null } }) as unknown as RootState;
+const makeState = (allSettings: Settings | null, discoveredModels: string[] = []): RootState =>
+    ({ settings: { allSettings, metadata: null, discoveredModels } }) as unknown as RootState;
 
 // ---------------------------------------------------------------------------
 // Part A: Selectors
@@ -228,6 +232,7 @@ describe('settingsReducer — setAsCurrentProviderConfig.fulfilled', () => {
                 modelConfig: { ...fullSettings.modelConfig, name: 'stale-old-model' },
             },
             metadata: null,
+            discoveredModels: [],
         };
 
         const newProvider = {
@@ -243,5 +248,167 @@ describe('settingsReducer — setAsCurrentProviderConfig.fulfilled', () => {
 
         expect(state.allSettings?.currentProviderConfig.providerId).toBe('ollama');
         expect(state.allSettings?.modelConfig.name).toBe('qwen3:0.6b');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Part D: model discovery (N1 — switch models from the main screen)
+// ---------------------------------------------------------------------------
+
+describe('settingsReducer — discoverCurrentProviderModels.fulfilled', () => {
+    const provider = { ...fullSettings.currentProviderConfig, providerId: 'ollama' };
+
+    it('populates discoveredModels for the current provider', () => {
+        const initialState: SettingsState = {
+            allSettings: { ...fullSettings, currentProviderConfig: provider },
+            metadata: null,
+            discoveredModels: [],
+        };
+        const action = discoverCurrentProviderModels.fulfilled(['a', 'b'], 'req', 'ollama');
+
+        const state = settingsReducer(initialState, action);
+
+        expect(state.discoveredModels).toEqual(['a', 'b']);
+    });
+
+    it('ignores results for a provider that is no longer current', () => {
+        const initialState: SettingsState = {
+            allSettings: { ...fullSettings, currentProviderConfig: provider },
+            metadata: null,
+            discoveredModels: ['existing'],
+        };
+        // arg names a different provider than the one currently active
+        const action = discoverCurrentProviderModels.fulfilled(['stale'], 'req', 'lmstudio');
+
+        const state = settingsReducer(initialState, action);
+
+        expect(state.discoveredModels).toEqual(['existing']);
+    });
+});
+
+describe('settingsReducer — discoveredModels reset on provider change', () => {
+    it('clears discoveredModels when the current provider changes', () => {
+        const initialState: SettingsState = {
+            allSettings: fullSettings,
+            metadata: null,
+            discoveredModels: ['old-1', 'old-2'],
+        };
+        const newProvider = { ...fullSettings.currentProviderConfig, providerId: 'ollama', selectedModel: 'm1' };
+        const action = setAsCurrentProviderConfig.fulfilled(newProvider, 'req', 'ollama');
+
+        const state = settingsReducer(initialState, action);
+
+        expect(state.discoveredModels).toEqual([]);
+    });
+});
+
+describe('discoverCurrentProviderModels thunk', () => {
+    const dispatch = jest.fn();
+    const getState = jest.fn();
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it('dispatches fulfilled with the discovered model ids on success', async () => {
+        (ActionHandlerAdapter.getModels as jest.Mock).mockResolvedValue({
+            data: [{ id: 'qwen3:0.6b', label: 'Qwen3 0.6B' }, { id: 'llama3', label: 'Llama 3' }],
+            error: null,
+        });
+
+        const action = await discoverCurrentProviderModels('ollama')(dispatch, getState, undefined);
+
+        expect(action.type).toBe('settings/discoverCurrentProviderModels/fulfilled');
+        expect(action.payload).toEqual(['qwen3:0.6b', 'llama3']);
+    });
+
+    it('rejects (not throws) with the message when discovery returns an error envelope', async () => {
+        (ActionHandlerAdapter.getModels as jest.Mock).mockResolvedValue({ data: null, error: { message: 'unreachable' } });
+
+        const action = await discoverCurrentProviderModels('ollama')(dispatch, getState, undefined);
+
+        expect(action.type).toBe('settings/discoverCurrentProviderModels/rejected');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        expect((action as any).payload).toBe('unreachable');
+    });
+
+    it('rejects (not throws) when the adapter rejects', async () => {
+        (ActionHandlerAdapter.getModels as jest.Mock).mockRejectedValue(new Error('boom'));
+
+        const action = await discoverCurrentProviderModels('ollama')(dispatch, getState, undefined);
+
+        expect(action.type).toBe('settings/discoverCurrentProviderModels/rejected');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        expect((action as any).payload).toBe('boom');
+    });
+});
+
+describe('settingsReducer — discoverCurrentProviderModels.rejected', () => {
+    it('preserves the existing discoveredModels when a refresh fails', () => {
+        const provider = { ...fullSettings.currentProviderConfig, providerId: 'ollama' };
+        const initialState: SettingsState = {
+            allSettings: { ...fullSettings, currentProviderConfig: provider },
+            metadata: null,
+            discoveredModels: ['kept-1', 'kept-2'],
+        };
+        const action = discoverCurrentProviderModels.rejected(new Error('x'), 'req', 'ollama', 'unreachable');
+
+        const state = settingsReducer(initialState, action);
+
+        expect(state.discoveredModels).toEqual(['kept-1', 'kept-2']);
+    });
+});
+
+describe('selectCurrentProviderModelItems', () => {
+    const provider = {
+        ...fullSettings.currentProviderConfig,
+        providerId: 'ollama',
+        selectedModel: 'qwen3:0.6b',
+    };
+
+    it('returns discovered models unioned with the current model, deduped', () => {
+        const state = makeState(
+            { ...fullSettings, currentProviderConfig: provider, modelConfig: { ...fullSettings.modelConfig, name: 'qwen3:0.6b' } },
+            ['qwen3:0.6b', 'llama3'],
+        );
+
+        const items = selectCurrentProviderModelItems(state);
+
+        expect(items.map((i) => i.value)).toEqual(['qwen3:0.6b', 'llama3']);
+    });
+
+    it('always includes the current model even when it is not among discovered models', () => {
+        const state = makeState(
+            { ...fullSettings, currentProviderConfig: provider, modelConfig: { ...fullSettings.modelConfig, name: 'custom-local' } },
+            ['llama3'],
+        );
+
+        const items = selectCurrentProviderModelItems(state);
+
+        expect(items.map((i) => i.value)).toContain('custom-local');
+        expect(items.map((i) => i.value)).toContain('llama3');
+    });
+
+    it('falls back to the current model when no models are discovered', () => {
+        const state = makeState(
+            { ...fullSettings, currentProviderConfig: provider, modelConfig: { ...fullSettings.modelConfig, name: 'qwen3:0.6b' } },
+            [],
+        );
+
+        const items = selectCurrentProviderModelItems(state);
+
+        expect(items.map((i) => i.value)).toEqual(['qwen3:0.6b']);
+    });
+
+    it('uses custom models when useCustomModels is enabled', () => {
+        const customProvider = { ...provider, useCustomModels: true, customModels: ['c1', 'c2'] };
+        const state = makeState(
+            { ...fullSettings, currentProviderConfig: customProvider, modelConfig: { ...fullSettings.modelConfig, name: 'c1' } },
+            ['discovered-ignored'],
+        );
+
+        const items = selectCurrentProviderModelItems(state);
+
+        expect(items.map((i) => i.value)).toEqual(['c1', 'c2']);
     });
 });

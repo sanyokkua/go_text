@@ -131,7 +131,7 @@ const AppMainView: React.FC = () => {
 
     return (
         <FlexContainer direction="column" overflowHidden style={{ width: '100%', height: '100%', maxHeight: '100vh', minHeight: '100vh' }}>
-            <div style={{ height: UI_HEIGHTS.APP_BAR }}>
+            <div style={{ minHeight: UI_HEIGHTS.APP_BAR, flexShrink: 0 }}>
                 <AppBar />
             </div>
             <FlexContainer grow overflowHidden>

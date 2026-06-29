@@ -338,56 +338,108 @@ func seedSettings(ctx context.Context, q *store.Queries) error {
 	return nil
 }
 
+// v3 dotted action IDs used by the starter stacks. Centralized so the seed table
+// and tests share a single source of truth (and to avoid duplicated literals).
+const (
+	actProofreadBasic    = "rewrite.proofread.basic"
+	actProofreadEnhanced = "rewrite.proofread.enhanced"
+	actClarification     = "rewrite.proofread.clarification"
+	actConcise           = "rewrite.intent.concise"
+	actSimplify          = "rewrite.intent.simplify"
+	actProfessionalize   = "rewrite.intent.professionalize"
+	actToneProfessional  = "rewrite.tone.professional"
+	actToneFriendly      = "rewrite.tone.friendly"
+	actToneDirect        = "rewrite.tone.direct"
+	actToneNeutral       = "rewrite.tone.neutral"
+	actToneRespectful    = "rewrite.tone.respectful"
+	actToneDiplomatic    = "rewrite.tone.diplomatic"
+	actToneEmpathetic    = "rewrite.tone.empathetic"
+	actStyleRiskReduce   = "rewrite.style.risk-reduce"
+	actStyleTechnical    = "rewrite.style.technical"
+	actStyleSupport      = "rewrite.style.support"
+	actFormatHeadings    = "structure.format.headings"
+	actFormatNumbered    = "structure.format.numbered"
+	actFormatBullets     = "structure.format.bullets"
+	actSummarizeExec     = "summarize.executive"
+	actKeyPoints         = "summarize.keypoints"
+	actDocEmail          = "structure.doc.email"
+	actDocTechSpec       = "structure.doc.techspec"
+	actDocChangelog      = "structure.doc.changelog"
+	actDocUserStory      = "structure.doc.userstory"
+)
+
+// starterStackDef describes one seeded starter stack: its display name, icon,
+// and the ordered v3 action IDs that make up its recipe.
+type starterStackDef struct {
+	name    string
+	icon    string
+	actions []string
+}
+
+// starterStacks is the canonical list of the 17 starter stacks from 09-prompts.md §4.
+// Every action ID is a valid v3 dotted catalog ID, and every stack is a valid plan
+// (≤5 steps, ≤3 inference groups, one action per exclusivity group). These invariants
+// are enforced by TestStarterStacks_AllValidPlans, which validates each stack against
+// the live v3 catalog and the actions.Planner.
+var starterStacks = []starterStackDef{
+	{name: "Message to manager", icon: "briefcase",
+		actions: []string{actProofreadEnhanced, actConcise, actToneProfessional}},
+	{name: "Message to coworker", icon: "users",
+		actions: []string{actProofreadBasic, actConcise, actToneFriendly}},
+	{name: "Task/problem explanation", icon: "help-circle",
+		actions: []string{actClarification, actSimplify, actFormatHeadings}},
+	{name: "Apology", icon: "heart",
+		actions: []string{actProfessionalize, actToneEmpathetic, actStyleRiskReduce}},
+	{name: "Polite request", icon: "hand",
+		actions: []string{actConcise, actToneRespectful}},
+	{name: "Clarification request", icon: "search",
+		actions: []string{actClarification, actToneDiplomatic}},
+	{name: "Conflict-safe message", icon: "shield",
+		actions: []string{actProofreadEnhanced, actToneNeutral, actStyleRiskReduce}},
+	{name: "Escalation / status update", icon: "alert-triangle",
+		actions: []string{actConcise, actSummarizeExec, actDocEmail}},
+	{name: "Standup update", icon: "clock",
+		actions: []string{actConcise, actFormatBullets, actKeyPoints}},
+	{name: "Customer reply", icon: "message-circle",
+		actions: []string{actProofreadEnhanced, actToneEmpathetic, actStyleSupport}},
+	{name: "Ask for help", icon: "life-buoy",
+		actions: []string{actClarification, actConcise, actToneRespectful}},
+	{name: "Meeting agenda", icon: "calendar",
+		actions: []string{actFormatNumbered, actFormatHeadings}},
+	{name: "Performance review", icon: "bar-chart",
+		actions: []string{actProfessionalize, actToneDiplomatic, actFormatHeadings}},
+	{name: "Code review comment", icon: "code",
+		actions: []string{actConcise, actToneDirect, actStyleTechnical}},
+	{name: "Bug report", icon: "bug",
+		actions: []string{actDocTechSpec}},
+	{name: "Pull-request description", icon: "git-pull-request",
+		actions: []string{actConcise, actToneProfessional, actDocChangelog}},
+	{name: "Issue report", icon: "file-text",
+		actions: []string{actClarification, actDocUserStory}},
+}
+
+// StarterStackActions returns the ordered v3 action IDs for each seeded starter
+// stack, keyed by the stack's display name. It exposes the seed recipes to other
+// packages (e.g. the stacks package's planner-validation test) without importing
+// the actions package here, which would create an import cycle (actions -> history
+// -> db). The returned map is a fresh copy; callers may not affect the seed table.
+func StarterStackActions() map[string][]string {
+	out := make(map[string][]string, len(starterStacks))
+	for _, s := range starterStacks {
+		actions := make([]string, len(s.actions))
+		copy(actions, s.actions)
+		out[s.name] = actions
+	}
+	return out
+}
+
 // seedStarterStacks inserts the 17 starter stacks from 09-prompts.md §4.
-// Unknown action IDs are dropped with a warning at load time (per spec),
-// so V3-only IDs are safe to seed now and will activate when T05 adds them.
+// All action IDs are valid v3 dotted catalog IDs so the seeded steps survive
+// StackHandler.filterUnknownSteps and validate against the planner.
 func seedStarterStacks(ctx context.Context, q *store.Queries) error {
 	now := time.Now().Unix()
 
-	type stackDef struct {
-		name    string
-		icon    string
-		actions []string
-	}
-
-	stacks := []stackDef{
-		{name: "Message to manager", icon: "briefcase",
-			actions: []string{"enhancedProofreading", "conciseRewrite", "professional"}},
-		{name: "Message to coworker", icon: "users",
-			actions: []string{"basicProofreading", "conciseRewrite", "friendly"}},
-		{name: "Task/problem explanation", icon: "help-circle",
-			actions: []string{"clarify", "simplify", "documentStructuring"}},
-		{name: "Apology", icon: "heart",
-			actions: []string{"formal", "empathetic", "riskFreeRewrite"}},
-		{name: "Polite request", icon: "hand",
-			actions: []string{"conciseRewrite", "respectful"}},
-		{name: "Clarification request", icon: "search",
-			actions: []string{"clarify", "diplomatic"}},
-		{name: "Conflict-safe message", icon: "shield",
-			actions: []string{"enhancedProofreading", "neutral", "riskFreeRewrite"}},
-		{name: "Escalation / status update", icon: "alert-triangle",
-			actions: []string{"conciseRewrite", "executiveBLUF", "emailTemplate"}},
-		{name: "Standup update", icon: "clock",
-			actions: []string{"conciseRewrite", "bulletConversion", "keyPoints"}},
-		{name: "Customer reply", icon: "message-circle",
-			actions: []string{"enhancedProofreading", "empathetic", "customerFacing"}},
-		{name: "Ask for help", icon: "life-buoy",
-			actions: []string{"clarify", "conciseRewrite", "respectful"}},
-		{name: "Meeting agenda", icon: "calendar",
-			actions: []string{"listConversion", "documentStructuring"}},
-		{name: "Performance review", icon: "bar-chart",
-			actions: []string{"formal", "diplomatic", "documentStructuring"}},
-		{name: "Code review comment", icon: "code",
-			actions: []string{"conciseRewrite", "direct", "technical"}},
-		{name: "Bug report", icon: "bug",
-			actions: []string{"specificationDocumentGenerator"}},
-		{name: "Pull-request description", icon: "git-pull-request",
-			actions: []string{"conciseRewrite", "professional", "changelog"}},
-		{name: "Issue report", icon: "file-text",
-			actions: []string{"clarify", "userStoryGeneration"}},
-	}
-
-	for _, s := range stacks {
+	for _, s := range starterStacks {
 		id := uuid.NewString()
 		if err := q.InsertStack(ctx, store.InsertStackParams{
 			ID:        id,

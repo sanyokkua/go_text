@@ -23,4 +23,10 @@ export interface SettingsState {
 
     // Metadata is separate from the main Settings object
     metadata: AppSettingsMetadata | null;
+
+    // Model ids discovered for the current provider via live discovery.
+    // Reset to [] whenever the current provider changes so the picker never
+    // offers another provider's models. Optional so existing preloaded-state
+    // fixtures stay valid; initialState always seeds it to [].
+    discoveredModels?: string[];
 }

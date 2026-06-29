@@ -478,6 +478,19 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 > `CLAUDE.md`: `ts-engineer`/`ts-tester` for `frontend/src`, `go-engineer`/`go-tester` for `internal/`,
 > load `wails-dev` for any bound-signature change. **Sequence:** T39/T40 → T32–T37 → T38/T41–T43 → T44 → T45.
 
+> **Ground-truth reconciliation (audited 2026-06-29 against the live `wails dev` build; evidence in
+> `docs/V3_Temp_Docs/.tmp/mockup-gap-audit.md` + `frontend/.tmp/`):** the attached "current app"
+> screenshots that motivated T32–T43 are **stale** — they predate the "align to mockup" commits.
+> Verified ALREADY-CORRECT in the current build (fresh screenshots on file): left settings tabs
+> (T38), sidebar full-collapse (T34a), in-pane icon buttons (T35), no status bar / top-bar readiness
+> dots (T32/T33), ⌘K palette (T32), inset run bar (T37), `.dark` on `documentElement` + Auto-follows-OS
+> theme. The provider bugs in **T39/T40 are ALREADY FIXED** in current code and verified by live
+> reproduction: Test inference succeeds **before Save** with an in-form model (✓ 5246ms on LM Studio —
+> VerificationPanel already passes the draft `form`), check status does **not** leak across providers,
+> and provider-switch syncs the model. So T39's bound-signature change is **not required** — T39/T40
+> collapse to "verify + add regression tests" (covered in T44). **Genuinely-broken items found that the
+> tasks above did NOT capture are added as T46 (critical) and T47 below.**
+
 ### T32 · Top-bar / chrome fidelity
 - **Goal:** AppBar matches mockup §4.2.
 - **Scope:** `ui/widgets/base/AppBar.tsx` — add "G" gradient logo badge before "GoText"; add a visible **⌘K** button in the right cluster opening the existing `CommandPalette`; confirm right-cluster grouping (Format · View · Layout · ⌘K · 🕘 · ℹ · ⚙) in light & dark. Add **readiness dots** (● ready / ○ not) to `ProviderPicker.tsx`/`ModelPicker.tsx` triggers.
@@ -536,6 +549,21 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Isolation (blocking):** destructive specs (delete provider, factory reset, clear history) mutate the real DB/settings — run against a **throwaway config/data dir** (env override or backup/restore `GoTextApp` config+db around the suite). **Local-only / not in CI.** First do one smoke navigation confirming Playwright reaches the Wails bridge at `http://localhost:34115`. Smallest models: Ollama `qwen3:0.6b-q4_K_M`, LM Studio smallest loaded.
 - **Scenarios (both providers):** 1) provider CRUD + Test connection/models/inference(pre-save) + Save/Set current + headers add/edit/remove + auth switch; 2) model settings (temp/context/token-limit); 3) generation (timeout/retries/markdown); 4) logging + factory reset (isolated); 5) appearance Light/Dark/Auto; 6) editor proofread + switch provider/model/language + Format/View/Layout + History open/manage + sidebar toggle; 7) build/run/manage stacks.
 - **Acceptance:** all journeys pass on both providers; each failure produces a code fix + regression test; loop until green.
+
+### T46 · Starter-stack action-ID remediation  *(critical — "stacks not working")*
+- **Bug (verified):** the seeder `internal/db/db.go` `seedStarterStacks` wrote **camelCase** action IDs (`basicProofreading`, `conciseRewrite`, …) that don't exist in the runtime **v3 dotted** catalog (`internal/prompts/v3/catalog.go`, e.g. `rewrite.proofread.basic`). `StackHandler.filterUnknownSteps` dropped every step, so all 17 starter stacks showed **0 steps / 0 inferences** in the sidebar and Manage grid, and ran as no-ops. Live backend logged ~40× `"dropping unknown action ID from saved stack"`.
+- **Backend (`go-engineer`/`go-tester`):** rewrite `seedStarterStacks` to valid v3 dotted IDs preserving each stack's intent; **every starter stack must pass `actions.NewPlanner(v3.Catalog()).Plan(...)`** (respect one-per-exclusivity-group, ≤5 steps, ≤3 inferences). Add a NEW numbered goose migration (`internal/db/migrations/0003_remap_stack_action_ids.sql`) that UPDATEs `stack_steps.action_id` old→new with a reversing `-- +goose Down`, so already-seeded DBs heal at `db.Open` without factory reset. Seed table and migration share one mapping (byte-identical result).
+- **Tests:** catalog-membership + planner-validity test for all 17 stacks (self-checking); seeded-DB test that steps survive `filterUnknownSteps`; migration remap (single, full block, Down-reverses).
+- **Acceptance:** every starter stack shows its real step/inference counts and recipe summary (mockup §"My Stacks"); `go test -race ./...` green. **Status: DONE this session** (see `internal/db/db.go`, `internal/db/migrations/0003_*.sql`, `internal/db/starter_stacks_test.go`, `internal/stacks/starter_stacks_plan_test.go`).
+
+### T47 · Main-screen model switching (AppBar model discovery)
+- **Gap (verified):** `ui/widgets/base/ModelPicker.tsx` (`TODO: no live model-discovery thunk`) + `selectCurrentProviderModelItems` return only `[modelConfig.name]`, so the AppBar MODEL dropdown lists a single option — the user cannot switch models from the main screen (required by §scenario-6; mockup MODEL pill is a searchable model list).
+- **Frontend (`ts-engineer`/`ts-tester`):** add a discovery thunk (reuse `ActionHandlerAdapter.getModels(currentProviderId)`) storing `discoveredModels` in the settings slice (reset on provider change); update the selector to list discovered ∪ current (deduped, current always present); wire the ⟳ refresh button + auto-discover on provider switch/mount; persist via `updateModelConfig`. If the Settings → Model tab has the same single-item limit, reuse the same source there.
+- **Tests:** reducer (discovery populates / provider-change resets), selector (discovered ∪ current), ModelPicker RTL (multiple options; select dispatches `updateModelConfig`; ⟳ dispatches discovery).
+- **Acceptance:** after switching the AppBar provider the MODEL dropdown lists the new provider's models and switching one persists + drives the next run.
+
+### T48 · Real-LLM model choice note
+- The live E2E (T45) must use a **reliable small** model — Ollama `gemma3:1b-it-q4_K_M` or `qwen3:1.7b`, LM Studio's smallest loaded — **not** `qwen3:0.6b`, which emits the documented `[NO_TEXT_PROVIDED]` empty-input sentinel (a model artifact, not a composition bug — LM Studio proofreads correctly on the same v3 path; `{{user_text}}` injection verified in `v3/catalog.go`).
 
 ### Final verification
 - Run `wails dev` and manually exercise the real app on this branch against LM Studio and Ollama; confirm UI/UX and provider flows match the mockups (per `CLAUDE.md` "Finishing task").

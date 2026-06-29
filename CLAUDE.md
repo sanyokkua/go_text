@@ -60,7 +60,8 @@ wails generate module        # regenerate frontend/wailsjs/ after any Go signatu
 cd frontend && npm install   # install frontend deps
 cd frontend && npm run test  # run Jest tests
 cd frontend && npm run test:coverage
-cd frontend && npm run verify:ui  # Playwright/Chromium UI tests
+cd frontend && npm run verify:ui  # Playwright/Chromium UI tests (Target A: bridge-mock)
+cd frontend && npm run verify:live  # local-only real-LLM E2E (Target B): needs `wails dev` at :34115 + LM Studio/Ollama running. Use a reliable small model (Ollama gemma3:1b / qwen3:1.7b — NOT qwen3:0.6b). Excluded from CI.
 
 go test -race ./...          # all Go tests with race detector (always use -race)
 go test ./internal/...       # backend unit/integration tests

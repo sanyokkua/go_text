@@ -1,7 +1,6 @@
 import React from 'react';
 import { ClipboardServiceAdapter, getLogger } from '../../../../logic/adapter';
 import {
-    selectHasDiff,
     selectInferenceRunning,
     selectInputContent,
     selectOutputContent,
@@ -11,7 +10,7 @@ import {
     useAppDispatch,
     useAppSelector,
 } from '../../../../logic/store';
-import { clearOutput, setViewMode, useOutputAsInput } from '../../../../logic/store/editor';
+import { clearOutput, useOutputAsInput } from '../../../../logic/store/editor';
 import { enqueueNotification } from '../../../../logic/store/notifications/slice';
 import { parseError } from '../../../../logic/utils/error_utils';
 import DiffView from '../../../../ui/components/DiffView';
@@ -29,7 +28,6 @@ const OutputPane: React.FC = () => {
     const inferenceRunning = useAppSelector(selectInferenceRunning);
     const runStatus = useAppSelector(selectRunStatus);
     const progress = useAppSelector(selectRunProgress);
-    const hasDiff = useAppSelector(selectHasDiff);
 
     const isRunning = runStatus === 'running';
 
@@ -84,20 +82,6 @@ const OutputPane: React.FC = () => {
                     Output <span className={styles.subLabel}>· {modeLabel}</span>
                 </span>
                 <div className={styles.headerRight}>
-                    <div className={styles.viewTabs}>
-                        {(['preview', 'source', 'diff'] as const).map((mode) => (
-                            <button
-                                key={mode}
-                                className={`${styles.viewTab} ${viewMode === mode ? styles.viewTabActive : ''}`}
-                                onClick={() => dispatch(setViewMode(mode))}
-                                disabled={inferenceRunning || (mode === 'diff' && !hasDiff)}
-                                aria-disabled={inferenceRunning || (mode === 'diff' && !hasDiff)}
-                                aria-label={`${mode} view`}
-                            >
-                                {mode.charAt(0).toUpperCase() + mode.slice(1)}
-                            </button>
-                        ))}
-                    </div>
                     <div className={styles.headerActions}>
                         <button className={styles.iconBtn} onClick={handleCopy} disabled={!output || inferenceRunning} aria-label="Copy output" title="Copy output">
                             ⧉

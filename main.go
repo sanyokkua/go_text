@@ -63,7 +63,7 @@ func main() {
 	app := application.NewApplicationContextHolder(appLogger, restyClient)
 
 	err = wails.Run(&options.App{
-		Title:     "Text Processing Suite",
+		Title:     "GoText",
 		Width:     MinimalWidth,
 		Height:    MinimalHeight,
 		MinWidth:  MinimalWidth,

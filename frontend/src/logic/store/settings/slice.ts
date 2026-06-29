@@ -17,6 +17,7 @@ import {
     addLanguage,
     createProviderConfig,
     deleteProviderConfig,
+    discoverCurrentProviderModels,
     getAppBehaviorConfig,
     getAppSettingsMetadata,
     getSettings,
@@ -34,7 +35,7 @@ import { SettingsState } from './types';
 
 const logger = getLogger('SettingsSlice');
 
-const initialState: SettingsState = { allSettings: null, metadata: null };
+const initialState: SettingsState = { allSettings: null, metadata: null, discoveredModels: [] };
 
 const settingsSlice = createSlice({
     name: 'settings',
@@ -88,6 +89,17 @@ const settingsSlice = createSlice({
                     // model so the editor never shows a stale model from the previous
                     // provider (which would make runs fail with a wrong/empty model).
                     state.allSettings.modelConfig.name = action.payload.selectedModel;
+                }
+                // Drop the previous provider's discovered models; the picker will
+                // re-discover the new provider's list on its next refresh/mount.
+                state.discoveredModels = [];
+            })
+            .addCase(discoverCurrentProviderModels.fulfilled, (state, action) => {
+                // Guard against a stale response landing after the user switched
+                // providers mid-flight: only apply when the request still targets
+                // the current provider.
+                if (state.allSettings?.currentProviderConfig.providerId === action.meta.arg) {
+                    state.discoveredModels = action.payload;
                 }
             })
             .addCase(deleteProviderConfig.fulfilled, (state, action) => {

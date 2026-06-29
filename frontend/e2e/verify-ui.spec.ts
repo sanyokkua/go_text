@@ -69,6 +69,15 @@ for (const route of ROUTES) {
                 const bodyText = await page.locator('body').innerText();
                 expect(bodyText.trim().length, 'page body is empty').toBeGreaterThan(0);
 
+                // Gate 5: the app bar wraps instead of clipping — the settings gear and
+                // command palette must stay visible/clickable at the narrowest width (B1).
+                if (route === '/') {
+                    const settingsBtn = page.locator('button[aria-label="Open settings"]');
+                    await expect(settingsBtn, 'settings gear must be visible (not clipped)').toBeInViewport();
+                    const cmdkBtn = page.locator('button[aria-label="Open command palette"]');
+                    await expect(cmdkBtn, '⌘K button must be visible (not clipped)').toBeInViewport();
+                }
+
                 // Screenshot
                 fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
                 const slug = route === '/' ? 'root' : route.replace(/\//g, '-').slice(1);

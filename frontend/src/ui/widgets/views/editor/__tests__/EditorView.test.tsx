@@ -116,24 +116,6 @@ describe('EditorView integration', () => {
         expect(screen.getByText(/run to preview/i)).toBeInTheDocument();
     });
 
-    it('Diff view tab is disabled when output is empty', () => {
-        render(
-            <Provider store={makeStore({ inputContent: 'some text' })}>
-                <EditorView />
-            </Provider>,
-        );
-        expect(screen.getByRole('button', { name: /diff view/i })).toBeDisabled();
-    });
-
-    it('Diff view tab is enabled when both input and output exist', () => {
-        render(
-            <Provider store={makeStore({ inputContent: 'text', outputContent: 'result' })}>
-                <EditorView />
-            </Provider>,
-        );
-        expect(screen.getByRole('button', { name: /diff view/i })).toBeEnabled();
-    });
-
     it('Run button is disabled when no action is armed', () => {
         render(
             <Provider store={makeStore({ inputContent: 'hi' })}>

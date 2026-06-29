@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { useAppDispatch, useAppSelector } from '../../../logic/store';
-import { selectCurrentProviderModelItems, selectModelConfig } from '../../../logic/store/settings/selectors';
-import { getCurrentProviderConfig, updateModelConfig } from '../../../logic/store/settings/thunks';
+import { selectCurrentProvider, selectCurrentProviderModelItems, selectModelConfig } from '../../../logic/store/settings/selectors';
+import { discoverCurrentProviderModels, updateModelConfig } from '../../../logic/store/settings/thunks';
 import { Tooltip } from '../../primitives/Tooltip';
 import { Select } from '../../primitives/Select';
 import styles from './ModelPicker.module.css';
@@ -11,7 +11,20 @@ const ModelPicker: React.FC = () => {
     const dispatch = useAppDispatch();
     const modelConfig = useAppSelector(selectModelConfig);
     const modelItems = useAppSelector(selectCurrentProviderModelItems);
+    const currentProvider = useAppSelector(selectCurrentProvider);
     const [refreshing, setRefreshing] = useState(false);
+
+    const providerId = currentProvider?.providerId ?? '';
+
+    // Auto-discover the current provider's models on first mount and whenever the
+    // provider changes, so the dropdown is switchable without a manual refresh.
+    // Keyed on providerId only — discovery writes discoveredModels, which is not a
+    // dependency here, so there is no refetch loop.
+    useEffect(() => {
+        if (providerId) {
+            void dispatch(discoverCurrentProviderModels(providerId));
+        }
+    }, [dispatch, providerId]);
 
     if (!modelConfig) {
         return null;
@@ -21,13 +34,13 @@ const ModelPicker: React.FC = () => {
         void dispatch(updateModelConfig({ ...modelConfig, name }));
     };
 
-    // TODO: No live model-discovery-and-persist thunk exists yet.
-    // getCurrentProviderConfig re-fetches the stored provider and refreshes
-    // customModels if the provider has them persisted from a previous sync.
+    // Discovery never rejects (the thunk swallows errors and resolves with []),
+    // so no .unwrap() — the spinner toggles regardless and no error reaches the UI.
     const handleRefresh = async (): Promise<void> => {
+        if (!providerId) return;
         setRefreshing(true);
         try {
-            await dispatch(getCurrentProviderConfig()).unwrap();
+            await dispatch(discoverCurrentProviderModels(providerId));
         } finally {
             setRefreshing(false);
         }

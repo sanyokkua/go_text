@@ -102,6 +102,33 @@ export const getCurrentProviderConfig = createAsyncThunk<ProviderConfig, void, {
     },
 );
 
+/**
+ * Discovers the live model list for the given provider and returns the model ids.
+ *
+ * A failed discovery (unreachable provider, missing credential) rejects with a
+ * message but is non-fatal for the UI: the slice only reacts to the fulfilled
+ * case, so a failed refresh leaves the previously-discovered list intact, while
+ * a genuinely-empty successful discovery still clears it. Callers must not call
+ * .unwrap() on this thunk — the rejection then never surfaces as a thrown error.
+ */
+export const discoverCurrentProviderModels = createAsyncThunk<Array<string>, string, { rejectValue: string }>(
+    'settings/discoverCurrentProviderModels',
+    async (providerId, { rejectWithValue }) => {
+        try {
+            const res = await ActionHandlerAdapter.getModels(providerId);
+            if (res.error) {
+                logger.logWarning(`discoverCurrentProviderModels: ${res.error.message}`);
+                return rejectWithValue(res.error.message);
+            }
+            return (res.data ?? []).map((m) => m.id);
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logWarning(`discoverCurrentProviderModels failed: ${err.message}`);
+            return rejectWithValue(err.message);
+        }
+    },
+);
+
 export const getInferenceBaseConfig = createAsyncThunk<InferenceBaseConfig, void, { rejectValue: string }>(
     'settings/getInferenceBaseConfig',
     async (_, { rejectWithValue }) => {
