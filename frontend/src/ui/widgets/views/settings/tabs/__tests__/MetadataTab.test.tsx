@@ -3,6 +3,7 @@ import '@testing-library/jest-dom';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
+import { openPath } from '../../../../../../logic/adapter';
 import { AppSettingsMetadata, Settings } from '../../../../../../logic/adapter/models';
 import notificationsReducer from '../../../../../../logic/store/notifications/slice';
 import settingsReducer from '../../../../../../logic/store/settings/slice';
@@ -15,6 +16,7 @@ jest.mock('../../../../../../logic/adapter', () => ({
         getSettings: jest.fn().mockResolvedValue({ data: null, error: null }),
         resetSettingsToDefault: jest.fn().mockResolvedValue({ data: null, error: null }),
     },
+    openPath: jest.fn().mockResolvedValue({ data: null, error: null }),
     getLogger: () => ({ logInfo: jest.fn(), logDebug: jest.fn(), logError: jest.fn(), logWarn: jest.fn() }),
     unwrap: (r: { data: unknown; error: { message: string } | null }) => {
         if (r?.error) throw new Error(r.error.message);
@@ -173,5 +175,95 @@ describe('MetadataTab', () => {
         await waitFor(() => {
             expect(screen.queryByRole('button', { name: /reset everything/i })).not.toBeInTheDocument();
         });
+    });
+
+    it('shows app folder path from metadata', () => {
+        render(
+            <Provider store={makeStore()}>
+                <MetadataTab />
+            </Provider>,
+        );
+        expect(screen.getByText('/Users/test/.config/GoText')).toBeInTheDocument();
+    });
+
+    it('renders a copy button for the app folder path', () => {
+        render(
+            <Provider store={makeStore()}>
+                <MetadataTab />
+            </Provider>,
+        );
+        expect(screen.getByRole('button', { name: /copy app folder path/i })).toBeInTheDocument();
+    });
+
+    it('renders an open button for the app folder', () => {
+        render(
+            <Provider store={makeStore()}>
+                <MetadataTab />
+            </Provider>,
+        );
+        expect(screen.getByRole('button', { name: /open app folder/i })).toBeInTheDocument();
+    });
+
+    it('renders an open button for the logs folder', () => {
+        render(
+            <Provider store={makeStore()}>
+                <MetadataTab />
+            </Provider>,
+        );
+        expect(screen.getByRole('button', { name: /open logs folder/i })).toBeInTheDocument();
+    });
+
+    it('clicking open app folder calls openPath with the settingsFolder path', async () => {
+        const openPathMock = openPath as jest.MockedFunction<typeof openPath>;
+        openPathMock.mockClear();
+        render(
+            <Provider store={makeStore()}>
+                <MetadataTab />
+            </Provider>,
+        );
+        await userEvent.click(screen.getByRole('button', { name: /open app folder/i }));
+        expect(openPathMock).toHaveBeenCalledWith('/Users/test/.config/GoText');
+    });
+
+    it('clicking open logs folder calls openPath with the logsFolder path', async () => {
+        const openPathMock = openPath as jest.MockedFunction<typeof openPath>;
+        openPathMock.mockClear();
+        render(
+            <Provider store={makeStore()}>
+                <MetadataTab />
+            </Provider>,
+        );
+        await userEvent.click(screen.getByRole('button', { name: /open logs folder/i }));
+        expect(openPathMock).toHaveBeenCalledWith('/Users/test/.local/share/GoText/logs');
+    });
+
+    it('open app folder button is disabled when metadata is null', () => {
+        const storeWithoutMeta = configureStore({
+            reducer: { settings: settingsReducer, ui: uiReducer, notifications: notificationsReducer },
+            preloadedState: {
+                settings: { allSettings: MOCK_SETTINGS, metadata: null },
+                ui: {
+                    layout: 'side' as const,
+                    sidebarCollapsed: false,
+                    historyOpen: false,
+                    inferenceRunning: false,
+                    currentView: 'settings' as const,
+                    armedActionId: null,
+                    armedStackId: null,
+                    activeActionsTab: null,
+                    buildMode: false,
+                    editingStackId: null,
+                    activeSettingsTab: 0,
+                    theme: { mode: 'auto' as const, effective: 'light' as const },
+                },
+            },
+        });
+        render(
+            <Provider store={storeWithoutMeta}>
+                <MetadataTab />
+            </Provider>,
+        );
+        expect(screen.getByRole('button', { name: /open app folder/i })).toBeDisabled();
+        expect(screen.getByRole('button', { name: /open logs folder/i })).toBeDisabled();
     });
 });

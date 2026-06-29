@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { ClipboardServiceAdapter } from '../../../../../logic/adapter';
+import { ClipboardServiceAdapter, openPath } from '../../../../../logic/adapter';
 import { useSettingsToast } from '../../../../../logic/hooks/useSettingsToast';
 import { useAppDispatch, useAppSelector } from '../../../../../logic/store';
 import { enqueueNotification } from '../../../../../logic/store/notifications/slice';
@@ -34,8 +34,27 @@ const MetadataTab: React.FC = () => {
         });
     };
 
-    const settingsFile = metadata?.settingsFile ?? '—';
+    const settingsFolder = metadata?.settingsFolder ?? '—';
     const logsFolder = metadata?.logsFolder ?? '—';
+    const settingsFile = metadata?.settingsFile ?? '—';
+
+    const handleOpenFolder = () => {
+        if (!metadata) return;
+        void runWithToast(openPath(settingsFolder), {
+            success: 'Opened app folder',
+            error: "Couldn't open the app folder.",
+            errorTitle: 'Open failed',
+        });
+    };
+
+    const handleOpenLogs = () => {
+        if (!metadata) return;
+        void runWithToast(openPath(logsFolder), {
+            success: 'Opened logs folder',
+            error: "Couldn't open the logs folder.",
+            errorTitle: 'Open failed',
+        });
+    };
 
     return (
         <section className={styles.root}>
@@ -48,21 +67,30 @@ const MetadataTab: React.FC = () => {
             <p className={styles.sectionHeader}>Data &amp; file locations</p>
 
             <div className={styles.fieldRow}>
-                <span className={styles.fieldLabel}>Database</span>
-                <code className={styles.monoPath}>{settingsFile}</code>
+                <span className={styles.fieldLabel}>App folder</span>
+                <code className={styles.monoPath}>{settingsFolder}</code>
                 <Button
                     variant="ghost"
                     size="sm"
-                    aria-label="Copy database path"
+                    aria-label="Copy app folder path"
                     onClick={() => {
-                        handleCopyPath(settingsFile).catch(() => undefined);
+                        handleCopyPath(settingsFolder).catch(() => undefined);
                     }}
                 >
                     ⧉
                 </Button>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Open app folder"
+                    disabled={!metadata}
+                    onClick={handleOpenFolder}
+                >
+                    📁
+                </Button>
             </div>
 
-            <div className={`${styles.fieldRow} ${styles.fieldRowLast}`}>
+            <div className={styles.fieldRow}>
                 <span className={styles.fieldLabel}>Logs folder</span>
                 <code className={styles.monoPath}>{logsFolder}</code>
                 <Button
@@ -71,6 +99,30 @@ const MetadataTab: React.FC = () => {
                     aria-label="Copy logs folder path"
                     onClick={() => {
                         handleCopyPath(logsFolder).catch(() => undefined);
+                    }}
+                >
+                    ⧉
+                </Button>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Open logs folder"
+                    disabled={!metadata}
+                    onClick={handleOpenLogs}
+                >
+                    📁
+                </Button>
+            </div>
+
+            <div className={`${styles.fieldRow} ${styles.fieldRowLast}`}>
+                <span className={styles.fieldLabel}>Database</span>
+                <code className={styles.monoPath}>{settingsFile}</code>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Copy database path"
+                    onClick={() => {
+                        handleCopyPath(settingsFile).catch(() => undefined);
                     }}
                 >
                     ⧉
