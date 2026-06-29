@@ -266,4 +266,30 @@ describe('MetadataTab', () => {
         expect(screen.getByRole('button', { name: /open app folder/i })).toBeDisabled();
         expect(screen.getByRole('button', { name: /open logs folder/i })).toBeDisabled();
     });
+
+    it('App folder row appears before Logs folder row in the DOM', () => {
+        const { container } = render(
+            <Provider store={makeStore()}>
+                <MetadataTab />
+            </Provider>,
+        );
+        const appFolderCopyBtn = container.querySelector('[aria-label="Copy app folder path"]');
+        const logsFolderCopyBtn = container.querySelector('[aria-label="Copy logs folder path"]');
+        expect(appFolderCopyBtn).not.toBeNull();
+        expect(logsFolderCopyBtn).not.toBeNull();
+        expect(appFolderCopyBtn!.compareDocumentPosition(logsFolderCopyBtn!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    });
+
+    it('Logs folder row appears before Database row in the DOM', () => {
+        const { container } = render(
+            <Provider store={makeStore()}>
+                <MetadataTab />
+            </Provider>,
+        );
+        const logsFolderCopyBtn = container.querySelector('[aria-label="Copy logs folder path"]');
+        const databaseCopyBtn = container.querySelector('[aria-label="Copy database path"]');
+        expect(logsFolderCopyBtn).not.toBeNull();
+        expect(databaseCopyBtn).not.toBeNull();
+        expect(logsFolderCopyBtn!.compareDocumentPosition(databaseCopyBtn!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    });
 });

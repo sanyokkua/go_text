@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import SettingsTabs from '../SettingsTabs';
 
 describe('SettingsTabs', () => {
@@ -63,10 +64,10 @@ describe('SettingsTabs', () => {
         expect(screen.getByRole('tab', { name: 'Providers' })).toHaveTextContent('🔌');
     });
 
-    it('calls onChange with the correct index when Providers tab is clicked', () => {
+    it('calls onChange with the correct index when Providers tab is clicked', async () => {
         const handleChange = jest.fn();
         render(<SettingsTabs activeTab={0} onChange={handleChange} />);
-        screen.getAllByRole('tab')[2].click(); // Providers is index 2
+        await userEvent.click(screen.getAllByRole('tab')[2]); // Providers is index 2
         expect(handleChange).toHaveBeenCalledWith(expect.anything(), 2);
     });
 });
