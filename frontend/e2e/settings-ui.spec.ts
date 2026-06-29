@@ -240,3 +240,76 @@ test.describe('App File Logging settings', () => {
         expect(jsErrors).toHaveLength(0);
     });
 });
+
+test.describe('About & data tab – app folder and open-folder buttons', () => {
+    test('About & data tab shows app folder path from bridge mock', async ({ page }) => {
+        const jsErrors: string[] = [];
+        page.on('pageerror', (err) => jsErrors.push(err.message));
+
+        await openSettings(page);
+        await page.getByRole('tab', { name: /about & data/i }).click();
+
+        // Bridge mock returns settingsFolder: '/mock/settings'
+        await expect(page.getByText('/mock/settings', { exact: true })).toBeVisible({ timeout: 5000 });
+        expect(jsErrors).toHaveLength(0);
+    });
+
+    test('About & data tab shows open app folder button', async ({ page }) => {
+        const jsErrors: string[] = [];
+        page.on('pageerror', (err) => jsErrors.push(err.message));
+
+        await openSettings(page);
+        await page.getByRole('tab', { name: /about & data/i }).click();
+
+        await expect(page.getByRole('button', { name: /open app folder/i })).toBeVisible({ timeout: 5000 });
+        expect(jsErrors).toHaveLength(0);
+    });
+
+    test('About & data tab shows open logs folder button', async ({ page }) => {
+        const jsErrors: string[] = [];
+        page.on('pageerror', (err) => jsErrors.push(err.message));
+
+        await openSettings(page);
+        await page.getByRole('tab', { name: /about & data/i }).click();
+
+        await expect(page.getByRole('button', { name: /open logs folder/i })).toBeVisible({ timeout: 5000 });
+        expect(jsErrors).toHaveLength(0);
+    });
+
+    test('clicking open app folder button produces no JS errors', async ({ page }) => {
+        const jsErrors: string[] = [];
+        page.on('pageerror', (err) => jsErrors.push(err.message));
+
+        await openSettings(page);
+        await page.getByRole('tab', { name: /about & data/i }).click();
+        await page.getByRole('button', { name: /open app folder/i }).click();
+
+        await page.waitForTimeout(400);
+        expect(jsErrors).toHaveLength(0);
+    });
+
+    test('clicking open logs folder button from About & data produces no JS errors', async ({ page }) => {
+        const jsErrors: string[] = [];
+        page.on('pageerror', (err) => jsErrors.push(err.message));
+
+        await openSettings(page);
+        await page.getByRole('tab', { name: /about & data/i }).click();
+        await page.getByRole('button', { name: /open logs folder/i }).click();
+
+        await page.waitForTimeout(400);
+        expect(jsErrors).toHaveLength(0);
+    });
+
+    test('About & data tab still shows database path and factory reset button', async ({ page }) => {
+        const jsErrors: string[] = [];
+        page.on('pageerror', (err) => jsErrors.push(err.message));
+
+        await openSettings(page);
+        await page.getByRole('tab', { name: /about & data/i }).click();
+
+        // Bridge mock returns databaseFile: '/mock/settings/gotext.db'
+        await expect(page.getByText('/mock/settings/gotext.db')).toBeVisible({ timeout: 5000 });
+        await expect(page.getByRole('button', { name: /factory reset/i })).toBeVisible({ timeout: 5000 });
+        expect(jsErrors).toHaveLength(0);
+    });
+});
