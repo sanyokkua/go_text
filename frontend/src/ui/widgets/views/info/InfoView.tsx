@@ -10,7 +10,7 @@ import CatalogList from './CatalogList';
 import styles from './InfoView.module.css';
 import PromptInspector from './PromptInspector';
 
-const GUIDE_CONTENT = `# Text Processing Suite
+const GUIDE_CONTENT = `# GoText
 
 Transform text with AI-powered actions. Each action applies a specific transformation via a language model.
 
@@ -48,7 +48,7 @@ const InfoView: React.FC = memo(function InfoView() {
     return (
         <div className={styles.root}>
             <header className={styles.header}>
-                <h1 className={styles.title}>Text Processing Suite</h1>
+                <h1 className={styles.title}>GoText</h1>
                 <p className={styles.subtitle}>AI-powered text transformations</p>
             </header>
 

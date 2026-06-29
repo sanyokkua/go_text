@@ -127,25 +127,25 @@ go test -race ./...
 
 | Platform | Path |
 |---|---|
-| macOS | `~/Library/Application Support/TextProcessingSuite/SettingsV2.json` |
-| Linux | `~/.config/TextProcessingSuite/SettingsV2.json` |
-| Windows | `%APPDATA%\TextProcessingSuite\SettingsV2.json` |
+| macOS | `~/Library/Application Support/GoText/SettingsV2.json` |
+| Linux | `~/.config/GoText/SettingsV2.json` |
+| Windows | `%APPDATA%\GoText\SettingsV2.json` |
 
 ### SQLite database
 
 | Platform | Path |
 |---|---|
-| macOS | `~/Library/Application Support/TextProcessingSuite/gotext.db` |
-| Linux | `~/.config/TextProcessingSuite/gotext.db` |
-| Windows | `%APPDATA%\TextProcessingSuite\gotext.db` |
+| macOS | `~/Library/Application Support/GoText/gotext.db` |
+| Linux | `~/.config/GoText/gotext.db` |
+| Windows | `%APPDATA%\GoText\gotext.db` |
 
 ### Logs
 
 | Platform | Path |
 |---|---|
-| macOS | `~/Library/Logs/TextProcessingSuite/` |
-| Linux | `~/.local/state/TextProcessingSuite/` |
-| Windows | `%APPDATA%\TextProcessingSuite\logs\` |
+| macOS | `~/Library/Logs/GoText/` |
+| Linux | `~/.local/state/GoText/` |
+| Windows | `%APPDATA%\GoText\logs\` |
 
 ---
 
@@ -178,8 +178,8 @@ go test -race ./...
 
 ```json
 {
-  "name": "TextProcessingSuite",
-  "outputfilename": "TextProcessingSuite",
+  "name": "GoText",
+  "outputfilename": "GoText",
   "frontend:install": "npm install",
   "frontend:build": "npm run build",
   "frontend:dev:watcher": "npm run dev",

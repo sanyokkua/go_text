@@ -1,6 +1,6 @@
 # 10 — UI/UX Specification (Behavior, States & Patterns)
 
-> **Application:** GoText — *"Text Processing Suite"* — a desktop text-processing app.
+> **Application:** GoText — *"GoText"* — a desktop text-processing app.
 > **Stack:** React 19 + TypeScript + Redux Toolkit, Radix Primitives (+ `cmdk` for searchable
 > lists/command palette), and a custom tokenized CSS theme system, rendered inside a Wails webview.
 > **Status:** Specification. Self-contained. Confirmed requirements only.

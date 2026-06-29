@@ -1,7 +1,7 @@
 # GoText — Functional Requirements
 
 > **Document:** Functional Requirements
-> **Product:** GoText ("Text Processing Suite") — a single-user desktop application for LLM-assisted
+> **Product:** GoText ("GoText") — a single-user desktop application for LLM-assisted
 > text processing.
 > **Technology baseline:** Go backend, Wails v2 desktop shell, React 19 + TypeScript + Redux frontend.
 > **Scope of this document:** the confirmed functional behavior of the application — user flows,

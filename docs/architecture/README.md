@@ -47,7 +47,7 @@ cd frontend && npm run verify:ui              # UI tests (Playwright)
 ### Production build
 
 ```bash
-wails build                     # → build/bin/TextProcessingSuite
+wails build                     # → build/bin/GoText
 ```
 
 ### After Go signature changes

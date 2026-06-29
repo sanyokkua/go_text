@@ -223,9 +223,9 @@ log file rather than being silently dropped.
 
 | Platform | Log folder |
 |---|---|
-| macOS | `~/Library/Logs/TextProcessingSuite/` |
-| Linux | `~/.local/state/TextProcessingSuite/` |
-| Windows | `%APPDATA%\TextProcessingSuite\logs\` |
+| macOS | `~/Library/Logs/GoText/` |
+| Linux | `~/.local/state/GoText/` |
+| Windows | `%APPDATA%\GoText\logs\` |
 
 The log file inside that folder is `app.log`. Rotation creates `app-YYYY-MM-DDTHH-MM-SS.log.gz` backups.
 

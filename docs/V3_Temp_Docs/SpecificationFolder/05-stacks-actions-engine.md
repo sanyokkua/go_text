@@ -1,6 +1,6 @@
 # 05 — Stacks & Multi-Action Engine
 
-GoText ("Text Processing Suite") — Go + Wails v2 backend, React 19 / TypeScript frontend.
+GoText ("GoText") — Go + Wails v2 backend, React 19 / TypeScript frontend.
 
 This document specifies the multi-action **stacks** engine: the backend-authoritative composition layer that lets a user select several text actions, run them as an ordered pipeline, and persist named recipes. It defines the domain model, the family/directive taxonomy, the planning and merge algorithms, the backend orchestration, the shared models, persistence of saved stacks, the Wails event/cancellation surface, and edge cases.
 

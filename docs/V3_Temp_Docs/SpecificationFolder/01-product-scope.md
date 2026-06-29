@@ -1,7 +1,7 @@
 # GoText v3 — Product Scope
 
 > **Document:** 01-product-scope.md
-> **Product:** GoText (also referred to as "Text Processing Suite") — a native desktop application for
+> **Product:** GoText (also referred to as "GoText") — a native desktop application for
 > LLM-powered text processing.
 > **Stack:** Go + Wails v2 backend; React 19 + TypeScript + Redux Toolkit frontend.
 > **Status:** Authoritative product scope for the v3 release. This document is self-contained; where a

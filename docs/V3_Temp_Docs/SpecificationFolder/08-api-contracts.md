@@ -1,6 +1,6 @@
 # 08 — API Contracts (Wails Bridge)
 
-> **Application:** GoText — *"Text Processing Suite"* (Go + Wails v2).
+> **Application:** GoText — *"GoText"* (Go + Wails v2).
 > **Transport:** the frontend and backend communicate **over the Wails bridge**, *not* over REST/HTTP.
 > Bound Go handler methods are exposed to TypeScript as **async functions** (`Promise<…>`). There is no
 > URL, verb, status code, or wire protocol the caller chooses — the method *is* the contract.

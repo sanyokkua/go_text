@@ -4,7 +4,7 @@
 
 ## Summary
 
-GoText ("Text Processing Suite") is a native desktop application for AI-powered text transformation.
+GoText ("GoText") is a native desktop application for AI-powered text transformation.
 A Wails v2 runtime hosts a Go backend and serves an embedded React SPA as the UI. All inference,
 persistence, and orchestration happen in the Go process; the frontend is presentation and local
 interaction state.

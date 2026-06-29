@@ -1,7 +1,7 @@
 # 04 — Providers, Models & Inference
 
 > **Status:** Final specification. Confirmed requirements only.
-> **Component:** GoText ("Text Processing Suite") — Go + Wails v2 backend.
+> **Component:** GoText ("GoText") — Go + Wails v2 backend.
 > **Scope of this document:** the provider abstraction, per-kind field contracts, inference logic,
 > model discovery, provider verification, error/retry taxonomy, and how all of this integrates into the
 > existing Go codebase under `internal/llms` and `internal/settings`. The error model used throughout is

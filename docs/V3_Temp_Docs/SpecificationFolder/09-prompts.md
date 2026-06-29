@@ -1,6 +1,6 @@
 # 09 — Prompts (Two-Tier Prompt Specification)
 
-GoText ("Text Processing Suite") — Go + Wails v2 backend, React 19 / TypeScript frontend.
+GoText ("GoText") — Go + Wails v2 backend, React 19 / TypeScript frontend.
 
 This document is the authoritative specification for the **prompt library** that GoText compiles into its Go binary. It defines the **two-tier prompt model** (family system prompts plus per-action atomic directive fragments and action metadata), the required rules every family system prompt must encode, and a full per-action specification for every shipped action.
 

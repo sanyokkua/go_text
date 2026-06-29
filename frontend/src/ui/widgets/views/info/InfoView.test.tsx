@@ -29,7 +29,7 @@ describe('InfoView', () => {
                 <InfoView />
             </Provider>,
         );
-        expect(screen.getByRole('heading', { name: /Text Processing Suite/i })).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /GoText/i })).toBeInTheDocument();
     });
 
     it('shows Guide tab content by default', () => {

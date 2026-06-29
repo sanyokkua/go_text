@@ -1,6 +1,6 @@
 # 13 — Testing Specification
 
-> **Status:** Specification (normative). Part of the GoText ("Text Processing Suite") v3
+> **Status:** Specification (normative). Part of the GoText ("GoText") v3
 > redesign — Go + Wails v2 backend, React 19 / TypeScript frontend.
 > **Date:** 2026-06-23.
 > **Scope:** This document is the authoritative test plan for the v3 redesign. It defines, for

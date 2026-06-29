@@ -1,7 +1,7 @@
 # 11 — Mockup Documentation (Textual Design Reference)
 
 > **Status:** Spec-ready. **Date:** 2026-06-23.
-> **App:** GoText — "Text Processing Suite". A Wails desktop app: Go backend, React + Radix
+> **App:** GoText — "GoText". A Wails desktop app: Go backend, React + Radix
 > Primitives front end, fully tokenized CSS theming.
 > **Purpose of this document:** This is the *complete textual replacement* for the visual design
 > mockup. It re-creates every screen, surface, region, widget, hierarchy, interaction, edge case,

@@ -67,7 +67,7 @@ methods.
 
 ```bash
 wails build
-# Output: build/bin/TextProcessingSuite (or .app / .exe on respective platforms)
+# Output: build/bin/GoText (or .app / .exe on respective platforms)
 ```
 
 ---
@@ -337,9 +337,9 @@ wails dev   # logs appear in the terminal at DEBUG level
 ```
 
 Log files (WARNING level and above in production):
-- macOS: `~/Library/Logs/TextProcessingSuite/`
-- Linux: `~/.local/state/TextProcessingSuite/`
-- Windows: `%APPDATA%\TextProcessingSuite\logs\`
+- macOS: `~/Library/Logs/GoText/`
+- Linux: `~/.local/state/GoText/`
+- Windows: `%APPDATA%\GoText\logs\`
 
 ### Frontend state
 

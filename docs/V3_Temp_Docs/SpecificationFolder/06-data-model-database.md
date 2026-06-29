@@ -1,7 +1,7 @@
 # GoText — Data Model & Database Specification (06)
 
 > **Document:** 06 — Data Model & Database
-> **Application:** GoText ("Text Processing Suite") — a native desktop LLM text-processing application.
+> **Application:** GoText ("GoText") — a native desktop LLM text-processing application.
 > **Stack:** Go + [Wails v2] backend; persistence via embedded SQLite.
 > **Module name:** `go_text`.
 > **Status:** Specification (confirmed requirements only).

@@ -48,23 +48,23 @@ jobs:
           # Linux (Ubuntu 24.04 with webkit2gtk-4.1)
           - platform: linux/amd64
             os: ubuntu-24.04
-            output_name: TextProcessingSuite-linux-amd64
-            artifact_path: build/bin/TextProcessingSuite-linux-amd64
+            output_name: GoText-linux-amd64
+            artifact_path: build/bin/GoText-linux-amd64
             build_tags: webkit2_41
             # webkit2_41 tag required for Ubuntu 24.04
 
           # Windows (with WebView2)
           - platform: windows/amd64
             os: windows-latest
-            output_name: TextProcessingSuite-windows-amd64.exe
-            artifact_path: build/bin/TextProcessingSuite-windows-amd64.exe
+            output_name: GoText-windows-amd64.exe
+            artifact_path: build/bin/GoText-windows-amd64.exe
             build_tags: ""
 
           # macOS Apple Silicon
           - platform: darwin/arm64
             os: macos-latest
-            output_name: TextProcessingSuite-macos-arm64
-            artifact_path: build/bin/TextProcessingSuite.app
+            output_name: GoText-macos-arm64
+            artifact_path: build/bin/GoText.app
             build_tags: ""
 
     runs-on: ${{ matrix.os }}
@@ -137,8 +137,8 @@ jobs:
         # Only runs when build_tags is not empty (Linux)
         run: wails build --platform ${{ matrix.platform }} -tags "${{ matrix.build_tags }}" -o "${{ matrix.output_name }}"
         # Single-line command works on all shells
-        # Linux: wails build --platform linux/amd64 -tags "webkit2_41" -o TextProcessingSuite-linux-amd64
-        # Output goes to build/bin/TextProcessingSuite-linux-amd64
+        # Linux: wails build --platform linux/amd64 -tags "webkit2_41" -o GoText-linux-amd64
+        # Output goes to build/bin/GoText-linux-amd64
 
       # --------------------------------------------------
       # Build the application (Windows/macOS - no tags)
@@ -148,8 +148,8 @@ jobs:
         # Only runs when build_tags is empty (Windows/macOS)
         run: wails build --platform ${{ matrix.platform }} -o "${{ matrix.output_name }}"
         # Single-line command works on all shells
-        # Windows: wails build --platform windows/amd64 -o TextProcessingSuite-windows-amd64.exe
-        # macOS: wails build --platform darwin/arm64 -o TextProcessingSuite-macos-arm64
+        # Windows: wails build --platform windows/amd64 -o GoText-windows-amd64.exe
+        # macOS: wails build --platform darwin/arm64 -o GoText-macos-arm64
         # Output goes to build/bin/[output_name]
 
       # --------------------------------------------------
@@ -166,9 +166,9 @@ jobs:
       # --------------------------------------------------
       - name: Fix executable permissions (macOS)
         if: runner.os == 'macOS'
-        run: chmod +x build/bin/TextProcessingSuite.app/Contents/MacOS/*
+        run: chmod +x build/bin/GoText.app/Contents/MacOS/*
         # Makes the binary inside .app bundle executable
-        # Path: TextProcessingSuite.app/Contents/MacOS/TextProcessingSuite
+        # Path: GoText.app/Contents/MacOS/GoText
 
       # --------------------------------------------------
       # Upload build artifacts
@@ -178,16 +178,16 @@ jobs:
         with:
           name: ${{ matrix.output_name }}
           # Artifact names:
-          # - TextProcessingSuite-linux-amd64
-          # - TextProcessingSuite-windows-amd64.exe
-          # - TextProcessingSuite-macos-arm64
+          # - GoText-linux-amd64
+          # - GoText-windows-amd64.exe
+          # - GoText-macos-arm64
           path: ${{ matrix.artifact_path }}
           # Uploads only the main artifact:
-          # - Linux: build/bin/TextProcessingSuite-linux-amd64
-          # - Windows: build/bin/TextProcessingSuite-windows-amd64.exe
-          # - macOS: build/bin/TextProcessingSuite.app (entire .app bundle)
+          # - Linux: build/bin/GoText-linux-amd64
+          # - Windows: build/bin/GoText-windows-amd64.exe
+          # - macOS: build/bin/GoText.app (entire .app bundle)
           # NOTE: For macOS, GitHub Actions flattens the structure:
-          #   Uploaded as: TextProcessingSuite.app/Contents/...
+          #   Uploaded as: GoText.app/Contents/...
           #   Downloaded as: Contents/... (top-level folder stripped)
           retention-days: 7
           # Auto-delete after 7 days to save storage
@@ -370,13 +370,13 @@ jobs:
         # Downloads everything to ./artifacts/
         # Structure after download (macOS gets flattened):
         # artifacts/
-        #   TextProcessingSuite-linux-amd64/
-        #     TextProcessingSuite-linux-amd64
-        #   TextProcessingSuite-windows-amd64.exe/
-        #     TextProcessingSuite-windows-amd64.exe
-        #   TextProcessingSuite-macos-arm64/
+        #   GoText-linux-amd64/
+        #     GoText-linux-amd64
+        #   GoText-windows-amd64.exe/
+        #     GoText-windows-amd64.exe
+        #   GoText-macos-arm64/
         #     Contents/
-        #       MacOS/TextProcessingSuite
+        #       MacOS/GoText
         #       Info.plist
         #       Resources/iconfile.icns
 
@@ -400,10 +400,10 @@ jobs:
           mkdir -p release-assets
           
           # Linux binary
-          LINUX="artifacts/TextProcessingSuite-linux-amd64/TextProcessingSuite-linux-amd64"
+          LINUX="artifacts/GoText-linux-amd64/GoText-linux-amd64"
           if [ -f "$LINUX" ]; then
-            cp "$LINUX" "release-assets/TextProcessingSuite-${VERSION}-linux-amd64"
-            # Result: TextProcessingSuite-1.0.0-linux-amd64
+            cp "$LINUX" "release-assets/GoText-${VERSION}-linux-amd64"
+            # Result: GoText-1.0.0-linux-amd64
             echo "✅ Linux"
           else
             echo "❌ Linux binary not found at: $LINUX"
@@ -411,10 +411,10 @@ jobs:
           fi
           
           # Windows binary
-          WINDOWS="artifacts/TextProcessingSuite-windows-amd64.exe/TextProcessingSuite-windows-amd64.exe"
+          WINDOWS="artifacts/GoText-windows-amd64.exe/GoText-windows-amd64.exe"
           if [ -f "$WINDOWS" ]; then
-            cp "$WINDOWS" "release-assets/TextProcessingSuite-${VERSION}-windows-amd64.exe"
-            # Result: TextProcessingSuite-1.0.0-windows-amd64.exe
+            cp "$WINDOWS" "release-assets/GoText-${VERSION}-windows-amd64.exe"
+            # Result: GoText-1.0.0-windows-amd64.exe
             echo "✅ Windows"
           else
             echo "❌ Windows binary not found at: $WINDOWS"
@@ -422,20 +422,20 @@ jobs:
           fi
           
           # macOS ARM64 - recreate .app structure and zip
-          MACOS_ARM_DIR="artifacts/TextProcessingSuite-macos-arm64"
+          MACOS_ARM_DIR="artifacts/GoText-macos-arm64"
           if [ -d "$MACOS_ARM_DIR/Contents" ]; then
             # GitHub Actions flattened the .app bundle, we need to recreate it
             cd "$MACOS_ARM_DIR"
             # Create the .app bundle with proper structure
-            mkdir -p TextProcessingSuite.app
-            mv Contents TextProcessingSuite.app/
+            mkdir -p GoText.app
+            mv Contents GoText.app/
             # CRITICAL: Restore executable permissions that were set during build
-            chmod +x TextProcessingSuite.app/Contents/MacOS/*
+            chmod +x GoText.app/Contents/MacOS/*
             # Now zip it with proper flags to preserve permissions
             # -r = recursive
             # -y = preserve symlinks
             # -X = preserve Unix file attributes (CRITICAL for executable permissions)
-            zip -r -y -X "../../release-assets/TextProcessingSuite-${VERSION}-macos-arm64.app.zip" TextProcessingSuite.app
+            zip -r -y -X "../../release-assets/GoText-${VERSION}-macos-arm64.app.zip" GoText.app
             cd ../..
             echo "✅ macOS ARM64 app zipped"
             # Note: The -X flag is essential for macOS apps to remain executable after unzipping
@@ -480,9 +480,9 @@ jobs:
 
           files: release-assets/*
           # Uploads all files from release-assets/
-          # - TextProcessingSuite-1.0.0-linux-amd64
-          # - TextProcessingSuite-1.0.0-windows-amd64.exe
-          # - TextProcessingSuite-1.0.0-macos-arm64.app.zip
+          # - GoText-1.0.0-linux-amd64
+          # - GoText-1.0.0-windows-amd64.exe
+          # - GoText-1.0.0-macos-arm64.app.zip
           # - SHA256SUMS.txt
 
 # ==============================================================================

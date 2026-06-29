@@ -1,6 +1,6 @@
 # 12 — UI Implementation (Radix Primitives + cmdk + Tokenized CSS)
 
-> **Application:** GoText — *"Text Processing Suite"*.
+> **Application:** GoText — *"GoText"*.
 > **Frontend stack:** React 19 + TypeScript + Redux Toolkit + Vite.
 > **Mandate:** replace **Material UI** with **Radix Primitives + `cmdk` + custom tokenized CSS**.
 > **Status:** Specification. Self-contained. Cross-references other spec documents by filename.

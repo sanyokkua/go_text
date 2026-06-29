@@ -1,7 +1,7 @@
 # GoText v3 — Specification (Master Index)
 
 This folder is the **complete, self-contained specification** for GoText v3 (internal product name
-"Text Processing Suite"): a cross-platform desktop application that transforms text with Large Language
+"GoText"): a cross-platform desktop application that transforms text with Large Language
 Models. A developer or AI agent can implement the entire solution using only the documents in this
 folder. There are no external references and no open questions.
 

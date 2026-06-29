@@ -1,4 +1,4 @@
-# Text Processing Suite
+# GoText
 
 [![Go Version](https://img.shields.io/badge/Go-1.25%2B-blue)](https://go.dev/)
 [![Wails](https://img.shields.io/badge/Wails-v2.11.0-blue)](https://wails.io/)
@@ -11,7 +11,7 @@
 
 ## Overview
 
-**Text Processing Suite** ("GoText") is a native desktop application that harnesses the power of
+**GoText** ("GoText") is a native desktop application that harnesses the power of
 Large Language Models to intelligently edit and transform text. It provides 60+ AI-powered actions
 across categories like grammar correction, style adaptation, multi-language translation, document
 structuring, and summarization — all directly on your desktop without browser or cloud dependency.
@@ -156,10 +156,10 @@ Download the latest release from the [GitHub Releases Page](https://github.com/s
 
 | Platform | File |
 |---|---|
-| macOS (Apple Silicon) | `TextProcessingSuite-*-macos-arm64.app.zip` |
-| macOS (Intel) | `TextProcessingSuite-*-macos-amd64.app.zip` |
-| Windows (64-bit) | `TextProcessingSuite-*-windows-amd64.exe` |
-| Linux (64-bit) | `TextProcessingSuite-*-linux-amd64` |
+| macOS (Apple Silicon) | `GoText-*-macos-arm64.app.zip` |
+| macOS (Intel) | `GoText-*-macos-amd64.app.zip` |
+| Windows (64-bit) | `GoText-*-windows-amd64.exe` |
+| Linux (64-bit) | `GoText-*-linux-amd64` |
 
 ![Release Page](docs/screenshots/ReleasePage_1.png)
 
@@ -170,7 +170,7 @@ macOS may block unsigned applications. After downloading:
 1. Extract the `.zip` file
 2. Remove the quarantine flag:
    ```bash
-   xattr -rd com.apple.quarantine TextProcessingSuite.app
+   xattr -rd com.apple.quarantine GoText.app
    ```
 3. If still blocked, go to **System Settings → Privacy & Security** and allow the app to run
 
@@ -203,7 +203,7 @@ wails dev
 
 # Build production binary
 wails build
-# Output: build/bin/TextProcessingSuite
+# Output: build/bin/GoText
 ```
 
 ---
@@ -228,9 +228,9 @@ list, and inference settings.
 
 | Platform | Path |
 |---|---|
-| macOS | `~/Library/Application Support/TextProcessingSuite/` |
-| Linux | `~/.config/TextProcessingSuite/` |
-| Windows | `%APPDATA%\TextProcessingSuite\` |
+| macOS | `~/Library/Application Support/GoText/` |
+| Linux | `~/.config/GoText/` |
+| Windows | `%APPDATA%\GoText\` |
 
 Files inside that folder:
 - `SettingsV2.json` — provider and UI preferences

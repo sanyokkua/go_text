@@ -1,7 +1,7 @@
 # GoText — Architecture Specification (03)
 
 > **Document:** 03 — Architecture
-> **Application:** GoText ("Text Processing Suite") — a native desktop LLM text-processing application.
+> **Application:** GoText ("GoText") — a native desktop LLM text-processing application.
 > **Stack:** Go + [Wails v2] backend; React 19 + TypeScript + Redux Toolkit frontend.
 > **Module name:** `go_text`.
 > **Status:** Specification (confirmed requirements only).

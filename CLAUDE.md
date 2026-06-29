@@ -33,7 +33,7 @@ All code in this project must follow the rules defined in `docs/ai_agent_rules/`
 
 ## Project Overview
 
-**Text Processing Suite** ("GoText") is a native desktop application built with Go + React via
+**GoText** ("GoText") is a native desktop application built with Go + React via
 [Wails v2](https://wails.io/). It provides AI-powered text transformation through multiple LLM
 providers (Ollama, LM Studio, Llama.cpp, OpenAI, OpenRouter, or any OpenAI-compatible API).
 Module name: `go_text`.
@@ -166,9 +166,9 @@ that the adapter subscribes to and dispatches into the `run` slice.
 
 | Platform | JSON settings | SQLite database |
 |---|---|---|
-| macOS | `~/Library/Application Support/TextProcessingSuite/SettingsV2.json` | `.../gotext.db` |
-| Linux | `~/.config/TextProcessingSuite/SettingsV2.json` | `.../gotext.db` |
-| Windows | `%APPDATA%\TextProcessingSuite\SettingsV2.json` | `.../gotext.db` |
+| macOS | `~/Library/Application Support/GoText/SettingsV2.json` | `.../gotext.db` |
+| Linux | `~/.config/GoText/SettingsV2.json` | `.../gotext.db` |
+| Windows | `%APPDATA%\GoText\SettingsV2.json` | `.../gotext.db` |
 
 ## Extending the App
 
