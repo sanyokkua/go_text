@@ -240,6 +240,57 @@ func TestSqliteSettingsRepository_AppBehaviorConfig_RoundTrip(t *testing.T) {
 	}
 }
 
+func TestSqliteSettingsRepository_GetUIPreferencesConfig_Default(t *testing.T) {
+	t.Parallel()
+	// Arrange: a freshly-seeded DB has never written ui.theme.
+	repo := newRepo(t)
+
+	// Act
+	got, err := repo.GetUIPreferencesConfig()
+
+	// Assert
+	if err != nil {
+		t.Fatalf("GetUIPreferencesConfig: %v", err)
+	}
+	if got.Theme != "auto" {
+		t.Errorf("default theme: want %q, got %q", "auto", got.Theme)
+	}
+}
+
+func TestSqliteSettingsRepository_UIPreferencesConfig_RoundTrip(t *testing.T) {
+	tests := []struct {
+		name  string
+		theme string
+	}{
+		{name: "dark", theme: "dark"},
+		{name: "light", theme: "light"},
+		{name: "auto", theme: "auto"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			// Arrange: each case gets its own freshly-seeded DB so writes
+			// to the ui.theme KV row cannot contaminate other cases.
+			repo := newRepo(t)
+
+			// Act
+			if err := repo.UpdateUIPreferencesConfig(&settings.UIPreferencesConfig{Theme: tt.theme}); err != nil {
+				t.Fatalf("UpdateUIPreferencesConfig: %v", err)
+			}
+			got, err := repo.GetUIPreferencesConfig()
+
+			// Assert
+			if err != nil {
+				t.Fatalf("GetUIPreferencesConfig: %v", err)
+			}
+			if got.Theme != tt.theme {
+				t.Errorf("round-trip theme: want %q, got %q", tt.theme, got.Theme)
+			}
+		})
+	}
+}
+
 // ── Languages ──────────────────────────────────────────────────────────────
 
 func TestSqliteSettingsRepository_Languages(t *testing.T) {

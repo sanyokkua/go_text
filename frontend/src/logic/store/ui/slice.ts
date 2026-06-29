@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { processPromptChain } from '../run/thunks';
-import { testProviderInference } from '../settings/thunks';
+import { getUIPreferences, testProviderInference } from '../settings/thunks';
 import { CurrentView, ThemeEffective, ThemeMode, UIState } from './types';
 
 const initialState: UIState = {
@@ -99,6 +99,10 @@ const uiSlice = createSlice({
             })
             .addCase(testProviderInference.rejected, (state) => {
                 state.inferenceRunning = false;
+            })
+            .addCase(getUIPreferences.fulfilled, (state, action) => {
+                state.theme.mode = action.payload.mode;
+                state.theme.effective = action.payload.effective;
             });
     },
 });

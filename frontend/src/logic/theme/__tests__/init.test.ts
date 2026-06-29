@@ -1,5 +1,5 @@
 import type { ThemeEffective } from '../../store/theme/types';
-import { applyTheme, initTheme, resolveEffectiveTheme, THEME_STORAGE_KEY, watchSystemTheme } from '../init';
+import { applyTheme, initTheme, resolveEffectiveTheme, watchSystemTheme } from '../init';
 
 // ── matchMedia mock helpers ──────────────────────────────────────────────────
 
@@ -41,12 +41,6 @@ function setMQMock(isDark: boolean): MockMQ {
 
 beforeEach(() => {
     document.documentElement.classList.remove('dark');
-});
-
-describe('THEME_STORAGE_KEY', () => {
-    it('is the string "ui.theme"', () => {
-        expect(THEME_STORAGE_KEY).toBe('ui.theme');
-    });
 });
 
 describe('resolveEffectiveTheme', () => {

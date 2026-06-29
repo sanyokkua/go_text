@@ -6,6 +6,7 @@ import {
     fromWireMetadata,
     fromWireProvider,
     fromWireSettings,
+    fromWireUIPreferences,
     getLogger,
     SettingsHandlerAdapter,
     unwrap,
@@ -18,8 +19,11 @@ import {
     ModelConfig,
     ProviderConfig,
     Settings,
+    UIPreferencesConfig,
 } from '../../adapter/models';
+import { resolveEffectiveTheme } from '../../theme/init';
 import { parseError } from '../../utils/error_utils';
+import { ThemeEffective, ThemeMode } from '../ui/types';
 
 const logger = getLogger('SettingsThunks');
 
@@ -309,6 +313,34 @@ export const updateAppBehaviorConfig = createAsyncThunk<AppBehaviorConfig, AppBe
     },
 );
 
+export const getUIPreferences = createAsyncThunk<{ mode: ThemeMode; effective: ThemeEffective }, void, { rejectValue: string }>(
+    'settings/getUIPreferences',
+    async (_, { rejectWithValue }) => {
+        try {
+            const cfg = fromWireUIPreferences(unwrap(await SettingsHandlerAdapter.getUIPreferencesConfig()));
+            const mode: ThemeMode = cfg.theme;
+            return { mode, effective: resolveEffectiveTheme(mode) };
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logError(`getUIPreferences failed: ${err.message}`);
+            return rejectWithValue(err.message);
+        }
+    },
+);
+
+export const updateUIPreferences = createAsyncThunk<void, UIPreferencesConfig, { rejectValue: string }>(
+    'settings/updateUIPreferences',
+    async (config, { rejectWithValue }) => {
+        try {
+            unwrap(await SettingsHandlerAdapter.updateUIPreferencesConfig(config));
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logError(`updateUIPreferences failed: ${err.message}`);
+            return rejectWithValue(err.message);
+        }
+    },
+);
+
 export const testProviderInference = createAsyncThunk<apperr.VerifyOutcome, ProviderConfig, { rejectValue: string }>(
     'settings/testProviderInference',
     async (providerConfig, { rejectWithValue }) => {
@@ -360,6 +392,7 @@ export const initializeSettingsState = createAsyncThunk<void, void, { rejectValu
                 dispatch(getModelConfig()).unwrap(),
                 dispatch(getInferenceBaseConfig()).unwrap(),
                 dispatch(getAppSettingsMetadata()).unwrap(),
+                dispatch(getUIPreferences()).unwrap(),
             ]);
         } catch (error: unknown) {
             const err = parseError(error);

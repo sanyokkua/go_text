@@ -7,17 +7,18 @@ import store from './logic/store';
 import { notifyError } from './logic/store/notifications/slice';
 import { setEffective, setMode } from './logic/store/theme/slice';
 import type { ThemeMode } from './logic/store/theme/types';
-import { THEME_STORAGE_KEY, initTheme } from './logic/theme/init';
+import { initTheme } from './logic/theme/init';
 import AppLayout from './ui/AppLayout';
 import RootErrorBoundary from './ui/RootErrorBoundary';
 import './ui/styles/base.css';
 import './ui/styles/markdown.css';
 import './ui/styles/tokens.css';
 
-const raw = localStorage.getItem(THEME_STORAGE_KEY);
-const storedMode: ThemeMode = raw === 'dark' || raw === 'light' ? raw : 'auto';
-const effective = initTheme(storedMode);
-store.dispatch(setMode(storedMode));
+// First paint uses 'auto' (OS theme); the persisted theme is applied a moment
+// later when initializeSettingsState → getUIPreferences resolves from the backend.
+const initialMode: ThemeMode = 'auto';
+const effective = initTheme(initialMode);
+store.dispatch(setMode(initialMode));
 store.dispatch(setEffective(effective));
 
 // Global catch-all for uncaught errors — must sit before render

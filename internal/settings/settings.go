@@ -43,6 +43,12 @@ type AppBehaviorConfig struct {
 	HistoryMaxEntries int  `json:"historyMaxEntries"`
 }
 
+// UIPreferencesConfig holds persisted UI preferences that must survive restart.
+// Theme is "auto" | "light" | "dark".
+type UIPreferencesConfig struct {
+	Theme string `json:"theme"`
+}
+
 // LoggingConfig maps the log.* KV rows from the settings table.
 type LoggingConfig struct {
 	LogFileEnabled bool   `json:"logFileEnabled"`

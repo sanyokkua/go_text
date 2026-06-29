@@ -144,6 +144,14 @@ func (m *MockSettingsService) UpdateAppBehaviorConfig(cfg *settings.AppBehaviorC
 	return cfg, nil
 }
 
+func (m *MockSettingsService) GetUIPreferencesConfig() (*settings.UIPreferencesConfig, error) {
+	return &settings.UIPreferencesConfig{}, nil
+}
+
+func (m *MockSettingsService) UpdateUIPreferencesConfig(cfg *settings.UIPreferencesConfig) (*settings.UIPreferencesConfig, error) {
+	return cfg, nil
+}
+
 // MockServerBehavior controls the mock HTTP server responses
 type MockServerBehavior struct {
 	StatusCode         int

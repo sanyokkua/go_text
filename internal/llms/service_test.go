@@ -70,6 +70,12 @@ func (s *stubSettingsService) GetAppBehaviorConfig() (*settings.AppBehaviorConfi
 func (s *stubSettingsService) UpdateAppBehaviorConfig(_ *settings.AppBehaviorConfig) (*settings.AppBehaviorConfig, error) {
 	return nil, nil
 }
+func (s *stubSettingsService) GetUIPreferencesConfig() (*settings.UIPreferencesConfig, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) UpdateUIPreferencesConfig(_ *settings.UIPreferencesConfig) (*settings.UIPreferencesConfig, error) {
+	return nil, nil
+}
 func (s *stubSettingsService) GetLoggingConfig() (*settings.LoggingConfig, error) { return nil, nil }
 func (s *stubSettingsService) UpdateLoggingConfig(_ *settings.LoggingConfig) (*settings.LoggingConfig, error) {
 	return nil, nil

@@ -97,6 +97,12 @@ func (m *mockSettingsService) RemoveLanguage(_ string) ([]string, error)        
 func (m *mockSettingsService) UpdateAppBehaviorConfig(_ *settings.AppBehaviorConfig) (*settings.AppBehaviorConfig, error) {
 	return nil, nil
 }
+func (m *mockSettingsService) GetUIPreferencesConfig() (*settings.UIPreferencesConfig, error) {
+	return &settings.UIPreferencesConfig{}, nil
+}
+func (m *mockSettingsService) UpdateUIPreferencesConfig(cfg *settings.UIPreferencesConfig) (*settings.UIPreferencesConfig, error) {
+	return cfg, nil
+}
 
 // mockFileUtilsService stubs file.FileUtilsServiceAPI.
 // EnsureAppLogsFolderExists records the call and returns configured values.

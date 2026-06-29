@@ -1,5 +1,5 @@
 import { apperr } from '../../../wailsjs/go/models';
-import { AppBehaviorConfig, AppSettingsMetadata, ProviderConfig, Settings } from './models';
+import { AppBehaviorConfig, AppSettingsMetadata, ProviderConfig, Settings, UIPreferencesConfig } from './models';
 
 export function fromWireProvider(v: apperr.ProviderConfig): ProviderConfig {
     return {
@@ -72,4 +72,13 @@ export function toWireBehavior(v: AppBehaviorConfig): apperr.AppBehaviorConfig {
         historyEnabled: v.historyEnabled ?? false,
         historyMaxEntries: v.historyMaxEntries ?? 0,
     });
+}
+
+export function fromWireUIPreferences(v: apperr.UIPreferencesConfig): UIPreferencesConfig {
+    const theme = v.theme === 'light' || v.theme === 'dark' ? v.theme : 'auto';
+    return { theme };
+}
+
+export function toWireUIPreferences(v: UIPreferencesConfig): apperr.UIPreferencesConfig {
+    return apperr.UIPreferencesConfig.createFrom({ theme: v.theme });
 }

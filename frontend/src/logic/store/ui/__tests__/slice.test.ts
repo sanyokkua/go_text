@@ -22,7 +22,7 @@ jest.mock('../../../adapter', () => ({
 
 import type { RootState } from '../../index';
 import { processPromptChain } from '../../run/thunks';
-import { testProviderInference } from '../../settings/thunks';
+import { getUIPreferences, testProviderInference } from '../../settings/thunks';
 import { selectActiveActionsTab, selectArmedActionId, selectArmedStackId, selectArmedTarget, selectCurrentView } from '../selectors';
 import uiReducer, {
     armAction,
@@ -106,6 +106,15 @@ describe('ui slice reducer', () => {
     it('setThemeEffective("dark") sets theme effective to dark', () => {
         const state = uiReducer(initialState, setThemeEffective('dark'));
 
+        expect(state.theme.effective).toBe('dark');
+    });
+
+    it('getUIPreferences.fulfilled sets theme mode and effective from the payload', () => {
+        const action = { type: getUIPreferences.fulfilled.type, payload: { mode: 'dark', effective: 'dark' } };
+
+        const state = uiReducer(initialState, action);
+
+        expect(state.theme.mode).toBe('dark');
         expect(state.theme.effective).toBe('dark');
     });
 

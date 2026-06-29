@@ -83,6 +83,8 @@ type SettingsServiceAPI interface {
 	RemoveLanguage(language string) ([]string, error)
 	GetAppBehaviorConfig() (*AppBehaviorConfig, error)
 	UpdateAppBehaviorConfig(cfg *AppBehaviorConfig) (*AppBehaviorConfig, error)
+	GetUIPreferencesConfig() (*UIPreferencesConfig, error)
+	UpdateUIPreferencesConfig(cfg *UIPreferencesConfig) (*UIPreferencesConfig, error)
 	GetLoggingConfig() (*LoggingConfig, error)
 	UpdateLoggingConfig(cfg *LoggingConfig) (*LoggingConfig, error)
 }
@@ -418,6 +420,27 @@ func (s *SettingsService) UpdateAppBehaviorConfig(cfg *AppBehaviorConfig) (*AppB
 		cfg.HistoryMaxEntries = 1000
 	}
 	if err := s.settingsRepo.UpdateAppBehaviorConfig(cfg); err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return cfg, nil
+}
+
+func (s *SettingsService) GetUIPreferencesConfig() (*UIPreferencesConfig, error) {
+	return s.settingsRepo.GetUIPreferencesConfig()
+}
+
+func (s *SettingsService) UpdateUIPreferencesConfig(cfg *UIPreferencesConfig) (*UIPreferencesConfig, error) {
+	const op = "SettingsService.UpdateUIPreferencesConfig"
+	if cfg == nil {
+		return nil, fmt.Errorf("%s: config cannot be nil", op)
+	}
+	switch cfg.Theme {
+	case "auto", "light", "dark":
+		// valid
+	default:
+		return nil, apperr.Validation("theme", "one of auto|light|dark", cfg.Theme)
+	}
+	if err := s.settingsRepo.UpdateUIPreferencesConfig(cfg); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	return cfg, nil

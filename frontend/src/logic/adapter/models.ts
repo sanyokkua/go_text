@@ -12,6 +12,15 @@ export interface AppBehaviorConfig {
 }
 
 /**
+ * UI preferences persisted in the backend.
+ *
+ * `theme` is the user's chosen mode; `'auto'` defers to the OS color scheme.
+ */
+export interface UIPreferencesConfig {
+    theme: 'auto' | 'light' | 'dark';
+}
+
+/**
  * Application settings metadata
  *
  * Provides information about the settings system including:

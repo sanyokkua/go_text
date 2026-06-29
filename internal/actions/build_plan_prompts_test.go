@@ -283,6 +283,12 @@ func (m *minimalSettingsService) GetAppBehaviorConfig() (*settings.AppBehaviorCo
 func (m *minimalSettingsService) UpdateAppBehaviorConfig(_ *settings.AppBehaviorConfig) (*settings.AppBehaviorConfig, error) {
 	panic("not implemented in test")
 }
+func (m *minimalSettingsService) GetUIPreferencesConfig() (*settings.UIPreferencesConfig, error) {
+	panic("not implemented in test")
+}
+func (m *minimalSettingsService) UpdateUIPreferencesConfig(_ *settings.UIPreferencesConfig) (*settings.UIPreferencesConfig, error) {
+	panic("not implemented in test")
+}
 func (m *minimalSettingsService) GetLoggingConfig() (*settings.LoggingConfig, error) {
 	panic("not implemented in test")
 }

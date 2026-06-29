@@ -1,7 +1,5 @@
 import type { ThemeEffective, ThemeMode } from '../store/theme/types';
 
-export const THEME_STORAGE_KEY = 'ui.theme' as const;
-
 export function resolveEffectiveTheme(mode: ThemeMode | string): ThemeEffective {
     if (mode === 'dark') return 'dark';
     if (mode === 'light') return 'light';

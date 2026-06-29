@@ -32,6 +32,8 @@ type SettingsHandlerAPI interface {
 	RemoveLanguage(language string) apperr.LanguagesResult
 	GetAppBehaviorConfig() apperr.AppBehaviorResult
 	UpdateAppBehaviorConfig(cfg apperr.AppBehaviorConfig) apperr.AppBehaviorResult
+	GetUIPreferencesConfig() apperr.UIPreferencesResult
+	UpdateUIPreferencesConfig(cfg apperr.UIPreferencesConfig) apperr.UIPreferencesResult
 	GetLoggingConfig() apperr.LoggingResult
 	UpdateLoggingConfig(cfg apperr.LoggingConfig) apperr.LoggingResult
 }
@@ -82,6 +84,12 @@ func toWireAppBehavior(v AppBehaviorConfig) apperr.AppBehaviorConfig {
 }
 func fromWireAppBehavior(v apperr.AppBehaviorConfig) AppBehaviorConfig {
 	return AppBehaviorConfig(v)
+}
+func toWireUIPreferences(v UIPreferencesConfig) apperr.UIPreferencesConfig {
+	return apperr.UIPreferencesConfig(v)
+}
+func fromWireUIPreferences(v apperr.UIPreferencesConfig) UIPreferencesConfig {
+	return UIPreferencesConfig(v)
 }
 func toWireLogging(v LoggingConfig) apperr.LoggingConfig   { return apperr.LoggingConfig(v) }
 func fromWireLogging(v apperr.LoggingConfig) LoggingConfig { return LoggingConfig(v) }
@@ -463,6 +471,41 @@ func (h *SettingsHandler) UpdateAppBehaviorConfig(cfg apperr.AppBehaviorConfig) 
 	}
 	ab := toWireAppBehavior(*updated)
 	return apperr.AppBehaviorResult{Data: &ab}
+}
+
+func (h *SettingsHandler) GetUIPreferencesConfig() (res apperr.UIPreferencesResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(h.zlog, ae)
+			res = apperr.UIPreferencesResult{Error: &wire}
+		}
+	}()
+	cfg, err := h.settingsService.GetUIPreferencesConfig()
+	if err != nil {
+		wire := apperr.ToWire(h.zlog, err)
+		return apperr.UIPreferencesResult{Error: &wire}
+	}
+	ui := toWireUIPreferences(*cfg)
+	return apperr.UIPreferencesResult{Data: &ui}
+}
+
+func (h *SettingsHandler) UpdateUIPreferencesConfig(cfg apperr.UIPreferencesConfig) (res apperr.UIPreferencesResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(h.zlog, ae)
+			res = apperr.UIPreferencesResult{Error: &wire}
+		}
+	}()
+	v := fromWireUIPreferences(cfg)
+	updated, err := h.settingsService.UpdateUIPreferencesConfig(&v)
+	if err != nil {
+		wire := apperr.ToWire(h.zlog, err)
+		return apperr.UIPreferencesResult{Error: &wire}
+	}
+	ui := toWireUIPreferences(*updated)
+	return apperr.UIPreferencesResult{Data: &ui}
 }
 
 func (h *SettingsHandler) GetLoggingConfig() (res apperr.LoggingResult) {

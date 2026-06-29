@@ -378,6 +378,24 @@ func (r *SqliteSettingsRepository) UpdateAppBehaviorConfig(cfg *AppBehaviorConfi
 	return nil
 }
 
+func (r *SqliteSettingsRepository) GetUIPreferencesConfig() (*UIPreferencesConfig, error) {
+	return &UIPreferencesConfig{
+		Theme: r.getString("ui.theme", "auto"),
+	}, nil
+}
+
+func (r *SqliteSettingsRepository) UpdateUIPreferencesConfig(cfg *UIPreferencesConfig) error {
+	rows := []store.UpsertSettingParams{
+		{Key: "ui.theme", Value: cfg.Theme, Type: "string"},
+	}
+	for _, row := range rows {
+		if err := r.database.Queries.UpsertSetting(bg(), row); err != nil {
+			return apperr.Internal(fmt.Errorf("UpdateUIPreferencesConfig %q: %w", row.Key, err))
+		}
+	}
+	return nil
+}
+
 func (r *SqliteSettingsRepository) GetLoggingConfig() (*LoggingConfig, error) {
 	return &LoggingConfig{
 		LogFileEnabled: r.getBool("log.fileEnabled", false),

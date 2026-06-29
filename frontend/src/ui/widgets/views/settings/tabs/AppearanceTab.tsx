@@ -3,8 +3,9 @@ import React from 'react';
 import { useAppDispatch, useAppSelector } from '../../../../../logic/store';
 import { selectThemeMode } from '../../../../../logic/store/ui/selectors';
 import { setThemeEffective, setThemeMode } from '../../../../../logic/store/ui/slice';
+import { updateUIPreferences } from '../../../../../logic/store/settings/thunks';
 import { ThemeMode } from '../../../../../logic/store/ui/types';
-import { THEME_STORAGE_KEY, resolveEffectiveTheme } from '../../../../../logic/theme/init';
+import { resolveEffectiveTheme } from '../../../../../logic/theme/init';
 import { Segmented, SegmentedItem } from '../../../../primitives/Segmented';
 import styles from './AppearanceTab.module.css';
 
@@ -23,7 +24,7 @@ const AppearanceTab: React.FC = () => {
         const effective = resolveEffectiveTheme(mode);
         dispatch(setThemeMode(mode));
         dispatch(setThemeEffective(effective));
-        localStorage.setItem(THEME_STORAGE_KEY, mode);
+        dispatch(updateUIPreferences({ theme: mode }));
     };
 
     return (

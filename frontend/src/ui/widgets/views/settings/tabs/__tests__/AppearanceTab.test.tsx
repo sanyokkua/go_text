@@ -14,6 +14,10 @@ jest.mock('../../../../../../logic/adapter', () => ({
         if (r?.error) throw new Error(r.error.message);
         return r?.data;
     }),
+    SettingsHandlerAdapter: {
+        updateUIPreferencesConfig: jest.fn().mockResolvedValue({ data: { theme: 'dark' } }),
+        getUIPreferencesConfig: jest.fn().mockResolvedValue({ data: { theme: 'auto' } }),
+    },
 }));
 
 function makeStore(uiOverride = {}) {

@@ -19,6 +19,8 @@ type SettingsRepositoryAPI interface {
 	UpdateModelConfig(cfg *ModelConfig) error
 	GetAppBehaviorConfig() (*AppBehaviorConfig, error)
 	UpdateAppBehaviorConfig(cfg *AppBehaviorConfig) error
+	GetUIPreferencesConfig() (*UIPreferencesConfig, error)
+	UpdateUIPreferencesConfig(cfg *UIPreferencesConfig) error
 	GetLoggingConfig() (*LoggingConfig, error)
 	UpdateLoggingConfig(cfg *LoggingConfig) error
 

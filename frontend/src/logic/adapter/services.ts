@@ -29,6 +29,7 @@ import {
     GetLanguageConfig,
     GetModelConfig,
     GetSettings,
+    GetUIPreferencesConfig,
     RemoveLanguage,
     ResetSettingsToDefault,
     SetAsCurrentProviderConfig,
@@ -38,12 +39,13 @@ import {
     UpdateInferenceBaseConfig,
     UpdateModelConfig,
     UpdateProviderConfig,
+    UpdateUIPreferencesConfig,
 } from '../../../wailsjs/go/settings/SettingsHandler';
 import { CreateStack, DeleteStack, DuplicateStack, GetStack, ListStacks, UpdateStack } from '../../../wailsjs/go/stacks/StackHandler';
 import { LogDebug, LogError, LogFatal, LogInfo, LogPrint, LogTrace, LogWarning } from '../../../wailsjs/runtime';
 import { IActionHandler, IAppHandler, IClipboardService, IHistoryHandler, ILoggerService, ISettingsHandler, IStackHandler } from './interfaces';
-import { toWireBehavior, toWireProvider } from './mappers';
-import { AppBehaviorConfig, InferenceBaseConfig, ModelConfig, ProviderConfig } from './models';
+import { toWireBehavior, toWireProvider, toWireUIPreferences } from './mappers';
+import { AppBehaviorConfig, InferenceBaseConfig, ModelConfig, ProviderConfig, UIPreferencesConfig } from './models';
 
 function formatLogMessage(message: string, serviceName?: string): string {
     if (serviceName && serviceName.trim().length > 0) {
@@ -262,6 +264,16 @@ export class SettingsHandler implements ISettingsHandler {
     async updateAppBehaviorConfig(config: AppBehaviorConfig): Promise<apperr.AppBehaviorResult> {
         this.logger.logInfo('updateAppBehaviorConfig');
         return UpdateAppBehaviorConfig(toWireBehavior(config));
+    }
+
+    async getUIPreferencesConfig(): Promise<apperr.UIPreferencesResult> {
+        this.logger.logInfo('getUIPreferencesConfig');
+        return GetUIPreferencesConfig();
+    }
+
+    async updateUIPreferencesConfig(config: UIPreferencesConfig): Promise<apperr.UIPreferencesResult> {
+        this.logger.logInfo('updateUIPreferencesConfig');
+        return UpdateUIPreferencesConfig(toWireUIPreferences(config));
     }
 }
 

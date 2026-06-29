@@ -89,6 +89,10 @@ type AppBehaviorConfig struct {
 	HistoryMaxEntries int  `json:"historyMaxEntries"`
 }
 
+type UIPreferencesConfig struct {
+	Theme string `json:"theme"`
+}
+
 type LoggingConfig struct {
 	LogFileEnabled bool   `json:"logFileEnabled"`
 	LogLevel       string `json:"logLevel"`
@@ -294,6 +298,11 @@ type ModelConfigResult struct {
 type AppBehaviorResult struct {
 	Data  *AppBehaviorConfig `json:"data,omitempty"`
 	Error *WireError         `json:"error,omitempty"`
+}
+
+type UIPreferencesResult struct {
+	Data  *UIPreferencesConfig `json:"data,omitempty"`
+	Error *WireError           `json:"error,omitempty"`
 }
 
 type LanguageResult struct {
