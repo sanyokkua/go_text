@@ -157,6 +157,7 @@ func (a *ApplicationContextHolder) Init(ctx context.Context) error {
 	}
 
 	isDev := runtime.Environment(ctx).BuildType == "dev"
+	a.SettingsHandler.SetAppLogger(a.appLogger, a.fileService, isDev)
 	lc := logging.Config{
 		FileEnabled: logCfg.LogFileEnabled,
 		Level:       logCfg.LogLevel,

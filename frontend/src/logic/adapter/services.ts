@@ -28,6 +28,7 @@ import {
     GetCurrentProviderConfig,
     GetInferenceBaseConfig,
     GetLanguageConfig,
+    GetLoggingConfig,
     GetModelConfig,
     GetSettings,
     GetUIPreferencesConfig,
@@ -39,6 +40,7 @@ import {
     SetDefaultOutputLanguage,
     UpdateAppBehaviorConfig,
     UpdateInferenceBaseConfig,
+    UpdateLoggingConfig,
     UpdateModelConfig,
     UpdateProviderConfig,
     UpdateUIPreferencesConfig,
@@ -46,8 +48,8 @@ import {
 import { CreateStack, DeleteStack, DuplicateStack, GetStack, ListStacks, SuggestedStacks, UpdateStack } from '../../../wailsjs/go/stacks/StackHandler';
 import { LogDebug, LogError, LogFatal, LogInfo, LogPrint, LogTrace, LogWarning } from '../../../wailsjs/runtime';
 import { IActionHandler, IAppHandler, IClipboardService, IHistoryHandler, ILoggerService, ISettingsHandler, IStackHandler } from './interfaces';
-import { toWireBehavior, toWireProvider, toWireUIPreferences } from './mappers';
-import { AppBehaviorConfig, InferenceBaseConfig, ModelConfig, ProviderConfig, UIPreferencesConfig } from './models';
+import { toWireBehavior, toWireLogging, toWireProvider, toWireUIPreferences } from './mappers';
+import { AppBehaviorConfig, InferenceBaseConfig, LoggingConfig, ModelConfig, ProviderConfig, UIPreferencesConfig } from './models';
 
 function formatLogMessage(message: string, serviceName?: string): string {
     if (serviceName && serviceName.trim().length > 0) {
@@ -286,6 +288,16 @@ export class SettingsHandler implements ISettingsHandler {
     async updateUIPreferencesConfig(config: UIPreferencesConfig): Promise<apperr.UIPreferencesResult> {
         this.logger.logInfo('updateUIPreferencesConfig');
         return UpdateUIPreferencesConfig(toWireUIPreferences(config));
+    }
+
+    async getLoggingConfig(): Promise<apperr.LoggingResult> {
+        this.logger.logInfo('getLoggingConfig');
+        return GetLoggingConfig();
+    }
+
+    async updateLoggingConfig(config: LoggingConfig): Promise<apperr.LoggingResult> {
+        this.logger.logInfo('updateLoggingConfig');
+        return UpdateLoggingConfig(toWireLogging(config));
     }
 }
 

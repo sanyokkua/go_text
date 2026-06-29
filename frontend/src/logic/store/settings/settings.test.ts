@@ -19,9 +19,13 @@ jest.mock('../../adapter', () => ({
     }),
     // Inline implementation mirrors mappers.ts fromWireBehavior — avoids wailsjs ESM import
     fromWireBehavior: jest.fn((v: { enableTaskLogging: boolean }) => ({ enableTaskLogging: v.enableTaskLogging, logDirectory: '' })),
+    // Direct passthrough — wire and frontend types are identical for logging config
+    fromWireLogging: jest.fn((v: unknown) => v),
     SettingsHandlerAdapter: {
         getAppBehaviorConfig: jest.fn().mockResolvedValue({ data: { enableTaskLogging: false } }),
         updateAppBehaviorConfig: jest.fn().mockResolvedValue({ data: { enableTaskLogging: true } }),
+        getLoggingConfig: jest.fn().mockResolvedValue({ data: { logFileEnabled: false, logLevel: 'info', logDirectory: '', logMaxSizeMB: 10, logMaxBackups: 5, logMaxAgeDays: 30, logCompress: false } }),
+        updateLoggingConfig: jest.fn().mockResolvedValue({ data: { logFileEnabled: true, logLevel: 'debug', logDirectory: '', logMaxSizeMB: 5, logMaxBackups: 5, logMaxAgeDays: 30, logCompress: false } }),
     },
     ActionHandlerAdapter: {
         getModels: jest.fn().mockResolvedValue({ data: [], error: null }),
@@ -30,11 +34,11 @@ jest.mock('../../adapter', () => ({
 
 import { apperr } from '../../../../wailsjs/go/models';
 import { SelectItem } from '../../../ui/primitives/Select';
-import { ActionHandlerAdapter, AppBehaviorConfig, Settings, SettingsHandlerAdapter } from '../../adapter';
+import { ActionHandlerAdapter, AppBehaviorConfig, LoggingConfig, Settings, SettingsHandlerAdapter } from '../../adapter';
 import { RootState } from '../index';
-import { selectAppBehaviorConfig, selectCurrentModelCaps, selectCurrentProviderModelItems } from './selectors';
+import { selectAppBehaviorConfig, selectCurrentModelCaps, selectCurrentProviderModelItems, selectLoggingConfig } from './selectors';
 import settingsReducer from './slice';
-import { discoverCurrentProviderModels, getAppBehaviorConfig, setAsCurrentProviderConfig, updateAppBehaviorConfig } from './thunks';
+import { discoverCurrentProviderModels, getAppBehaviorConfig, getLoggingConfig, setAsCurrentProviderConfig, updateAppBehaviorConfig, updateLoggingConfig } from './thunks';
 import { SettingsState } from './types';
 
 // ---------------------------------------------------------------------------
@@ -461,5 +465,132 @@ describe('selectCurrentModelCaps', () => {
         const caps = selectCurrentModelCaps(state);
 
         expect(caps).toBeNull();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Part E: Logging config — selector, slice, thunks
+// ---------------------------------------------------------------------------
+
+const defaultLogging: LoggingConfig = {
+    logFileEnabled: false,
+    logLevel: 'info',
+    logDirectory: '',
+    logMaxSizeMB: 10,
+    logMaxBackups: 5,
+    logMaxAgeDays: 30,
+    logCompress: false,
+};
+
+describe('selectLoggingConfig', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it('returns null when allSettings is null', () => {
+        const state = makeState(null);
+        expect(selectLoggingConfig(state)).toBeNull();
+    });
+
+    it('returns null when loggingConfig is absent', () => {
+        const state = makeState({ ...fullSettings });
+        expect(selectLoggingConfig(state)).toBeNull();
+    });
+
+    it('returns config when loggingConfig is set', () => {
+        const state = makeState({ ...fullSettings, loggingConfig: defaultLogging });
+        expect(selectLoggingConfig(state)).toEqual(defaultLogging);
+    });
+});
+
+describe('settingsReducer — getLoggingConfig.fulfilled', () => {
+    const emptyState: SettingsState = { allSettings: null, metadata: null };
+
+    it('is a no-op when allSettings is null', () => {
+        const action = getLoggingConfig.fulfilled(defaultLogging, 'id', undefined);
+        const state = settingsReducer(emptyState, action);
+        expect(state.allSettings).toBeNull();
+    });
+
+    it('sets loggingConfig when allSettings exists', () => {
+        const initialState: SettingsState = { allSettings: { ...fullSettings }, metadata: null };
+        const action = getLoggingConfig.fulfilled(defaultLogging, 'id', undefined);
+        const state = settingsReducer(initialState, action);
+        expect(state.allSettings?.loggingConfig).toEqual(defaultLogging);
+    });
+});
+
+describe('settingsReducer — updateLoggingConfig.fulfilled', () => {
+    const emptyState: SettingsState = { allSettings: null, metadata: null };
+
+    it('is a no-op when allSettings is null', () => {
+        const action = updateLoggingConfig.fulfilled(defaultLogging, 'id', defaultLogging);
+        const state = settingsReducer(emptyState, action);
+        expect(state.allSettings).toBeNull();
+    });
+
+    it('updates loggingConfig when allSettings exists', () => {
+        const initialState: SettingsState = { allSettings: { ...fullSettings, loggingConfig: defaultLogging }, metadata: null };
+        const updated: LoggingConfig = { ...defaultLogging, logFileEnabled: true, logLevel: 'debug' };
+        const action = updateLoggingConfig.fulfilled(updated, 'id', updated);
+        const state = settingsReducer(initialState, action);
+        expect(state.allSettings?.loggingConfig).toEqual(updated);
+    });
+});
+
+describe('getLoggingConfig thunk', () => {
+    const dispatch = jest.fn();
+    const getState = jest.fn();
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it('dispatches fulfilled with the mapped config on success', async () => {
+        (SettingsHandlerAdapter.getLoggingConfig as jest.Mock).mockResolvedValue({ data: defaultLogging });
+
+        const action = await getLoggingConfig()(dispatch, getState, undefined);
+
+        expect(action.type).toBe('settings/getLoggingConfig/fulfilled');
+        expect(action.payload).toEqual(defaultLogging);
+    });
+
+    it('dispatches rejected with error message on failure', async () => {
+        (SettingsHandlerAdapter.getLoggingConfig as jest.Mock).mockRejectedValue(new Error('network'));
+
+        const action = await getLoggingConfig()(dispatch, getState, undefined);
+
+        expect(action.type).toBe('settings/getLoggingConfig/rejected');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        expect((action as any).payload).toBe('network');
+    });
+});
+
+describe('updateLoggingConfig thunk', () => {
+    const dispatch = jest.fn();
+    const getState = jest.fn();
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it('dispatches fulfilled with the updated config on success', async () => {
+        const updated: LoggingConfig = { ...defaultLogging, logFileEnabled: true, logLevel: 'debug', logMaxSizeMB: 5 };
+        (SettingsHandlerAdapter.updateLoggingConfig as jest.Mock).mockResolvedValue({ data: updated });
+
+        const action = await updateLoggingConfig(updated)(dispatch, getState, undefined);
+
+        expect(action.type).toBe('settings/updateLoggingConfig/fulfilled');
+        expect(action.payload).toEqual(updated);
+    });
+
+    it('dispatches rejected with error message on failure', async () => {
+        (SettingsHandlerAdapter.updateLoggingConfig as jest.Mock).mockRejectedValue(new Error('save failed'));
+
+        const action = await updateLoggingConfig(defaultLogging)(dispatch, getState, undefined);
+
+        expect(action.type).toBe('settings/updateLoggingConfig/rejected');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        expect((action as any).payload).toBe('save failed');
     });
 });

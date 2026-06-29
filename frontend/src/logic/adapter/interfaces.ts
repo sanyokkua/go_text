@@ -1,5 +1,5 @@
 import { apperr } from '../../../wailsjs/go/models';
-import { AppBehaviorConfig, InferenceBaseConfig, ModelConfig, ProviderConfig, UIPreferencesConfig } from './models';
+import { AppBehaviorConfig, InferenceBaseConfig, LoggingConfig, ModelConfig, ProviderConfig, UIPreferencesConfig } from './models';
 
 export interface ILoggerService {
     logPrint(message: string): void;
@@ -65,6 +65,8 @@ export interface ISettingsHandler {
     updateAppBehaviorConfig(config: AppBehaviorConfig): Promise<apperr.AppBehaviorResult>;
     getUIPreferencesConfig(): Promise<apperr.UIPreferencesResult>;
     updateUIPreferencesConfig(config: UIPreferencesConfig): Promise<apperr.UIPreferencesResult>;
+    getLoggingConfig(): Promise<apperr.LoggingResult>;
+    updateLoggingConfig(config: LoggingConfig): Promise<apperr.LoggingResult>;
 }
 
 export interface IClipboardService {

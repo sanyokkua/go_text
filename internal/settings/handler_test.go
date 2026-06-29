@@ -6,6 +6,7 @@ import (
 	"github.com/rs/zerolog"
 
 	"go_text/internal/apperr"
+	"go_text/internal/logging"
 	"go_text/internal/settings"
 )
 
@@ -16,6 +17,114 @@ func newUIPreferencesHandler(t *testing.T) *settings.SettingsHandler {
 	repo := newRepo(t)
 	svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
 	return settings.NewSettingsHandler(noopLogger{}, zerolog.Nop(), svc, nil)
+}
+
+// newLoggingHandler creates a handler wired with a real *logging.Logger so
+// UpdateLoggingConfig can exercise the Reconfigure path.
+func newLoggingHandler(t *testing.T) (*settings.SettingsHandler, *logging.Logger) {
+	t.Helper()
+	repo := newRepo(t)
+	svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+	h := settings.NewSettingsHandler(noopLogger{}, zerolog.Nop(), svc, nil)
+	l, err := logging.New(logging.DefaultConfig(), false)
+	if err != nil {
+		t.Fatalf("logging.New: %v", err)
+	}
+	h.SetAppLogger(l, stubFileUtils{}, false)
+	return h, l
+}
+
+func TestSettingsHandler_GetLoggingConfig_ReturnsDefaults(t *testing.T) {
+	// Arrange: freshly-seeded DB, no updates applied.
+	repo := newRepo(t)
+	svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+	handler := settings.NewSettingsHandler(noopLogger{}, zerolog.Nop(), svc, nil)
+
+	// Act
+	res := handler.GetLoggingConfig()
+
+	// Assert
+	if res.Error != nil {
+		t.Fatalf("unexpected error: %+v", res.Error)
+	}
+	if res.Data == nil {
+		t.Fatal("expected Data to be set")
+	}
+	if res.Data.LogFileEnabled {
+		t.Error("default LogFileEnabled: want false")
+	}
+	if res.Data.LogLevel != "info" {
+		t.Errorf("default LogLevel: want %q, got %q", "info", res.Data.LogLevel)
+	}
+	if res.Data.LogMaxSizeMB != 10 {
+		t.Errorf("default LogMaxSizeMB: want 10, got %d", res.Data.LogMaxSizeMB)
+	}
+}
+
+func TestSettingsHandler_UpdateLoggingConfig_ReconfiguresLogger(t *testing.T) {
+	// Arrange: handler wired with a real logger so Reconfigure is exercised.
+	handler, l := newLoggingHandler(t)
+
+	cfg := apperr.LoggingConfig{
+		LogFileEnabled: false,
+		LogLevel:       "debug",
+		LogDirectory:   "",
+		LogMaxSizeMB:   5,
+		LogMaxBackups:  3,
+		LogMaxAgeDays:  7,
+		LogCompress:    false,
+	}
+
+	// Act
+	res := handler.UpdateLoggingConfig(cfg)
+
+	// Assert — envelope is clean.
+	if res.Error != nil {
+		t.Fatalf("unexpected error: %+v", res.Error)
+	}
+	if res.Data == nil {
+		t.Fatal("expected Data to be set")
+	}
+	if res.Data.LogLevel != "debug" {
+		t.Errorf("saved LogLevel: want %q, got %q", "debug", res.Data.LogLevel)
+	}
+	// Logger must have been reconfigured to debug level.
+	if l.ZeroLogger().GetLevel() != zerolog.DebugLevel {
+		t.Errorf("zerolog level after reconfigure: want DebugLevel, got %v", l.ZeroLogger().GetLevel())
+	}
+}
+
+func TestSettingsHandler_UpdateLoggingConfig_DisablesFile(t *testing.T) {
+	handler, _ := newLoggingHandler(t)
+
+	// Enable file logging first.
+	enable := apperr.LoggingConfig{
+		LogFileEnabled: false,
+		LogLevel:       "info",
+		LogDirectory:   "",
+		LogMaxSizeMB:   10,
+		LogMaxBackups:  5,
+		LogMaxAgeDays:  30,
+		LogCompress:    false,
+	}
+	if res := handler.UpdateLoggingConfig(enable); res.Error != nil {
+		t.Fatalf("enable step error: %+v", res.Error)
+	}
+
+	// Disable.
+	disable := enable
+	disable.LogFileEnabled = false
+	res := handler.UpdateLoggingConfig(disable)
+
+	if res.Error != nil {
+		t.Fatalf("disable step error: %+v", res.Error)
+	}
+	if res.Data == nil {
+		t.Fatal("expected Data on disable")
+	}
+	if res.Data.LogFileEnabled {
+		t.Error("expected LogFileEnabled to be false after disable")
+	}
 }
 
 func TestSettingsHandler_GetUIPreferencesConfig(t *testing.T) {

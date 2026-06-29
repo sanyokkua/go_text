@@ -207,6 +207,35 @@ func TestLogger_WithOp_directCall(t *testing.T) {
 	opLog.Info().Msg("op log")
 }
 
+func TestLogger_Reconfigure_disablesFileWriter(t *testing.T) {
+	dir := t.TempDir()
+	cfg := logging.Config{
+		FileEnabled: true,
+		Level:       "info",
+		Directory:   dir,
+		MaxSizeMB:   1,
+		MaxBackups:  1,
+		MaxAgeDays:  1,
+		Compress:    false,
+	}
+	l, err := logging.New(cfg, false)
+	if err != nil {
+		t.Fatalf("New with file: %v", err)
+	}
+
+	// Disable file writer — exercises the close-existing-sink and no-file branch.
+	cfg.FileEnabled = false
+	if err := l.Reconfigure(cfg, false); err != nil {
+		t.Fatalf("Reconfigure to file-disabled: %v", err)
+	}
+
+	// Logger must still be usable; writes go to stderr only.
+	l.Info("written after file disabled")
+	if err := l.Close(); err != nil {
+		t.Errorf("Close after disable: %v", err)
+	}
+}
+
 func TestNewAppStructLogger_returnsWorkingLogger(t *testing.T) {
 	l := logging.NewAppStructLogger()
 	if l == nil {

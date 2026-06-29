@@ -1,4 +1,23 @@
 /**
+ * Application file logging configuration
+ *
+ * Controls the zerolog application logger: whether it writes to disk, which
+ * level to capture, and how large log files grow before rotation. The other
+ * four fields (logDirectory, logMaxBackups, logMaxAgeDays, logCompress) are
+ * stored in the DB but not exposed in the UI — they are sent back unchanged
+ * on every update.
+ */
+export interface LoggingConfig {
+    logFileEnabled: boolean;
+    logLevel: string;
+    logDirectory: string;
+    logMaxSizeMB: number;
+    logMaxBackups: number;
+    logMaxAgeDays: number;
+    logCompress: boolean;
+}
+
+/**
  * Application behavior configuration for task logging
  *
  * Controls whether completed tasks are written to log files and where those files are stored.
@@ -126,4 +145,5 @@ export interface Settings {
     modelConfig: ModelConfig;
     languageConfig: LanguageConfig;
     appBehaviorConfig: AppBehaviorConfig;
+    loggingConfig?: LoggingConfig;
 }

@@ -118,6 +118,23 @@ export function UpdateUIPreferencesConfig(_cfg: unknown): Promise<AnyResult> {
     return Promise.resolve(ok(defaultUIPreferences));
 }
 
+const defaultLoggingConfig = {
+    logFileEnabled: false,
+    logLevel: 'info',
+    logDirectory: '',
+    logMaxSizeMB: 10,
+    logMaxBackups: 5,
+    logMaxAgeDays: 30,
+    logCompress: false,
+};
+
+export function GetLoggingConfig(): Promise<AnyResult> {
+    return Promise.resolve(ok(defaultLoggingConfig));
+}
+export function UpdateLoggingConfig(_cfg: unknown): Promise<AnyResult> {
+    return Promise.resolve(ok(_cfg ?? defaultLoggingConfig));
+}
+
 const mockProviderPresets = [
     { name: 'LM Studio', kind: 'lmstudio', baseURL: 'http://127.0.0.1:1234/', authScheme: 'none', completionPath: 'v1/chat/completions', modelsPath: 'v1/models', apiKeyEnvVar: '', headers: '{}' },
     { name: 'Llama.cpp', kind: 'llamacpp', baseURL: 'http://127.0.0.1:8080/', authScheme: 'none', completionPath: 'v1/chat/completions', modelsPath: 'v1/models', apiKeyEnvVar: '', headers: '{}' },

@@ -81,3 +81,10 @@
     font-size: 0.875rem;
     font-weight: 500;
 }
+
+.selectRow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) 0;
+}

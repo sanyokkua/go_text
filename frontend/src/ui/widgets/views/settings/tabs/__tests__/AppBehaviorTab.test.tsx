@@ -14,6 +14,7 @@ import AppBehaviorTab from '../AppBehaviorTab';
 jest.mock('../../../../../../logic/adapter', () => ({
     SettingsHandlerAdapter: {
         updateAppBehaviorConfig: jest.fn().mockResolvedValue({ data: null, error: null }),
+        updateLoggingConfig: jest.fn().mockImplementation((cfg: unknown) => Promise.resolve({ data: cfg, error: null })),
         getSettings: jest.fn().mockResolvedValue({ data: null, error: null }),
     },
     HistoryHandlerAdapter: {
@@ -30,6 +31,7 @@ jest.mock('../../../../../../logic/adapter', () => ({
     },
     fromWireSettings: (v: unknown) => v,
     fromWireBehavior: (v: unknown) => v,
+    fromWireLogging: (v: unknown) => v,
 }));
 
 const MOCK_PROVIDER = {
@@ -58,6 +60,7 @@ const MOCK_SETTINGS: Settings = {
     modelConfig: { name: 'gpt-4o', useTemperature: true, temperature: 0.7, useContextWindow: false, contextWindow: 4096, useLegacyMaxTokens: false },
     languageConfig: { languages: ['English'], defaultInputLanguage: 'English', defaultOutputLanguage: 'English' },
     appBehaviorConfig: { enableTaskLogging: false, logDirectory: '/tmp/logs', historyEnabled: true, historyMaxEntries: 500 },
+    loggingConfig: { logFileEnabled: false, logLevel: 'info', logDirectory: '', logMaxSizeMB: 10, logMaxBackups: 5, logMaxAgeDays: 30, logCompress: false },
 };
 
 const MOCK_METADATA: AppSettingsMetadata = {
@@ -180,5 +183,61 @@ describe('AppBehaviorTab', () => {
                 expect.objectContaining({ severity: 'success', surface: 'toast', message: 'Task logging enabled' }),
             );
         });
+    });
+
+    it('renders the App File Logging section header', () => {
+        render(
+            <Provider store={makeStore()}>
+                <AppBehaviorTab settings={MOCK_SETTINGS} metadata={MOCK_METADATA} />
+            </Provider>,
+        );
+        expect(screen.getByText(/app file logging/i)).toBeInTheDocument();
+    });
+
+    it('renders the file logging switch in unchecked state by default', () => {
+        render(
+            <Provider store={makeStore()}>
+                <AppBehaviorTab settings={MOCK_SETTINGS} metadata={MOCK_METADATA} />
+            </Provider>,
+        );
+        expect(screen.getByRole('switch', { name: /enable file logging/i })).not.toBeChecked();
+    });
+
+    it('renders the max file size stepper with default value 10', () => {
+        render(
+            <Provider store={makeStore()}>
+                <AppBehaviorTab settings={MOCK_SETTINGS} metadata={MOCK_METADATA} />
+            </Provider>,
+        );
+        expect(screen.getByRole('spinbutton', { name: /max log file size mb/i })).toHaveValue(10);
+    });
+
+    it('enqueues a success toast when file logging is enabled', async () => {
+        const store = makeStore();
+        render(
+            <Provider store={store}>
+                <AppBehaviorTab settings={MOCK_SETTINGS} metadata={MOCK_METADATA} />
+            </Provider>,
+        );
+
+        await userEvent.click(screen.getByRole('switch', { name: /enable file logging/i }));
+
+        await waitFor(() => {
+            expect(store.getState().notifications.queue).toContainEqual(
+                expect.objectContaining({ severity: 'success', surface: 'toast', message: 'File logging enabled' }),
+            );
+        });
+    });
+
+    it('renders with DEFAULT_LOGGING when loggingConfig is absent', () => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { loggingConfig: _omitted, ...settingsWithoutLogging } = MOCK_SETTINGS;
+        render(
+            <Provider store={makeStore()}>
+                <AppBehaviorTab settings={settingsWithoutLogging} metadata={MOCK_METADATA} />
+            </Provider>,
+        );
+        expect(screen.getByRole('switch', { name: /enable file logging/i })).not.toBeChecked();
+        expect(screen.getByRole('spinbutton', { name: /max log file size mb/i })).toHaveValue(10);
     });
 });

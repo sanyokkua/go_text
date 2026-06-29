@@ -1,5 +1,5 @@
 import { apperr } from '../../../wailsjs/go/models';
-import { AppBehaviorConfig, AppSettingsMetadata, ProviderConfig, Settings, UIPreferencesConfig } from './models';
+import { AppBehaviorConfig, AppSettingsMetadata, LoggingConfig, ProviderConfig, Settings, UIPreferencesConfig } from './models';
 
 export function fromWireProvider(v: apperr.ProviderConfig): ProviderConfig {
     return {
@@ -81,4 +81,28 @@ export function fromWireUIPreferences(v: apperr.UIPreferencesConfig): UIPreferen
 
 export function toWireUIPreferences(v: UIPreferencesConfig): apperr.UIPreferencesConfig {
     return apperr.UIPreferencesConfig.createFrom({ theme: v.theme });
+}
+
+export function fromWireLogging(v: apperr.LoggingConfig): LoggingConfig {
+    return {
+        logFileEnabled: v.logFileEnabled,
+        logLevel: v.logLevel,
+        logDirectory: v.logDirectory,
+        logMaxSizeMB: v.logMaxSizeMB,
+        logMaxBackups: v.logMaxBackups,
+        logMaxAgeDays: v.logMaxAgeDays,
+        logCompress: v.logCompress,
+    };
+}
+
+export function toWireLogging(v: LoggingConfig): apperr.LoggingConfig {
+    return apperr.LoggingConfig.createFrom({
+        logFileEnabled: v.logFileEnabled,
+        logLevel: v.logLevel,
+        logDirectory: v.logDirectory,
+        logMaxSizeMB: v.logMaxSizeMB,
+        logMaxBackups: v.logMaxBackups,
+        logMaxAgeDays: v.logMaxAgeDays,
+        logCompress: v.logCompress,
+    });
 }

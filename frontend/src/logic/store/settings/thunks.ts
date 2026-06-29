@@ -3,6 +3,7 @@ import { apperr } from '../../../../wailsjs/go/models';
 import {
     ActionHandlerAdapter,
     fromWireBehavior,
+    fromWireLogging,
     fromWireMetadata,
     fromWireProvider,
     fromWireSettings,
@@ -17,6 +18,7 @@ import {
     AppSettingsMetadata,
     InferenceBaseConfig,
     LanguageConfig,
+    LoggingConfig,
     ModelConfig,
     ProviderConfig,
     Settings,
@@ -327,6 +329,32 @@ export const updateAppBehaviorConfig = createAsyncThunk<AppBehaviorConfig, AppBe
     },
 );
 
+export const getLoggingConfig = createAsyncThunk<LoggingConfig, void, { rejectValue: string }>(
+    'settings/getLoggingConfig',
+    async (_, { rejectWithValue }) => {
+        try {
+            return fromWireLogging(unwrap(await SettingsHandlerAdapter.getLoggingConfig()));
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logError(`getLoggingConfig failed: ${err.message}`);
+            return rejectWithValue(err.message);
+        }
+    },
+);
+
+export const updateLoggingConfig = createAsyncThunk<LoggingConfig, LoggingConfig, { rejectValue: string }>(
+    'settings/updateLoggingConfig',
+    async (config, { rejectWithValue }) => {
+        try {
+            return fromWireLogging(unwrap(await SettingsHandlerAdapter.updateLoggingConfig(config)));
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logError(`updateLoggingConfig failed: ${err.message}`);
+            return rejectWithValue(err.message);
+        }
+    },
+);
+
 export const getUIPreferences = createAsyncThunk<{ mode: ThemeMode; effective: ThemeEffective }, void, { rejectValue: string }>(
     'settings/getUIPreferences',
     async (_, { rejectWithValue }) => {
@@ -412,6 +440,7 @@ export const initializeSettingsState = createAsyncThunk<void, void, { rejectValu
                 dispatch(getInferenceBaseConfig()).unwrap(),
                 dispatch(getAppSettingsMetadata()).unwrap(),
                 dispatch(getUIPreferences()).unwrap(),
+                dispatch(getLoggingConfig()).unwrap(),
             ]);
         } catch (error: unknown) {
             const err = parseError(error);

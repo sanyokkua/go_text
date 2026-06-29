@@ -8,6 +8,12 @@ async function openSettings(page: Page): Promise<void> {
     await page.waitForSelector('nav[aria-label="Provider list"]', { timeout: 8000 });
 }
 
+async function openLoggingTab(page: Page): Promise<void> {
+    await openSettings(page);
+    await page.getByRole('tab', { name: /^logging$/i }).click();
+    await page.waitForTimeout(300);
+}
+
 test.describe('Settings UI – all tabs accessible', () => {
     test('all seven settings tab buttons are visible', async ({ page }) => {
         // Arrange
@@ -181,6 +187,57 @@ test.describe('Settings UI – all tabs accessible', () => {
         }
 
         // Assert
+        expect(jsErrors).toHaveLength(0);
+    });
+});
+
+test.describe('App File Logging settings', () => {
+    test('shows App File Logging section heading', async ({ page }) => {
+        const jsErrors: string[] = [];
+        page.on('pageerror', (err) => jsErrors.push(err.message));
+
+        await openLoggingTab(page);
+
+        await expect(page.getByText(/app file logging/i)).toBeVisible({ timeout: 5000 });
+        expect(jsErrors).toHaveLength(0);
+    });
+
+    test('Enable file logging toggle starts unchecked', async ({ page }) => {
+        const jsErrors: string[] = [];
+        page.on('pageerror', (err) => jsErrors.push(err.message));
+
+        await openLoggingTab(page);
+
+        const toggle = page.getByRole('switch', { name: /enable file logging/i });
+        await expect(toggle).toBeVisible({ timeout: 5000 });
+        await expect(toggle).toHaveAttribute('aria-checked', 'false');
+
+        expect(jsErrors).toHaveLength(0);
+    });
+
+    test('toggling enable file logging produces no JS errors', async ({ page }) => {
+        const jsErrors: string[] = [];
+        page.on('pageerror', (err) => jsErrors.push(err.message));
+
+        await openLoggingTab(page);
+
+        await page.getByRole('switch', { name: /enable file logging/i }).click();
+
+        // Allow toast / redux update to settle.
+        await page.waitForTimeout(500);
+        expect(jsErrors).toHaveLength(0);
+    });
+
+    test('max file size stepper is visible with value 10', async ({ page }) => {
+        const jsErrors: string[] = [];
+        page.on('pageerror', (err) => jsErrors.push(err.message));
+
+        await openLoggingTab(page);
+
+        const stepper = page.getByRole('spinbutton', { name: /max log file size mb/i });
+        await expect(stepper).toBeVisible({ timeout: 5000 });
+        await expect(stepper).toHaveValue('10');
+
         expect(jsErrors).toHaveLength(0);
     });
 });

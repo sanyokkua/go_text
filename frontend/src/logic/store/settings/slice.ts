@@ -21,6 +21,7 @@ import {
     fetchProviderPresets,
     getAppBehaviorConfig,
     getAppSettingsMetadata,
+    getLoggingConfig,
     getSettings,
     removeLanguage,
     resetSettingsToDefault,
@@ -29,6 +30,7 @@ import {
     setDefaultOutputLanguage,
     updateAppBehaviorConfig,
     updateInferenceBaseConfig,
+    updateLoggingConfig,
     updateModelConfig,
     updateProviderConfig,
 } from './thunks';
@@ -153,6 +155,18 @@ const settingsSlice = createSlice({
             .addCase(updateAppBehaviorConfig.fulfilled, (state, action) => {
                 if (state.allSettings) {
                     state.allSettings.appBehaviorConfig = action.payload;
+                }
+            })
+
+            // Logging config updates
+            .addCase(getLoggingConfig.fulfilled, (state, action) => {
+                if (state.allSettings) {
+                    state.allSettings.loggingConfig = action.payload;
+                }
+            })
+            .addCase(updateLoggingConfig.fulfilled, (state, action) => {
+                if (state.allSettings) {
+                    state.allSettings.loggingConfig = action.payload;
                 }
             });
     },

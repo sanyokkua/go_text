@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"go_text/internal/apperr"
+	"go_text/internal/file"
+	"go_text/internal/logging"
 
 	"github.com/rs/zerolog"
 	"github.com/wailsapp/wails/v2/pkg/logger"
@@ -47,6 +49,9 @@ type SettingsHandler struct {
 	zlog            zerolog.Logger
 	settingsService SettingsServiceAPI
 	presets         []apperr.ProviderPreset
+	appLogger       *logging.Logger
+	fileUtils       file.FileUtilsServiceAPI
+	isDev           bool
 }
 
 // NewSettingsHandler constructs a SettingsHandler shell. presets are the
@@ -66,6 +71,16 @@ func (h *SettingsHandler) Configure(wailsLogger logger.Logger, zlog zerolog.Logg
 	h.logger = wailsLogger
 	h.zlog = zlog
 	h.settingsService = service
+}
+
+// SetAppLogger wires the live application logger so UpdateLoggingConfig can
+// reconfigure it immediately after saving to the DB. Called from Init() after
+// isDev is resolved. The fileUtils pointer is needed to resolve the default
+// log-folder path when LogDirectory is empty.
+func (h *SettingsHandler) SetAppLogger(l *logging.Logger, fu file.FileUtilsServiceAPI, isDev bool) {
+	h.appLogger = l
+	h.fileUtils = fu
+	h.isDev = isDev
 }
 
 // ── Type adapters ──────────────────────────────────────────────────────────
@@ -559,6 +574,35 @@ func (h *SettingsHandler) UpdateLoggingConfig(cfg apperr.LoggingConfig) (res app
 		wire := apperr.ToWire(h.zlog, err)
 		return apperr.LoggingResult{Error: &wire}
 	}
-	lc := toWireLogging(*updated)
-	return apperr.LoggingResult{Data: &lc}
+	h.reconfigureLogger(updated)
+	wired := toWireLogging(*updated)
+	return apperr.LoggingResult{Data: &wired}
+}
+
+// reconfigureLogger rebuilds the live zerolog writer from the persisted config.
+// It is a no-op when appLogger has not been wired (e.g. during unit tests).
+func (h *SettingsHandler) reconfigureLogger(cfg *LoggingConfig) {
+	if h.appLogger == nil {
+		return
+	}
+	lc := logging.Config{
+		FileEnabled: cfg.LogFileEnabled,
+		Level:       cfg.LogLevel,
+		MaxSizeMB:   cfg.LogMaxSizeMB,
+		MaxBackups:  cfg.LogMaxBackups,
+		MaxAgeDays:  cfg.LogMaxAgeDays,
+		Compress:    cfg.LogCompress,
+	}
+	if cfg.LogFileEnabled && cfg.LogDirectory == "" && h.fileUtils != nil {
+		if dir, dirErr := h.fileUtils.EnsureAppLogsFolderExists(""); dirErr == nil {
+			lc.Directory = dir
+		}
+	} else {
+		lc.Directory = cfg.LogDirectory
+	}
+	if rcErr := h.appLogger.Reconfigure(lc, h.isDev); rcErr != nil {
+		h.zlog.Debug().Str("component", "settings").Str("op", "UpdateLoggingConfig").Err(rcErr).Msg("logger reconfigure failed")
+	} else {
+		h.zlog.Debug().Str("component", "settings").Str("op", "UpdateLoggingConfig").Msg("logger reconfigured")
+	}
 }

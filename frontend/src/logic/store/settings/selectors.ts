@@ -13,6 +13,7 @@ export const selectSettingsMetadata = (state: RootState) => state.settings.metad
 export const selectCurrentProvider = (state: RootState) => state.settings.allSettings?.currentProviderConfig || null;
 export const selectModelConfig = (state: RootState) => state.settings.allSettings?.modelConfig || null;
 export const selectAppBehaviorConfig = (state: RootState) => state.settings.allSettings?.appBehaviorConfig ?? null;
+export const selectLoggingConfig = (state: RootState) => state.settings.allSettings?.loggingConfig ?? null;
 export const selectInferenceBaseConfig = (state: RootState) => state.settings.allSettings?.inferenceBaseConfig ?? null;
 export const selectLanguageConfig = (state: RootState) => state.settings.allSettings?.languageConfig ?? null;
 export const selectAvailableProviders = (state: RootState) => state.settings.allSettings?.availableProviderConfigs ?? [];
