@@ -17,6 +17,7 @@ export const selectInferenceBaseConfig = (state: RootState) => state.settings.al
 export const selectLanguageConfig = (state: RootState) => state.settings.allSettings?.languageConfig ?? null;
 export const selectAvailableProviders = (state: RootState) => state.settings.allSettings?.availableProviderConfigs ?? [];
 export const selectDiscoveredModels = (state: RootState): apperr.ModelInfo[] => state.settings.discoveredModels ?? [];
+export const selectProviderPresets = (state: RootState): apperr.ProviderPreset[] => state.settings.providerPresets ?? [];
 
 // Derived SelectItem lists for compact pickers in AppBar
 export const selectProviderItems = createSelector([selectAvailableProviders], (providers): SelectItem[] =>

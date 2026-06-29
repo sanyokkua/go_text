@@ -18,10 +18,20 @@ func TestOpen_FreshDB_MigratesAndSeeds(t *testing.T) {
 
 	ctx := context.Background()
 
-	// Providers: 5 defaults seeded
+	// Providers: exactly 2 defaults seeded (Ollama + LM Studio).
 	count, err := database.Queries.CountProviders(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, int64(5), count)
+	assert.Equal(t, int64(2), count)
+
+	provs, err := database.Queries.ListProviders(ctx)
+	require.NoError(t, err)
+	require.Len(t, provs, 2)
+	kinds := map[string]bool{}
+	for _, p := range provs {
+		kinds[p.Kind] = true
+	}
+	assert.True(t, kinds["ollama"], "expected an ollama provider")
+	assert.True(t, kinds["lmstudio"], "expected an lmstudio provider")
 
 	// Languages: 15 defaults seeded
 	langs, err := database.Queries.ListLanguages(ctx)
@@ -35,16 +45,19 @@ func TestOpen_FreshDB_MigratesAndSeeds(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, settings, 24)
 
-	// app_state: current provider is set (Ollama)
+	// app_state: current provider is set, and it is the Ollama provider.
 	provID, err := database.Queries.GetCurrentProviderID(ctx)
 	require.NoError(t, err)
-	assert.True(t, provID.Valid)
-	assert.NotEmpty(t, provID.String)
+	require.True(t, provID.Valid)
+	require.NotEmpty(t, provID.String)
+	current, err := database.Queries.GetProvider(ctx, provID.String)
+	require.NoError(t, err)
+	assert.Equal(t, "ollama", current.Kind, "Ollama must be the default current provider")
 
-	// Stacks: 17 starter stacks seeded
+	// Stacks: a fresh seed creates ZERO stacks (starter stacks are suggestions only).
 	stacks, err := database.Queries.ListStacks(ctx)
 	require.NoError(t, err)
-	assert.Len(t, stacks, 17)
+	assert.Empty(t, stacks)
 }
 
 func TestOpen_ExistingDB_DoesNotReseed(t *testing.T) {
@@ -62,7 +75,7 @@ func TestOpen_ExistingDB_DoesNotReseed(t *testing.T) {
 
 	count, err := db2.Queries.CountProviders(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, int64(5), count, "second open must not reseed")
+	assert.Equal(t, int64(2), count, "second open must not reseed")
 }
 
 func TestMigrationRoundTrip(t *testing.T) {
@@ -129,11 +142,11 @@ func TestSeed_FactoryReset_RepopulatesDefaults(t *testing.T) {
 	// Verify all defaults restored
 	count, err := database.Queries.CountProviders(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, int64(5), count)
+	assert.Equal(t, int64(2), count)
 
 	stacks, err := database.Queries.ListStacks(ctx)
 	require.NoError(t, err)
-	assert.Len(t, stacks, 17)
+	assert.Empty(t, stacks, "factory reset must not seed any stacks")
 
 	settings, err := database.Queries.ListSettings(ctx)
 	require.NoError(t, err)
@@ -145,8 +158,11 @@ func TestSeed_FactoryReset_RepopulatesDefaults(t *testing.T) {
 
 	provID, err := database.Queries.GetCurrentProviderID(ctx)
 	require.NoError(t, err)
-	assert.True(t, provID.Valid)
-	assert.NotEmpty(t, provID.String)
+	require.True(t, provID.Valid)
+	require.NotEmpty(t, provID.String)
+	current, err := database.Queries.GetProvider(ctx, provID.String)
+	require.NoError(t, err)
+	assert.Equal(t, "ollama", current.Kind, "Ollama must be the default current provider after reset")
 }
 
 func TestSeed_Idempotent_WhenCalledTwice(t *testing.T) {
@@ -164,5 +180,5 @@ func TestSeed_Idempotent_WhenCalledTwice(t *testing.T) {
 
 	count, err := database.Queries.CountProviders(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, int64(5), count, "Seed idempotency: still 5 providers after second Seed")
+	assert.Equal(t, int64(2), count, "Seed idempotency: still 2 providers after second Seed")
 }

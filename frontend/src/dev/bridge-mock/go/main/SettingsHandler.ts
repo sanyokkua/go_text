@@ -108,3 +108,24 @@ export function SetDefaultInputLanguage(_name: string): Promise<VoidResult> {
 export function SetDefaultOutputLanguage(_name: string): Promise<VoidResult> {
     return Promise.resolve(voidOk());
 }
+
+const defaultUIPreferences = { theme: 'auto' };
+
+export function GetUIPreferencesConfig(): Promise<AnyResult> {
+    return Promise.resolve(ok(defaultUIPreferences));
+}
+export function UpdateUIPreferencesConfig(_cfg: unknown): Promise<AnyResult> {
+    return Promise.resolve(ok(defaultUIPreferences));
+}
+
+const mockProviderPresets = [
+    { name: 'LM Studio', kind: 'lmstudio', baseURL: 'http://127.0.0.1:1234/', authScheme: 'none', completionPath: 'v1/chat/completions', modelsPath: 'v1/models', apiKeyEnvVar: '', headers: '{}' },
+    { name: 'Llama.cpp', kind: 'llamacpp', baseURL: 'http://127.0.0.1:8080/', authScheme: 'none', completionPath: 'v1/chat/completions', modelsPath: 'v1/models', apiKeyEnvVar: '', headers: '{}' },
+    { name: 'Ollama', kind: 'ollama', baseURL: 'http://127.0.0.1:11434/', authScheme: 'none', completionPath: 'v1/chat/completions', modelsPath: 'v1/models', apiKeyEnvVar: '', headers: '{}' },
+    { name: 'OpenAI', kind: 'openai', baseURL: 'https://api.openai.com/', authScheme: 'bearer', completionPath: 'v1/chat/completions', modelsPath: 'v1/models', apiKeyEnvVar: 'OPENAI_API_KEY', headers: '{}' },
+    { name: 'OpenRouter', kind: 'openai', baseURL: 'https://openrouter.ai/api/', authScheme: 'bearer', completionPath: 'v1/chat/completions', modelsPath: 'v1/models', apiKeyEnvVar: 'OPENROUTER_API_KEY', headers: '{}' },
+];
+
+export function ProviderPresets(): Promise<AnyResult> {
+    return Promise.resolve(ok(mockProviderPresets));
+}

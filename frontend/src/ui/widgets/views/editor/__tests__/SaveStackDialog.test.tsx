@@ -1,8 +1,9 @@
 import { configureStore } from '@reduxjs/toolkit';
 import '@testing-library/jest-dom';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
+import { selectBuilderIcon } from '../../../../../logic/store/stacks/builder/selectors';
 import actionsReducer from '../../../../../logic/store/actions/slice';
 import notificationsReducer from '../../../../../logic/store/notifications/slice';
 import stacksBuilderReducer from '../../../../../logic/store/stacks/builder/slice';
@@ -197,5 +198,38 @@ describe('SaveStackDialog', () => {
             </Provider>,
         );
         expect(screen.getAllByRole('button', { name: /icon/i }).length).toBeGreaterThan(0);
+    });
+
+    it('updates the builder icon when a grid emoji is selected', async () => {
+        // Arrange
+        const store = makeStore();
+        render(
+            <Provider store={store}>
+                <SaveStackDialog open onOpenChange={jest.fn()} />
+            </Provider>,
+        );
+
+        // Act
+        await userEvent.click(screen.getByRole('button', { name: 'Icon 🚀' }));
+
+        // Assert
+        expect(selectBuilderIcon(store.getState() as Parameters<typeof selectBuilderIcon>[0])).toBe('🚀');
+    });
+
+    it('updates the builder icon when an arbitrary emoji is entered in the free-text field', () => {
+        // Arrange
+        const store = makeStore();
+        render(
+            <Provider store={store}>
+                <SaveStackDialog open onOpenChange={jest.fn()} />
+            </Provider>,
+        );
+        const iconField = screen.getByPlaceholderText(/any emoji/i);
+
+        // Act: the field is pre-filled to its maxLength, so replace the value outright.
+        fireEvent.change(iconField, { target: { value: '🦄' } });
+
+        // Assert
+        expect(selectBuilderIcon(store.getState() as Parameters<typeof selectBuilderIcon>[0])).toBe('🦄');
     });
 });

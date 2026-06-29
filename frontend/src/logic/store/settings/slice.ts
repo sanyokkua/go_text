@@ -18,6 +18,7 @@ import {
     createProviderConfig,
     deleteProviderConfig,
     discoverCurrentProviderModels,
+    fetchProviderPresets,
     getAppBehaviorConfig,
     getAppSettingsMetadata,
     getSettings,
@@ -35,7 +36,7 @@ import { SettingsState } from './types';
 
 const logger = getLogger('SettingsSlice');
 
-const initialState: SettingsState = { allSettings: null, metadata: null, discoveredModels: [] };
+const initialState: SettingsState = { allSettings: null, metadata: null, discoveredModels: [], providerPresets: [] };
 
 const settingsSlice = createSlice({
     name: 'settings',
@@ -138,6 +139,9 @@ const settingsSlice = createSlice({
             // Metadata loading
             .addCase(getAppSettingsMetadata.fulfilled, (state, action) => {
                 state.metadata = action.payload;
+            })
+            .addCase(fetchProviderPresets.fulfilled, (state, action) => {
+                state.providerPresets = action.payload;
             })
 
             // App behavior config updates

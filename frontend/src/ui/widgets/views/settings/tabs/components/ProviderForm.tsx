@@ -33,6 +33,10 @@ export const BLANK_PROVIDER: ProviderConfig = {
 
 interface ProviderFormProps {
     provider: ProviderConfig | null;
+    /** When true the form is creating a new provider, which reveals the preset row. */
+    isNew: boolean;
+    /** Built-in provider templates offered as one-click fills when creating a new provider. */
+    presets: apperr.ProviderPreset[];
     authTypes: string[];
     providerTypes: string[];
     existingNames: string[];
@@ -41,6 +45,43 @@ interface ProviderFormProps {
     onDelete: (id: string) => void;
     onSetCurrent: (id: string) => void;
     onCancel: () => void;
+}
+
+/**
+ * Maps a backend ProviderPreset onto the form's ProviderConfig shape, mirroring
+ * `fromWireProvider`. Preset headers arrive as a JSON string; an empty or
+ * malformed value resolves to no headers rather than throwing.
+ */
+function presetToForm(preset: apperr.ProviderPreset, base: ProviderConfig): ProviderConfig {
+    const headers = parsePresetHeaders(preset.headers);
+    const headerKeys = Object.keys(headers);
+    return {
+        ...base,
+        providerId: '',
+        providerName: preset.name,
+        providerType: preset.kind,
+        baseUrl: preset.baseUrl,
+        modelsEndpoint: preset.modelsPath,
+        completionEndpoint: preset.completionPath,
+        authType: preset.authScheme,
+        useAuthTokenFromEnv: !!preset.apiKeyEnvVar,
+        envVarTokenName: preset.apiKeyEnvVar ?? '',
+        useCustomHeaders: headerKeys.length > 0,
+        headers,
+    };
+}
+
+function parsePresetHeaders(raw: string): Record<string, string> {
+    if (!raw || raw.trim() === '') return {};
+    try {
+        const parsed: unknown = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            return parsed as Record<string, string>;
+        }
+        return {};
+    } catch {
+        return {};
+    }
 }
 
 const prettifyAuthType = (raw: string): string => {
@@ -95,6 +136,8 @@ const isFormValid = (errors: FormErrors, form: ProviderConfig): boolean => {
 
 const ProviderForm: React.FC<ProviderFormProps> = ({
     provider,
+    isNew,
+    presets,
     authTypes,
     providerTypes,
     existingNames,
@@ -163,6 +206,13 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
         });
     };
 
+    // Fills the whole form from a preset in one update. The user can still edit
+    // every field before saving, so this counts as a dirty change.
+    const applyPreset = (preset: apperr.ProviderPreset) => {
+        setForm((prev) => presetToForm(preset, prev));
+        setDirty(true);
+    };
+
     const errors = validateForm(form, existingNames);
     const valid = isFormValid(errors, form);
 
@@ -197,6 +247,25 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
 
     return (
         <div className={styles.root}>
+            {/* Preset quick-fill row — only when creating a new provider */}
+            {isNew && presets.length > 0 && (
+                <div className={styles.presetField}>
+                    <span className={styles.label}>Start from a preset</span>
+                    <div className={styles.presetRow}>
+                        {presets.map((preset) => (
+                            <button
+                                key={preset.name}
+                                type="button"
+                                onClick={() => applyPreset(preset)}
+                                className={styles.presetBtn}
+                            >
+                                {preset.name}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Name */}
             <div className={styles.field}>
                 <label htmlFor="pf-name" className={styles.label}>

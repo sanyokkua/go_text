@@ -1,11 +1,12 @@
 import { configureStore } from '@reduxjs/toolkit';
 import '@testing-library/jest-dom';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
 
 import { ProviderConfig } from '../../../../../../../logic/adapter/models';
 import uiReducer from '../../../../../../../logic/store/ui/slice';
-import ProviderForm from '../ProviderForm';
+import ProviderForm, { BLANK_PROVIDER } from '../ProviderForm';
 
 // ProviderForm reaches out to the backend for model discovery and verification.
 // Stub the adapter so the form renders synchronously without live calls. The
@@ -59,6 +60,8 @@ function renderForm() {
         <Provider store={store}>
             <ProviderForm
                 provider={AZURE_PROVIDER}
+                isNew={false}
+                presets={[]}
                 authTypes={['none', 'bearer', 'api-key']}
                 providerTypes={['openai', 'azure', 'anthropic']}
                 existingNames={[]}
@@ -101,5 +104,113 @@ describe('ProviderForm two-column layout', () => {
         const grid = apiVersionInput.closest('div')?.parentElement ?? null;
         expect(grid).toContainElement(modelTrigger);
         expect(grid).not.toContainElement(baseUrlInput);
+    });
+});
+
+// Preset fixtures mirror the backend `apperr.ProviderPreset` wire shape (all 8
+// string fields). They are passed as plain object literals — the prop type is
+// satisfied structurally without importing the wailsjs class.
+const LM_STUDIO_PRESET = {
+    name: 'LM Studio',
+    kind: 'lmstudio',
+    baseUrl: 'http://localhost:1234/',
+    authScheme: 'none',
+    completionPath: '/v1/chat/completions',
+    modelsPath: '/v1/models',
+    apiKeyEnvVar: '',
+    headers: '',
+};
+
+const OPENAI_PRESET = {
+    name: 'OpenAI',
+    kind: 'openai',
+    baseUrl: 'https://api.openai.com/',
+    authScheme: 'bearer',
+    completionPath: '/v1/chat/completions',
+    modelsPath: '/v1/models',
+    apiKeyEnvVar: 'OPENAI_API_KEY',
+    headers: '',
+};
+
+const ALL_PRESETS = [
+    LM_STUDIO_PRESET,
+    { ...OPENAI_PRESET, name: 'Llama.cpp', kind: 'llamacpp', baseUrl: 'http://localhost:8080/', authScheme: 'none', apiKeyEnvVar: '' },
+    { ...OPENAI_PRESET, name: 'Ollama', kind: 'ollama', baseUrl: 'http://localhost:11434/', authScheme: 'none', apiKeyEnvVar: '' },
+    OPENAI_PRESET,
+    { ...OPENAI_PRESET, name: 'OpenRouter', kind: 'openai', baseUrl: 'https://openrouter.ai/api/', apiKeyEnvVar: 'OPENROUTER_API_KEY' },
+];
+
+function renderNewForm(presets: typeof ALL_PRESETS) {
+    const store = configureStore({ reducer: { ui: uiReducer } });
+    return render(
+        <Provider store={store}>
+            <ProviderForm
+                provider={BLANK_PROVIDER}
+                isNew={true}
+                presets={presets}
+                authTypes={['none', 'bearer', 'api-key']}
+                providerTypes={['openai', 'lmstudio', 'ollama', 'llamacpp', 'azure']}
+                existingNames={[]}
+                isCurrent={false}
+                onSave={jest.fn()}
+                onDelete={jest.fn()}
+                onSetCurrent={jest.fn()}
+                onCancel={jest.fn()}
+            />
+        </Provider>,
+    );
+}
+
+describe('ProviderForm preset quick-fill', () => {
+    it('renders a button for every preset when creating a new provider', () => {
+        renderNewForm(ALL_PRESETS);
+
+        for (const name of ['LM Studio', 'Llama.cpp', 'Ollama', 'OpenAI', 'OpenRouter']) {
+            expect(screen.getByRole('button', { name })).toBeInTheDocument();
+        }
+    });
+
+    it('fills the Base URL field from the clicked preset', async () => {
+        renderNewForm(ALL_PRESETS);
+
+        await userEvent.click(screen.getByRole('button', { name: 'LM Studio' }));
+
+        expect(screen.getByLabelText(/base url/i)).toHaveValue('http://localhost:1234/');
+    });
+
+    it('activates the matching auth type and reveals the env-var field for an authenticated preset', async () => {
+        renderNewForm(ALL_PRESETS);
+
+        // OpenAI uses a bearer token, so the Bearer auth segment becomes pressed
+        // and the (initially hidden) API-key env-var input appears, pre-filled.
+        await userEvent.click(screen.getByRole('button', { name: 'OpenAI' }));
+
+        expect(screen.getByRole('button', { name: 'Bearer' })).toHaveAttribute('aria-pressed', 'true');
+        expect(screen.getByLabelText(/api key environment variable/i)).toHaveValue('OPENAI_API_KEY');
+        expect(screen.getByLabelText(/base url/i)).toHaveValue('https://api.openai.com/');
+    });
+
+    it('does not render preset buttons when editing an existing provider (isNew false)', () => {
+        const store = configureStore({ reducer: { ui: uiReducer } });
+        render(
+            <Provider store={store}>
+                <ProviderForm
+                    provider={AZURE_PROVIDER}
+                    isNew={false}
+                    presets={ALL_PRESETS}
+                    authTypes={['none', 'bearer', 'api-key']}
+                    providerTypes={['openai', 'azure']}
+                    existingNames={[]}
+                    isCurrent={false}
+                    onSave={jest.fn()}
+                    onDelete={jest.fn()}
+                    onSetCurrent={jest.fn()}
+                    onCancel={jest.fn()}
+                />
+            </Provider>,
+        );
+
+        expect(screen.queryByRole('button', { name: 'LM Studio' })).not.toBeInTheDocument();
+        expect(screen.queryByText(/start from a preset/i)).not.toBeInTheDocument();
     });
 });

@@ -36,9 +36,25 @@
     letter-spacing: 0.04em;
 }
 
-.itemId {
-    font-size: 0.8125rem;
+.titleText {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.itemName {
+    font-size: 0.9375rem;
+    font-weight: 600;
     color: var(--ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.itemId {
+    font-size: 0.6875rem;
+    color: var(--ink-3);
     font-family: var(--mono);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -111,12 +127,18 @@
     font-weight: 500;
 }
 
-.promptBlock {
-    padding: var(--space-2) var(--space-3);
+.promptCards {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-3);
 }
 
-.promptBlock + .promptBlock {
-    border-top: 1px solid var(--line);
+.promptCard {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: var(--space-2) var(--space-3);
 }
 
 .promptLabel {
@@ -136,6 +158,41 @@
     word-break: break-word;
     color: var(--ink);
     line-height: 1.5;
+    user-select: text;
+    -webkit-user-select: text;
+}
+
+.params {
+    padding: 0 var(--space-3) var(--space-3);
+}
+
+.paramsCaption {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-3);
+    margin-bottom: var(--space-2);
+}
+
+.paramsRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+}
+
+.paramBadge {
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    font-size: 0.6875rem;
+    color: var(--ink-3);
+}
+
+.paramBadge strong {
+    color: var(--ink);
+    font-weight: 600;
 }
 
 .footer {

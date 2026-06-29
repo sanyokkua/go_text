@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 import { Settings } from '../../../../../logic/adapter/models';
+import { useSettingsToast } from '../../../../../logic/hooks/useSettingsToast';
 import { useAppDispatch } from '../../../../../logic/store';
 import { updateInferenceBaseConfig } from '../../../../../logic/store/settings/thunks';
 import { Button } from '../../../../components/Button';
@@ -30,6 +31,7 @@ interface Props {
 
 const InferenceConfigTab: React.FC<Props> = ({ settings }) => {
     const dispatch = useAppDispatch();
+    const runWithToast = useSettingsToast();
 
     const [form, setForm] = useState<InferenceForm>(() => toForm(settings.inferenceBaseConfig));
     const [saving, setSaving] = useState(false);
@@ -41,7 +43,7 @@ const InferenceConfigTab: React.FC<Props> = ({ settings }) => {
     const handleSave = async () => {
         setSaving(true);
         try {
-            await dispatch(updateInferenceBaseConfig(form)).unwrap();
+            await runWithToast(dispatch(updateInferenceBaseConfig(form)), { success: 'Inference settings saved' });
         } finally {
             setSaving(false);
         }

@@ -1,7 +1,9 @@
 import { configureStore } from '@reduxjs/toolkit';
 import '@testing-library/jest-dom';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
+import { openPath } from '../../../../../../logic/adapter';
 import { AppSettingsMetadata, Settings } from '../../../../../../logic/adapter/models';
 import historyReducer from '../../../../../../logic/store/history/slice';
 import notificationsReducer from '../../../../../../logic/store/notifications/slice';
@@ -21,11 +23,13 @@ jest.mock('../../../../../../logic/adapter', () => ({
     },
     getLogger: () => ({ logInfo: jest.fn(), logDebug: jest.fn(), logError: jest.fn(), logWarn: jest.fn() }),
     openExternal: jest.fn(),
+    openPath: jest.fn().mockResolvedValue(undefined),
     unwrap: (r: { data: unknown; error: { message: string } | null }) => {
         if (r?.error) throw new Error(r.error.message);
         return r?.data;
     },
     fromWireSettings: (v: unknown) => v,
+    fromWireBehavior: (v: unknown) => v,
 }));
 
 const MOCK_PROVIDER = {
@@ -142,5 +146,39 @@ describe('AppBehaviorTab', () => {
             </Provider>,
         );
         expect(screen.getByRole('button', { name: /open logs folder/i })).toBeInTheDocument();
+    });
+
+    it('opens the resolved logs folder path without a file:// prefix when clicked', async () => {
+        const openPathMock = openPath as jest.MockedFunction<typeof openPath>;
+        openPathMock.mockClear();
+        render(
+            <Provider store={makeStore()}>
+                <AppBehaviorTab settings={MOCK_SETTINGS} metadata={MOCK_METADATA} />
+            </Provider>,
+        );
+
+        await userEvent.click(screen.getByRole('button', { name: /open logs folder/i }));
+
+        // The side-effect IS the test goal: handleOpenLogs must call openPath with
+        // the bare path from metadata.logsFolder — no file:// scheme prefix.
+        expect(openPathMock).toHaveBeenCalledWith('/Users/test/.local/share/GoText/logs');
+        expect(openPathMock.mock.calls[0][0]).not.toContain('file://');
+    });
+
+    it('enqueues a success toast after the task-logging toggle write resolves', async () => {
+        const store = makeStore();
+        render(
+            <Provider store={store}>
+                <AppBehaviorTab settings={MOCK_SETTINGS} metadata={MOCK_METADATA} />
+            </Provider>,
+        );
+
+        await userEvent.click(screen.getByRole('switch', { name: /enable task logging/i }));
+
+        await waitFor(() => {
+            expect(store.getState().notifications.queue).toContainEqual(
+                expect.objectContaining({ severity: 'success', surface: 'toast', message: 'Task logging enabled' }),
+            );
+        });
     });
 });

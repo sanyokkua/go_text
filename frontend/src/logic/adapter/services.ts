@@ -14,6 +14,7 @@ import {
     BrowserOpenURL,
     ClipboardGetText,
     ClipboardSetText,
+    OpenPath,
 } from '../../../wailsjs/go/application/ApplicationContextHolder';
 import { ClearHistory, DeleteHistoryEntry, GetHistoryEntry, ListHistory } from '../../../wailsjs/go/history/HistoryHandler';
 import { apperr } from '../../../wailsjs/go/models';
@@ -30,6 +31,7 @@ import {
     GetModelConfig,
     GetSettings,
     GetUIPreferencesConfig,
+    ProviderPresets,
     RemoveLanguage,
     ResetSettingsToDefault,
     SetAsCurrentProviderConfig,
@@ -41,7 +43,7 @@ import {
     UpdateProviderConfig,
     UpdateUIPreferencesConfig,
 } from '../../../wailsjs/go/settings/SettingsHandler';
-import { CreateStack, DeleteStack, DuplicateStack, GetStack, ListStacks, UpdateStack } from '../../../wailsjs/go/stacks/StackHandler';
+import { CreateStack, DeleteStack, DuplicateStack, GetStack, ListStacks, SuggestedStacks, UpdateStack } from '../../../wailsjs/go/stacks/StackHandler';
 import { LogDebug, LogError, LogFatal, LogInfo, LogPrint, LogTrace, LogWarning } from '../../../wailsjs/runtime';
 import { IActionHandler, IAppHandler, IClipboardService, IHistoryHandler, ILoggerService, ISettingsHandler, IStackHandler } from './interfaces';
 import { toWireBehavior, toWireProvider, toWireUIPreferences } from './mappers';
@@ -111,6 +113,11 @@ export class AppHandler implements IAppHandler {
     browserOpenURL(url: string): Promise<apperr.VoidResult> {
         this.logger.logDebug(`AppHandler.browserOpenURL: ${url}`);
         return BrowserOpenURL(url);
+    }
+
+    openPath(path: string): Promise<apperr.VoidResult> {
+        this.logger.logDebug(`AppHandler.openPath: ${path}`);
+        return OpenPath(path);
     }
 }
 
@@ -204,6 +211,11 @@ export class SettingsHandler implements ISettingsHandler {
     async getLanguageConfig(): Promise<apperr.LanguageResult> {
         this.logger.logInfo('getLanguageConfig');
         return GetLanguageConfig();
+    }
+
+    async providerPresets(): Promise<apperr.ProviderPresetsResult> {
+        this.logger.logInfo('providerPresets');
+        return ProviderPresets();
     }
 
     async getModelConfig(): Promise<apperr.ModelConfigResult> {
@@ -327,6 +339,11 @@ export class StackHandler implements IStackHandler {
     async listStacks(): Promise<apperr.StacksResult> {
         this.logger.logInfo('listStacks');
         return ListStacks();
+    }
+
+    async suggestedStacks(): Promise<apperr.SuggestedStacksResult> {
+        this.logger.logInfo('suggestedStacks');
+        return SuggestedStacks();
     }
 
     async updateStack(stack: apperr.SavedStack): Promise<apperr.StackResult> {

@@ -31,6 +31,11 @@
     border: 1px solid var(--line);
     border-radius: var(--radius-md);
     padding: 13px;
+    /* Generated output is copyable by mouse (in addition to the Copy button). */
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
 }
 
 .empty {

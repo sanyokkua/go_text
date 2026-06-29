@@ -16,33 +16,50 @@ const panicMsgFmt = "panic: %v"
 // StackHandler is the Wails-bound handler for saved-stack CRUD.
 // All bound methods follow the envelope pattern: return apperr.*Result,
 // no error return, and include defer/recover for panic safety.
+// SuggestedStackRecipe is the icon-bearing recipe data the handler resolves
+// into a SuggestedStack. It mirrors db.StarterStackRecipe without importing db
+// (the DI container performs the conversion).
+type SuggestedStackRecipe struct {
+	Name    string
+	Icon    string
+	Actions []string
+}
+
 type StackHandler struct {
-	logger     logger.Logger
-	zlog       zerolog.Logger
-	repo       StackRepositoryAPI
-	planner    *actions.Planner
-	catalogIDs map[string]bool
+	logger       logger.Logger
+	zlog         zerolog.Logger
+	repo         StackRepositoryAPI
+	planner      *actions.Planner
+	catalogIDs   map[string]bool
+	catalogNames map[string]string
+	recipes      []SuggestedStackRecipe
 }
 
 // NewStackHandler constructs a StackHandler.
 // repo may be nil when constructed (DI late-binding); call SetRepository
-// before the first Wails invocation (Init does this).
+// before the first Wails invocation (Init does this). recipes are the
+// suggested-stack recipes exposed via SuggestedStacks.
 func NewStackHandler(
 	wailsLogger logger.Logger,
 	zlog zerolog.Logger,
 	repo StackRepositoryAPI,
 	catalog []apperr.ActionMeta,
+	recipes []SuggestedStackRecipe,
 ) *StackHandler {
 	ids := make(map[string]bool, len(catalog))
+	names := make(map[string]string, len(catalog))
 	for _, a := range catalog {
 		ids[a.ID] = true
+		names[a.ID] = a.Name
 	}
 	return &StackHandler{
-		logger:     wailsLogger,
-		zlog:       zlog,
-		repo:       repo,
-		planner:    actions.NewPlanner(catalog),
-		catalogIDs: ids,
+		logger:       wailsLogger,
+		zlog:         zlog,
+		repo:         repo,
+		planner:      actions.NewPlanner(catalog),
+		catalogIDs:   ids,
+		catalogNames: names,
+		recipes:      recipes,
 	}
 }
 
@@ -114,6 +131,50 @@ func (h *StackHandler) ListStacks() (res apperr.StacksResult) {
 		list = []apperr.SavedStack{}
 	}
 	return apperr.StacksResult{Data: list}
+}
+
+// SuggestedStacks returns the recommended stack recipes for the Info/About
+// guide, resolving each action ID to its display name via the catalog.
+// Unknown action IDs are dropped from both ActionIDs and ActionNames
+// (mirrors ListStacks' graceful handling of stale IDs).
+func (h *StackHandler) SuggestedStacks() (res apperr.SuggestedStacksResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicMsgFmt, r))
+			wire := apperr.ToWire(h.zlog, ae)
+			res = apperr.SuggestedStacksResult{Error: &wire}
+		}
+	}()
+	out := make([]apperr.SuggestedStack, 0, len(h.recipes))
+	for _, recipe := range h.recipes {
+		out = append(out, h.resolveSuggestedStack(recipe))
+	}
+	return apperr.SuggestedStacksResult{Data: out}
+}
+
+// resolveSuggestedStack maps a recipe's action IDs to index-aligned ID/name
+// pairs, dropping any ID absent from the catalog.
+func (h *StackHandler) resolveSuggestedStack(recipe SuggestedStackRecipe) apperr.SuggestedStack {
+	ids := make([]string, 0, len(recipe.Actions))
+	names := make([]string, 0, len(recipe.Actions))
+	for _, id := range recipe.Actions {
+		name, ok := h.catalogNames[id]
+		if !ok {
+			h.zlog.Warn().
+				Str("stackName", recipe.Name).
+				Str("actionId", id).
+				Msg("dropping unknown action ID from suggested stack")
+			continue
+		}
+		ids = append(ids, id)
+		names = append(names, name)
+	}
+	return apperr.SuggestedStack{
+		Name:        recipe.Name,
+		Icon:        recipe.Icon,
+		ActionIDs:   ids,
+		ActionNames: names,
+	}
 }
 
 // GetStack returns a single stack by ID. Unknown action IDs are dropped.

@@ -107,6 +107,42 @@ function renderAppBar() {
     return { store, ...utils };
 }
 
+describe('AppBar — flattened layout renders all main-view controls', () => {
+    it('renders the wordmark, pickers, segmented controls and icon buttons together on the main view', () => {
+        renderAppBar();
+
+        // Brand wordmark (the single-letter logo is aria-hidden, so it is not queryable by role).
+        expect(screen.getByText('GoText')).toBeInTheDocument();
+
+        // Provider, model and language pickers.
+        expect(screen.getByRole('combobox', { name: /provider/i })).toBeInTheDocument();
+        expect(screen.getByRole('combobox', { name: /model/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /languages/i })).toBeInTheDocument();
+
+        // Format segmented control.
+        expect(screen.getByRole('radio', { name: /plain/i })).toBeInTheDocument();
+        expect(screen.getByRole('radio', { name: /^md$/i })).toBeInTheDocument();
+
+        // View-mode segmented control.
+        expect(screen.getByRole('radio', { name: /preview/i })).toBeInTheDocument();
+        expect(screen.getByRole('radio', { name: /source/i })).toBeInTheDocument();
+        expect(screen.getByRole('radio', { name: /diff/i })).toBeInTheDocument();
+
+        // Layout segmented control.
+        expect(screen.getByRole('radio', { name: /side/i })).toBeInTheDocument();
+        expect(screen.getByRole('radio', { name: /stacked/i })).toBeInTheDocument();
+
+        // Right-cluster icon buttons.
+        expect(screen.getByRole('button', { name: /open command palette/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /toggle history rail/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /about and info/i })).toBeInTheDocument();
+
+        // Sidebar toggle and settings entry point.
+        expect(screen.getByRole('button', { name: /collapse sidebar|expand sidebar/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /open settings/i })).toBeInTheDocument();
+    });
+});
+
 describe('AppBar chrome — readiness dots removed', () => {
     it('renders no provider or model readiness-dot nodes', () => {
         renderAppBar();

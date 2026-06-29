@@ -3,6 +3,7 @@ package stacks
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/rs/zerolog"
@@ -57,7 +58,11 @@ func (m *mockRepo) Duplicate(_ string) (*apperr.SavedStack, error) {
 }
 
 func newTestHandler(repo StackRepositoryAPI) *StackHandler {
-	return NewStackHandler(nil, zerolog.Nop(), repo, testCatalog)
+	return NewStackHandler(nil, zerolog.Nop(), repo, testCatalog, nil)
+}
+
+func newSuggestionsHandler(recipes []SuggestedStackRecipe) *StackHandler {
+	return NewStackHandler(nil, zerolog.Nop(), &mockRepo{}, testCatalog, recipes)
 }
 
 // ─── ListStacks ──────────────────────────────────────────────────────────────
@@ -125,6 +130,131 @@ func TestStackHandler_ListStacks_EmptyIsNonNilSlice(t *testing.T) {
 	}
 	if res.Data == nil {
 		t.Error("expected non-nil empty slice, got nil")
+	}
+}
+
+// ─── SuggestedStacks ─────────────────────────────────────────────────────────
+
+// suggestCatalog carries display names so ID→Name resolution can be asserted.
+var suggestCatalog = []apperr.ActionMeta{
+	{ID: "conciseRewrite", Name: "Make Concise", Family: "Rewrite", ExclusivityGroup: "rewrite-mode", OrderRank: 100, Mergeable: true},
+	{ID: "formal", Name: "Formal Tone", Family: "Rewrite", ExclusivityGroup: "tone", OrderRank: 200, Mergeable: true},
+	{ID: "keyPoints", Name: "Key Points", Family: "Summarize", ExclusivityGroup: "summarize-mode", OrderRank: 300, Mergeable: false, Terminal: true},
+}
+
+func newSuggestCatalogHandler(recipes []SuggestedStackRecipe) *StackHandler {
+	return NewStackHandler(nil, zerolog.Nop(), &mockRepo{}, suggestCatalog, recipes)
+}
+
+func TestStackHandler_SuggestedStacks_ResolvesNames(t *testing.T) {
+	t.Parallel()
+	recipes := []SuggestedStackRecipe{
+		{Name: "Polish", Icon: "sparkles", Actions: []string{"conciseRewrite", "formal"}},
+	}
+	h := newSuggestCatalogHandler(recipes)
+
+	res := h.SuggestedStacks()
+
+	if res.Error != nil {
+		t.Fatalf("unexpected error: %v", res.Error)
+	}
+	if len(res.Data) != 1 {
+		t.Fatalf("expected 1 suggested stack, got %d", len(res.Data))
+	}
+	got := res.Data[0]
+	if got.Name != "Polish" || got.Icon != "sparkles" {
+		t.Errorf("unexpected metadata: name=%q icon=%q", got.Name, got.Icon)
+	}
+	wantIDs := []string{"conciseRewrite", "formal"}
+	wantNames := []string{"Make Concise", "Formal Tone"}
+	if !reflect.DeepEqual(got.ActionIDs, wantIDs) {
+		t.Errorf("ActionIDs: want %v, got %v", wantIDs, got.ActionIDs)
+	}
+	if !reflect.DeepEqual(got.ActionNames, wantNames) {
+		t.Errorf("ActionNames: want %v, got %v", wantNames, got.ActionNames)
+	}
+}
+
+func TestStackHandler_SuggestedStacks_DropsUnknownActionIDs(t *testing.T) {
+	t.Parallel()
+	recipes := []SuggestedStackRecipe{
+		{Name: "Mixed", Icon: "wand", Actions: []string{"conciseRewrite", "ghostAction", "keyPoints"}},
+	}
+	h := newSuggestCatalogHandler(recipes)
+
+	res := h.SuggestedStacks()
+
+	if res.Error != nil {
+		t.Fatalf("unexpected error: %v", res.Error)
+	}
+	got := res.Data[0]
+	// "ghostAction" is dropped from both index-aligned slices.
+	wantIDs := []string{"conciseRewrite", "keyPoints"}
+	wantNames := []string{"Make Concise", "Key Points"}
+	if !reflect.DeepEqual(got.ActionIDs, wantIDs) {
+		t.Errorf("ActionIDs: want %v, got %v", wantIDs, got.ActionIDs)
+	}
+	if !reflect.DeepEqual(got.ActionNames, wantNames) {
+		t.Errorf("ActionNames: want %v, got %v", wantNames, got.ActionNames)
+	}
+	if len(got.ActionIDs) != len(got.ActionNames) {
+		t.Errorf("ActionIDs and ActionNames must stay index-aligned: %v vs %v", got.ActionIDs, got.ActionNames)
+	}
+}
+
+func TestStackHandler_SuggestedStacks_OnePerRecipe(t *testing.T) {
+	t.Parallel()
+	recipes := []SuggestedStackRecipe{
+		{Name: "A", Icon: "a", Actions: []string{"conciseRewrite"}},
+		{Name: "B", Icon: "b", Actions: []string{"formal"}},
+		{Name: "C", Icon: "c", Actions: []string{"keyPoints"}},
+	}
+	h := newSuggestCatalogHandler(recipes)
+
+	res := h.SuggestedStacks()
+
+	if res.Error != nil {
+		t.Fatalf("unexpected error: %v", res.Error)
+	}
+	if len(res.Data) != len(recipes) {
+		t.Fatalf("expected %d suggested stacks, got %d", len(recipes), len(res.Data))
+	}
+	for i, r := range recipes {
+		if res.Data[i].Name != r.Name {
+			t.Errorf("index %d: want name %q, got %q", i, r.Name, res.Data[i].Name)
+		}
+	}
+}
+
+func TestStackHandler_SuggestedStacks_EmptyRecipes(t *testing.T) {
+	t.Parallel()
+	h := newSuggestionsHandler(nil)
+
+	res := h.SuggestedStacks()
+
+	if res.Error != nil {
+		t.Fatalf("unexpected error: %v", res.Error)
+	}
+	if len(res.Data) != 0 {
+		t.Errorf("expected zero suggested stacks, got %d", len(res.Data))
+	}
+}
+
+func TestStackHandler_SuggestedStacks_AllUnknownDropsToEmptySlices(t *testing.T) {
+	t.Parallel()
+	recipes := []SuggestedStackRecipe{
+		{Name: "Stale", Icon: "trash", Actions: []string{"gone1", "gone2"}},
+	}
+	h := newSuggestCatalogHandler(recipes)
+
+	res := h.SuggestedStacks()
+
+	if res.Error != nil {
+		t.Fatalf("unexpected error: %v", res.Error)
+	}
+	got := res.Data[0]
+	if len(got.ActionIDs) != 0 || len(got.ActionNames) != 0 {
+		t.Errorf("expected all actions dropped, got IDs=%v Names=%v", got.ActionIDs, got.ActionNames)
 	}
 }
 

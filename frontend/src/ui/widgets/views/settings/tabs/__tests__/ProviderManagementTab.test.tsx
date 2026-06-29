@@ -14,11 +14,18 @@ import ProviderManagementTab from '../ProviderManagementTab';
 // is testable without the ESM/CJS interop issue from the nested wailsjs import.
 jest.mock('../components/ProviderForm', () => {
     const React = require('react');
-    const MockProviderForm = ({ provider }: { provider: unknown }) => {
+    const MockProviderForm = ({ provider, onSave }: { provider: unknown; onSave: (p: unknown) => void }) => {
         if (!provider) {
             return React.createElement('div', null, '(Select a provider to edit or create a new one)');
         }
-        return React.createElement('form', null, React.createElement('input', { 'aria-label': 'Provider name', 'type': 'text' }));
+        // A minimal Save button lets tests exercise the tab's save→toast flow
+        // without pulling in the real form's wailsjs/ESM dependency chain.
+        return React.createElement(
+            'form',
+            null,
+            React.createElement('input', { 'aria-label': 'Provider name', 'type': 'text' }),
+            React.createElement('button', { type: 'button', onClick: () => onSave(provider) }, 'Save'),
+        );
     };
     MockProviderForm.displayName = 'MockProviderForm';
     return {
@@ -55,7 +62,29 @@ jest.mock('../../../../../../logic/adapter', () => ({
     SettingsHandlerAdapter: {
         getSettings: jest.fn().mockResolvedValue({ data: null, error: null }),
         createProviderConfig: jest.fn().mockResolvedValue({ data: null, error: null }),
-        updateProviderConfig: jest.fn().mockResolvedValue({ data: null, error: null }),
+        // Returns the saved provider so the settings slice's `updateProviderConfig.fulfilled`
+        // reducer (which reads payload.providerId) succeeds — production never returns null here.
+        updateProviderConfig: jest.fn().mockResolvedValue({
+            data: {
+                providerId: 'p1',
+                providerName: 'Test Provider',
+                providerType: 'openai',
+                baseUrl: 'http://localhost:1234',
+                modelsEndpoint: '',
+                completionEndpoint: '',
+                authType: 'api-key',
+                authToken: '',
+                useAuthTokenFromEnv: true,
+                envVarTokenName: 'TEST_KEY',
+                apiVersion: '',
+                selectedModel: 'gpt-4o',
+                useCustomHeaders: false,
+                headers: {},
+                useCustomModels: false,
+                customModels: [],
+            },
+            error: null,
+        }),
         deleteProviderConfig: jest.fn().mockResolvedValue({ data: null, error: null }),
         setAsCurrentProviderConfig: jest.fn().mockResolvedValue({ data: null, error: null }),
     },
@@ -213,5 +242,24 @@ describe('ProviderManagementTab', () => {
         const newBtnFollowsItem =
             providerItem.compareDocumentPosition(newBtn) & Node.DOCUMENT_POSITION_FOLLOWING;
         expect(newBtnFollowsItem).toBeTruthy();
+    });
+
+    it('enqueues a "Provider saved" success toast after saving an existing provider', async () => {
+        const store = makeStore();
+        render(
+            <Provider store={store}>
+                <ProviderManagementTab />
+            </Provider>,
+        );
+
+        // Select the existing provider (update path), then trigger the form's save.
+        await userEvent.click(screen.getByRole('button', { name: /test provider/i }));
+        await userEvent.click(screen.getByRole('button', { name: /^save$/i }));
+
+        await waitFor(() => {
+            expect(store.getState().notifications.queue).toContainEqual(
+                expect.objectContaining({ severity: 'success', surface: 'toast', message: 'Provider saved' }),
+            );
+        });
     });
 });

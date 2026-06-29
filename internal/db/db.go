@@ -182,9 +182,8 @@ func seedDefaults(ctx context.Context, q *store.Queries) error {
 	if err := q.SetCurrentProviderID(ctx, sql.NullString{String: ollamaID, Valid: true}); err != nil {
 		return fmt.Errorf("app_state: %w", err)
 	}
-	if err := seedStarterStacks(ctx, q); err != nil {
-		return fmt.Errorf("stacks: %w", err)
-	}
+	// Starter stacks are no longer seeded into the DB; they are exposed as
+	// suggestions (StarterStackRecipes) for the Info/About guide instead.
 	return nil
 }
 
@@ -203,82 +202,105 @@ func wipeAllTables(ctx context.Context, tx *sql.Tx) error {
 	return nil
 }
 
-// seedProviders inserts the five default LLM providers and returns the
-// Ollama provider ID (used as the initial current_provider_id).
+// ProviderPreset is one entry in the canonical provider-preset catalog.
+// It is the single source of truth shared by the seeder (which inserts only
+// the SeedDefault entries) and the New-Provider form's one-click presets
+// (which exposes all entries via the settings handler). It carries no apperr
+// dependency so the db package stays free of apperr imports.
+type ProviderPreset struct {
+	Name           string
+	Kind           string
+	BaseURL        string
+	AuthScheme     string
+	APIKeyEnvVar   string
+	CompletionPath string
+	ModelsPath     string
+	Headers        string
+
+	// SeedDefault marks the presets inserted on a fresh database.
+	// Only Ollama (current) and LM Studio are seeded; the rest are
+	// available solely as one-click presets in the New-Provider form.
+	SeedDefault bool
+}
+
+// providerPresets is the canonical list of provider presets. Ollama and
+// LM Studio are seeded on a fresh DB; all five are exposed as form presets.
+var providerPresets = []ProviderPreset{
+	{
+		Name: "Ollama", Kind: "ollama",
+		BaseURL: "http://127.0.0.1:11434/", AuthScheme: "none",
+		CompletionPath: defaultCompletionPath, ModelsPath: defaultModelsPath,
+		Headers: "{}", SeedDefault: true,
+	},
+	{
+		Name: "LM Studio", Kind: "lmstudio",
+		BaseURL: "http://127.0.0.1:1234/", AuthScheme: "none",
+		CompletionPath: defaultCompletionPath, ModelsPath: defaultModelsPath,
+		Headers: "{}", SeedDefault: true,
+	},
+	{
+		Name: "Llama.cpp", Kind: "llamacpp",
+		BaseURL: "http://127.0.0.1:8080/", AuthScheme: "none",
+		CompletionPath: defaultCompletionPath, ModelsPath: defaultModelsPath,
+		Headers: "{}",
+	},
+	{
+		Name: "OpenAI", Kind: "openai",
+		BaseURL: "https://api.openai.com/", AuthScheme: "bearer",
+		APIKeyEnvVar:   "OPENAI_API_KEY",
+		CompletionPath: defaultCompletionPath, ModelsPath: defaultModelsPath,
+		Headers: `{"OpenAI-Organization":"","OpenAI-Project":""}`,
+	},
+	{
+		Name: "OpenRouter.ai", Kind: "openai",
+		BaseURL: "https://openrouter.ai/api/", AuthScheme: "bearer",
+		APIKeyEnvVar:   "OPENROUTER_API_KEY",
+		CompletionPath: defaultCompletionPath, ModelsPath: defaultModelsPath,
+		Headers: "{}",
+	},
+}
+
+// ProviderPresets returns a defensive copy of the canonical provider presets.
+// The settings handler exposes these to the New-Provider form.
+func ProviderPresets() []ProviderPreset {
+	out := make([]ProviderPreset, len(providerPresets))
+	copy(out, providerPresets)
+	return out
+}
+
+// seedProviders inserts the default-seeded LLM providers (Ollama + LM Studio)
+// and returns the Ollama provider ID (used as the initial current_provider_id).
 func seedProviders(ctx context.Context, q *store.Queries) (string, error) {
 	now := time.Now().Unix()
 
-	type providerRow struct {
-		name           string
-		kind           string
-		baseURL        string
-		authScheme     string
-		apiKeyEnvVar   string
-		completionPath string
-		modelsPath     string
-		headers        string
-	}
-
-	providers := []providerRow{
-		{
-			name: "Ollama", kind: "ollama",
-			baseURL: "http://127.0.0.1:11434/", authScheme: "none",
-			completionPath: defaultCompletionPath, modelsPath: defaultModelsPath,
-			headers: "{}",
-		},
-		{
-			name: "LM Studio", kind: "lmstudio",
-			baseURL: "http://127.0.0.1:1234/", authScheme: "none",
-			completionPath: defaultCompletionPath, modelsPath: defaultModelsPath,
-			headers: "{}",
-		},
-		{
-			name: "Llama.cpp", kind: "llamacpp",
-			baseURL: "http://127.0.0.1:8080/", authScheme: "none",
-			completionPath: defaultCompletionPath, modelsPath: defaultModelsPath,
-			headers: "{}",
-		},
-		{
-			name: "OpenRouter.ai", kind: "openai",
-			baseURL: "https://openrouter.ai/api/", authScheme: "bearer",
-			apiKeyEnvVar:   "OPENROUTER_API_KEY",
-			completionPath: defaultCompletionPath, modelsPath: defaultModelsPath,
-			headers: "{}",
-		},
-		{
-			name: "OpenAI", kind: "openai",
-			baseURL: "https://api.openai.com/", authScheme: "bearer",
-			apiKeyEnvVar:   "OPENAI_API_KEY",
-			completionPath: defaultCompletionPath, modelsPath: defaultModelsPath,
-			headers: `{"OpenAI-Organization":"","OpenAI-Project":""}`,
-		},
-	}
-
 	var ollamaID string
-	for i, p := range providers {
+	for _, p := range providerPresets {
+		if !p.SeedDefault {
+			continue
+		}
 		id := uuid.NewString()
-		if i == 0 {
+		if p.Kind == "ollama" {
 			ollamaID = id
 		}
 		err := q.CreateProvider(ctx, store.CreateProviderParams{
 			ID:              id,
-			Name:            p.name,
-			Kind:            p.kind,
-			BaseUrl:         p.baseURL,
-			AuthScheme:      p.authScheme,
-			ApiKeyEnvVar:    p.apiKeyEnvVar,
+			Name:            p.Name,
+			Kind:            p.Kind,
+			BaseUrl:         p.BaseURL,
+			AuthScheme:      p.AuthScheme,
+			ApiKeyEnvVar:    p.APIKeyEnvVar,
 			ApiVersion:      "",
 			SelectedModel:   "",
-			CompletionPath:  p.completionPath,
-			ModelsPath:      p.modelsPath,
+			CompletionPath:  p.CompletionPath,
+			ModelsPath:      p.ModelsPath,
 			UseCustomModels: 0,
-			Headers:         p.headers,
+			Headers:         p.Headers,
 			CustomModels:    "[]",
 			CreatedAt:       now,
 			UpdatedAt:       now,
 		})
 		if err != nil {
-			return "", fmt.Errorf("create provider %q: %w", p.name, err)
+			return "", fmt.Errorf("create provider %q: %w", p.Name, err)
 		}
 	}
 	return ollamaID, nil
@@ -433,32 +455,24 @@ func StarterStackActions() map[string][]string {
 	return out
 }
 
-// seedStarterStacks inserts the 17 starter stacks from 09-prompts.md §4.
-// All action IDs are valid v3 dotted catalog IDs so the seeded steps survive
-// StackHandler.filterUnknownSteps and validate against the planner.
-func seedStarterStacks(ctx context.Context, q *store.Queries) error {
-	now := time.Now().Unix()
+// StarterStackRecipe is one suggested-stack recipe exposed to the Info/About
+// guide. It carries the icon (which StarterStackActions does not) so the
+// frontend can render the suggestion exactly as a seeded stack would appear.
+type StarterStackRecipe struct {
+	Name    string
+	Icon    string
+	Actions []string
+}
 
-	for _, s := range starterStacks {
-		id := uuid.NewString()
-		if err := q.InsertStack(ctx, store.InsertStackParams{
-			ID:        id,
-			Name:      s.name,
-			Icon:      s.icon,
-			CreatedAt: now,
-			UpdatedAt: now,
-		}); err != nil {
-			return fmt.Errorf("insert stack %q: %w", s.name, err)
-		}
-		for pos, actionID := range s.actions {
-			if err := q.InsertStackStep(ctx, store.InsertStackStepParams{
-				StackID:  id,
-				Position: int64(pos),
-				ActionID: actionID,
-			}); err != nil {
-				return fmt.Errorf("insert stack step %q[%d]: %w", s.name, pos, err)
-			}
-		}
+// StarterStackRecipes returns a defensive copy of the starter-stack recipes,
+// preserving canonical order. Unlike StarterStackActions, it includes the icon
+// so the suggestions can be rendered in the Info/About guide.
+func StarterStackRecipes() []StarterStackRecipe {
+	out := make([]StarterStackRecipe, len(starterStacks))
+	for i, s := range starterStacks {
+		actions := make([]string, len(s.actions))
+		copy(actions, s.actions)
+		out[i] = StarterStackRecipe{Name: s.name, Icon: s.icon, Actions: actions}
 	}
-	return nil
+	return out
 }

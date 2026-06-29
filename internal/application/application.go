@@ -3,6 +3,9 @@ package application
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/exec"
+	stdruntime "runtime"
 	"strings"
 
 	"go_text/internal/actions"
@@ -48,7 +51,7 @@ func NewApplicationContextHolder(appLogger *logging.Logger, restyClient *resty.C
 	fileUtilsService := file.NewFileUtilsService(appLogger)
 	// settingsRepo is nil until Init() opens the DB and wires SqliteSettingsRepository.
 	settingsService := settings.NewSettingsService(appLogger, nil, fileUtilsService)
-	settingsHandler := settings.NewSettingsHandler(appLogger, zlog.Logger, settingsService)
+	settingsHandler := settings.NewSettingsHandler(appLogger, zlog.Logger, settingsService, providerPresets())
 
 	taskLogService := tasklog.NewTaskLogService(appLogger, settingsService, fileUtilsService)
 	historyService := history.NewHistoryService(appLogger, settingsService)
@@ -62,7 +65,7 @@ func NewApplicationContextHolder(appLogger *logging.Logger, restyClient *resty.C
 	actionHandler := actions.NewActionHandler(appLogger, zlog.Logger, actionService, verificationService, inferenceGate)
 
 	catalog := actionService.GetActionCatalog()
-	stackHandler := stacks.NewStackHandler(appLogger, zlog.Logger, nil, catalog)
+	stackHandler := stacks.NewStackHandler(appLogger, zlog.Logger, nil, catalog, suggestedStackRecipes())
 	historyHandler := history.NewHistoryHandler(appLogger, zlog.Logger, historyService)
 
 	return &ApplicationContextHolder{
@@ -76,6 +79,41 @@ func NewApplicationContextHolder(appLogger *logging.Logger, restyClient *resty.C
 		appLogger:       appLogger,
 		historyService:  historyService,
 	}
+}
+
+// providerPresets converts the db-owned provider presets into the apperr wire
+// type. Kept here (not in db) so the db package stays free of apperr imports.
+func providerPresets() []apperr.ProviderPreset {
+	src := db.ProviderPresets()
+	out := make([]apperr.ProviderPreset, len(src))
+	for i, p := range src {
+		out[i] = apperr.ProviderPreset{
+			Name:           p.Name,
+			Kind:           p.Kind,
+			BaseURL:        p.BaseURL,
+			AuthScheme:     p.AuthScheme,
+			CompletionPath: p.CompletionPath,
+			ModelsPath:     p.ModelsPath,
+			APIKeyEnvVar:   p.APIKeyEnvVar,
+			Headers:        p.Headers,
+		}
+	}
+	return out
+}
+
+// suggestedStackRecipes converts the db-owned starter-stack recipes into the
+// stacks handler's input type, keeping the stacks package free of a db import.
+func suggestedStackRecipes() []stacks.SuggestedStackRecipe {
+	src := db.StarterStackRecipes()
+	out := make([]stacks.SuggestedStackRecipe, len(src))
+	for i, r := range src {
+		out[i] = stacks.SuggestedStackRecipe{
+			Name:    r.Name,
+			Icon:    r.Icon,
+			Actions: r.Actions,
+		}
+	}
+	return out
 }
 
 // SetContext stores the Wails runtime context for use by bound methods.
@@ -215,5 +253,62 @@ func (a *ApplicationContextHolder) BrowserOpenURL(url string) (res apperr.VoidRe
 		return apperr.VoidResult{Error: &wire}
 	}
 	runtime.BrowserOpenURL(a.ctx, url)
+	return apperr.VoidResult{}
+}
+
+// runOpenCommand is the execution seam for OpenPath. Tests swap it to assert
+// the chosen argv without launching a real OS file manager.
+var runOpenCommand = func(name string, args ...string) error {
+	return exec.Command(name, args...).Run()
+}
+
+// openPathArgs returns the OS file-manager command and arguments for goos.
+// It is a pure function (no side effects) so tests can assert the argv per
+// platform directly. An unsupported platform yields a validation error.
+func openPathArgs(goos, path string) (name string, args []string, err error) {
+	switch goos {
+	case "darwin":
+		return "open", []string{path}, nil
+	case "windows":
+		return "explorer", []string{path}, nil
+	case "linux":
+		return "xdg-open", []string{path}, nil
+	default:
+		return "", nil, apperr.Validation("platform", "darwin, windows, or linux", goos)
+	}
+}
+
+// OpenPath opens a folder or file in the OS file manager. It validates that the
+// path is non-empty and exists before launching, then dispatches by GOOS.
+// On Windows, explorer commonly exits non-zero even on success, so its exit
+// error is not treated as failure.
+func (a *ApplicationContextHolder) OpenPath(path string) (res apperr.VoidResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(zlog.Logger, ae)
+			res = apperr.VoidResult{Error: &wire}
+		}
+	}()
+	if strings.TrimSpace(path) == "" {
+		ae := apperr.Validation("path", "be non-empty", "empty string")
+		wire := apperr.ToWire(zlog.Logger, ae)
+		return apperr.VoidResult{Error: &wire}
+	}
+	if _, err := os.Stat(path); err != nil {
+		ae := apperr.Validation("path", "point to an existing path", "not found")
+		wire := apperr.ToWire(zlog.Logger, ae)
+		return apperr.VoidResult{Error: &wire}
+	}
+	name, args, err := openPathArgs(stdruntime.GOOS, path)
+	if err != nil {
+		wire := apperr.ToWire(zlog.Logger, err)
+		return apperr.VoidResult{Error: &wire}
+	}
+	if err := runOpenCommand(name, args...); err != nil && stdruntime.GOOS != "windows" {
+		ae := apperr.Internal(fmt.Errorf("open path: %w", err))
+		wire := apperr.ToWire(zlog.Logger, ae)
+		return apperr.VoidResult{Error: &wire}
+	}
 	return apperr.VoidResult{}
 }

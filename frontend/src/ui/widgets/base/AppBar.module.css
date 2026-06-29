@@ -14,28 +14,23 @@
     gap: var(--space-2);
 }
 
-/* .left and .right are the wrap units: each stays intact and the right group
-   drops to a second row before any control is clipped. They may wrap internally
-   too, so the settings gear and ⌘K are always reachable down to ~375px. */
+/* `display: contents` dissolves these wrappers so every control becomes a direct
+   flex item of `.bar`. Only the items that don't fit wrap, one by one, instead of
+   a whole cluster dropping as a unit. */
 .left {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-2);
-    min-width: 0;
-}
-
-/* Collapses to zero when the right group wraps onto its own row. */
-.spacer {
-    flex: 1 1 var(--space-2);
+    display: contents;
 }
 
 .right {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-1);
-    align-items: center;
-    justify-content: flex-end;
+    display: contents;
+}
+
+/* The first trailing control absorbs the remaining row space, pushing the right
+   cluster to the edge while still letting those controls wrap individually.
+   `:first-child` is unaffected by the parent's `display: contents`, so this
+   targets the first Segmented on the main view and the settings button elsewhere. */
+.right > :first-child {
+    margin-left: auto;
 }
 
 .wordmark {

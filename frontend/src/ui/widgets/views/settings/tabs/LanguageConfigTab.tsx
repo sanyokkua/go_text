@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
 import { Settings } from '../../../../../logic/adapter/models';
+import { useSettingsToast } from '../../../../../logic/hooks/useSettingsToast';
 import { useAppDispatch } from '../../../../../logic/store';
 import { addLanguage, removeLanguage, setDefaultInputLanguage, setDefaultOutputLanguage } from '../../../../../logic/store/settings/thunks';
 import { Button } from '../../../../components/Button';
@@ -13,6 +14,7 @@ interface Props {
 
 const LanguageConfigTab: React.FC<Props> = ({ settings }) => {
     const dispatch = useAppDispatch();
+    const runWithToast = useSettingsToast();
     const { languages, defaultInputLanguage, defaultOutputLanguage } = settings.languageConfig;
 
     const [newLanguage, setNewLanguage] = useState('');
@@ -20,7 +22,7 @@ const LanguageConfigTab: React.FC<Props> = ({ settings }) => {
     const handleAdd = () => {
         const trimmed = newLanguage.trim();
         if (!trimmed) return;
-        dispatch(addLanguage(trimmed));
+        void runWithToast(dispatch(addLanguage(trimmed)), { success: `Language "${trimmed}" added` });
         setNewLanguage('');
     };
 
@@ -63,16 +65,26 @@ const LanguageConfigTab: React.FC<Props> = ({ settings }) => {
                             items={[
                                 {
                                     label: 'Set as default input',
-                                    onClick: () => dispatch(setDefaultInputLanguage(lang)),
+                                    onClick: () =>
+                                        void runWithToast(dispatch(setDefaultInputLanguage(lang)), {
+                                            success: `Default input language set to "${lang}"`,
+                                        }),
                                     disabled: lang === defaultInputLanguage,
                                 },
                                 {
                                     label: 'Set as default output',
-                                    onClick: () => dispatch(setDefaultOutputLanguage(lang)),
+                                    onClick: () =>
+                                        void runWithToast(dispatch(setDefaultOutputLanguage(lang)), {
+                                            success: `Default output language set to "${lang}"`,
+                                        }),
                                     disabled: lang === defaultOutputLanguage,
                                 },
                                 { type: 'separator' },
-                                { label: 'Remove', variant: 'danger', onClick: () => dispatch(removeLanguage(lang)) },
+                                {
+                                    label: 'Remove',
+                                    variant: 'danger',
+                                    onClick: () => void runWithToast(dispatch(removeLanguage(lang)), { success: `Language "${lang}" removed` }),
+                                },
                             ]}
                         />
                     </div>

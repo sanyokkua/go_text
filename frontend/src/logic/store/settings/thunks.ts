@@ -8,6 +8,7 @@ import {
     fromWireSettings,
     fromWireUIPreferences,
     getLogger,
+    getProviderPresets,
     SettingsHandlerAdapter,
     unwrap,
 } from '../../adapter';
@@ -88,6 +89,19 @@ export const getAppSettingsMetadata = createAsyncThunk<AppSettingsMetadata, void
         } catch (error: unknown) {
             const err = parseError(error);
             logger.logError(`getAppSettingsMetadata failed: ${err.message}`);
+            return rejectWithValue(err.message);
+        }
+    },
+);
+
+export const fetchProviderPresets = createAsyncThunk<apperr.ProviderPreset[], void, { rejectValue: string }>(
+    'settings/fetchProviderPresets',
+    async (_, { rejectWithValue }) => {
+        try {
+            return await getProviderPresets();
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logError(`fetchProviderPresets failed: ${err.message}`);
             return rejectWithValue(err.message);
         }
     },
@@ -384,6 +398,11 @@ export const initializeSettingsState = createAsyncThunk<void, void, { rejectValu
     'settings/initialize',
     async (_, { dispatch, rejectWithValue }) => {
         try {
+            // Provider presets are a non-critical enhancement for the New Provider
+            // form. Fire without .unwrap() so a preset-fetch failure never blocks
+            // the critical settings load (which gates app startup).
+            void dispatch(fetchProviderPresets());
+
             await Promise.all([
                 dispatch(getSettings()).unwrap(),
                 dispatch(getAllProviderConfigs()).unwrap(),

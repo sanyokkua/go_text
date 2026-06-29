@@ -209,8 +209,41 @@ type PromptPreviewRequest struct {
 	SampleInput      string      `json:"sampleInput,omitempty"`
 }
 
+// SuggestedStack is one recommended stack recipe shown in the Info/About
+// guide. ActionIDs and ActionNames are index-aligned; unknown action IDs are
+// dropped from both before transmission.
+type SuggestedStack struct {
+	Name        string   `json:"name"`
+	Icon        string   `json:"icon"`
+	ActionIDs   []string `json:"actionIds"`
+	ActionNames []string `json:"actionNames"`
+}
+
+// ProviderPreset is a one-click preset for the New-Provider form. OpenRouter
+// reuses the existing "openai" kind; no new provider kind is introduced.
+type ProviderPreset struct {
+	Name           string `json:"name"`
+	Kind           string `json:"kind"`
+	BaseURL        string `json:"baseUrl"`
+	AuthScheme     string `json:"authScheme"`
+	CompletionPath string `json:"completionPath"`
+	ModelsPath     string `json:"modelsPath"`
+	APIKeyEnvVar   string `json:"apiKeyEnvVar"`
+	Headers        string `json:"headers"`
+}
+
 // ─── Result envelope types ────────────────────────────────────────────────
 // Bound handler methods return these directly — no separate error return.
+
+type SuggestedStacksResult struct {
+	Data  []SuggestedStack `json:"data,omitempty"`
+	Error *WireError       `json:"error,omitempty"`
+}
+
+type ProviderPresetsResult struct {
+	Data  []ProviderPreset `json:"data,omitempty"`
+	Error *WireError       `json:"error,omitempty"`
+}
 
 type VoidResult struct {
 	Error *WireError `json:"error,omitempty"`

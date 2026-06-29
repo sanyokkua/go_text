@@ -36,6 +36,7 @@ type SettingsHandlerAPI interface {
 	UpdateUIPreferencesConfig(cfg apperr.UIPreferencesConfig) apperr.UIPreferencesResult
 	GetLoggingConfig() apperr.LoggingResult
 	UpdateLoggingConfig(cfg apperr.LoggingConfig) apperr.LoggingResult
+	ProviderPresets() apperr.ProviderPresetsResult
 }
 
 // SettingsHandler is the Wails-bound handler for settings operations.
@@ -45,14 +46,17 @@ type SettingsHandler struct {
 	logger          logger.Logger
 	zlog            zerolog.Logger
 	settingsService SettingsServiceAPI
+	presets         []apperr.ProviderPreset
 }
 
-// NewSettingsHandler constructs a SettingsHandler shell.
-func NewSettingsHandler(wailsLogger logger.Logger, zlog zerolog.Logger, settingsService SettingsServiceAPI) *SettingsHandler {
+// NewSettingsHandler constructs a SettingsHandler shell. presets are the
+// New-Provider form's one-click provider presets.
+func NewSettingsHandler(wailsLogger logger.Logger, zlog zerolog.Logger, settingsService SettingsServiceAPI, presets []apperr.ProviderPreset) *SettingsHandler {
 	return &SettingsHandler{
 		logger:          wailsLogger,
 		zlog:            zlog,
 		settingsService: settingsService,
+		presets:         presets,
 	}
 }
 
@@ -506,6 +510,22 @@ func (h *SettingsHandler) UpdateUIPreferencesConfig(cfg apperr.UIPreferencesConf
 	}
 	ui := toWireUIPreferences(*updated)
 	return apperr.UIPreferencesResult{Data: &ui}
+}
+
+// ProviderPresets returns the one-click provider presets for the New-Provider
+// form. It is read-only static data, so it cannot fail under normal operation;
+// the defer/recover only guards against an unexpected panic.
+func (h *SettingsHandler) ProviderPresets() (res apperr.ProviderPresetsResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(h.zlog, ae)
+			res = apperr.ProviderPresetsResult{Error: &wire}
+		}
+	}()
+	out := make([]apperr.ProviderPreset, len(h.presets))
+	copy(out, h.presets)
+	return apperr.ProviderPresetsResult{Data: out}
 }
 
 func (h *SettingsHandler) GetLoggingConfig() (res apperr.LoggingResult) {

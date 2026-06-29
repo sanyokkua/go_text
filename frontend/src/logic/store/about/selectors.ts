@@ -10,3 +10,4 @@ export const selectAboutInspectorLoading = (state: RootState): boolean => state.
 export const selectAboutInspectorData = (state: RootState): apperr.PromptPreview | null => state.about.inspectorData;
 export const selectAboutInspectorError = (state: RootState): string | null => state.about.inspectorError;
 export const selectAboutPreviewInputEnabled = (state: RootState): boolean => state.about.previewInputEnabled;
+export const selectSuggestedStacks = (state: RootState): apperr.SuggestedStack[] => state.about.suggestedStacks;

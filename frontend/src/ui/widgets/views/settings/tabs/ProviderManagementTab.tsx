@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 
-import { getLogger } from '../../../../../logic/adapter';
 import { ProviderConfig } from '../../../../../logic/adapter/models';
+import { useSettingsToast } from '../../../../../logic/hooks/useSettingsToast';
 import { useAppDispatch, useAppSelector } from '../../../../../logic/store';
-import { selectAllSettings, selectSettingsMetadata } from '../../../../../logic/store/settings/selectors';
+import { selectAllSettings, selectProviderPresets, selectSettingsMetadata } from '../../../../../logic/store/settings/selectors';
 import {
     createProviderConfig,
     deleteProviderConfig,
@@ -15,12 +15,13 @@ import ProviderList from './components/ProviderList';
 import styles from './ProviderManagementTab.module.css';
 
 const NEW_ID = '__new__';
-const logger = getLogger('ProviderManagementTab');
 
 const ProviderManagementTab: React.FC = () => {
     const dispatch = useAppDispatch();
+    const runWithToast = useSettingsToast();
     const settings = useAppSelector(selectAllSettings);
     const metadata = useAppSelector(selectSettingsMetadata);
+    const presets = useAppSelector(selectProviderPresets);
 
     const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -53,13 +54,24 @@ const ProviderManagementTab: React.FC = () => {
         }
     };
 
+    const handleSaveWithToast = (p: ProviderConfig) => {
+        void runWithToast(
+            { unwrap: () => handleSave(p) },
+            { success: selectedId === NEW_ID ? 'Provider created' : 'Provider saved' },
+        );
+    };
+
     const handleDelete = async (id: string) => {
         await dispatch(deleteProviderConfig(id)).unwrap();
         setSelectedId(null);
     };
 
-    const handleSetCurrent = async (id: string) => {
-        await dispatch(setAsCurrentProviderConfig(id)).unwrap();
+    const handleDeleteWithToast = (id: string) => {
+        void runWithToast({ unwrap: () => handleDelete(id) }, { success: 'Provider deleted' });
+    };
+
+    const handleSetCurrent = (id: string) => {
+        void runWithToast(dispatch(setAsCurrentProviderConfig(id)), { success: 'Current provider updated' });
     };
 
     const handleCancel = () => {
@@ -77,19 +89,15 @@ const ProviderManagementTab: React.FC = () => {
             />
             <ProviderForm
                 provider={selectedProvider}
+                isNew={selectedId === NEW_ID}
+                presets={presets}
                 authTypes={authTypes}
                 providerTypes={providerTypes}
                 existingNames={existingNames}
                 isCurrent={isCurrent}
-                onSave={(p) => {
-                    handleSave(p).catch((err: unknown) => logger.logError(`save failed: ${String(err)}`));
-                }}
-                onDelete={(id) => {
-                    handleDelete(id).catch((err: unknown) => logger.logError(`delete failed: ${String(err)}`));
-                }}
-                onSetCurrent={(id) => {
-                    handleSetCurrent(id).catch((err: unknown) => logger.logError(`set-current failed: ${String(err)}`));
-                }}
+                onSave={handleSaveWithToast}
+                onDelete={handleDeleteWithToast}
+                onSetCurrent={handleSetCurrent}
                 onCancel={handleCancel}
             />
         </div>

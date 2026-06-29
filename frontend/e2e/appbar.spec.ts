@@ -190,4 +190,40 @@ test.describe('AppBar', () => {
 
         expect(jsErrors).toHaveLength(0);
     });
+
+    // Task 7 — controls wrap individually, not as whole sub-groups.
+    test('toolbar group wrappers are dissolved so controls are direct flex items', async ({ page }) => {
+        // Arrange
+        await loadMainView(page);
+
+        // Assert – the former `.left`/`.right` grouping divs now use display:contents,
+        // so their children participate directly in the header's flex/flex-wrap layout
+        // and wrap one-by-one instead of dropping as a whole cluster.
+        const wrapperDisplays = await page.evaluate(() => {
+            const header = document.querySelector('header');
+            if (!header) return [] as string[];
+            return Array.from(header.children)
+                .filter((el) => el.tagName === 'DIV')
+                .map((el) => getComputedStyle(el).display);
+        });
+        expect(wrapperDisplays.length).toBeGreaterThan(0);
+        expect(wrapperDisplays.every((d) => d === 'contents')).toBe(true);
+    });
+
+    test('toolbar wraps to additional rows when the window is too narrow', async ({ page }) => {
+        // Arrange
+        await loadMainView(page);
+
+        // Act – measure header height wide vs. narrow
+        await page.setViewportSize({ width: 1400, height: 800 });
+        await page.waitForTimeout(150);
+        const wideHeight = await page.evaluate(() => document.querySelector('header')!.getBoundingClientRect().height);
+
+        await page.setViewportSize({ width: 520, height: 800 });
+        await page.waitForTimeout(150);
+        const narrowHeight = await page.evaluate(() => document.querySelector('header')!.getBoundingClientRect().height);
+
+        // Assert – narrowing forces items onto more rows, growing the header
+        expect(narrowHeight).toBeGreaterThan(wideHeight);
+    });
 });

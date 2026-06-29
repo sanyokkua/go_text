@@ -224,3 +224,33 @@
     font-family: var(--mono);
     color: var(--ink);
 }
+
+/* Preset quick-fill row (new-provider only) */
+.presetField {
+    margin-bottom: var(--space-3);
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--line);
+}
+
+.presetRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.presetBtn {
+    padding: 4px var(--space-3);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+    font-size: 0.8125rem;
+    font-family: var(--font);
+    font-weight: 500;
+}
+
+.presetBtn:hover {
+    border-color: var(--teal);
+    color: var(--teal);
+}

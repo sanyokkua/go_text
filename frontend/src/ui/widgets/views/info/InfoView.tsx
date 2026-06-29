@@ -1,8 +1,10 @@
-import React, { memo } from 'react';
-import { selectAboutSection, useAppDispatch, useAppSelector } from '../../../../logic/store';
+import React, { memo, useEffect } from 'react';
+import { selectAboutSection, selectSuggestedStacks, useAppDispatch, useAppSelector } from '../../../../logic/store';
 import { setAboutSection } from '../../../../logic/store/about/slice';
+import { fetchSuggestedStacks } from '../../../../logic/store/about/thunks';
 import { AboutSection } from '../../../../logic/store/about/types';
 import { MarkdownView } from '../../../components/MarkdownView';
+import { StackGlyph } from '../../../components/StackGlyph';
 import { Tabs } from '../../../primitives/Tabs';
 import CatalogList from './CatalogList';
 import styles from './InfoView.module.css';
@@ -35,6 +37,13 @@ Press **⌘K** (or **Ctrl+K** on Windows/Linux) from anywhere in the app to open
 const InfoView: React.FC = memo(function InfoView() {
     const dispatch = useAppDispatch();
     const section = useAppSelector(selectAboutSection);
+    const suggestedStacks = useAppSelector(selectSuggestedStacks);
+
+    useEffect(() => {
+        if (suggestedStacks.length === 0) {
+            dispatch(fetchSuggestedStacks());
+        }
+    }, [dispatch, suggestedStacks.length]);
 
     return (
         <div className={styles.root}>
@@ -55,6 +64,29 @@ const InfoView: React.FC = memo(function InfoView() {
                             content: (
                                 <div className={styles.guideContent}>
                                     <MarkdownView source={GUIDE_CONTENT} />
+                                    {suggestedStacks.length > 0 && (
+                                        <section className={styles.suggestions} aria-label="Suggested stacks">
+                                            <h2 className={styles.suggestionsTitle}>Suggested stacks</h2>
+                                            <p className={styles.suggestionsHint}>Ideas to build your own multi-step pipelines.</p>
+                                            <ul className={styles.suggestionList}>
+                                                {suggestedStacks.map((s) => (
+                                                    <li key={s.name} className={styles.suggestionRow}>
+                                                        <StackGlyph icon={s.icon} className={styles.suggestionIcon} />
+                                                        <div className={styles.suggestionBody}>
+                                                            <span className={styles.suggestionName}>{s.name}</span>
+                                                            <div className={styles.suggestionActions}>
+                                                                {s.actionNames.map((name, index) => (
+                                                                    <span key={`${s.name}-${index}`} className={styles.suggestionChip}>
+                                                                        {name}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </section>
+                                    )}
                                 </div>
                             ),
                         },

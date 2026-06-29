@@ -22,7 +22,19 @@ import styles from './SaveStackDialog.module.css';
 
 const logger = getLogger('SaveStackDialog');
 
-const ICONS = ['📝', '✏️', '🔄', '🎯', '💡', '⚡', '🔍', '📋', '🌐', '🎨'];
+const ICONS = [
+    // Work / dev glyphs
+    '📝', '✏️', '🔧', '🐛', '🚀', '📊', '✅', '💬', '📌', '🌐',
+    '🎯', '💡', '⚡', '🔍', '📋', '🎨', '📈', '🗂️', '🏷️', '🔄',
+    '⚙️', '🛠️', '🔨', '📐', '📎', '🖇️', '🗃️', '📁', '📄', '🔖',
+    // Symbols
+    '⭐', '🔥', '💎', '🎁', '🔔', '🧩', '🧠', '🪄', '🧪', '🔬',
+    '📚', '📖', '✒️', '🖊️', '🖋️', '✍️', '🗒️', '📰', '🧾', '📑',
+    // Faces / people
+    '😀', '😎', '🤖', '👍', '👀', '🙌', '👋', '🙏', '💪', '🫡',
+    // Misc objects
+    '☕', '🌟', '🌈', '🎵', '🧭', '⏱️', '⏰', '📅', '💰', '🏆',
+];
 
 function defaultName(stepCount: number): string {
     return stepCount === 1 ? 'My Stack' : `${stepCount}-Step Stack`;
@@ -58,8 +70,9 @@ const SaveStackDialog: React.FC<SaveStackDialogProps> = ({ open, onOpenChange })
     const canSave = name.trim().length > 0 && !isDuplicate && !saving;
 
     const handleIconSelect = (ic: string) => {
-        setIcon(ic);
-        dispatch(setBuilderIcon(ic));
+        const trimmed = ic.trim();
+        setIcon(trimmed);
+        dispatch(setBuilderIcon(trimmed));
     };
 
     const handleSave = async () => {
@@ -124,6 +137,22 @@ const SaveStackDialog: React.FC<SaveStackDialogProps> = ({ open, onOpenChange })
                 {isDuplicate && <p className={styles.errorMsg}>Name already exists — choose a unique name.</p>}
 
                 <label className={styles.fieldLabel}>Icon</label>
+                <div className={styles.iconRow}>
+                    <span className={styles.iconPreview} aria-hidden="true">
+                        {icon}
+                    </span>
+                    <input
+                        id="stack-icon"
+                        className={styles.iconInput}
+                        type="text"
+                        value={icon}
+                        maxLength={2}
+                        onChange={(e) => handleIconSelect(e.target.value)}
+                        placeholder="Any emoji"
+                        aria-label="Selected icon"
+                        autoComplete="off"
+                    />
+                </div>
                 <div className={styles.iconPicker}>
                     {ICONS.map((ic) => (
                         <button

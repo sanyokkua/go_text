@@ -91,8 +91,6 @@ const AppBar: React.FC = () => {
                 )}
             </div>
 
-            <div className={styles.spacer} />
-
             <div className={styles.right}>
                 {isMain && (
                     <>

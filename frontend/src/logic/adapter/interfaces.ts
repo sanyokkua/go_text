@@ -36,6 +36,7 @@ export interface IStackHandler {
     duplicateStack(id: string, newName: string): Promise<apperr.StackResult>;
     getStack(id: string): Promise<apperr.StackResult>;
     listStacks(): Promise<apperr.StacksResult>;
+    suggestedStacks(): Promise<apperr.SuggestedStacksResult>;
     updateStack(stack: apperr.SavedStack): Promise<apperr.StackResult>;
 }
 
@@ -49,6 +50,7 @@ export interface ISettingsHandler {
     getCurrentProviderConfig(): Promise<apperr.ProviderResult>;
     getInferenceBaseConfig(): Promise<apperr.InferenceResult>;
     getLanguageConfig(): Promise<apperr.LanguageResult>;
+    providerPresets(): Promise<apperr.ProviderPresetsResult>;
     getModelConfig(): Promise<apperr.ModelConfigResult>;
     getSettings(): Promise<apperr.SettingsResult>;
     removeLanguage(language: string): Promise<apperr.LanguagesResult>;
@@ -75,4 +77,5 @@ export interface IAppHandler {
     clipboardGetText(): Promise<apperr.StringResult>;
     clipboardSetText(text: string): Promise<apperr.VoidResult>;
     browserOpenURL(url: string): Promise<apperr.VoidResult>;
+    openPath(path: string): Promise<apperr.VoidResult>;
 }

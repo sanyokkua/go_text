@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
 import { ClipboardServiceAdapter } from '../../../../../logic/adapter';
+import { useSettingsToast } from '../../../../../logic/hooks/useSettingsToast';
 import { useAppDispatch, useAppSelector } from '../../../../../logic/store';
 import { enqueueNotification } from '../../../../../logic/store/notifications/slice';
 import { selectSettingsMetadata } from '../../../../../logic/store/settings/selectors';
@@ -11,6 +12,7 @@ import styles from './MetadataTab.module.css';
 
 const MetadataTab: React.FC = () => {
     const dispatch = useAppDispatch();
+    const runWithToast = useSettingsToast();
     const metadata = useAppSelector(selectSettingsMetadata);
     const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
@@ -26,26 +28,10 @@ const MetadataTab: React.FC = () => {
     };
 
     const handleConfirmReset = async () => {
-        try {
-            await dispatch(resetSettingsToDefault()).unwrap();
-            dispatch(
-                enqueueNotification({
-                    severity: 'info',
-                    surface: 'toast',
-                    title: 'Settings reset',
-                    message: 'All settings have been restored to defaults.',
-                }),
-            );
-        } catch {
-            dispatch(
-                enqueueNotification({
-                    severity: 'error',
-                    surface: 'toast',
-                    title: 'Reset failed',
-                    message: 'An error occurred during factory reset. Please try again.',
-                }),
-            );
-        }
+        await runWithToast(dispatch(resetSettingsToDefault()), {
+            success: 'All settings have been restored to defaults.',
+            successTitle: 'Settings reset',
+        });
     };
 
     const settingsFile = metadata?.settingsFile ?? '—';

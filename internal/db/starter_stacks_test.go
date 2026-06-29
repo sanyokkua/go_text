@@ -42,34 +42,6 @@ func TestStarterStacks_AllStepsInCatalog(t *testing.T) {
 	}
 }
 
-// TestSeededStarterStacks_StepsSurviveCatalogFilter verifies that the steps actually
-// written to the database by the seeder are all valid catalog IDs, so the StackHandler
-// catalog filter keeps every one of them on read.
-func TestSeededStarterStacks_StepsSurviveCatalogFilter(t *testing.T) {
-	dbPath := filepath.Join(t.TempDir(), "seed.db")
-
-	database, err := Open(dbPath)
-	require.NoError(t, err)
-	defer database.Close()
-
-	ctx := context.Background()
-	ids := catalogIDSet()
-
-	stacks, err := database.Queries.ListStacks(ctx)
-	require.NoError(t, err)
-	require.Len(t, stacks, 17)
-
-	for _, stack := range stacks {
-		steps, err := database.Queries.GetStackSteps(ctx, stack.ID)
-		require.NoError(t, err)
-		require.NotEmptyf(t, steps, "seeded stack %q has no steps in DB", stack.Name)
-		for _, actionID := range steps {
-			assert.Truef(t, ids[actionID],
-				"seeded stack %q step %q is not in the v3 catalog", stack.Name, actionID)
-		}
-	}
-}
-
 // TestMigration_RemapsStaleCamelCaseActionID proves migration 0003 heals an
 // already-seeded database: a stale camelCase action_id is rewritten to its
 // valid v3 dotted ID when migrations are applied.

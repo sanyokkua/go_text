@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 
-import { openExternal } from '../../../../../logic/adapter';
+import { openPath } from '../../../../../logic/adapter';
 import { AppBehaviorConfig, AppSettingsMetadata, Settings } from '../../../../../logic/adapter/models';
+import { useSettingsToast } from '../../../../../logic/hooks/useSettingsToast';
 import { useAppDispatch } from '../../../../../logic/store';
 import { clearHistory } from '../../../../../logic/store/history/thunks';
 import { enqueueNotification } from '../../../../../logic/store/notifications/slice';
@@ -19,6 +20,7 @@ interface Props {
 
 const AppBehaviorTab: React.FC<Props> = ({ settings, metadata }) => {
     const dispatch = useAppDispatch();
+    const runWithToast = useSettingsToast();
     const config: AppBehaviorConfig = settings.appBehaviorConfig;
 
     const [localMaxEntries, setLocalMaxEntries] = useState<number>(config.historyMaxEntries ?? 500);
@@ -30,17 +32,23 @@ const AppBehaviorTab: React.FC<Props> = ({ settings, metadata }) => {
     }, [config.historyMaxEntries]);
 
     const handleToggleTaskLogging = (checked: boolean) => {
-        dispatch(updateAppBehaviorConfig({ ...config, enableTaskLogging: checked })).catch(() => undefined);
+        void runWithToast(dispatch(updateAppBehaviorConfig({ ...config, enableTaskLogging: checked })), {
+            success: checked ? 'Task logging enabled' : 'Task logging disabled',
+        });
     };
 
     const handleToggleHistory = (checked: boolean) => {
-        dispatch(updateAppBehaviorConfig({ ...config, historyEnabled: checked })).catch(() => undefined);
+        void runWithToast(dispatch(updateAppBehaviorConfig({ ...config, historyEnabled: checked })), {
+            success: checked ? 'History enabled' : 'History disabled',
+        });
     };
 
     const handleSaveMaxEntries = async () => {
         setSavingMaxEntries(true);
         try {
-            await dispatch(updateAppBehaviorConfig({ ...config, historyMaxEntries: localMaxEntries })).unwrap();
+            await runWithToast(dispatch(updateAppBehaviorConfig({ ...config, historyMaxEntries: localMaxEntries })), {
+                success: 'History limit saved',
+            });
         } finally {
             setSavingMaxEntries(false);
         }
@@ -72,9 +80,12 @@ const AppBehaviorTab: React.FC<Props> = ({ settings, metadata }) => {
     const logsFolder = metadata?.logsFolder ?? '';
 
     const handleOpenLogs = () => {
-        if (logsFolder) {
-            openExternal(`file://${logsFolder}`);
-        }
+        if (!logsFolder) return;
+        void runWithToast(openPath(logsFolder), {
+            success: 'Opened logs folder',
+            error: "Couldn't open the logs folder.",
+            errorTitle: 'Open failed',
+        });
     };
 
     const isMaxEntriesDirty = localMaxEntries !== (config.historyMaxEntries ?? 500);

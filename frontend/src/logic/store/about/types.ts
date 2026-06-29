@@ -12,4 +12,5 @@ export interface AboutState {
     inspectorData: apperr.PromptPreview | null;
     inspectorError: string | null;
     previewInputEnabled: boolean;
+    suggestedStacks: apperr.SuggestedStack[];
 }

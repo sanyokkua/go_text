@@ -15,3 +15,7 @@ export function ClipboardSetText(_text: string): Promise<VoidResult> {
 export function BrowserOpenURL(_url: string): Promise<VoidResult> {
     return Promise.resolve(voidOk());
 }
+
+export function OpenPath(_path: string): Promise<VoidResult> {
+    return Promise.resolve(voidOk());
+}

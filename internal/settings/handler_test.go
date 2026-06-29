@@ -15,7 +15,7 @@ func newUIPreferencesHandler(t *testing.T) *settings.SettingsHandler {
 	t.Helper()
 	repo := newRepo(t)
 	svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
-	return settings.NewSettingsHandler(noopLogger{}, zerolog.Nop(), svc)
+	return settings.NewSettingsHandler(noopLogger{}, zerolog.Nop(), svc, nil)
 }
 
 func TestSettingsHandler_GetUIPreferencesConfig(t *testing.T) {

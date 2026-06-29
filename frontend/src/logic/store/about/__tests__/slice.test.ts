@@ -33,6 +33,7 @@ const initialState: AboutState = {
     inspectorData: null,
     inspectorError: null,
     previewInputEnabled: false,
+    suggestedStacks: [],
 };
 
 describe('aboutSlice', () => {

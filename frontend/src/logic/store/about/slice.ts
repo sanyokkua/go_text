@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 import { apperr } from '../../../../wailsjs/go/models';
-import { previewPromptForInspector } from './thunks';
+import { fetchSuggestedStacks, previewPromptForInspector } from './thunks';
 import { AboutItemType, AboutSection, AboutState } from './types';
 
 const initialState: AboutState = {
@@ -13,6 +13,7 @@ const initialState: AboutState = {
     inspectorData: null,
     inspectorError: null,
     previewInputEnabled: false,
+    suggestedStacks: [],
 };
 
 const aboutSlice = createSlice({
@@ -56,6 +57,9 @@ const aboutSlice = createSlice({
             .addCase(previewPromptForInspector.rejected, (state, action) => {
                 state.inspectorLoading = false;
                 state.inspectorError = action.payload ?? 'Preview failed';
+            })
+            .addCase(fetchSuggestedStacks.fulfilled, (state, action: PayloadAction<apperr.SuggestedStack[]>) => {
+                state.suggestedStacks = action.payload;
             });
     },
 });

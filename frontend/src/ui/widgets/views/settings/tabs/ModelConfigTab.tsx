@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 import { Settings } from '../../../../../logic/adapter/models';
+import { useSettingsToast } from '../../../../../logic/hooks/useSettingsToast';
 import {
     selectCurrentProvider,
     selectCurrentProviderModelItems,
@@ -58,6 +59,7 @@ interface Props {
 
 const ModelConfigTab: React.FC<Props> = ({ settings }) => {
     const dispatch = useAppDispatch();
+    const runWithToast = useSettingsToast();
     const currentProvider = useAppSelector(selectCurrentProvider);
     // Shared discovery source — same selector the AppBar ModelPicker consumes, so
     // the two views never disagree about which models exist.
@@ -111,7 +113,7 @@ const ModelConfigTab: React.FC<Props> = ({ settings }) => {
     const handleSave = async (): Promise<void> => {
         setSaving(true);
         try {
-            await dispatch(updateModelConfig(form)).unwrap();
+            await runWithToast(dispatch(updateModelConfig(form)), { success: 'Model settings saved' });
         } finally {
             setSaving(false);
         }

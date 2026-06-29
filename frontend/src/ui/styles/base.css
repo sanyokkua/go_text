@@ -44,8 +44,12 @@ body {
     background: var(--ink-3);
 }
 
-/* App chrome — no accidental text selection; editors and inputs opt back in */
+/* App chrome — no accidental text selection; editors and inputs opt back in.
+   The macOS WKWebView only honors the -webkit- prefixed property, so both are required. */
 body {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
     user-select: none;
 }
 textarea,
@@ -53,6 +57,9 @@ input[type='text'],
 input[type='search'],
 input[type='number'],
 [contenteditable='true'] {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
     user-select: text;
 }
 

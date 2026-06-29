@@ -1,7 +1,7 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 
 import { apperr } from '../../../../wailsjs/go/models';
-import { ActionHandlerAdapter, getLogger, unwrap } from '../../adapter';
+import { ActionHandlerAdapter, getLogger, getSuggestedStacks, unwrap } from '../../adapter';
 import { parseError } from '../../utils/error_utils';
 import { AppDispatch, RootState } from '../index';
 
@@ -19,6 +19,20 @@ export const previewPromptForInspector = createAsyncThunk<
     } catch (error: unknown) {
         const err = parseError(error);
         logger.logError(`previewPromptForInspector failed: ${err.message}`);
+        return rejectWithValue(err.message);
+    }
+});
+
+export const fetchSuggestedStacks = createAsyncThunk<
+    apperr.SuggestedStack[],
+    void,
+    { dispatch: AppDispatch; state: RootState; rejectValue: string }
+>('about/fetchSuggestedStacks', async (_, { rejectWithValue }) => {
+    try {
+        return await getSuggestedStacks();
+    } catch (error: unknown) {
+        const err = parseError(error);
+        logger.logError(`fetchSuggestedStacks failed: ${err.message}`);
         return rejectWithValue(err.message);
     }
 });

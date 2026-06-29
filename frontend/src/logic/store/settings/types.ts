@@ -32,4 +32,10 @@ export interface SettingsState {
     // Optional so existing preloaded-state fixtures stay valid; initialState
     // always seeds it to [].
     discoveredModels?: apperr.ModelInfo[];
+
+    // Built-in provider templates (LM Studio, Llama.cpp, Ollama, OpenAI,
+    // OpenRouter) offered as one-click fills in the New Provider form. Loaded
+    // once at startup. Optional for the same fixture-compatibility reason as
+    // discoveredModels; initialState always seeds it to [].
+    providerPresets?: apperr.ProviderPreset[];
 }
