@@ -13,13 +13,13 @@ interface TabDef {
 }
 
 const TABS: TabDef[] = [
+    { label: 'Appearance', glyph: '🎨' },
+    { label: 'Logging', glyph: '🗒' },
     { label: 'Providers', glyph: '🔌' },
     { label: 'Model', glyph: '⚙' },
     { label: 'Generation', glyph: '✍' },
     { label: 'Languages', glyph: '🌐' },
-    { label: 'Logging', glyph: '🗒' },
     { label: 'About & data', glyph: 'ℹ' },
-    { label: 'Appearance', glyph: '🎨' },
 ];
 
 const SettingsTabs: React.FC<SettingsTabsProps> = ({ activeTab, onChange }) => {
