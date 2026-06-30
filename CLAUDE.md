@@ -139,13 +139,15 @@ func (h *XxxHandler) DoSomething(req SomeRequest) (res apperr.XxxResult) {
 ui/styles/         → tokens.css (CSS custom properties — all colors, spacing, radii, fonts)
                      base.css (minimal reset + global defaults)
 ui/primitives/     → thin Radix Primitives wrappers (Select, Dialog, Switch, Tabs, Toast, etc.)
-ui/components/     → presentational + app-specific (Button, EditorPane, StackBuilderBar, etc.)
+ui/components/     → presentational + app-specific (Badge, Button, Card, Chip, DiffView,
+                     FlexContainer, IconButton, MarkdownView, MermaidBlock, NumberStepper,
+                     StackGlyph, StepProgress)
 ui/widgets/views/  → feature views (Editor, Settings, About, ManageStacks)
-ui/widgets/base/   → AppBar, StatusBar, overlays
+ui/widgets/base/   → AppBar, LanguagePicker, ModelPicker, NotificationContainer, ProviderPicker
 logic/adapter/     → thin wrappers around Wails auto-generated JS bindings (frontend/wailsjs/)
 logic/store/       → Redux Toolkit slices: settings, editor, actions, stacks, run, history, ui,
                      notifications, about
-logic/hooks/       → typed useAppDispatch / useAppSelector
+logic/hooks/       → domain hooks: useChainEvents, useSettingsToast
 dev/bridge-mock/   → dev-only bridge mock (frontend-only Vite dev server; no Go backend)
 ```
 

@@ -1,7 +1,7 @@
 # GoText
 
 [![Go Version](https://img.shields.io/badge/Go-1.25%2B-blue)](https://go.dev/)
-[![Wails](https://img.shields.io/badge/Wails-v2.11.0-blue)](https://wails.io/)
+[![Wails](https://img.shields.io/badge/Wails-v2.12.0-blue)](https://wails.io/)
 [![React](https://img.shields.io/badge/React-19.2.3-61DAFB)](https://react.dev/)
 
 > A native desktop application for intelligent text transformation powered by Large Language Models.
@@ -12,7 +12,7 @@
 ## Overview
 
 **GoText** ("GoText") is a native desktop application that harnesses the power of
-Large Language Models to intelligently edit and transform text. It provides 60+ AI-powered actions
+Large Language Models to intelligently edit and transform text. It provides 90+ AI-powered actions
 across categories like grammar correction, style adaptation, multi-language translation, document
 structuring, and summarization — all directly on your desktop without browser or cloud dependency.
 
@@ -30,7 +30,7 @@ performance with a small distribution footprint.
 
 ## Key Features
 
-**60+ text processing actions across 10 categories**
+**90+ text processing actions across 10 categories**
 
 ### Proofreading & Grammar
 
@@ -250,7 +250,7 @@ Files inside that folder:
 ## Usage
 
 1. **Select Provider**: Choose your LLM provider from Settings
-2. **Choose Action**: Browse 10 categories with 60+ actions in the sidebar
+2. **Choose Action**: Browse 10 categories with 90+ actions in the sidebar
 3. **Enter Text**: Paste or type your text in the input area
 4. **Process**: Click the action button and wait for the LLM response
 5. **Review Output**: The transformed text appears with markdown / diff rendering
@@ -264,12 +264,12 @@ Files inside that folder:
 
 | Component | Technology | Version |
 |---|---|---|
-| Backend | Go | 1.25.1 |
-| Desktop framework | Wails | v2.11.0 |
+| Backend | Go | 1.25.7 |
+| Desktop framework | Wails | v2.12.0 |
 | Frontend | React | 19.2.3 |
 | Language | TypeScript | 5.9.3 |
 | State management | Redux Toolkit | 2.11.2 |
-| UI primitives | Radix Primitives (`radix-ui`) | ~1.5.x |
+| UI primitives | Radix Primitives (`radix-ui`) | ^1.6.0 |
 | Command palette | `cmdk` | latest |
 | HTTP client | Resty | v3 |
 | Build tool | Vite | 7.x |
@@ -294,7 +294,7 @@ go_text/
 │   ├── gate/                   # InferenceGate (single-flight)
 │   ├── history/                # Action history
 │   ├── llms/                   # LLM provider integration
-│   ├── prompts/                # Prompt library (60+ actions)
+│   ├── prompts/                # Prompt library (90+ actions)
 │   ├── settings/               # Settings management
 │   ├── stacks/                 # Saved stacks
 │   ├── verification/           # Provider diagnostics

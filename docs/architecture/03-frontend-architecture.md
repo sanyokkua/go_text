@@ -32,7 +32,7 @@ frontend/src/
     adapter/        # backend integration — wraps wailsjs/ bindings; unwraps Result envelope;
                     # subscribes to runtime events (chain:progress, chain:done)
     store/          # Redux Toolkit slices (see §3 below)
-    hooks/          # typed useAppDispatch / useAppSelector
+    hooks/          # domain hooks (useChainEvents, useSettingsToast); typed dispatch/selector hooks exported from store/index.ts
     theme/          # theme token utilities (reads/applies .dark class on documentElement)
     utils/          # shared utility functions
   ui/

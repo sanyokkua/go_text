@@ -93,7 +93,7 @@ go test -race ./...
 | Module | Role |
 |---|---|
 | `github.com/wailsapp/wails/v2` | Desktop framework |
-| `github.com/go-resty/resty/v2` | HTTP client for LLM provider calls |
+| `resty.dev/v3` | HTTP client for LLM provider calls |
 | `github.com/rs/zerolog` | Structured logging |
 | `gopkg.in/natefinch/lumberjack.v2` | Log rotation |
 | `modernc.org/sqlite` | Pure-Go SQLite driver (no CGO) |
@@ -182,12 +182,12 @@ go test -race ./...
   "outputfilename": "GoText",
   "frontend:install": "npm install",
   "frontend:build": "npm run build",
-  "frontend:dev:watcher": "npm run dev",
-  "frontend:dev:serverUrl": "http://localhost:5173",
-  "wailsjsdir": "./frontend/wailsjs",
-  "assetdir": "./frontend/dist"
+  "frontend:dev:watcher": "npm run dev -- --mode wails",
+  "frontend:dev:serverUrl": "auto",
+  "author": { "name": "Oleksandr Kostenko", "email": "sanyokkua@gmail.com" },
+  "version": "2.0.1"
 }
 ```
 
-The `wailsjsdir` (`frontend/wailsjs/`) is the output directory for `wails generate module` —
+The `frontend/wailsjs/` directory is the output of `wails generate module` —
 never edit files there.

@@ -9,7 +9,7 @@ A Wails v2 runtime hosts a Go backend and serves an embedded React SPA as the UI
 persistence, and orchestration happen in the Go process; the frontend is presentation and local
 interaction state.
 
-Users compose single actions or multi-step stacks across 60+ text-processing directives (rewriting,
+Users compose single actions or multi-step stacks across 90+ text-processing directives (rewriting,
 summarising, translating, structuring, prompt-engineering), run them against a configured LLM provider,
 and review the result with markdown and diff rendering.
 
@@ -27,15 +27,15 @@ is read with `os.Getenv` at request time and never written to the database or lo
 
 | Component | Version / package |
 |---|---|
-| Go | 1.25.1 |
-| Desktop framework | Wails v2.11.0 |
+| Go | 1.25.7 |
+| Desktop framework | Wails v2.12.0 |
 | React | 19.2.3 |
 | TypeScript | 5.9.3 |
 | Redux Toolkit | 2.11.2 |
 | UI primitives | `radix-ui` (Radix Primitives — not Radix Themes) |
 | Command palette | `cmdk` |
 | Build tool | Vite 7.x |
-| HTTP client | `github.com/go-resty/resty/v2` |
+| HTTP client | `resty.dev/v3` |
 | SQLite driver | `modernc.org/sqlite` (pure Go, no CGO) |
 | Migrations | `github.com/pressly/goose/v3` |
 | Type-safe SQL | `sqlc` (generated into `internal/db/store/`) |

@@ -158,7 +158,7 @@ Frontend UI → dispatch(runChain) → adapter → ProcessPromptChain(req)
 ### Provider configuration
 
 Providers are configured in Settings. Each provider config carries:
-- `kind`: one of `ollama`, `lm_studio`, `llama_cpp`, `openai`, `openrouter`, or a custom kind
+- `kind`: one of `ollama`, `lmstudio`, `llamacpp`, `openai`, `azure`, or a custom kind
 - `baseUrl`: the provider's base URL
 - `completionPath`: path to the chat completions endpoint
 - `modelsPath`: path to the models listing endpoint
