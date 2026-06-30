@@ -1,3 +1,4 @@
+import { RefreshCw } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 
 import { useAppDispatch, useAppSelector } from '../../../logic/store';
@@ -60,7 +61,7 @@ const ModelPicker: React.FC = () => {
                     onClick={() => void handleRefresh()}
                     className={refreshing ? iconStyles.spinning : ''}
                 >
-                    ⟳
+                    <RefreshCw size={14} />
                 </IconButton>
             </Tooltip>
         </div>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { ChevronLeft, History, Info, PanelLeft, Settings, X } from 'lucide-react';
 
 import { getLogger } from '../../../logic/adapter';
 import {
@@ -61,7 +62,7 @@ const AppBar: React.FC = () => {
                             }}
                             className={styles.sidebarBtn}
                         >
-                            ☰
+                            <PanelLeft size={16} />
                         </button>
                     </Tooltip>
                 )}
@@ -74,7 +75,7 @@ const AppBar: React.FC = () => {
                         }}
                         className={styles.backBtn}
                     >
-                        ‹ Editor
+                        <ChevronLeft size={16} /><span>Editor</span>
                     </button>
                 )}
 
@@ -152,7 +153,7 @@ const AppBar: React.FC = () => {
                                     logger.logInfo('History toggled');
                                 }}
                             >
-                                🕘
+                                <History size={16} />
                             </IconButton>
                         </Tooltip>
                         <Tooltip content="About GoText" side="bottom">
@@ -163,7 +164,7 @@ const AppBar: React.FC = () => {
                                     logger.logInfo('Navigated to info');
                                 }}
                             >
-                                ℹ
+                                <Info size={16} />
                             </IconButton>
                         </Tooltip>
                     </>
@@ -175,7 +176,7 @@ const AppBar: React.FC = () => {
                             dispatch(setCurrentView(isMain ? 'settings' : 'main'));
                         }}
                     >
-                        {isMain ? '⚙' : '✕'}
+                        {isMain ? <Settings size={16} /> : <X size={16} />}
                     </IconButton>
                 </Tooltip>
             </div>
