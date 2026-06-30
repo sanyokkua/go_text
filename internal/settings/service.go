@@ -448,6 +448,18 @@ func (s *SettingsService) UpdateUIPreferencesConfig(cfg *UIPreferencesConfig) (*
 	default:
 		return nil, apperr.Validation("theme", "one of auto|light|dark", cfg.Theme)
 	}
+	switch cfg.Layout {
+	case "", "side", "stacked":
+		// valid; empty means "use default"
+	default:
+		return nil, apperr.Validation("layout", "one of side|stacked", cfg.Layout)
+	}
+	switch cfg.ViewMode {
+	case "", "preview", "source", "diff":
+		// valid; empty means "use default"
+	default:
+		return nil, apperr.Validation("viewMode", "one of preview|source|diff", cfg.ViewMode)
+	}
 	if err := s.settingsRepo.UpdateUIPreferencesConfig(cfg); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}

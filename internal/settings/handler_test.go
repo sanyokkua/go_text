@@ -146,6 +146,118 @@ func TestSettingsHandler_GetUIPreferencesConfig(t *testing.T) {
 	}
 }
 
+func TestSettingsHandler_UpdateUIPreferencesConfig_Layout(t *testing.T) {
+	tests := []struct {
+		name    string
+		layout  string
+		wantErr bool
+	}{
+		{name: "valid_side", layout: "side", wantErr: false},
+		{name: "valid_stacked", layout: "stacked", wantErr: false},
+		{name: "valid_empty", layout: "", wantErr: false},
+		{name: "invalid_column", layout: "column", wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			handler := newUIPreferencesHandler(t)
+
+			res := handler.UpdateUIPreferencesConfig(apperr.UIPreferencesConfig{
+				Theme:  "auto",
+				Layout: tt.layout,
+			})
+
+			if tt.wantErr {
+				if res.Error == nil {
+					t.Fatalf("expected error for layout %q, got none", tt.layout)
+				}
+				if res.Error.Code != apperr.CodeValidation {
+					t.Errorf("expected CodeValidation, got %q", res.Error.Code)
+				}
+				return
+			}
+			if res.Error != nil {
+				t.Fatalf("unexpected error for layout %q: %+v", tt.layout, res.Error)
+			}
+		})
+	}
+}
+
+func TestSettingsHandler_UpdateUIPreferencesConfig_ViewMode(t *testing.T) {
+	tests := []struct {
+		name     string
+		viewMode string
+		wantErr  bool
+	}{
+		{name: "valid_preview", viewMode: "preview", wantErr: false},
+		{name: "valid_source", viewMode: "source", wantErr: false},
+		{name: "valid_diff", viewMode: "diff", wantErr: false},
+		{name: "valid_empty", viewMode: "", wantErr: false},
+		{name: "invalid_raw", viewMode: "raw", wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			handler := newUIPreferencesHandler(t)
+
+			res := handler.UpdateUIPreferencesConfig(apperr.UIPreferencesConfig{
+				Theme:    "auto",
+				ViewMode: tt.viewMode,
+			})
+
+			if tt.wantErr {
+				if res.Error == nil {
+					t.Fatalf("expected error for viewMode %q, got none", tt.viewMode)
+				}
+				if res.Error.Code != apperr.CodeValidation {
+					t.Errorf("expected CodeValidation, got %q", res.Error.Code)
+				}
+				return
+			}
+			if res.Error != nil {
+				t.Fatalf("unexpected error for viewMode %q: %+v", tt.viewMode, res.Error)
+			}
+		})
+	}
+}
+
+func TestSettingsHandler_GetUIPreferencesConfig_ReturnsAllFields(t *testing.T) {
+	t.Parallel()
+	handler := newUIPreferencesHandler(t)
+
+	// Seed a non-default state
+	_ = handler.UpdateUIPreferencesConfig(apperr.UIPreferencesConfig{
+		Theme: "dark", Layout: "stacked",
+		SidebarCollapsed: true, HistoryOpen: true, ViewMode: "source",
+	})
+
+	res := handler.GetUIPreferencesConfig()
+
+	if res.Error != nil {
+		t.Fatalf("unexpected error: %+v", res.Error)
+	}
+	if res.Data == nil {
+		t.Fatal("expected non-nil Data")
+	}
+	if res.Data.Theme != "dark" {
+		t.Errorf("Theme: want %q, got %q", "dark", res.Data.Theme)
+	}
+	if res.Data.Layout != "stacked" {
+		t.Errorf("Layout: want %q, got %q", "stacked", res.Data.Layout)
+	}
+	if !res.Data.SidebarCollapsed {
+		t.Errorf("SidebarCollapsed: want true, got false")
+	}
+	if !res.Data.HistoryOpen {
+		t.Errorf("HistoryOpen: want true, got false")
+	}
+	if res.Data.ViewMode != "source" {
+		t.Errorf("ViewMode: want %q, got %q", "source", res.Data.ViewMode)
+	}
+}
+
 func TestSettingsHandler_UpdateUIPreferencesConfig(t *testing.T) {
 	tests := []struct {
 		name      string
