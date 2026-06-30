@@ -201,7 +201,7 @@ test.describe('App File Logging settings', () => {
         expect(jsErrors).toHaveLength(0);
     });
 
-    test('Enable file logging toggle starts unchecked', async ({ page }) => {
+    test('Enable file logging toggle starts checked (bridge-mock default is enabled)', async ({ page }) => {
         const jsErrors: string[] = [];
         page.on('pageerror', (err) => jsErrors.push(err.message));
 
@@ -209,7 +209,10 @@ test.describe('App File Logging settings', () => {
 
         const toggle = page.getByRole('switch', { name: /enable file logging/i });
         await expect(toggle).toBeVisible({ timeout: 5000 });
-        await expect(toggle).toHaveAttribute('aria-checked', 'false');
+        // bridge-mock GetLoggingConfig returns logFileEnabled: true and GetSettings is delayed
+        // to fire after GetLoggingConfig — same async ordering as the real app. The toggle
+        // must be ON because the thunk fix ensures getLoggingConfig fires after allSettings is set.
+        await expect(toggle).toHaveAttribute('aria-checked', 'true');
 
         expect(jsErrors).toHaveLength(0);
     });
@@ -310,6 +313,46 @@ test.describe('About & data tab – app folder and open-folder buttons', () => {
         // Bridge mock returns databaseFile: '/mock/settings/gotext.db'
         await expect(page.getByText('/mock/settings/gotext.db')).toBeVisible({ timeout: 5000 });
         await expect(page.getByRole('button', { name: /factory reset/i })).toBeVisible({ timeout: 5000 });
+        expect(jsErrors).toHaveLength(0);
+    });
+});
+
+test.describe('Settings UI – Logging tab', () => {
+    test('Logging tab renders file logging toggle reflecting GetLoggingConfig response', async ({ page }) => {
+        // Arrange
+        const jsErrors: string[] = [];
+        page.on('pageerror', (err) => jsErrors.push(err.message));
+
+        await openLoggingTab(page);
+
+        // Assert – bridge-mock GetLoggingConfig returns logFileEnabled: true and GetSettings
+        // is delayed to fire after GetLoggingConfig (simulating real-app async ordering).
+        // The toggle must be ON — without the sequential dispatch fix the race would drop
+        // the config (state.allSettings=null when getLoggingConfig.fulfilled fires) and show OFF.
+        const toggle = page.getByRole('switch', { name: /enable file logging/i });
+        await expect(toggle).toBeVisible({ timeout: 5000 });
+        await expect(toggle).toBeChecked();
+        expect(jsErrors).toHaveLength(0);
+    });
+
+    test('file logging toggle starts ON (bridge-mock default) and stays ON across tab navigation', async ({ page }) => {
+        // Arrange
+        const jsErrors: string[] = [];
+        page.on('pageerror', (err) => jsErrors.push(err.message));
+
+        await openLoggingTab(page);
+        const toggle = page.getByRole('switch', { name: /enable file logging/i });
+        // bridge-mock GetLoggingConfig returns logFileEnabled: true; the sequential dispatch
+        // fix ensures this value reaches state.allSettings even though GetLoggingConfig
+        // resolves before GetSettings (simulated by the 0ms setTimeout on GetSettings).
+        await expect(toggle).toBeChecked({ timeout: 3000 });
+
+        // Navigate to another tab and back — getSettings.fulfilled must NOT wipe loggingConfig from state
+        await page.getByRole('tab', { name: /^providers$/i }).click();
+        await page.getByRole('tab', { name: /^logging$/i }).click();
+
+        // Assert – toggle must still show ON after tab round-trip
+        await expect(page.getByRole('switch', { name: /enable file logging/i })).toBeChecked({ timeout: 3000 });
         expect(jsErrors).toHaveLength(0);
     });
 });

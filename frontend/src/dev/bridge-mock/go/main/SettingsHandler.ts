@@ -46,7 +46,11 @@ const defaultSettings = {
 };
 
 export function GetSettings(): Promise<AnyResult> {
-    return Promise.resolve(ok(defaultSettings));
+    // Simulates real backend being slower for GetSettings than GetLoggingConfig.
+    // GetLoggingConfig (7 DB reads) always returns before GetSettings in the real app.
+    // This delay ensures bridge-mock tests exercise the same async ordering so the
+    // sequential dispatch fix is actually tested.
+    return new Promise(resolve => setTimeout(() => resolve(ok(defaultSettings)), 0));
 }
 export function ResetSettingsToDefault(): Promise<AnyResult> {
     return Promise.resolve(ok(defaultSettings));
@@ -119,7 +123,7 @@ export function UpdateUIPreferencesConfig(_cfg: unknown): Promise<AnyResult> {
 }
 
 const defaultLoggingConfig = {
-    logFileEnabled: false,
+    logFileEnabled: true,
     logLevel: 'info',
     logDirectory: '',
     logMaxSizeMB: 10,

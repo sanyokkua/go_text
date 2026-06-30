@@ -38,7 +38,7 @@ import { ActionHandlerAdapter, AppBehaviorConfig, LoggingConfig, Settings, Setti
 import { RootState } from '../index';
 import { selectAppBehaviorConfig, selectCurrentModelCaps, selectCurrentProviderModelItems, selectLoggingConfig } from './selectors';
 import settingsReducer from './slice';
-import { discoverCurrentProviderModels, getAppBehaviorConfig, getLoggingConfig, setAsCurrentProviderConfig, updateAppBehaviorConfig, updateLoggingConfig } from './thunks';
+import { createProviderConfig, discoverCurrentProviderModels, getAppBehaviorConfig, getLoggingConfig, getSettings, setAsCurrentProviderConfig, updateAppBehaviorConfig, updateLoggingConfig } from './thunks';
 import { SettingsState } from './types';
 
 // ---------------------------------------------------------------------------
@@ -592,5 +592,75 @@ describe('updateLoggingConfig thunk', () => {
         expect(action.type).toBe('settings/updateLoggingConfig/rejected');
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         expect((action as any).payload).toBe('save failed');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Bug regression: getSettings.fulfilled must not wipe loggingConfig loaded
+// by the concurrent getLoggingConfig thunk during initializeSettingsState.
+// ---------------------------------------------------------------------------
+
+const enabledLogging: LoggingConfig = {
+    logFileEnabled: true,
+    logLevel: 'debug',
+    logDirectory: '/custom/logs',
+    logMaxSizeMB: 20,
+    logMaxBackups: 3,
+    logMaxAgeDays: 14,
+    logCompress: true,
+};
+
+describe('settingsReducer — getSettings.fulfilled loggingConfig preservation', () => {
+    it('preserves loggingConfig when getSettings fires after getLoggingConfig', () => {
+        // Simulate the race: getLoggingConfig.fulfilled fires first, then getSettings.fulfilled wipes allSettings.
+        const afterLoggingLoad: SettingsState = {
+            allSettings: { ...fullSettings, loggingConfig: enabledLogging },
+            metadata: null,
+            discoveredModels: [],
+        };
+
+        const state = settingsReducer(afterLoggingLoad, getSettings.fulfilled({ ...fullSettings }, 'req', undefined));
+
+        expect(state.allSettings?.loggingConfig).toEqual(enabledLogging);
+    });
+
+    it('leaves loggingConfig undefined when allSettings was null before getSettings fires', () => {
+        // If getSettings fires before getLoggingConfig, loggingConfig starts undefined — getLoggingConfig sets it afterward.
+        const emptyState: SettingsState = { allSettings: null, metadata: null, discoveredModels: [] };
+
+        const state = settingsReducer(emptyState, getSettings.fulfilled({ ...fullSettings }, 'req', undefined));
+
+        expect(state.allSettings?.loggingConfig).toBeUndefined();
+    });
+
+    it('does not corrupt other settings fields while preserving loggingConfig', () => {
+        const afterLoggingLoad: SettingsState = {
+            allSettings: { ...fullSettings, loggingConfig: enabledLogging },
+            metadata: null,
+            discoveredModels: [],
+        };
+        const newSettings = { ...fullSettings, modelConfig: { ...fullSettings.modelConfig, name: 'new-model' } };
+
+        const state = settingsReducer(afterLoggingLoad, getSettings.fulfilled(newSettings, 'req', undefined));
+
+        expect(state.allSettings?.modelConfig.name).toBe('new-model');
+        expect(state.allSettings?.loggingConfig).toEqual(enabledLogging);
+    });
+});
+
+describe('settingsReducer — createProviderConfig.fulfilled loggingConfig preservation', () => {
+    it('preserves loggingConfig when createProviderConfig fires after getLoggingConfig', () => {
+        const afterLoggingLoad: SettingsState = {
+            allSettings: { ...fullSettings, loggingConfig: enabledLogging },
+            metadata: null,
+            discoveredModels: [],
+        };
+
+        const state = settingsReducer(
+            afterLoggingLoad,
+            createProviderConfig.fulfilled({ ...fullSettings }, 'req', fullSettings.currentProviderConfig),
+        );
+
+        expect(state.allSettings?.loggingConfig).toEqual(enabledLogging);
     });
 });

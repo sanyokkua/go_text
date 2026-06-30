@@ -440,8 +440,11 @@ export const initializeSettingsState = createAsyncThunk<void, void, { rejectValu
                 dispatch(getInferenceBaseConfig()).unwrap(),
                 dispatch(getAppSettingsMetadata()).unwrap(),
                 dispatch(getUIPreferences()).unwrap(),
-                dispatch(getLoggingConfig()).unwrap(),
             ]);
+
+            // Must run after getSettings so state.allSettings is populated before
+            // getLoggingConfig.fulfilled fires (its reducer guard requires non-null allSettings).
+            await dispatch(getLoggingConfig()).unwrap();
         } catch (error: unknown) {
             const err = parseError(error);
             logger.logError(`initializeSettingsState failed: ${err.message}`);

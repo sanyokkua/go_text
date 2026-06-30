@@ -49,14 +49,25 @@ const settingsSlice = createSlice({
             // Full state replacement operations
             .addCase(getSettings.fulfilled, (state, action) => {
                 logger.logInfo('Settings loaded successfully');
+                // loggingConfig is loaded separately via GetLoggingConfig and is absent from
+                // the GetSettings response. Preserve it so a parallel init load isn't wiped.
+                const loggingConfig = state.allSettings?.loggingConfig;
                 state.allSettings = action.payload;
+                if (state.allSettings !== null && loggingConfig !== undefined) {
+                    state.allSettings.loggingConfig = loggingConfig;
+                }
             })
             .addCase(resetSettingsToDefault.fulfilled, (state, action) => {
                 state.allSettings = action.payload;
             })
             .addCase(createProviderConfig.fulfilled, (state, action) => {
-                // Full settings replacement after provider creation
+                // Full settings replacement after provider creation — preserve loggingConfig
+                // for the same reason as getSettings.fulfilled above.
+                const loggingConfig = state.allSettings?.loggingConfig;
                 state.allSettings = action.payload;
+                if (state.allSettings !== null && loggingConfig !== undefined) {
+                    state.allSettings.loggingConfig = loggingConfig;
+                }
             })
 
             // Partial updates for specific configurations
