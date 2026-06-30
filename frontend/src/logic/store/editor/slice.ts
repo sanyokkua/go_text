@@ -12,6 +12,7 @@
  */
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { getLogger } from '../../adapter';
+import { getUIPreferences } from '../settings/thunks';
 import { EditorState } from './types';
 
 const logger = getLogger('EditorSlice');
@@ -47,7 +48,11 @@ const editorSlice = createSlice({
             state.viewMode = action.payload;
         },
     },
-    extraReducers: () => {},
+    extraReducers: (builder) => {
+        builder.addCase(getUIPreferences.fulfilled, (state, action) => {
+            state.viewMode = action.payload.viewMode;
+        });
+    },
 });
 
 export const { setInputContent, setOutputContent, useOutputAsInput, clearInput, clearOutput, setViewMode } = editorSlice.actions;

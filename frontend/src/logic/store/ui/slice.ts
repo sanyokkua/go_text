@@ -103,6 +103,9 @@ const uiSlice = createSlice({
             .addCase(getUIPreferences.fulfilled, (state, action) => {
                 state.theme.mode = action.payload.mode;
                 state.theme.effective = action.payload.effective;
+                state.layout = action.payload.layout;
+                state.sidebarCollapsed = action.payload.sidebarCollapsed;
+                state.historyOpen = action.payload.historyOpen;
             });
     },
 });

@@ -21,11 +21,15 @@ jest.mock('../../adapter', () => ({
     fromWireBehavior: jest.fn((v: { enableTaskLogging: boolean }) => ({ enableTaskLogging: v.enableTaskLogging, logDirectory: '' })),
     // Direct passthrough — wire and frontend types are identical for logging config
     fromWireLogging: jest.fn((v: unknown) => v),
+    // Passthrough — wire and frontend UIPreferencesConfig shapes are identical
+    fromWireUIPreferences: jest.fn((v: unknown) => v),
     SettingsHandlerAdapter: {
         getAppBehaviorConfig: jest.fn().mockResolvedValue({ data: { enableTaskLogging: false } }),
         updateAppBehaviorConfig: jest.fn().mockResolvedValue({ data: { enableTaskLogging: true } }),
         getLoggingConfig: jest.fn().mockResolvedValue({ data: { logFileEnabled: false, logLevel: 'info', logDirectory: '', logMaxSizeMB: 10, logMaxBackups: 5, logMaxAgeDays: 30, logCompress: false } }),
         updateLoggingConfig: jest.fn().mockResolvedValue({ data: { logFileEnabled: true, logLevel: 'debug', logDirectory: '', logMaxSizeMB: 5, logMaxBackups: 5, logMaxAgeDays: 30, logCompress: false } }),
+        getUIPreferencesConfig: jest.fn().mockResolvedValue({ data: { theme: 'light', layout: 'side', sidebarCollapsed: false, historyOpen: false, viewMode: 'preview' } }),
+        updateUIPreferencesConfig: jest.fn().mockResolvedValue({ data: undefined }),
     },
     ActionHandlerAdapter: {
         getModels: jest.fn().mockResolvedValue({ data: [], error: null }),
@@ -34,11 +38,22 @@ jest.mock('../../adapter', () => ({
 
 import { apperr } from '../../../../wailsjs/go/models';
 import { SelectItem } from '../../../ui/primitives/Select';
-import { ActionHandlerAdapter, AppBehaviorConfig, LoggingConfig, Settings, SettingsHandlerAdapter } from '../../adapter';
+import { ActionHandlerAdapter, AppBehaviorConfig, fromWireUIPreferences, LoggingConfig, Settings, SettingsHandlerAdapter } from '../../adapter';
 import { RootState } from '../index';
 import { selectAppBehaviorConfig, selectCurrentModelCaps, selectCurrentProviderModelItems, selectLoggingConfig } from './selectors';
 import settingsReducer from './slice';
-import { createProviderConfig, discoverCurrentProviderModels, getAppBehaviorConfig, getLoggingConfig, getSettings, setAsCurrentProviderConfig, updateAppBehaviorConfig, updateLoggingConfig } from './thunks';
+import {
+    createProviderConfig,
+    discoverCurrentProviderModels,
+    getAppBehaviorConfig,
+    getLoggingConfig,
+    getSettings,
+    getUIPreferences,
+    persistUIPreferences,
+    setAsCurrentProviderConfig,
+    updateAppBehaviorConfig,
+    updateLoggingConfig,
+} from './thunks';
 import { SettingsState } from './types';
 
 // ---------------------------------------------------------------------------
@@ -662,5 +677,94 @@ describe('settingsReducer — createProviderConfig.fulfilled loggingConfig prese
         );
 
         expect(state.allSettings?.loggingConfig).toEqual(enabledLogging);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Part F: UI preferences — getUIPreferences and persistUIPreferences thunks
+// ---------------------------------------------------------------------------
+
+describe('getUIPreferences thunk', () => {
+    const dispatch = jest.fn();
+    const getState = jest.fn();
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it('dispatches fulfilled with all 5 UIPreferencesConfig fields in the payload on success', async () => {
+        (SettingsHandlerAdapter.getUIPreferencesConfig as jest.Mock).mockResolvedValue({
+            data: { theme: 'dark', layout: 'stacked', sidebarCollapsed: true, historyOpen: false, viewMode: 'source' },
+        });
+        (fromWireUIPreferences as jest.Mock).mockReturnValue({
+            theme: 'dark',
+            layout: 'stacked',
+            sidebarCollapsed: true,
+            historyOpen: false,
+            viewMode: 'source',
+        });
+
+        const action = await getUIPreferences()(dispatch, getState, undefined);
+
+        expect(action.type).toBe('settings/getUIPreferences/fulfilled');
+        expect(action.payload).toMatchObject({
+            mode: 'dark',
+            effective: 'dark',
+            layout: 'stacked',
+            sidebarCollapsed: true,
+            historyOpen: false,
+            viewMode: 'source',
+        });
+    });
+
+    it('dispatches rejected with parsed error message when the adapter rejects', async () => {
+        (SettingsHandlerAdapter.getUIPreferencesConfig as jest.Mock).mockRejectedValue(new Error('network error'));
+
+        const action = await getUIPreferences()(dispatch, getState, undefined);
+
+        expect(action.type).toBe('settings/getUIPreferences/rejected');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        expect((action as any).payload).toBe('network error');
+    });
+});
+
+describe('persistUIPreferences thunk', () => {
+    const dispatch = jest.fn();
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it('calls updateUIPreferencesConfig with all 5 fields assembled from state and dispatches fulfilled', async () => {
+        (SettingsHandlerAdapter.updateUIPreferencesConfig as jest.Mock).mockResolvedValue({ data: undefined });
+        const getState = jest.fn().mockReturnValue({
+            ui: { theme: { mode: 'dark' }, layout: 'stacked', sidebarCollapsed: true, historyOpen: false },
+            editor: { viewMode: 'source' },
+        } as unknown as RootState);
+
+        const action = await persistUIPreferences()(dispatch, getState, undefined);
+
+        expect(action.type).toBe('settings/persistUIPreferences/fulfilled');
+        expect(SettingsHandlerAdapter.updateUIPreferencesConfig).toHaveBeenCalledWith({
+            theme: 'dark',
+            layout: 'stacked',
+            sidebarCollapsed: true,
+            historyOpen: false,
+            viewMode: 'source',
+        });
+    });
+
+    it('dispatches rejected with parsed error message when the adapter rejects', async () => {
+        (SettingsHandlerAdapter.updateUIPreferencesConfig as jest.Mock).mockRejectedValue(new Error('save failed'));
+        const getState = jest.fn().mockReturnValue({
+            ui: { theme: { mode: 'light' }, layout: 'side', sidebarCollapsed: false, historyOpen: false },
+            editor: { viewMode: 'preview' },
+        } as unknown as RootState);
+
+        const action = await persistUIPreferences()(dispatch, getState, undefined);
+
+        expect(action.type).toBe('settings/persistUIPreferences/rejected');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        expect((action as any).payload).toBe('save failed');
     });
 });

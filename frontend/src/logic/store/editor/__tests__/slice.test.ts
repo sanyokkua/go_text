@@ -20,6 +20,7 @@ jest.mock('../../../adapter', () => ({
     SettingsHandlerAdapter: {},
 }));
 
+import { getUIPreferences } from '../../settings/thunks';
 import editorReducer, { clearInput, clearOutput, setInputContent, setOutputContent, setViewMode, useOutputAsInput } from '../slice';
 import type { EditorState } from '../types';
 
@@ -85,5 +86,16 @@ describe('editor slice reducer', () => {
         const state = editorReducer(stateInSource, setViewMode('preview'));
 
         expect(state.viewMode).toBe('preview');
+    });
+
+    it('getUIPreferences.fulfilled restores viewMode from the payload', () => {
+        const action = {
+            type: getUIPreferences.fulfilled.type,
+            payload: { mode: 'light', effective: 'light', layout: 'side', sidebarCollapsed: false, historyOpen: false, viewMode: 'source' },
+        };
+
+        const state = editorReducer(initialState, action);
+
+        expect(state.viewMode).toBe('source');
     });
 });

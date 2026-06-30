@@ -356,20 +356,28 @@ export const updateLoggingConfig = createAsyncThunk<LoggingConfig, LoggingConfig
     },
 );
 
-export const getUIPreferences = createAsyncThunk<{ mode: ThemeMode; effective: ThemeEffective }, void, { rejectValue: string }>(
-    'settings/getUIPreferences',
-    async (_, { rejectWithValue }) => {
-        try {
-            const cfg = fromWireUIPreferences(unwrap(await SettingsHandlerAdapter.getUIPreferencesConfig()));
-            const mode: ThemeMode = cfg.theme;
-            return { mode, effective: resolveEffectiveTheme(mode) };
-        } catch (error: unknown) {
-            const err = parseError(error);
-            logger.logError(`getUIPreferences failed: ${err.message}`);
-            return rejectWithValue(err.message);
-        }
-    },
-);
+export const getUIPreferences = createAsyncThunk<
+    { mode: ThemeMode; effective: ThemeEffective; layout: UIPreferencesConfig['layout']; sidebarCollapsed: boolean; historyOpen: boolean; viewMode: UIPreferencesConfig['viewMode'] },
+    void,
+    { rejectValue: string }
+>('settings/getUIPreferences', async (_, { rejectWithValue }) => {
+    try {
+        const cfg = fromWireUIPreferences(unwrap(await SettingsHandlerAdapter.getUIPreferencesConfig()));
+        const mode: ThemeMode = cfg.theme;
+        return {
+            mode,
+            effective: resolveEffectiveTheme(mode),
+            layout: cfg.layout,
+            sidebarCollapsed: cfg.sidebarCollapsed,
+            historyOpen: cfg.historyOpen,
+            viewMode: cfg.viewMode,
+        };
+    } catch (error: unknown) {
+        const err = parseError(error);
+        logger.logError(`getUIPreferences failed: ${err.message}`);
+        return rejectWithValue(err.message);
+    }
+});
 
 export const updateUIPreferences = createAsyncThunk<void, Partial<UIPreferencesConfig>, { state: RootState; rejectValue: string }>(
     'settings/updateUIPreferences',
@@ -389,6 +397,27 @@ export const updateUIPreferences = createAsyncThunk<void, Partial<UIPreferencesC
         } catch (error: unknown) {
             const err = parseError(error);
             logger.logError(`updateUIPreferences failed: ${err.message}`);
+            return rejectWithValue(err.message);
+        }
+    },
+);
+
+export const persistUIPreferences = createAsyncThunk<void, void, { state: RootState; rejectValue: string }>(
+    'settings/persistUIPreferences',
+    async (_, { getState, rejectWithValue }) => {
+        try {
+            const state = getState();
+            const config: UIPreferencesConfig = {
+                theme: state.ui.theme.mode as 'auto' | 'light' | 'dark',
+                layout: state.ui.layout,
+                sidebarCollapsed: state.ui.sidebarCollapsed,
+                historyOpen: state.ui.historyOpen,
+                viewMode: state.editor.viewMode,
+            };
+            unwrap(await SettingsHandlerAdapter.updateUIPreferencesConfig(config));
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logError(`persistUIPreferences failed: ${err.message}`);
             return rejectWithValue(err.message);
         }
     },

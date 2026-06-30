@@ -119,12 +119,28 @@ describe('ui slice reducer', () => {
     });
 
     it('getUIPreferences.fulfilled sets theme mode and effective from the payload', () => {
-        const action = { type: getUIPreferences.fulfilled.type, payload: { mode: 'dark', effective: 'dark' } };
+        const action = {
+            type: getUIPreferences.fulfilled.type,
+            payload: { mode: 'dark', effective: 'dark', layout: 'side', sidebarCollapsed: false, historyOpen: false, viewMode: 'preview' },
+        };
 
         const state = uiReducer(initialState, action);
 
         expect(state.theme.mode).toBe('dark');
         expect(state.theme.effective).toBe('dark');
+    });
+
+    it('getUIPreferences.fulfilled restores layout, sidebarCollapsed, and historyOpen from the payload', () => {
+        const action = {
+            type: getUIPreferences.fulfilled.type,
+            payload: { mode: 'light', effective: 'light', layout: 'stacked', sidebarCollapsed: true, historyOpen: true, viewMode: 'source' },
+        };
+
+        const state = uiReducer(initialState, action);
+
+        expect(state.layout).toBe('stacked');
+        expect(state.sidebarCollapsed).toBe(true);
+        expect(state.historyOpen).toBe(true);
     });
 
     it('processPromptChain.pending sets inferenceRunning to true', () => {
