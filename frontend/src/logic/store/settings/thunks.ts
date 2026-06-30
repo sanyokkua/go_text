@@ -26,7 +26,7 @@ import {
 } from '../../adapter/models';
 import { resolveEffectiveTheme } from '../../theme/init';
 import { parseError } from '../../utils/error_utils';
-import { RootState } from '../index';
+import type { RootState } from '../index';
 import { ThemeEffective, ThemeMode } from '../ui/types';
 
 const logger = getLogger('SettingsThunks');
