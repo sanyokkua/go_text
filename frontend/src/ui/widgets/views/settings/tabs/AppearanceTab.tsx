@@ -1,9 +1,9 @@
 import React from 'react';
 
 import { useAppDispatch, useAppSelector } from '../../../../../logic/store';
+import { updateUIPreferences } from '../../../../../logic/store/settings/thunks';
 import { selectThemeMode } from '../../../../../logic/store/ui/selectors';
 import { setThemeEffective, setThemeMode } from '../../../../../logic/store/ui/slice';
-import { updateUIPreferences } from '../../../../../logic/store/settings/thunks';
 import { ThemeMode } from '../../../../../logic/store/ui/types';
 import { resolveEffectiveTheme } from '../../../../../logic/theme/init';
 import { Segmented, SegmentedItem } from '../../../../primitives/Segmented';
@@ -33,8 +33,8 @@ const AppearanceTab: React.FC = () => {
                 <p className={styles.sectionHeader}>Theme</p>
                 <Segmented value={themeMode} onValueChange={handleThemeChange} items={THEME_OPTIONS} />
                 <p className={styles.description}>
-                    <strong>Auto</strong> follows your operating system and switches live when the OS changes. <strong>Light/Dark</strong> override the
-                    OS. Applies instantly — no restart.
+                    <strong>Auto</strong> follows your operating system and switches live when the OS changes. <strong>Light/Dark</strong> override
+                    the OS. Applies instantly — no restart.
                 </p>
             </div>
 

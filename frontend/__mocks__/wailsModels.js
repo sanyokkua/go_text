@@ -132,9 +132,7 @@ class ModelConfig {
 class Settings {
     constructor(source = {}) {
         if (typeof source === 'string') source = JSON.parse(source);
-        this.availableProviderConfigs = (source['availableProviderConfigs'] ?? []).map(
-            (p) => new ProviderConfig(p)
-        );
+        this.availableProviderConfigs = (source['availableProviderConfigs'] ?? []).map((p) => new ProviderConfig(p));
         this.currentProviderConfig = new ProviderConfig(source['currentProviderConfig'] ?? {});
         this.inferenceBaseConfig = new InferenceBaseConfig(source['inferenceBaseConfig'] ?? {});
         this.modelConfig = new ModelConfig(source['modelConfig'] ?? {});

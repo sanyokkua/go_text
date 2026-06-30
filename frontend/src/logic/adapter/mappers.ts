@@ -78,13 +78,7 @@ export function fromWireUIPreferences(v: apperr.UIPreferencesConfig): UIPreferen
     const theme = v.theme === 'light' || v.theme === 'dark' ? v.theme : 'auto';
     const layout = v.layout === 'stacked' ? 'stacked' : 'side';
     const viewMode = v.viewMode === 'source' || v.viewMode === 'diff' ? v.viewMode : 'preview';
-    return {
-        theme,
-        layout,
-        sidebarCollapsed: Boolean(v.sidebarCollapsed),
-        historyOpen: Boolean(v.historyOpen),
-        viewMode,
-    };
+    return { theme, layout, sidebarCollapsed: Boolean(v.sidebarCollapsed), historyOpen: Boolean(v.historyOpen), viewMode };
 }
 
 export function toWireUIPreferences(v: UIPreferencesConfig): apperr.UIPreferencesConfig {

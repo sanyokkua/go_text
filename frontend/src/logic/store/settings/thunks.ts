@@ -26,6 +26,7 @@ import {
 } from '../../adapter/models';
 import { resolveEffectiveTheme } from '../../theme/init';
 import { parseError } from '../../utils/error_utils';
+import { RootState } from '../index';
 import { ThemeEffective, ThemeMode } from '../ui/types';
 
 const logger = getLogger('SettingsThunks');
@@ -370,10 +371,20 @@ export const getUIPreferences = createAsyncThunk<{ mode: ThemeMode; effective: T
     },
 );
 
-export const updateUIPreferences = createAsyncThunk<void, UIPreferencesConfig, { rejectValue: string }>(
+export const updateUIPreferences = createAsyncThunk<void, Partial<UIPreferencesConfig>, { state: RootState; rejectValue: string }>(
     'settings/updateUIPreferences',
-    async (config, { rejectWithValue }) => {
+    async (patch, { getState, rejectWithValue }) => {
         try {
+            const ui = getState().ui;
+            // Build the full config by merging the patch with the current Redux UI state.
+            // viewMode is not yet tracked in the UI slice so it falls back to 'preview'.
+            const config: UIPreferencesConfig = {
+                theme: patch.theme ?? ui.theme.mode,
+                layout: patch.layout ?? ui.layout,
+                sidebarCollapsed: patch.sidebarCollapsed ?? ui.sidebarCollapsed,
+                historyOpen: patch.historyOpen ?? ui.historyOpen,
+                viewMode: patch.viewMode ?? 'preview',
+            };
             unwrap(await SettingsHandlerAdapter.updateUIPreferencesConfig(config));
         } catch (error: unknown) {
             const err = parseError(error);
