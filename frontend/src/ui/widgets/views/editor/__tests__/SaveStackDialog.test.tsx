@@ -191,7 +191,7 @@ describe('SaveStackDialog', () => {
         expect(screen.getByText(/1 step/i)).toBeInTheDocument();
     });
 
-    it('shows icon picker buttons', () => {
+    it('shows the emoji picker grid buttons', () => {
         render(
             <Provider store={makeStore()}>
                 <SaveStackDialog open onOpenChange={jest.fn()} />
@@ -224,12 +224,94 @@ describe('SaveStackDialog', () => {
                 <SaveStackDialog open onOpenChange={jest.fn()} />
             </Provider>,
         );
-        const iconField = screen.getByPlaceholderText(/any emoji/i);
+        const iconField = screen.getByPlaceholderText(/emoji/i);
 
         // Act: the field is pre-filled to its maxLength, so replace the value outright.
         fireEvent.change(iconField, { target: { value: '🦄' } });
 
         // Assert
         expect(selectBuilderIcon(store.getState() as Parameters<typeof selectBuilderIcon>[0])).toBe('🦄');
+    });
+
+    it('icon value is displayed only in the input field, not in a separate preview element', () => {
+        render(
+            <Provider store={makeStore()}>
+                <SaveStackDialog open onOpenChange={jest.fn()} />
+            </Provider>,
+        );
+        // Exactly 2 text inputs: name and icon — no extra display element
+        expect(screen.getAllByRole('textbox')).toHaveLength(2);
+        expect(screen.getByRole('textbox', { name: /selected icon/i })).toBeInTheDocument();
+    });
+
+    it('renders the hint label for copy-paste', () => {
+        render(
+            <Provider store={makeStore()}>
+                <SaveStackDialog open onOpenChange={jest.fn()} />
+            </Provider>,
+        );
+        expect(screen.getByText(/copy any emoji from the internet/i)).toBeInTheDocument();
+    });
+
+    it('renders the Paste button', () => {
+        render(
+            <Provider store={makeStore()}>
+                <SaveStackDialog open onOpenChange={jest.fn()} />
+            </Provider>,
+        );
+        expect(screen.getByRole('button', { name: /^paste$/i })).toBeInTheDocument();
+    });
+
+    describe('Paste button clipboard integration', () => {
+        afterEach(() => {
+            Object.defineProperty(navigator, 'clipboard', {
+                value: undefined,
+                configurable: true,
+                writable: true,
+            });
+        });
+
+        it('reads clipboard and updates the icon', async () => {
+            // Arrange
+            Object.defineProperty(navigator, 'clipboard', {
+                value: { readText: jest.fn().mockResolvedValue('🎉') },
+                configurable: true,
+                writable: true,
+            });
+            const store = makeStore();
+            render(
+                <Provider store={store}>
+                    <SaveStackDialog open onOpenChange={jest.fn()} />
+                </Provider>,
+            );
+
+            // Act
+            await userEvent.click(screen.getByRole('button', { name: /^paste$/i }));
+
+            // Assert
+            expect(selectBuilderIcon(store.getState() as Parameters<typeof selectBuilderIcon>[0])).toBe('🎉');
+        });
+
+        it('handles clipboard permission error gracefully', async () => {
+            // Arrange
+            Object.defineProperty(navigator, 'clipboard', {
+                value: { readText: jest.fn().mockRejectedValue(new DOMException('NotAllowedError', 'NotAllowedError')) },
+                configurable: true,
+                writable: true,
+            });
+            const store = makeStore();
+            render(
+                <Provider store={store}>
+                    <SaveStackDialog open onOpenChange={jest.fn()} />
+                </Provider>,
+            );
+            const initialIcon = selectBuilderIcon(store.getState() as Parameters<typeof selectBuilderIcon>[0]);
+
+            // Act — must not throw
+            await userEvent.click(screen.getByRole('button', { name: /^paste$/i }));
+
+            // Assert — icon is unchanged
+            expect(selectBuilderIcon(store.getState() as Parameters<typeof selectBuilderIcon>[0])).toBe(initialIcon);
+        });
     });
 });
