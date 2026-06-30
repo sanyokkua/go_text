@@ -5,6 +5,17 @@ async function loadEditor(page: Page): Promise<void> {
     await page.waitForLoadState('networkidle');
 }
 
+async function openSaveDialog(page: Page): Promise<void> {
+    await loadEditor(page);
+    await page
+        .getByRole('complementary', { name: 'Actions sidebar' })
+        .getByRole('button', { name: /build a stack/i })
+        .click();
+    await page.getByRole('button', { name: /summarise/i }).click();
+    await page.getByRole('button', { name: /save stack/i }).click();
+    await expect(page.getByLabel('Name')).toBeVisible({ timeout: 5000 });
+}
+
 test.describe('Stack building UI', () => {
     test('"My Stacks" section header and Build button are always visible in the sidebar', async ({ page }) => {
         // Arrange
@@ -223,6 +234,50 @@ test.describe('Stack building UI', () => {
 
         // Assert – Save button is still enabled (2 steps, 2 inferences, within caps)
         await expect(page.getByRole('button', { name: /save stack/i })).toBeEnabled({ timeout: 5000 });
+
+        expect(jsErrors).toHaveLength(0);
+    });
+
+    test('Save stack dialog shows the emoji hint text', async ({ page }) => {
+        // Arrange
+        const jsErrors: string[] = [];
+        page.on('pageerror', (err) => jsErrors.push(err.message));
+
+        await openSaveDialog(page);
+
+        // Assert
+        await expect(page.getByText(/copy any emoji from the internet/i)).toBeVisible({ timeout: 3000 });
+
+        expect(jsErrors).toHaveLength(0);
+    });
+
+    test('Save stack dialog shows the Paste button', async ({ page }) => {
+        // Arrange
+        const jsErrors: string[] = [];
+        page.on('pageerror', (err) => jsErrors.push(err.message));
+
+        await openSaveDialog(page);
+
+        // Assert
+        await expect(page.getByRole('button', { name: /^paste$/i })).toBeVisible({ timeout: 3000 });
+
+        expect(jsErrors).toHaveLength(0);
+    });
+
+    test('Paste button sets the icon from clipboard', async ({ page }) => {
+        // Arrange
+        const jsErrors: string[] = [];
+        page.on('pageerror', (err) => jsErrors.push(err.message));
+
+        await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+        await openSaveDialog(page);
+        await page.evaluate(() => navigator.clipboard.writeText('🎉'));
+
+        // Act
+        await page.getByRole('button', { name: /^paste$/i }).click();
+
+        // Assert
+        await expect(page.getByLabel('Selected icon')).toHaveValue('🎉');
 
         expect(jsErrors).toHaveLength(0);
     });
