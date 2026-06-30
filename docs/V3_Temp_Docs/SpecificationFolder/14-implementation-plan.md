@@ -669,3 +669,114 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Live (per `CLAUDE.md`):** `wails dev` + LM Studio/Ollama (reliable small model) — single-action run
   (loader only in output), arm+run a saved stack from sidebar, provider/model switch sync, history wrap,
   light/dark colors. Any new bug found → covering test + fix.
+
+---
+
+## Phase 10 — Post-Live-Test Bug Fixes
+
+> **Discovery:** live-testing session 2026-06-30 (Phases 1–10 via Playwright + real Ollama inference)
+> uncovered the three defects below. Each task includes root-cause analysis, scope, required tests,
+> and acceptance criteria.
+
+### T58 — History rail stale after run completion
+
+- **Severity:** High
+- **Discovery:** After a chain run completed, the History rail showed the pre-run list. Toggling the
+  rail off and back on forced a re-fetch and the new entry appeared. The rail has no subscription to
+  run-completion events.
+- **Root cause:** `HistoryRail` (or the `fetchHistory` thunk) fetches once on mount/toggle but is
+  not subscribed to run-slice state transitions. When `processPromptChain` resolves, the `run` slice
+  transitions to `done`/`partial`/`error`, but nothing triggers a history re-fetch.
+- **Fix (`ts-engineer`):**
+  Option A (preferred): in `logic/store/history/thunks.ts`, add an `extraReducers` case for
+  `processPromptChain.fulfilled` (and `.rejected`) that dispatches `fetchHistory` — so history
+  refreshes automatically whenever a chain settles.
+  Option B: add a `useEffect` in `HistoryRail.tsx` that watches `selectRunStatus`; when status
+  transitions from `running` to a terminal state, dispatch `fetchHistory`.
+- **Files:**
+  - `frontend/src/logic/store/history/thunks.ts`
+  - `frontend/src/logic/store/run/slice.ts` (reference for `processPromptChain` action type)
+  - `frontend/src/ui/widgets/base/HistoryRail.tsx` (if Option B chosen)
+- **Tests (`ts-tester`):**
+  - RTL: render `HistoryRail` inside a test store; simulate `processPromptChain.fulfilled`; assert
+    a second `fetchHistory` call is dispatched without toggling the rail.
+  - Jest slice test: verify that `processPromptChain.fulfilled` in `historySlice.extraReducers`
+    triggers a new `fetchHistory` dispatch (or sets a flag that causes the next render to fetch).
+- **Acceptance:** New history entries appear in the rail immediately after run completion with no
+  user interaction required.
+
+### T59 — `selectRunProgress` selector not memoized
+
+- **Severity:** Medium
+- **Discovery:** Redux DevTools showed repeated `react-redux` "The result function returned a
+  different result when called with the same parameters" warnings during inference. `OutputPane`
+  re-rendered on every `run` slice update even when `groupIndex`, `totalGroups`, and `family` were
+  unchanged.
+- **Root cause:** `frontend/src/logic/store/run/selectors.ts` — `selectRunProgress` is a plain
+  function that constructs a new `{ groupIndex, totalGroups, family }` object literal on every
+  invocation. `react-redux` performs a reference-equality check (`===`) on the return value; a
+  new object fails that check even when field values are identical.
+- **Fix (`ts-engineer`):** Convert to `createSelector` (already available via `@reduxjs/toolkit`):
+  ```typescript
+  export const selectRunProgress = createSelector(
+      (state: RootState) => state.run.currentGroupIndex,
+      (state: RootState) => state.run.totalGroups,
+      (state: RootState) => state.run.currentGroupFamily,
+      (groupIndex, totalGroups, family) => {
+          if (groupIndex === null || totalGroups === null || family === null) return null;
+          return { groupIndex, totalGroups, family };
+      }
+  );
+  ```
+- **Files:**
+  - `frontend/src/logic/store/run/selectors.ts`
+- **Tests (`ts-tester`):**
+  - Jest: call `selectRunProgress` twice with identical state snapshots; assert the two return
+    values are the same reference (`toBe`).
+  - Jest: call with a changed `currentGroupIndex`; assert a new object reference is returned.
+  - RTL: render `OutputPane` with a simulated running state; verify no "different result" console
+    warning is emitted during repeated state updates with identical progress values.
+- **Acceptance:** No `react-redux` "different result" warnings appear in the console during
+  inference; `OutputPane` does not re-render when progress values are unchanged.
+
+### T60 — Stack builder UX: inference cap not surfaced, no action deselect
+
+- **Severity:** Medium (two sub-issues found in the same session)
+- **Discovery:**
+  1. **Cap not surfaced early:** The 3-inference cap becomes apparent only after the cap is hit —
+     buttons become disabled with a `title` tooltip. The "N/5 steps · M inferences" counter in the
+     builder bar is visible but gives no visual signal that 3 is the maximum until it is too late.
+     A user can build 4 steps before learning they are at capacity.
+  2. **No action deselect:** Once an action is armed via the RunBar / `ActionsSidebar`, clicking
+     the same action again scrolls the sidebar to that action's section instead of deselecting it.
+     There is no path to a "nothing armed" state after the first selection short of a full app
+     restart.
+- **Fix (1) — cap highlight (`ts-engineer`):**
+  In `StackBuilderBar.tsx`, apply an amber/red CSS class to the "M inferences" portion of the
+  counter when `inferenceCount >= 3`. Optionally add a static "3 MAX" chip consistent with the
+  existing "1 MAX" chips used for exclusivity groups (see `tokens.css` `--amber`/`--red` tokens).
+- **Fix (2) — action deselect (`ts-engineer`):**
+  - Add `clearArmedAction` reducer to `frontend/src/logic/store/ui/slice.ts` that sets
+    `armedActionId` to `null`.
+  - In `ActionsSidebar.tsx`, change the click handler for the currently-armed action: if
+    `armedActionId === action.id`, dispatch `clearArmedAction()` instead of scrolling.
+  - In `RunBar.tsx`, handle `armedActionId === null` gracefully: show a placeholder label (e.g.
+    "Select an action") and disable the Run button.
+- **Files:**
+  - `frontend/src/ui/widgets/views/editor/StackBuilderBar.tsx`
+  - `frontend/src/ui/widgets/views/editor/StackBuilderBar.module.css`
+  - `frontend/src/logic/store/ui/slice.ts`
+  - `frontend/src/ui/widgets/views/editor/ActionsSidebar.tsx`
+  - `frontend/src/ui/widgets/views/editor/RunBar.tsx`
+- **Tests (`ts-tester`):**
+  - RTL `StackBuilderBar`: at `inferenceCount = 3`, assert the inference counter carries an amber
+    or error CSS class; at `inferenceCount < 3`, assert it does not.
+  - RTL `ActionsSidebar`: click an already-armed action; assert `clearArmedAction` is dispatched
+    and `armedActionId` becomes `null`.
+  - RTL `RunBar`: render with `armedActionId = null`; assert Run button is disabled and a
+    placeholder text is shown.
+- **Acceptance:**
+  1. When the inference count reaches 3, the counter turns amber/red before any button is
+     disabled — users see the limit approaching.
+  2. Clicking an armed action in the sidebar deselects it; RunBar enters the null-armed state
+     with a disabled Run button.
