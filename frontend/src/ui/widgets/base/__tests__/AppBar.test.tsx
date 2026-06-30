@@ -13,8 +13,9 @@ import { configureStore } from '@reduxjs/toolkit';
 import '@testing-library/jest-dom';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { SettingsHandlerAdapter } from '../../../../logic/adapter';
 import { Provider } from 'react-redux';
+
+import { SettingsHandlerAdapter } from '../../../../logic/adapter';
 import actionsReducer from '../../../../logic/store/actions/slice';
 import editorReducer from '../../../../logic/store/editor/slice';
 import historyReducer from '../../../../logic/store/history/slice';
