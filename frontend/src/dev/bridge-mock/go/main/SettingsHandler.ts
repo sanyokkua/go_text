@@ -113,13 +113,22 @@ export function SetDefaultOutputLanguage(_name: string): Promise<VoidResult> {
     return Promise.resolve(voidOk());
 }
 
-const defaultUIPreferences = { theme: 'auto' };
+const defaultUIPreferences = {
+    theme: 'auto',
+    layout: 'side',
+    sidebarCollapsed: false,
+    historyOpen: false,
+    viewMode: 'preview',
+};
 
 export function GetUIPreferencesConfig(): Promise<AnyResult> {
-    return Promise.resolve(ok(defaultUIPreferences));
+    const overrides = (window as Window & { __bridgeMockUIPrefs?: Partial<typeof defaultUIPreferences> }).__bridgeMockUIPrefs;
+    const prefs = overrides ? { ...defaultUIPreferences, ...overrides } : defaultUIPreferences;
+    return Promise.resolve(ok(prefs));
 }
-export function UpdateUIPreferencesConfig(_cfg: unknown): Promise<AnyResult> {
-    return Promise.resolve(ok(defaultUIPreferences));
+export function UpdateUIPreferencesConfig(cfg: unknown): Promise<AnyResult> {
+    (window as Window & { __lastUIPrefsUpdate?: unknown }).__lastUIPrefsUpdate = cfg;
+    return Promise.resolve(ok({ ...defaultUIPreferences, ...(cfg as object) }));
 }
 
 const defaultLoggingConfig = {

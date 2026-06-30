@@ -227,3 +227,125 @@ test.describe('AppBar', () => {
         expect(narrowHeight).toBeGreaterThan(wideHeight);
     });
 });
+
+test.describe('UI state persistence — load from bridge-mock', () => {
+    // Each test injects window.__bridgeMockUIPrefs BEFORE page load so that
+    // GetUIPreferencesConfig picks it up when the Redux thunk fires on startup.
+
+    test('restores stacked layout when bridge-mock returns layout=stacked', async ({ page }) => {
+        // Arrange — addInitScript runs before any page JS, so the override is present
+        // when GetUIPreferencesConfig is called during app startup.
+        await page.addInitScript(() => {
+            (window as Window & { __bridgeMockUIPrefs?: Record<string, unknown> }).__bridgeMockUIPrefs = { layout: 'stacked' };
+        });
+        await page.goto('/');
+        await page.waitForLoadState('networkidle');
+
+        // Assert – Stacked radio must be the active selection
+        await expect(page.getByRole('radio', { name: /stacked/i })).toHaveAttribute('aria-checked', 'true', { timeout: 5000 });
+    });
+
+    test('restores collapsed sidebar when bridge-mock returns sidebarCollapsed=true', async ({ page }) => {
+        // Arrange
+        await page.addInitScript(() => {
+            (window as Window & { __bridgeMockUIPrefs?: Record<string, unknown> }).__bridgeMockUIPrefs = { sidebarCollapsed: true };
+        });
+        await page.goto('/');
+        await page.waitForLoadState('networkidle');
+
+        // Assert – collapsed sidebar → label is "Expand sidebar", aria-pressed is false
+        const expandBtn = page.getByRole('button', { name: /expand sidebar/i });
+        await expect(expandBtn).toBeVisible({ timeout: 5000 });
+        await expect(expandBtn).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    test('restores open history rail when bridge-mock returns historyOpen=true', async ({ page }) => {
+        // Arrange
+        await page.addInitScript(() => {
+            (window as Window & { __bridgeMockUIPrefs?: Record<string, unknown> }).__bridgeMockUIPrefs = { historyOpen: true };
+        });
+        await page.goto('/');
+        await page.waitForLoadState('networkidle');
+
+        // Assert – history button reflects the persisted open state
+        await expect(page.getByRole('button', { name: /toggle history rail/i })).toHaveAttribute('aria-pressed', 'true', { timeout: 5000 });
+    });
+
+    test('restores source view mode when bridge-mock returns viewMode=source', async ({ page }) => {
+        // Arrange
+        await page.addInitScript(() => {
+            (window as Window & { __bridgeMockUIPrefs?: Record<string, unknown> }).__bridgeMockUIPrefs = { viewMode: 'source' };
+        });
+        await page.goto('/');
+        await page.waitForLoadState('networkidle');
+
+        // Assert – Source radio must be the active selection
+        await expect(page.getByRole('radio', { name: 'Source' })).toHaveAttribute('aria-checked', 'true', { timeout: 5000 });
+    });
+});
+
+test.describe('UI state persistence — saves on change', () => {
+    // Each test verifies that interacting with an AppBar control causes
+    // persistUIPreferences to call UpdateUIPreferencesConfig with the updated field.
+    // window.__lastUIPrefsUpdate is written by the bridge-mock on every such call.
+
+    test('toggling the sidebar calls UpdateUIPreferencesConfig with sidebarCollapsed=true', async ({ page }) => {
+        // Arrange
+        await loadMainView(page);
+
+        // Act – sidebar starts expanded (sidebarCollapsed: false), clicking collapses it
+        await page.getByRole('button', { name: /collapse sidebar/i }).click();
+        await page.waitForTimeout(300);
+
+        // Assert
+        const lastUpdate = await page.evaluate(() => {
+            return (window as Window & { __lastUIPrefsUpdate?: Record<string, unknown> }).__lastUIPrefsUpdate;
+        });
+        expect(lastUpdate?.sidebarCollapsed).toBe(true);
+    });
+
+    test('switching layout to Stacked calls UpdateUIPreferencesConfig with layout=stacked', async ({ page }) => {
+        // Arrange
+        await loadMainView(page);
+
+        // Act
+        await page.getByRole('radio', { name: /stacked/i }).click();
+        await page.waitForTimeout(300);
+
+        // Assert
+        const lastUpdate = await page.evaluate(() => {
+            return (window as Window & { __lastUIPrefsUpdate?: Record<string, unknown> }).__lastUIPrefsUpdate;
+        });
+        expect(lastUpdate?.layout).toBe('stacked');
+    });
+
+    test('switching view mode to Source calls UpdateUIPreferencesConfig with viewMode=source', async ({ page }) => {
+        // Arrange
+        await loadMainView(page);
+
+        // Act
+        await page.getByRole('radio', { name: 'Source' }).click();
+        await page.waitForTimeout(300);
+
+        // Assert
+        const lastUpdate = await page.evaluate(() => {
+            return (window as Window & { __lastUIPrefsUpdate?: Record<string, unknown> }).__lastUIPrefsUpdate;
+        });
+        expect(lastUpdate?.viewMode).toBe('source');
+    });
+
+    test('opening the history rail calls UpdateUIPreferencesConfig with historyOpen=true', async ({ page }) => {
+        // Arrange
+        await loadMainView(page);
+
+        // Act – history starts closed (historyOpen: false default)
+        await page.getByRole('button', { name: /toggle history rail/i }).click();
+        await page.waitForTimeout(300);
+
+        // Assert
+        const lastUpdate = await page.evaluate(() => {
+            return (window as Window & { __lastUIPrefsUpdate?: Record<string, unknown> }).__lastUIPrefsUpdate;
+        });
+        expect(lastUpdate?.historyOpen).toBe(true);
+    });
+});
