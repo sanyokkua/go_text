@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { useAppDispatch, useAppSelector } from '../../../../../logic/store';
-import { updateUIPreferences } from '../../../../../logic/store/settings/thunks';
+import { persistUIPreferences } from '../../../../../logic/store/settings/thunks';
 import { selectThemeMode } from '../../../../../logic/store/ui/selectors';
 import { setThemeEffective, setThemeMode } from '../../../../../logic/store/ui/slice';
 import { ThemeMode } from '../../../../../logic/store/ui/types';
@@ -24,7 +24,7 @@ const AppearanceTab: React.FC = () => {
         const effective = resolveEffectiveTheme(mode);
         dispatch(setThemeMode(mode));
         dispatch(setThemeEffective(effective));
-        dispatch(updateUIPreferences({ theme: mode }));
+        void dispatch(persistUIPreferences());
     };
 
     return (

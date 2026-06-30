@@ -14,8 +14,8 @@ import {
     useAppSelector,
 } from '../../../logic/store';
 import { setViewMode } from '../../../logic/store/editor';
-import { updateInferenceBaseConfig } from '../../../logic/store/settings/thunks';
-import { setCurrentView, setLayout, toggleHistory, togglePalette, toggleSidebar } from '../../../logic/store/ui';
+import { persistUIPreferences, updateInferenceBaseConfig } from '../../../logic/store/settings/thunks';
+import { setCurrentView, setHistoryOpen, setLayout, setSidebarCollapsed, togglePalette } from '../../../logic/store/ui';
 import { IconButton } from '../../components/IconButton';
 import { Segmented } from '../../primitives/Segmented';
 import { Tooltip } from '../../primitives/Tooltip';
@@ -55,7 +55,8 @@ const AppBar: React.FC = () => {
                             aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                             aria-pressed={!sidebarCollapsed}
                             onClick={() => {
-                                dispatch(toggleSidebar());
+                                dispatch(setSidebarCollapsed(!sidebarCollapsed));
+                                void dispatch(persistUIPreferences());
                                 logger.logInfo('Sidebar toggled');
                             }}
                             className={styles.sidebarBtn}
@@ -105,7 +106,10 @@ const AppBar: React.FC = () => {
                         />
                         <Segmented
                             value={viewMode}
-                            onValueChange={(v) => dispatch(setViewMode(v as typeof viewMode))}
+                            onValueChange={(v) => {
+                                dispatch(setViewMode(v as typeof viewMode));
+                                void dispatch(persistUIPreferences());
+                            }}
                             items={[
                                 { value: 'preview', label: 'Preview' },
                                 { value: 'source', label: 'Source' },
@@ -115,7 +119,10 @@ const AppBar: React.FC = () => {
                         />
                         <Segmented
                             value={layout}
-                            onValueChange={(v) => dispatch(setLayout(v as typeof layout))}
+                            onValueChange={(v) => {
+                                dispatch(setLayout(v as typeof layout));
+                                void dispatch(persistUIPreferences());
+                            }}
                             items={[
                                 { value: 'side', label: '⊞ Side' },
                                 { value: 'stacked', label: '⊟ Stacked' },
@@ -140,7 +147,8 @@ const AppBar: React.FC = () => {
                                 on={historyOpen}
                                 disabled={!historyEnabled}
                                 onClick={() => {
-                                    dispatch(toggleHistory());
+                                    dispatch(setHistoryOpen(!historyOpen));
+                                    void dispatch(persistUIPreferences());
                                     logger.logInfo('History toggled');
                                 }}
                             >

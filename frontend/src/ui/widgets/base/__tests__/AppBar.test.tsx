@@ -1,11 +1,19 @@
 jest.mock('../../../../logic/adapter', () => ({
     getLogger: () => ({ logDebug: jest.fn(), logInfo: jest.fn(), logError: jest.fn(), logWarning: jest.fn() }),
+    SettingsHandlerAdapter: {
+        updateUIPreferencesConfig: jest.fn().mockResolvedValue({}),
+    },
+    unwrap: (res: { data?: unknown; error?: unknown }) => {
+        if (res?.error) throw res.error;
+        return res?.data;
+    },
 }));
 
 import { configureStore } from '@reduxjs/toolkit';
 import '@testing-library/jest-dom';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { SettingsHandlerAdapter } from '../../../../logic/adapter';
 import { Provider } from 'react-redux';
 import actionsReducer from '../../../../logic/store/actions/slice';
 import editorReducer from '../../../../logic/store/editor/slice';
@@ -115,5 +123,54 @@ describe('AppBar — icon button tooltips', () => {
     it('settings button is present with accessible label', () => {
         renderAppBar();
         expect(screen.getByRole('button', { name: /open settings/i })).toBeInTheDocument();
+    });
+});
+
+describe('AppBar — UI persistence', () => {
+    let mockUpdateUIPreferencesConfig: jest.Mock;
+
+    beforeEach(() => {
+        mockUpdateUIPreferencesConfig = SettingsHandlerAdapter.updateUIPreferencesConfig as jest.Mock;
+        mockUpdateUIPreferencesConfig.mockClear();
+    });
+
+    it('calls updateUIPreferencesConfig after sidebar toggle', async () => {
+        renderAppBar();
+        await userEvent.click(screen.getByRole('button', { name: /collapse sidebar/i }));
+        await waitFor(() => {
+            expect(mockUpdateUIPreferencesConfig).toHaveBeenCalledWith(
+                expect.objectContaining({ sidebarCollapsed: true }),
+            );
+        });
+    });
+
+    it('calls updateUIPreferencesConfig after history toggle', async () => {
+        renderAppBar({ historyOpen: false });
+        await userEvent.click(screen.getByRole('button', { name: /toggle history rail/i }));
+        await waitFor(() => {
+            expect(mockUpdateUIPreferencesConfig).toHaveBeenCalledWith(
+                expect.objectContaining({ historyOpen: true }),
+            );
+        });
+    });
+
+    it('calls updateUIPreferencesConfig after viewMode change', async () => {
+        renderAppBar();
+        await userEvent.click(screen.getByRole('radio', { name: /source/i }));
+        await waitFor(() => {
+            expect(mockUpdateUIPreferencesConfig).toHaveBeenCalledWith(
+                expect.objectContaining({ viewMode: 'source' }),
+            );
+        });
+    });
+
+    it('calls updateUIPreferencesConfig after layout change', async () => {
+        renderAppBar();
+        await userEvent.click(screen.getByRole('radio', { name: /stacked/i }));
+        await waitFor(() => {
+            expect(mockUpdateUIPreferencesConfig).toHaveBeenCalledWith(
+                expect.objectContaining({ layout: 'stacked' }),
+            );
+        });
     });
 });
