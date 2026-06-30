@@ -379,28 +379,6 @@ export const getUIPreferences = createAsyncThunk<
     }
 });
 
-export const updateUIPreferences = createAsyncThunk<void, Partial<UIPreferencesConfig>, { state: RootState; rejectValue: string }>(
-    'settings/updateUIPreferences',
-    async (patch, { getState, rejectWithValue }) => {
-        try {
-            const ui = getState().ui;
-            // Build the full config by merging the patch with the current Redux UI state.
-            // viewMode is not yet tracked in the UI slice so it falls back to 'preview'.
-            const config: UIPreferencesConfig = {
-                theme: patch.theme ?? ui.theme.mode,
-                layout: patch.layout ?? ui.layout,
-                sidebarCollapsed: patch.sidebarCollapsed ?? ui.sidebarCollapsed,
-                historyOpen: patch.historyOpen ?? ui.historyOpen,
-                viewMode: patch.viewMode ?? 'preview',
-            };
-            unwrap(await SettingsHandlerAdapter.updateUIPreferencesConfig(config));
-        } catch (error: unknown) {
-            const err = parseError(error);
-            logger.logError(`updateUIPreferences failed: ${err.message}`);
-            return rejectWithValue(err.message);
-        }
-    },
-);
 
 export const persistUIPreferences = createAsyncThunk<void, void, { state: RootState; rejectValue: string }>(
     'settings/persistUIPreferences',
