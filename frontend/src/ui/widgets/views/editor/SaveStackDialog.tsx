@@ -75,6 +75,15 @@ const SaveStackDialog: React.FC<SaveStackDialogProps> = ({ open, onOpenChange })
         dispatch(setBuilderIcon(trimmed));
     };
 
+    const handlePaste = async () => {
+        try {
+            const text = await navigator.clipboard.readText();
+            handleIconSelect(text.trim());
+        } catch {
+            // clipboard unavailable or permission denied — user types manually
+        }
+    };
+
     const handleSave = async () => {
         if (!canSave) return;
         setSaving(true);
@@ -138,9 +147,6 @@ const SaveStackDialog: React.FC<SaveStackDialogProps> = ({ open, onOpenChange })
 
                 <label className={styles.fieldLabel}>Icon</label>
                 <div className={styles.iconRow}>
-                    <span className={styles.iconPreview} aria-hidden="true">
-                        {icon}
-                    </span>
                     <input
                         id="stack-icon"
                         className={styles.iconInput}
@@ -148,11 +154,20 @@ const SaveStackDialog: React.FC<SaveStackDialogProps> = ({ open, onOpenChange })
                         value={icon}
                         maxLength={2}
                         onChange={(e) => handleIconSelect(e.target.value)}
-                        placeholder="Any emoji"
+                        placeholder="Emoji"
                         aria-label="Selected icon"
                         autoComplete="off"
                     />
+                    <button
+                        className={styles.pasteBtn}
+                        type="button"
+                        onClick={handlePaste}
+                        aria-label="Paste"
+                    >
+                        Paste
+                    </button>
                 </div>
+                <p className={styles.iconHint}>Copy any emoji from the internet and paste it here.</p>
                 <div className={styles.iconPicker}>
                     {ICONS.map((ic) => (
                         <button

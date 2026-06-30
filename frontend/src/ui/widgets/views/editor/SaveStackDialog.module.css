@@ -46,27 +46,14 @@
     margin-bottom: var(--space-1);
 }
 
-.iconPreview {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    flex-shrink: 0;
-    font-size: 1.6rem;
-    line-height: 1;
-    background: var(--surface-2);
-    border: 2px solid var(--teal);
-    border-radius: var(--radius-sm);
-}
-
 .iconInput {
     border: 1px solid var(--line);
     border-radius: var(--radius-sm);
-    font-size: 1.1rem;
+    font-size: 1.5rem;
     text-align: center;
     padding: 6px 10px;
-    width: 70px;
+    width: 90px;
+    height: 44px;
     background: var(--surface);
     color: var(--ink);
     box-sizing: border-box;
@@ -75,6 +62,29 @@
 .iconInput:focus {
     outline: none;
     border-color: var(--teal-light);
+}
+
+.pasteBtn {
+    height: 44px;
+    padding: 0 var(--space-3);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    color: var(--ink-2);
+    font-size: 0.875rem;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.pasteBtn:hover {
+    background: var(--surface);
+    border-color: var(--teal-light);
+}
+
+.iconHint {
+    font-size: 0.75rem;
+    color: var(--ink-3);
+    margin: 0 0 var(--space-1);
 }
 
 .iconPicker {
