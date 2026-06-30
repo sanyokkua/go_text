@@ -38,6 +38,11 @@
     border: 1px solid var(--line);
     border-radius: var(--radius-md);
     padding: 13px;
+    transition: border-color 120ms ease;
+}
+
+.body:focus-within {
+    border-color: var(--teal-light);
 }
 
 .textarea {

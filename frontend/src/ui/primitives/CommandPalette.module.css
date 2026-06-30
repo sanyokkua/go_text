@@ -56,6 +56,10 @@
     padding: 14px 0;
 }
 
+.input:focus-visible {
+    box-shadow: none;
+}
+
 .input::placeholder {
     color: var(--ink-3);
 }

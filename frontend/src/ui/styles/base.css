@@ -29,6 +29,11 @@ body {
     box-shadow: var(--focus-ring);
 }
 
+textarea:focus-visible,
+input:focus-visible {
+    box-shadow: none;
+}
+
 ::-webkit-scrollbar {
     width: 6px;
     height: 6px;

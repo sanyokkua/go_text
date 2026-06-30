@@ -67,6 +67,12 @@
     outline: none;
     font-family: var(--font);
     box-sizing: border-box;
+    transition: border-color 120ms ease;
+}
+
+.textInput:focus-visible {
+    border-color: var(--teal-light);
+    box-shadow: none;
 }
 
 /* Auth segment */

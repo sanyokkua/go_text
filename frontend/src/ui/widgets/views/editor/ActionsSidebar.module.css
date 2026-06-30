@@ -295,7 +295,7 @@
 
 .searchBox:focus-visible {
     outline: none;
-    box-shadow: var(--focus-ring);
+    border-color: var(--teal-light);
 }
 
 .scrollArea {
