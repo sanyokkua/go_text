@@ -1,5 +1,6 @@
 import { apperr } from '../../../wailsjs/go/models';
-import { fromWireBehavior, fromWireMetadata, fromWireProvider, toWireBehavior, toWireProvider } from './mappers';
+import { fromWireBehavior, fromWireMetadata, fromWireProvider, fromWireUIPreferences, toWireBehavior, toWireProvider, toWireUIPreferences } from './mappers';
+import { UIPreferencesConfig } from './models';
 
 const wireProvider: apperr.ProviderConfig = apperr.ProviderConfig.createFrom({
     id: 'p1',
@@ -87,5 +88,124 @@ describe('fromWireBehavior / toWireBehavior', () => {
         const w = toWireBehavior({ enableTaskLogging: true, logDirectory: '' });
         expect(w.historyEnabled).toBe(false);
         expect(w.historyMaxEntries).toBe(0);
+    });
+});
+
+describe('fromWireUIPreferences / toWireUIPreferences', () => {
+    describe('theme field', () => {
+        it('passes through "light"', () => {
+            const w = apperr.UIPreferencesConfig.createFrom({ theme: 'light', layout: 'side', sidebarCollapsed: false, historyOpen: false, viewMode: 'preview' });
+            expect(fromWireUIPreferences(w).theme).toBe('light');
+        });
+
+        it('passes through "dark"', () => {
+            const w = apperr.UIPreferencesConfig.createFrom({ theme: 'dark', layout: 'side', sidebarCollapsed: false, historyOpen: false, viewMode: 'preview' });
+            expect(fromWireUIPreferences(w).theme).toBe('dark');
+        });
+
+        it('defaults to "auto" for unknown theme values', () => {
+            const w = apperr.UIPreferencesConfig.createFrom({ theme: 'solarized', layout: 'side', sidebarCollapsed: false, historyOpen: false, viewMode: 'preview' });
+            expect(fromWireUIPreferences(w).theme).toBe('auto');
+        });
+
+        it('defaults to "auto" when theme is empty string', () => {
+            const w = apperr.UIPreferencesConfig.createFrom({ theme: '', layout: 'side', sidebarCollapsed: false, historyOpen: false, viewMode: 'preview' });
+            expect(fromWireUIPreferences(w).theme).toBe('auto');
+        });
+    });
+
+    describe('layout field', () => {
+        it('passes through "side"', () => {
+            const w = apperr.UIPreferencesConfig.createFrom({ theme: 'auto', layout: 'side', sidebarCollapsed: false, historyOpen: false, viewMode: 'preview' });
+            expect(fromWireUIPreferences(w).layout).toBe('side');
+        });
+
+        it('passes through "stacked"', () => {
+            const w = apperr.UIPreferencesConfig.createFrom({ theme: 'auto', layout: 'stacked', sidebarCollapsed: false, historyOpen: false, viewMode: 'preview' });
+            expect(fromWireUIPreferences(w).layout).toBe('stacked');
+        });
+
+        it('defaults to "side" for unknown layout values', () => {
+            const w = apperr.UIPreferencesConfig.createFrom({ theme: 'auto', layout: 'grid', sidebarCollapsed: false, historyOpen: false, viewMode: 'preview' });
+            expect(fromWireUIPreferences(w).layout).toBe('side');
+        });
+    });
+
+    describe('viewMode field', () => {
+        it('passes through "preview"', () => {
+            const w = apperr.UIPreferencesConfig.createFrom({ theme: 'auto', layout: 'side', sidebarCollapsed: false, historyOpen: false, viewMode: 'preview' });
+            expect(fromWireUIPreferences(w).viewMode).toBe('preview');
+        });
+
+        it('passes through "source"', () => {
+            const w = apperr.UIPreferencesConfig.createFrom({ theme: 'auto', layout: 'side', sidebarCollapsed: false, historyOpen: false, viewMode: 'source' });
+            expect(fromWireUIPreferences(w).viewMode).toBe('source');
+        });
+
+        it('passes through "diff"', () => {
+            const w = apperr.UIPreferencesConfig.createFrom({ theme: 'auto', layout: 'side', sidebarCollapsed: false, historyOpen: false, viewMode: 'diff' });
+            expect(fromWireUIPreferences(w).viewMode).toBe('diff');
+        });
+
+        it('defaults to "preview" for unknown viewMode values', () => {
+            const w = apperr.UIPreferencesConfig.createFrom({ theme: 'auto', layout: 'side', sidebarCollapsed: false, historyOpen: false, viewMode: 'split' });
+            expect(fromWireUIPreferences(w).viewMode).toBe('preview');
+        });
+    });
+
+    describe('boolean fields', () => {
+        it('maps sidebarCollapsed=true as Boolean true', () => {
+            const w = apperr.UIPreferencesConfig.createFrom({ theme: 'auto', layout: 'side', sidebarCollapsed: true, historyOpen: false, viewMode: 'preview' });
+            expect(fromWireUIPreferences(w).sidebarCollapsed).toBe(true);
+        });
+
+        it('maps sidebarCollapsed=false as Boolean false', () => {
+            const w = apperr.UIPreferencesConfig.createFrom({ theme: 'auto', layout: 'side', sidebarCollapsed: false, historyOpen: false, viewMode: 'preview' });
+            expect(fromWireUIPreferences(w).sidebarCollapsed).toBe(false);
+        });
+
+        it('maps historyOpen=true as Boolean true', () => {
+            const w = apperr.UIPreferencesConfig.createFrom({ theme: 'auto', layout: 'side', sidebarCollapsed: false, historyOpen: true, viewMode: 'preview' });
+            expect(fromWireUIPreferences(w).historyOpen).toBe(true);
+        });
+
+        it('maps historyOpen=false as Boolean false', () => {
+            const w = apperr.UIPreferencesConfig.createFrom({ theme: 'auto', layout: 'side', sidebarCollapsed: false, historyOpen: false, viewMode: 'preview' });
+            expect(fromWireUIPreferences(w).historyOpen).toBe(false);
+        });
+    });
+
+    describe('toWireUIPreferences', () => {
+        it('round-trips all 5 fields', () => {
+            const domain: UIPreferencesConfig = {
+                theme: 'dark',
+                layout: 'stacked',
+                sidebarCollapsed: true,
+                historyOpen: true,
+                viewMode: 'diff',
+            };
+            const wire = toWireUIPreferences(domain);
+            expect(wire.theme).toBe('dark');
+            expect(wire.layout).toBe('stacked');
+            expect(wire.sidebarCollapsed).toBe(true);
+            expect(wire.historyOpen).toBe(true);
+            expect(wire.viewMode).toBe('diff');
+        });
+
+        it('maps all fields for light/side/preview combination', () => {
+            const domain: UIPreferencesConfig = {
+                theme: 'light',
+                layout: 'side',
+                sidebarCollapsed: false,
+                historyOpen: false,
+                viewMode: 'preview',
+            };
+            const wire = toWireUIPreferences(domain);
+            expect(wire.theme).toBe('light');
+            expect(wire.layout).toBe('side');
+            expect(wire.sidebarCollapsed).toBe(false);
+            expect(wire.historyOpen).toBe(false);
+            expect(wire.viewMode).toBe('preview');
+        });
     });
 });

@@ -76,11 +76,25 @@ export function toWireBehavior(v: AppBehaviorConfig): apperr.AppBehaviorConfig {
 
 export function fromWireUIPreferences(v: apperr.UIPreferencesConfig): UIPreferencesConfig {
     const theme = v.theme === 'light' || v.theme === 'dark' ? v.theme : 'auto';
-    return { theme };
+    const layout = v.layout === 'stacked' ? 'stacked' : 'side';
+    const viewMode = v.viewMode === 'source' || v.viewMode === 'diff' ? v.viewMode : 'preview';
+    return {
+        theme,
+        layout,
+        sidebarCollapsed: Boolean(v.sidebarCollapsed),
+        historyOpen: Boolean(v.historyOpen),
+        viewMode,
+    };
 }
 
 export function toWireUIPreferences(v: UIPreferencesConfig): apperr.UIPreferencesConfig {
-    return apperr.UIPreferencesConfig.createFrom({ theme: v.theme });
+    return apperr.UIPreferencesConfig.createFrom({
+        theme: v.theme,
+        layout: v.layout,
+        sidebarCollapsed: v.sidebarCollapsed,
+        historyOpen: v.historyOpen,
+        viewMode: v.viewMode,
+    });
 }
 
 export function fromWireLogging(v: apperr.LoggingConfig): LoggingConfig {

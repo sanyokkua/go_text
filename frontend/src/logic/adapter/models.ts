@@ -33,10 +33,16 @@ export interface AppBehaviorConfig {
 /**
  * UI preferences persisted in the backend.
  *
- * `theme` is the user's chosen mode; `'auto'` defers to the OS color scheme.
+ * `theme` defers to the OS color scheme when `'auto'`.
+ * `layout` controls whether editor panes are side-by-side or stacked vertically.
+ * `viewMode` selects which output representation is active in the editor pane.
  */
 export interface UIPreferencesConfig {
     theme: 'auto' | 'light' | 'dark';
+    layout: 'side' | 'stacked';
+    sidebarCollapsed: boolean;
+    historyOpen: boolean;
+    viewMode: 'preview' | 'source' | 'diff';
 }
 
 /**

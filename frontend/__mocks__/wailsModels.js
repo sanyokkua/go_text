@@ -212,6 +212,21 @@ class SavedStack {
     }
 }
 
+class UIPreferencesConfig {
+    constructor(source = {}) {
+        if (typeof source === 'string') source = JSON.parse(source);
+        this.theme = source['theme'] ?? '';
+        this.layout = source['layout'] ?? '';
+        this.sidebarCollapsed = source['sidebarCollapsed'] ?? false;
+        this.historyOpen = source['historyOpen'] ?? false;
+        this.viewMode = source['viewMode'] ?? '';
+    }
+
+    static createFrom(source = {}) {
+        return new UIPreferencesConfig(source);
+    }
+}
+
 // eslint-disable-next-line no-undef
 module.exports = {
     apperr: {
@@ -228,5 +243,6 @@ module.exports = {
         SavedStack,
         ChainStep,
         ChainRequest,
+        UIPreferencesConfig,
     },
 };
