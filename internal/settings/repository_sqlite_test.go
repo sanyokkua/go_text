@@ -291,6 +291,91 @@ func TestSqliteSettingsRepository_UIPreferencesConfig_RoundTrip(t *testing.T) {
 	}
 }
 
+func TestSqliteSettingsRepository_GetUIPreferencesConfig_Defaults(t *testing.T) {
+	t.Parallel()
+	repo := newRepo(t)
+
+	got, err := repo.GetUIPreferencesConfig()
+
+	if err != nil {
+		t.Fatalf("GetUIPreferencesConfig: %v", err)
+	}
+	if got.Theme != "auto" {
+		t.Errorf("default Theme: want %q, got %q", "auto", got.Theme)
+	}
+	if got.Layout != "side" {
+		t.Errorf("default Layout: want %q, got %q", "side", got.Layout)
+	}
+	if got.SidebarCollapsed != false {
+		t.Errorf("default SidebarCollapsed: want false, got %v", got.SidebarCollapsed)
+	}
+	if got.HistoryOpen != false {
+		t.Errorf("default HistoryOpen: want false, got %v", got.HistoryOpen)
+	}
+	if got.ViewMode != "preview" {
+		t.Errorf("default ViewMode: want %q, got %q", "preview", got.ViewMode)
+	}
+}
+
+func TestSqliteSettingsRepository_UIPreferencesConfig_FullRoundTrip(t *testing.T) {
+	tests := []struct {
+		name  string
+		input settings.UIPreferencesConfig
+	}{
+		{
+			name: "all_non_default",
+			input: settings.UIPreferencesConfig{
+				Theme: "dark", Layout: "stacked",
+				SidebarCollapsed: true, HistoryOpen: true, ViewMode: "source",
+			},
+		},
+		{
+			name: "all_default",
+			input: settings.UIPreferencesConfig{
+				Theme: "auto", Layout: "side",
+				SidebarCollapsed: false, HistoryOpen: false, ViewMode: "preview",
+			},
+		},
+		{
+			name: "diff_viewmode",
+			input: settings.UIPreferencesConfig{
+				Theme: "light", Layout: "side",
+				SidebarCollapsed: false, HistoryOpen: true, ViewMode: "diff",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			repo := newRepo(t)
+
+			if err := repo.UpdateUIPreferencesConfig(&tt.input); err != nil {
+				t.Fatalf("UpdateUIPreferencesConfig: %v", err)
+			}
+			got, err := repo.GetUIPreferencesConfig()
+			if err != nil {
+				t.Fatalf("GetUIPreferencesConfig: %v", err)
+			}
+			if got.Theme != tt.input.Theme {
+				t.Errorf("Theme: want %q, got %q", tt.input.Theme, got.Theme)
+			}
+			if got.Layout != tt.input.Layout {
+				t.Errorf("Layout: want %q, got %q", tt.input.Layout, got.Layout)
+			}
+			if got.SidebarCollapsed != tt.input.SidebarCollapsed {
+				t.Errorf("SidebarCollapsed: want %v, got %v", tt.input.SidebarCollapsed, got.SidebarCollapsed)
+			}
+			if got.HistoryOpen != tt.input.HistoryOpen {
+				t.Errorf("HistoryOpen: want %v, got %v", tt.input.HistoryOpen, got.HistoryOpen)
+			}
+			if got.ViewMode != tt.input.ViewMode {
+				t.Errorf("ViewMode: want %q, got %q", tt.input.ViewMode, got.ViewMode)
+			}
+		})
+	}
+}
+
 // ── Languages ──────────────────────────────────────────────────────────────
 
 func TestSqliteSettingsRepository_Languages(t *testing.T) {

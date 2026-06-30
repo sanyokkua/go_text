@@ -90,7 +90,11 @@ type AppBehaviorConfig struct {
 }
 
 type UIPreferencesConfig struct {
-	Theme string `json:"theme"`
+	Theme            string `json:"theme"`
+	Layout           string `json:"layout"`
+	SidebarCollapsed bool   `json:"sidebarCollapsed"`
+	HistoryOpen      bool   `json:"historyOpen"`
+	ViewMode         string `json:"viewMode"`
 }
 
 type LoggingConfig struct {

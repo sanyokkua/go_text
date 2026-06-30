@@ -380,13 +380,21 @@ func (r *SqliteSettingsRepository) UpdateAppBehaviorConfig(cfg *AppBehaviorConfi
 
 func (r *SqliteSettingsRepository) GetUIPreferencesConfig() (*UIPreferencesConfig, error) {
 	return &UIPreferencesConfig{
-		Theme: r.getString("ui.theme", "auto"),
+		Theme:            r.getString("ui.theme", "auto"),
+		Layout:           r.getString("ui.layout", "side"),
+		SidebarCollapsed: r.getBool("ui.sidebarCollapsed", false),
+		HistoryOpen:      r.getBool("ui.historyOpen", false),
+		ViewMode:         r.getString("ui.viewMode", "preview"),
 	}, nil
 }
 
 func (r *SqliteSettingsRepository) UpdateUIPreferencesConfig(cfg *UIPreferencesConfig) error {
 	rows := []store.UpsertSettingParams{
 		{Key: "ui.theme", Value: cfg.Theme, Type: "string"},
+		{Key: "ui.layout", Value: cfg.Layout, Type: "string"},
+		{Key: "ui.sidebarCollapsed", Value: strconv.FormatBool(cfg.SidebarCollapsed), Type: "bool"},
+		{Key: "ui.historyOpen", Value: strconv.FormatBool(cfg.HistoryOpen), Type: "bool"},
+		{Key: "ui.viewMode", Value: cfg.ViewMode, Type: "string"},
 	}
 	for _, row := range rows {
 		if err := r.database.Queries.UpsertSetting(bg(), row); err != nil {

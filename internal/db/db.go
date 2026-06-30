@@ -324,7 +324,7 @@ func seedLanguages(ctx context.Context, q *store.Queries) error {
 	return nil
 }
 
-// seedSettings inserts all 24 default KV rows from the §A.6 catalog.
+// seedSettings inserts all 26 default KV rows from the §A.6 catalog.
 func seedSettings(ctx context.Context, q *store.Queries) error {
 	rows := []store.UpsertSettingParams{
 		{Key: "inference.timeout", Value: "60", Type: "int"},
@@ -341,6 +341,8 @@ func seedSettings(ctx context.Context, q *store.Queries) error {
 		{Key: "lang.defaultOutput", Value: "Ukrainian", Type: "string"},
 		{Key: "ui.theme", Value: "", Type: "string"},
 		{Key: "ui.layout", Value: "", Type: "string"},
+		{Key: "ui.sidebarCollapsed", Value: "false", Type: "bool"},
+		{Key: "ui.historyOpen", Value: "false", Type: "bool"},
 		{Key: "ui.viewMode", Value: "", Type: "string"},
 		{Key: "log.fileEnabled", Value: "false", Type: "bool"},
 		{Key: "log.level", Value: "info", Type: "string"},

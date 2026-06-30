@@ -40,10 +40,10 @@ func TestOpen_FreshDB_MigratesAndSeeds(t *testing.T) {
 	assert.Contains(t, langs, "English")
 	assert.Contains(t, langs, "Ukrainian")
 
-	// Settings: 24 defaults seeded
+	// Settings: 26 defaults seeded
 	settings, err := database.Queries.ListSettings(ctx)
 	require.NoError(t, err)
-	assert.Len(t, settings, 24)
+	assert.Len(t, settings, 26)
 
 	// app_state: current provider is set, and it is the Ollama provider.
 	provID, err := database.Queries.GetCurrentProviderID(ctx)
@@ -150,7 +150,7 @@ func TestSeed_FactoryReset_RepopulatesDefaults(t *testing.T) {
 
 	settings, err := database.Queries.ListSettings(ctx)
 	require.NoError(t, err)
-	assert.Len(t, settings, 24)
+	assert.Len(t, settings, 26)
 
 	langs, err := database.Queries.ListLanguages(ctx)
 	require.NoError(t, err)

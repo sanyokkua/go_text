@@ -44,9 +44,14 @@ type AppBehaviorConfig struct {
 }
 
 // UIPreferencesConfig holds persisted UI preferences that must survive restart.
-// Theme is "auto" | "light" | "dark".
+// Theme is "auto" | "light" | "dark". Layout is "side" | "stacked".
+// ViewMode is "preview" | "source" | "diff".
 type UIPreferencesConfig struct {
-	Theme string `json:"theme"`
+	Theme            string `json:"theme"`
+	Layout           string `json:"layout"`
+	SidebarCollapsed bool   `json:"sidebarCollapsed"`
+	HistoryOpen      bool   `json:"historyOpen"`
+	ViewMode         string `json:"viewMode"`
 }
 
 // LoggingConfig maps the log.* KV rows from the settings table.
