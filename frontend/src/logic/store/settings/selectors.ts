@@ -2,8 +2,17 @@ import { createSelector } from '@reduxjs/toolkit';
 
 import { apperr } from '../../../../wailsjs/go/models';
 import { SelectItem } from '../../../ui/primitives/Select';
-import { Settings } from '../../adapter';
+import { ProviderConfig, Settings } from '../../adapter';
 import { RootState } from '../index';
+
+// Shared empty-array reference reused by the nullish-fallback selectors below so
+// repeated calls return the same object when the underlying field is absent —
+// `?? []` would otherwise allocate a new array every call, defeating reselect's
+// reference-equality memoization for any derived selector built on top of them.
+const EMPTY_ARRAY: readonly never[] = [];
+function emptyArray<T>(): T[] {
+    return EMPTY_ARRAY as unknown as T[];
+}
 
 // Basic selectors
 export const selectAllSettings = (state: RootState): Settings | null => state.settings.allSettings;
@@ -16,9 +25,10 @@ export const selectAppBehaviorConfig = (state: RootState) => state.settings.allS
 export const selectLoggingConfig = (state: RootState) => state.settings.allSettings?.loggingConfig ?? null;
 export const selectInferenceBaseConfig = (state: RootState) => state.settings.allSettings?.inferenceBaseConfig ?? null;
 export const selectLanguageConfig = (state: RootState) => state.settings.allSettings?.languageConfig ?? null;
-export const selectAvailableProviders = (state: RootState) => state.settings.allSettings?.availableProviderConfigs ?? [];
-export const selectDiscoveredModels = (state: RootState): apperr.ModelInfo[] => state.settings.discoveredModels ?? [];
-export const selectProviderPresets = (state: RootState): apperr.ProviderPreset[] => state.settings.providerPresets ?? [];
+export const selectAvailableProviders = (state: RootState): ProviderConfig[] =>
+    state.settings.allSettings?.availableProviderConfigs ?? emptyArray<ProviderConfig>();
+export const selectDiscoveredModels = (state: RootState): apperr.ModelInfo[] => state.settings.discoveredModels ?? emptyArray<apperr.ModelInfo>();
+export const selectProviderPresets = (state: RootState): apperr.ProviderPreset[] => state.settings.providerPresets ?? emptyArray<apperr.ProviderPreset>();
 
 // Derived SelectItem lists for compact pickers in AppBar
 export const selectProviderItems = createSelector([selectAvailableProviders], (providers): SelectItem[] =>
