@@ -238,11 +238,7 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
     };
 
     if (provider === null) {
-        return (
-            <div className={styles.empty}>
-                (Select a provider to edit or create a new one)
-            </div>
-        );
+        return <div className={styles.empty}>(Select a provider to edit or create a new one)</div>;
     }
 
     return (
@@ -253,12 +249,7 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                     <span className={styles.label}>Start from a preset</span>
                     <div className={styles.presetRow}>
                         {presets.map((preset) => (
-                            <button
-                                key={preset.name}
-                                type="button"
-                                onClick={() => applyPreset(preset)}
-                                className={styles.presetBtn}
-                            >
+                            <button key={preset.name} type="button" onClick={() => applyPreset(preset)} className={styles.presetBtn}>
                                 {preset.name}
                             </button>
                         ))}
@@ -347,8 +338,8 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                     )}
                     <p className={styles.envVarBanner}>
                         🔑 <strong>API key — environment variable</strong>{' '}
-                        <code className={styles.envVarCode}>{form.envVarTokenName.trim() || 'YOUR_API_KEY'}</code> — the app reads the key from
-                        this variable at run time and <strong>never stores it</strong>.
+                        <code className={styles.envVarCode}>{form.envVarTokenName.trim() || 'YOUR_API_KEY'}</code> — the app reads the key from this
+                        variable at run time and <strong>never stores it</strong>.
                     </p>
                 </div>
             )}
@@ -498,39 +489,22 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
             {/* Action bar */}
             <div className={styles.actionBar}>
                 {!isCurrent && provider !== null && (
-                    <button
-                        type="button"
-                        onClick={() => onSetCurrent(provider.providerId)}
-                        className={[styles.btnBase, styles.btnGhost].join(' ')}
-                    >
+                    <button type="button" onClick={() => onSetCurrent(provider.providerId)} className={[styles.btnBase, styles.btnGhost].join(' ')}>
                         Set as current
                     </button>
                 )}
 
                 {provider !== null && (
-                    <button
-                        type="button"
-                        onClick={() => setDeleteOpen(true)}
-                        className={[styles.btnBase, styles.btnDanger].join(' ')}
-                    >
+                    <button type="button" onClick={() => setDeleteOpen(true)} className={[styles.btnBase, styles.btnDanger].join(' ')}>
                         Delete…
                     </button>
                 )}
 
-                <button
-                    type="button"
-                    onClick={onCancel}
-                    className={[styles.btnBase, styles.btnCancel].join(' ')}
-                >
+                <button type="button" onClick={onCancel} className={[styles.btnBase, styles.btnCancel].join(' ')}>
                     Cancel
                 </button>
 
-                <button
-                    type="button"
-                    onClick={handleSave}
-                    disabled={!dirty || !valid}
-                    className={[styles.btnBase, styles.btnSave].join(' ')}
-                >
+                <button type="button" onClick={handleSave} disabled={!dirty || !valid} className={[styles.btnBase, styles.btnSave].join(' ')}>
                     Save
                 </button>
             </div>

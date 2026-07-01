@@ -20,7 +20,7 @@ func (e *fakeNetError) Temporary() bool { return false }
 
 func TestMapTransportError_ContextDeadline(t *testing.T) {
 	t.Parallel()
-	ae := mapTransportError("my-provider", "http://localhost:11434/",context.DeadlineExceeded)
+	ae := mapTransportError("my-provider", "http://localhost:11434/", context.DeadlineExceeded)
 	if ae.Code != apperr.CodeTimeout {
 		t.Errorf("want CodeTimeout, got %q", ae.Code)
 	}
@@ -29,7 +29,7 @@ func TestMapTransportError_ContextDeadline(t *testing.T) {
 func TestMapTransportError_NetTimeout(t *testing.T) {
 	t.Parallel()
 	err := &fakeNetError{timeout: true}
-	ae := mapTransportError("my-provider", "http://localhost:11434/",err)
+	ae := mapTransportError("my-provider", "http://localhost:11434/", err)
 	if ae.Code != apperr.CodeTimeout {
 		t.Errorf("want CodeTimeout, got %q", ae.Code)
 	}
@@ -38,7 +38,7 @@ func TestMapTransportError_NetTimeout(t *testing.T) {
 func TestMapTransportError_DialError(t *testing.T) {
 	t.Parallel()
 	err := &net.OpError{Op: "dial", Net: "tcp", Err: errors.New("connection refused")}
-	ae := mapTransportError("my-provider", "http://localhost:11434/",err)
+	ae := mapTransportError("my-provider", "http://localhost:11434/", err)
 	if ae.Code != apperr.CodeProviderUnreachable {
 		t.Errorf("want CodeProviderUnreachable, got %q", ae.Code)
 	}

@@ -28,7 +28,8 @@ export const selectLanguageConfig = (state: RootState) => state.settings.allSett
 export const selectAvailableProviders = (state: RootState): ProviderConfig[] =>
     state.settings.allSettings?.availableProviderConfigs ?? emptyArray<ProviderConfig>();
 export const selectDiscoveredModels = (state: RootState): apperr.ModelInfo[] => state.settings.discoveredModels ?? emptyArray<apperr.ModelInfo>();
-export const selectProviderPresets = (state: RootState): apperr.ProviderPreset[] => state.settings.providerPresets ?? emptyArray<apperr.ProviderPreset>();
+export const selectProviderPresets = (state: RootState): apperr.ProviderPreset[] =>
+    state.settings.providerPresets ?? emptyArray<apperr.ProviderPreset>();
 
 // Derived SelectItem lists for compact pickers in AppBar
 export const selectProviderItems = createSelector([selectAvailableProviders], (providers): SelectItem[] =>
@@ -72,10 +73,7 @@ export const selectCurrentProviderModelItems = createSelector(
  * has not been discovered yet. Drives feature gating in the Settings Model tab
  * (e.g. hiding the temperature control for models that reject it).
  */
-export const selectCurrentModelCaps = createSelector(
-    [selectModelConfig, selectDiscoveredModels],
-    (modelCfg, discovered): apperr.ModelCaps | null => {
-        if (!modelCfg) return null;
-        return discovered.find((m) => m.id === modelCfg.name)?.caps ?? null;
-    },
-);
+export const selectCurrentModelCaps = createSelector([selectModelConfig, selectDiscoveredModels], (modelCfg, discovered): apperr.ModelCaps | null => {
+    if (!modelCfg) return null;
+    return discovered.find((m) => m.id === modelCfg.name)?.caps ?? null;
+});

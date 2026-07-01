@@ -49,12 +49,7 @@ const ProviderList: React.FC<ProviderListProps> = ({ providers, currentId, selec
         </ul>
 
         <div className={styles.newBtnWrap}>
-            <button
-                type="button"
-                onClick={onNew}
-                aria-label="New provider"
-                className={styles.newBtn}
-            >
+            <button type="button" onClick={onNew} aria-label="New provider" className={styles.newBtn}>
                 + New provider
             </button>
         </div>

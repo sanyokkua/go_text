@@ -111,11 +111,7 @@ describe('notifyError', () => {
 
     it('maps CodeStepFailed message with the inner error text exactly once, not double-wrapped', () => {
         const action = notifyError(
-            wire(apperr.ErrorCode.CodeStepFailed, {
-                stepIndex: '0',
-                family: 'rewrite',
-                inner: "The text exceeds the model's context window.",
-            }),
+            wire(apperr.ErrorCode.CodeStepFailed, { stepIndex: '0', family: 'rewrite', inner: "The text exceeds the model's context window." }),
         );
         expect(action.payload.title).toBe('Step 1 failed');
         expect(action.payload.message).toBe("Step 1 (rewrite) failed: The text exceeds the model's context window.. Earlier steps completed.");
@@ -125,9 +121,7 @@ describe('notifyError', () => {
     });
 
     it('falls back to wire.message for CodeStepFailed when Details lacks "inner"', () => {
-        const action = notifyError(
-            wire(apperr.ErrorCode.CodeStepFailed, { stepIndex: '0', family: 'rewrite' }, 'fallback inner text'),
-        );
+        const action = notifyError(wire(apperr.ErrorCode.CodeStepFailed, { stepIndex: '0', family: 'rewrite' }, 'fallback inner text'));
         expect(action.payload.message).toBe('Step 1 (rewrite) failed: fallback inner text. Earlier steps completed.');
     });
 

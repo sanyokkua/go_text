@@ -2,13 +2,7 @@ import type { RootState } from '../../index';
 import { selectAvailableProviders, selectDiscoveredModels, selectProviderItems, selectProviderPresets } from '../selectors';
 
 function stateWithSettings(overrides: Partial<RootState['settings']> = {}): RootState {
-    return {
-        settings: {
-            allSettings: null,
-            metadata: null,
-            ...overrides,
-        },
-    } as RootState;
+    return { settings: { allSettings: null, metadata: null, ...overrides } } as RootState;
 }
 
 describe('selectAvailableProviders', () => {

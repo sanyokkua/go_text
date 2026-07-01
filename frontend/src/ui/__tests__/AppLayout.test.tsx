@@ -7,9 +7,7 @@ import AppLayout from '../AppLayout';
 
 // The ui slice transitively imports logic/adapter (ESM-heavy Wails bindings).
 // Stub it so the store module graph loads under Jest, matching the editor tests.
-jest.mock('../../logic/adapter', () => ({
-    getLogger: () => ({ logInfo: jest.fn(), logDebug: jest.fn(), logError: jest.fn(), logWarn: jest.fn() }),
-}));
+jest.mock('../../logic/adapter', () => ({ getLogger: () => ({ logInfo: jest.fn(), logDebug: jest.fn(), logError: jest.fn(), logWarn: jest.fn() }) }));
 
 // AppMainView and NotificationContainer are stubbed: the regression target
 // (a full-screen loading overlay) is a SIBLING of AppMainView in AppLayout,
@@ -27,10 +25,7 @@ jest.mock('../widgets/base/NotificationContainer', () => {
 });
 
 // Avoid touching window.matchMedia / DOM theme application during the test.
-jest.mock('../../logic/theme/init', () => ({
-    applyTheme: jest.fn(),
-    watchSystemTheme: jest.fn(() => () => undefined),
-}));
+jest.mock('../../logic/theme/init', () => ({ applyTheme: jest.fn(), watchSystemTheme: jest.fn(() => () => undefined) }));
 
 function makeStore(uiOverrides = {}) {
     return configureStore({

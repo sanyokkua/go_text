@@ -48,9 +48,7 @@ const LanguageConfigTab: React.FC<Props> = ({ settings }) => {
             </div>
 
             <div className={styles.langList}>
-                {languages.length === 0 && (
-                    <p className={styles.emptyMsg}>No languages configured.</p>
-                )}
+                {languages.length === 0 && <p className={styles.emptyMsg}>No languages configured.</p>}
                 {languages.map((lang) => (
                     <div key={lang} className={styles.langRow}>
                         <span className={styles.langName}>{lang}</span>
@@ -91,9 +89,7 @@ const LanguageConfigTab: React.FC<Props> = ({ settings }) => {
                 ))}
             </div>
 
-            <p className={styles.helper}>
-                Row menu (⋮): set as default input · set as default output · remove. Defaults shown as badges.
-            </p>
+            <p className={styles.helper}>Row menu (⋮): set as default input · set as default output · remove. Defaults shown as badges.</p>
         </section>
     );
 };

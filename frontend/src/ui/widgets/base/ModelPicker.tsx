@@ -5,9 +5,9 @@ import { useAppDispatch, useAppSelector } from '../../../logic/store';
 import { selectCurrentProvider, selectCurrentProviderModelItems, selectModelConfig } from '../../../logic/store/settings/selectors';
 import { discoverCurrentProviderModels, updateModelConfig } from '../../../logic/store/settings/thunks';
 import { IconButton } from '../../components/IconButton';
+import iconStyles from '../../components/IconButton.module.css';
 import { Select } from '../../primitives/Select';
 import { Tooltip } from '../../primitives/Tooltip';
-import iconStyles from '../../components/IconButton.module.css';
 import styles from './ModelPicker.module.css';
 
 const ModelPicker: React.FC = () => {

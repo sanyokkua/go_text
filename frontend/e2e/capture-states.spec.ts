@@ -60,16 +60,34 @@ for (const theme of THEMES) {
         await click(async () => page.getByRole('button', { name: /history rail/i }).click(), 'history-off');
 
         // 5. Build-stack mode (+ add a couple steps)
-        await click(async () => page.getByRole('button', { name: /Build a stack/i }).first().click(), 'build');
+        await click(
+            async () =>
+                page
+                    .getByRole('button', { name: /Build a stack/i })
+                    .first()
+                    .click(),
+            'build',
+        );
         await shot('05-build-empty');
         // try clicking first two action rows in sidebar
         await click(async () => {
             const rows = page.locator('aside button');
             const n = Math.min(3, await rows.count());
-            for (let i = 0; i < n; i++) await rows.nth(i).click().catch(() => {});
+            for (let i = 0; i < n; i++)
+                await rows
+                    .nth(i)
+                    .click()
+                    .catch(() => {});
         }, 'add steps');
         await shot('06-build-steps');
-        await click(async () => page.getByRole('button', { name: /Cancel/i }).first().click(), 'cancel build');
+        await click(
+            async () =>
+                page
+                    .getByRole('button', { name: /Cancel/i })
+                    .first()
+                    .click(),
+            'cancel build',
+        );
 
         // 6. Sidebar collapsed
         await click(async () => page.getByRole('button', { name: /Collapse sidebar/i }).click(), 'collapse');
@@ -92,7 +110,14 @@ for (const theme of THEMES) {
         await click(async () => page.getByRole('button', { name: /^Close$/i }).click(), 'close about');
 
         // 9. Manage stacks
-        await click(async () => page.getByText(/Manage/i).first().click(), 'manage');
+        await click(
+            async () =>
+                page
+                    .getByText(/Manage/i)
+                    .first()
+                    .click(),
+            'manage',
+        );
         await shot('11-manage-stacks');
     });
 }

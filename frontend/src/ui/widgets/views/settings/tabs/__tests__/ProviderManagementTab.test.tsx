@@ -64,27 +64,29 @@ jest.mock('../../../../../../logic/adapter', () => ({
         createProviderConfig: jest.fn().mockResolvedValue({ data: null, error: null }),
         // Returns the saved provider so the settings slice's `updateProviderConfig.fulfilled`
         // reducer (which reads payload.providerId) succeeds — production never returns null here.
-        updateProviderConfig: jest.fn().mockResolvedValue({
-            data: {
-                providerId: 'p1',
-                providerName: 'Test Provider',
-                providerType: 'openai',
-                baseUrl: 'http://localhost:1234',
-                modelsEndpoint: '',
-                completionEndpoint: '',
-                authType: 'api-key',
-                authToken: '',
-                useAuthTokenFromEnv: true,
-                envVarTokenName: 'TEST_KEY',
-                apiVersion: '',
-                selectedModel: 'gpt-4o',
-                useCustomHeaders: false,
-                headers: {},
-                useCustomModels: false,
-                customModels: [],
-            },
-            error: null,
-        }),
+        updateProviderConfig: jest
+            .fn()
+            .mockResolvedValue({
+                data: {
+                    providerId: 'p1',
+                    providerName: 'Test Provider',
+                    providerType: 'openai',
+                    baseUrl: 'http://localhost:1234',
+                    modelsEndpoint: '',
+                    completionEndpoint: '',
+                    authType: 'api-key',
+                    authToken: '',
+                    useAuthTokenFromEnv: true,
+                    envVarTokenName: 'TEST_KEY',
+                    apiVersion: '',
+                    selectedModel: 'gpt-4o',
+                    useCustomHeaders: false,
+                    headers: {},
+                    useCustomModels: false,
+                    customModels: [],
+                },
+                error: null,
+            }),
         deleteProviderConfig: jest.fn().mockResolvedValue({ data: null, error: null }),
         setAsCurrentProviderConfig: jest.fn().mockResolvedValue({ data: null, error: null }),
     },
@@ -248,8 +250,7 @@ describe('ProviderManagementTab', () => {
         const providerItem = screen.getByRole('button', { name: /test provider/i });
         const newBtn = screen.getByRole('button', { name: /new provider/i });
 
-        const newBtnFollowsItem =
-            providerItem.compareDocumentPosition(newBtn) & Node.DOCUMENT_POSITION_FOLLOWING;
+        const newBtnFollowsItem = providerItem.compareDocumentPosition(newBtn) & Node.DOCUMENT_POSITION_FOLLOWING;
         expect(newBtnFollowsItem).toBeTruthy();
     });
 

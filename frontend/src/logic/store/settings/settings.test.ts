@@ -26,14 +26,38 @@ jest.mock('../../adapter', () => ({
     SettingsHandlerAdapter: {
         getAppBehaviorConfig: jest.fn().mockResolvedValue({ data: { enableTaskLogging: false } }),
         updateAppBehaviorConfig: jest.fn().mockResolvedValue({ data: { enableTaskLogging: true } }),
-        getLoggingConfig: jest.fn().mockResolvedValue({ data: { logFileEnabled: false, logLevel: 'info', logDirectory: '', logMaxSizeMB: 10, logMaxBackups: 5, logMaxAgeDays: 30, logCompress: false } }),
-        updateLoggingConfig: jest.fn().mockResolvedValue({ data: { logFileEnabled: true, logLevel: 'debug', logDirectory: '', logMaxSizeMB: 5, logMaxBackups: 5, logMaxAgeDays: 30, logCompress: false } }),
-        getUIPreferencesConfig: jest.fn().mockResolvedValue({ data: { theme: 'light', layout: 'side', sidebarCollapsed: false, historyOpen: false, viewMode: 'preview' } }),
+        getLoggingConfig: jest
+            .fn()
+            .mockResolvedValue({
+                data: {
+                    logFileEnabled: false,
+                    logLevel: 'info',
+                    logDirectory: '',
+                    logMaxSizeMB: 10,
+                    logMaxBackups: 5,
+                    logMaxAgeDays: 30,
+                    logCompress: false,
+                },
+            }),
+        updateLoggingConfig: jest
+            .fn()
+            .mockResolvedValue({
+                data: {
+                    logFileEnabled: true,
+                    logLevel: 'debug',
+                    logDirectory: '',
+                    logMaxSizeMB: 5,
+                    logMaxBackups: 5,
+                    logMaxAgeDays: 30,
+                    logCompress: false,
+                },
+            }),
+        getUIPreferencesConfig: jest
+            .fn()
+            .mockResolvedValue({ data: { theme: 'light', layout: 'side', sidebarCollapsed: false, historyOpen: false, viewMode: 'preview' } }),
         updateUIPreferencesConfig: jest.fn().mockResolvedValue({ data: undefined }),
     },
-    ActionHandlerAdapter: {
-        getModels: jest.fn().mockResolvedValue({ data: [], error: null }),
-    },
+    ActionHandlerAdapter: { getModels: jest.fn().mockResolvedValue({ data: [], error: null }) },
 }));
 
 import { apperr } from '../../../../wailsjs/go/models';
@@ -269,12 +293,9 @@ describe('updateAppBehaviorConfig thunk', () => {
 // ---------------------------------------------------------------------------
 
 describe('settingsReducer — setAsCurrentProviderConfig.fulfilled', () => {
-    it('syncs modelConfig.name to the newly current provider\'s selectedModel', () => {
+    it("syncs modelConfig.name to the newly current provider's selectedModel", () => {
         const initialState: SettingsState = {
-            allSettings: {
-                ...fullSettings,
-                modelConfig: { ...fullSettings.modelConfig, name: 'stale-old-model' },
-            },
+            allSettings: { ...fullSettings, modelConfig: { ...fullSettings.modelConfig, name: 'stale-old-model' } },
             metadata: null,
             discoveredModels: [],
         };
@@ -332,11 +353,7 @@ describe('settingsReducer — discoverCurrentProviderModels.fulfilled', () => {
 
 describe('settingsReducer — discoveredModels reset on provider change', () => {
     it('clears discoveredModels when the current provider changes', () => {
-        const initialState: SettingsState = {
-            allSettings: fullSettings,
-            metadata: null,
-            discoveredModels: models('old-1', 'old-2'),
-        };
+        const initialState: SettingsState = { allSettings: fullSettings, metadata: null, discoveredModels: models('old-1', 'old-2') };
         const newProvider = { ...fullSettings.currentProviderConfig, providerId: 'ollama', selectedModel: 'm1' };
         const action = setAsCurrentProviderConfig.fulfilled(newProvider, 'req', 'ollama');
 
@@ -355,7 +372,10 @@ describe('discoverCurrentProviderModels thunk', () => {
     });
 
     it('dispatches fulfilled with the discovered ModelInfo records on success', async () => {
-        const discovered = [{ id: 'qwen3:0.6b', label: 'Qwen3 0.6B' }, { id: 'llama3', label: 'Llama 3' }];
+        const discovered = [
+            { id: 'qwen3:0.6b', label: 'Qwen3 0.6B' },
+            { id: 'llama3', label: 'Llama 3' },
+        ];
         (ActionHandlerAdapter.getModels as jest.Mock).mockResolvedValue({ data: discovered, error: null });
 
         const action = await discoverCurrentProviderModels('ollama')(dispatch, getState, undefined);
@@ -402,11 +422,7 @@ describe('settingsReducer — discoverCurrentProviderModels.rejected', () => {
 });
 
 describe('selectCurrentProviderModelItems', () => {
-    const provider = {
-        ...fullSettings.currentProviderConfig,
-        providerId: 'ollama',
-        selectedModel: 'qwen3:0.6b',
-    };
+    const provider = { ...fullSettings.currentProviderConfig, providerId: 'ollama', selectedModel: 'qwen3:0.6b' };
 
     it('returns discovered models unioned with the current model, deduped', () => {
         const state = makeState(
@@ -470,10 +486,9 @@ describe('selectCurrentModelCaps', () => {
     const provider = { ...fullSettings.currentProviderConfig, providerId: 'ollama', selectedModel: 'm1' };
 
     it('returns the caps of the currently-selected model when discovered', () => {
-        const state = makeState(
-            { ...fullSettings, currentProviderConfig: provider, modelConfig: { ...fullSettings.modelConfig, name: 'm1' } },
-            [{ id: 'm1', label: 'm1', caps: { supportsTemperature: false } }] as never,
-        );
+        const state = makeState({ ...fullSettings, currentProviderConfig: provider, modelConfig: { ...fullSettings.modelConfig, name: 'm1' } }, [
+            { id: 'm1', label: 'm1', caps: { supportsTemperature: false } },
+        ] as never);
 
         const caps = selectCurrentModelCaps(state);
 
@@ -481,10 +496,9 @@ describe('selectCurrentModelCaps', () => {
     });
 
     it('returns null when the current model has not been discovered', () => {
-        const state = makeState(
-            { ...fullSettings, currentProviderConfig: provider, modelConfig: { ...fullSettings.modelConfig, name: 'unknown' } },
-            [{ id: 'm1', label: 'm1' }],
-        );
+        const state = makeState({ ...fullSettings, currentProviderConfig: provider, modelConfig: { ...fullSettings.modelConfig, name: 'unknown' } }, [
+            { id: 'm1', label: 'm1' },
+        ]);
 
         const caps = selectCurrentModelCaps(state);
 
@@ -746,10 +760,12 @@ describe('persistUIPreferences thunk', () => {
 
     it('calls updateUIPreferencesConfig with all 5 fields assembled from state and dispatches fulfilled', async () => {
         (SettingsHandlerAdapter.updateUIPreferencesConfig as jest.Mock).mockResolvedValue({ data: undefined });
-        const getState = jest.fn().mockReturnValue({
-            ui: { theme: { mode: 'dark' }, layout: 'stacked', sidebarCollapsed: true, historyOpen: false },
-            editor: { viewMode: 'source' },
-        } as unknown as RootState);
+        const getState = jest
+            .fn()
+            .mockReturnValue({
+                ui: { theme: { mode: 'dark' }, layout: 'stacked', sidebarCollapsed: true, historyOpen: false },
+                editor: { viewMode: 'source' },
+            } as unknown as RootState);
 
         const action = await persistUIPreferences()(dispatch, getState, undefined);
 
@@ -765,10 +781,12 @@ describe('persistUIPreferences thunk', () => {
 
     it('dispatches rejected with parsed error message when the adapter rejects', async () => {
         (SettingsHandlerAdapter.updateUIPreferencesConfig as jest.Mock).mockRejectedValue(new Error('save failed'));
-        const getState = jest.fn().mockReturnValue({
-            ui: { theme: { mode: 'light' }, layout: 'side', sidebarCollapsed: false, historyOpen: false },
-            editor: { viewMode: 'preview' },
-        } as unknown as RootState);
+        const getState = jest
+            .fn()
+            .mockReturnValue({
+                ui: { theme: { mode: 'light' }, layout: 'side', sidebarCollapsed: false, historyOpen: false },
+                editor: { viewMode: 'preview' },
+            } as unknown as RootState);
 
         const action = await persistUIPreferences()(dispatch, getState, undefined);
 

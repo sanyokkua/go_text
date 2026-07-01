@@ -59,10 +59,7 @@ const defaultSettings = {
 // Lets Playwright fixtures exercise the T67 context-window highlight without depending
 // on UpdateModelConfig, which (like the other mock Update* handlers) always echoes its
 // static default rather than persisting the caller's payload.
-const smallContextWindowSettings = {
-    ...defaultSettings,
-    modelConfig: { ...defaultModel, useContextWindow: true, contextWindow: 1024 },
-};
+const smallContextWindowSettings = { ...defaultSettings, modelConfig: { ...defaultModel, useContextWindow: true, contextWindow: 1024 } };
 
 export function GetSettings(): Promise<AnyResult> {
     // Simulates real backend being slower for GetSettings than GetLoggingConfig.
@@ -70,7 +67,7 @@ export function GetSettings(): Promise<AnyResult> {
     // This delay ensures bridge-mock tests exercise the same async ordering so the
     // sequential dispatch fix is actually tested.
     const settings = mockParam('context-window-test') ? smallContextWindowSettings : defaultSettings;
-    return new Promise(resolve => setTimeout(() => resolve(ok(settings)), 0));
+    return new Promise((resolve) => setTimeout(() => resolve(ok(settings)), 0));
 }
 export function ResetSettingsToDefault(): Promise<AnyResult> {
     return Promise.resolve(ok(defaultSettings));
@@ -133,13 +130,7 @@ export function SetDefaultOutputLanguage(_name: string): Promise<VoidResult> {
     return Promise.resolve(voidOk());
 }
 
-const defaultUIPreferences = {
-    theme: 'auto',
-    layout: 'side',
-    sidebarCollapsed: false,
-    historyOpen: false,
-    viewMode: 'preview',
-};
+const defaultUIPreferences = { theme: 'auto', layout: 'side', sidebarCollapsed: false, historyOpen: false, viewMode: 'preview' };
 
 export function GetUIPreferencesConfig(): Promise<AnyResult> {
     const overrides = (window as Window & { __bridgeMockUIPrefs?: Partial<typeof defaultUIPreferences> }).__bridgeMockUIPrefs;
@@ -169,11 +160,56 @@ export function UpdateLoggingConfig(_cfg: unknown): Promise<AnyResult> {
 }
 
 const mockProviderPresets = [
-    { name: 'LM Studio', kind: 'lmstudio', baseURL: 'http://127.0.0.1:1234/', authScheme: 'none', completionPath: 'v1/chat/completions', modelsPath: 'v1/models', apiKeyEnvVar: '', headers: '{}' },
-    { name: 'Llama.cpp', kind: 'llamacpp', baseURL: 'http://127.0.0.1:8080/', authScheme: 'none', completionPath: 'v1/chat/completions', modelsPath: 'v1/models', apiKeyEnvVar: '', headers: '{}' },
-    { name: 'Ollama', kind: 'ollama', baseURL: 'http://127.0.0.1:11434/', authScheme: 'none', completionPath: 'v1/chat/completions', modelsPath: 'v1/models', apiKeyEnvVar: '', headers: '{}' },
-    { name: 'OpenAI', kind: 'openai', baseURL: 'https://api.openai.com/', authScheme: 'bearer', completionPath: 'v1/chat/completions', modelsPath: 'v1/models', apiKeyEnvVar: 'OPENAI_API_KEY', headers: '{}' },
-    { name: 'OpenRouter', kind: 'openai', baseURL: 'https://openrouter.ai/api/', authScheme: 'bearer', completionPath: 'v1/chat/completions', modelsPath: 'v1/models', apiKeyEnvVar: 'OPENROUTER_API_KEY', headers: '{}' },
+    {
+        name: 'LM Studio',
+        kind: 'lmstudio',
+        baseURL: 'http://127.0.0.1:1234/',
+        authScheme: 'none',
+        completionPath: 'v1/chat/completions',
+        modelsPath: 'v1/models',
+        apiKeyEnvVar: '',
+        headers: '{}',
+    },
+    {
+        name: 'Llama.cpp',
+        kind: 'llamacpp',
+        baseURL: 'http://127.0.0.1:8080/',
+        authScheme: 'none',
+        completionPath: 'v1/chat/completions',
+        modelsPath: 'v1/models',
+        apiKeyEnvVar: '',
+        headers: '{}',
+    },
+    {
+        name: 'Ollama',
+        kind: 'ollama',
+        baseURL: 'http://127.0.0.1:11434/',
+        authScheme: 'none',
+        completionPath: 'v1/chat/completions',
+        modelsPath: 'v1/models',
+        apiKeyEnvVar: '',
+        headers: '{}',
+    },
+    {
+        name: 'OpenAI',
+        kind: 'openai',
+        baseURL: 'https://api.openai.com/',
+        authScheme: 'bearer',
+        completionPath: 'v1/chat/completions',
+        modelsPath: 'v1/models',
+        apiKeyEnvVar: 'OPENAI_API_KEY',
+        headers: '{}',
+    },
+    {
+        name: 'OpenRouter',
+        kind: 'openai',
+        baseURL: 'https://openrouter.ai/api/',
+        authScheme: 'bearer',
+        completionPath: 'v1/chat/completions',
+        modelsPath: 'v1/models',
+        apiKeyEnvVar: 'OPENROUTER_API_KEY',
+        headers: '{}',
+    },
 ];
 
 export function ProviderPresets(): Promise<AnyResult> {

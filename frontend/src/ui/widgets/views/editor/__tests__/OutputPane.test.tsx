@@ -1,8 +1,8 @@
 import { configureStore } from '@reduxjs/toolkit';
 import '@testing-library/jest-dom';
+import { act, render, screen } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { act, render, screen } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import editorReducer, { setInputContent } from '../../../../../logic/store/editor/slice';
 import notificationsReducer from '../../../../../logic/store/notifications/slice';
@@ -48,7 +48,9 @@ describe('OutputPane', () => {
 
     it('shows the in-pane Generating step progress indicator when run is in progress', () => {
         render(
-            <Provider store={makeStore({}, { status: 'running', runId: 'r1', currentGroupIndex: 0, totalGroups: 2, currentGroupFamily: 'Proofreading' })}>
+            <Provider
+                store={makeStore({}, { status: 'running', runId: 'r1', currentGroupIndex: 0, totalGroups: 2, currentGroupFamily: 'Proofreading' })}
+            >
                 <OutputPane />
             </Provider>,
         );

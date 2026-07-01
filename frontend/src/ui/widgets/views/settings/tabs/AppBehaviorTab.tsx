@@ -50,15 +50,11 @@ const AppBehaviorTab: React.FC<Props> = ({ settings, metadata }) => {
     };
 
     const handleLogLevelChange = (level: string) => {
-        void runWithToast(dispatch(updateLoggingConfig({ ...loggingCfg, logLevel: level })), {
-            success: `Log level set to ${level}`,
-        });
+        void runWithToast(dispatch(updateLoggingConfig({ ...loggingCfg, logLevel: level })), { success: `Log level set to ${level}` });
     };
 
     const handleMaxFileSizeChange = (size: number) => {
-        void runWithToast(dispatch(updateLoggingConfig({ ...loggingCfg, logMaxSizeMB: size })), {
-            success: `Max log size set to ${size} MB`,
-        });
+        void runWithToast(dispatch(updateLoggingConfig({ ...loggingCfg, logMaxSizeMB: size })), { success: `Max log size set to ${size} MB` });
     };
 
     const [localMaxEntries, setLocalMaxEntries] = useState<number>(config.historyMaxEntries ?? 500);

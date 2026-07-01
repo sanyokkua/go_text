@@ -23,16 +23,15 @@ export const previewPromptForInspector = createAsyncThunk<
     }
 });
 
-export const fetchSuggestedStacks = createAsyncThunk<
-    apperr.SuggestedStack[],
-    void,
-    { dispatch: AppDispatch; state: RootState; rejectValue: string }
->('about/fetchSuggestedStacks', async (_, { rejectWithValue }) => {
-    try {
-        return await getSuggestedStacks();
-    } catch (error: unknown) {
-        const err = parseError(error);
-        logger.logError(`fetchSuggestedStacks failed: ${err.message}`);
-        return rejectWithValue(err.message);
-    }
-});
+export const fetchSuggestedStacks = createAsyncThunk<apperr.SuggestedStack[], void, { dispatch: AppDispatch; state: RootState; rejectValue: string }>(
+    'about/fetchSuggestedStacks',
+    async (_, { rejectWithValue }) => {
+        try {
+            return await getSuggestedStacks();
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logError(`fetchSuggestedStacks failed: ${err.message}`);
+            return rejectWithValue(err.message);
+        }
+    },
+);

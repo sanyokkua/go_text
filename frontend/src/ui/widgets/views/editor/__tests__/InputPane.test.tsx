@@ -1,8 +1,8 @@
 import { configureStore } from '@reduxjs/toolkit';
 import '@testing-library/jest-dom';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { act, fireEvent, render, screen } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { Settings } from '../../../../../logic/adapter/models';
 import editorReducer from '../../../../../logic/store/editor/slice';
@@ -58,12 +58,18 @@ const MOCK_SETTINGS: Settings = {
     },
     languageConfig: { languages: ['auto'], defaultInputLanguage: 'auto', defaultOutputLanguage: 'auto' },
     appBehaviorConfig: { enableTaskLogging: false, logDirectory: '', historyEnabled: false, historyMaxEntries: 0 },
-    loggingConfig: { logFileEnabled: false, logLevel: 'info', logDirectory: '', logMaxSizeMB: 10, logMaxBackups: 5, logMaxAgeDays: 30, logCompress: false },
+    loggingConfig: {
+        logFileEnabled: false,
+        logLevel: 'info',
+        logDirectory: '',
+        logMaxSizeMB: 10,
+        logMaxBackups: 5,
+        logMaxAgeDays: 30,
+        logCompress: false,
+    },
 };
 
-function makeStore(
-    options: { editorOverrides?: object; armedActionId?: string | null; useContextWindow?: boolean; contextWindow?: number } = {},
-) {
+function makeStore(options: { editorOverrides?: object; armedActionId?: string | null; useContextWindow?: boolean; contextWindow?: number } = {}) {
     const { editorOverrides = {}, armedActionId = null, useContextWindow = false, contextWindow = 100 } = options;
     return configureStore({
         reducer: { editor: editorReducer, ui: uiReducer, notifications: notificationsReducer, settings: settingsReducer },
@@ -92,10 +98,7 @@ function makeStore(
 }
 
 function mockPreviewResolves(estimatedTokens: number) {
-    mockPreviewPrompt.mockResolvedValue({
-        data: { kind: 'single', inferences: 1, groups: [{ estimatedTokens }], summary: '' },
-        error: null,
-    });
+    mockPreviewPrompt.mockResolvedValue({ data: { kind: 'single', inferences: 1, groups: [{ estimatedTokens }], summary: '' }, error: null });
 }
 
 beforeEach(() => {

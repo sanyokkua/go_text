@@ -55,12 +55,7 @@ function buildParameterBadges(params: apperr.PreviewParams): ParameterBadge[] {
  * against the action catalog; stacks resolve against the saved-stacks list. Falls
  * back to the raw id when no match is found (e.g. a stale selection).
  */
-function resolveDisplayName(
-    id: string,
-    type: AboutItemType | null,
-    catalog: apperr.ActionMeta[],
-    stacks: apperr.SavedStack[],
-): string {
+function resolveDisplayName(id: string, type: AboutItemType | null, catalog: apperr.ActionMeta[], stacks: apperr.SavedStack[]): string {
     if (type === 'stack') {
         return stacks.find((s) => s.id === id)?.name ?? id;
     }

@@ -95,10 +95,16 @@ describe('ModelPicker', () => {
 
     it('exposes every discovered model plus the current model as options', async () => {
         (ActionHandlerAdapter.getModels as jest.Mock).mockResolvedValue({
-            data: [{ id: 'qwen3:0.6b', label: 'qwen3:0.6b' }, { id: 'llama3', label: 'llama3' }],
+            data: [
+                { id: 'qwen3:0.6b', label: 'qwen3:0.6b' },
+                { id: 'llama3', label: 'llama3' },
+            ],
             error: null,
         });
-        renderPicker([{ id: 'qwen3:0.6b', label: 'qwen3:0.6b' }, { id: 'llama3', label: 'llama3' }]);
+        renderPicker([
+            { id: 'qwen3:0.6b', label: 'qwen3:0.6b' },
+            { id: 'llama3', label: 'llama3' },
+        ]);
 
         await userEvent.click(screen.getByRole('combobox'));
 
@@ -108,10 +114,16 @@ describe('ModelPicker', () => {
 
     it('persists the chosen model via updateModelConfig when a new option is selected', async () => {
         (ActionHandlerAdapter.getModels as jest.Mock).mockResolvedValue({
-            data: [{ id: 'qwen3:0.6b', label: 'qwen3:0.6b' }, { id: 'llama3', label: 'llama3' }],
+            data: [
+                { id: 'qwen3:0.6b', label: 'qwen3:0.6b' },
+                { id: 'llama3', label: 'llama3' },
+            ],
             error: null,
         });
-        renderPicker([{ id: 'qwen3:0.6b', label: 'qwen3:0.6b' }, { id: 'llama3', label: 'llama3' }]);
+        renderPicker([
+            { id: 'qwen3:0.6b', label: 'qwen3:0.6b' },
+            { id: 'llama3', label: 'llama3' },
+        ]);
 
         await userEvent.click(screen.getByRole('combobox'));
         await userEvent.click(await screen.findByRole('option', { name: 'llama3' }));

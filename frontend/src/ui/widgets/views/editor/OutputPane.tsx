@@ -83,7 +83,13 @@ const OutputPane: React.FC = () => {
                 </span>
                 <div className={styles.headerRight}>
                     <div className={styles.headerActions}>
-                        <button className={styles.iconBtn} onClick={handleCopy} disabled={!output || inferenceRunning} aria-label="Copy output" title="Copy output">
+                        <button
+                            className={styles.iconBtn}
+                            onClick={handleCopy}
+                            disabled={!output || inferenceRunning}
+                            aria-label="Copy output"
+                            title="Copy output"
+                        >
                             ⧉
                         </button>
                         <button

@@ -117,8 +117,7 @@ const StackBuilderBar: React.FC<StackBuilderBarProps> = ({ onSave, boxed = false
 
             {/* Live counter */}
             <span className={styles.counter}>
-                ▤ {stepCount} / 5 steps ·{' '}
-                <span className={inferenceCapReached ? styles.inferenceCapReached : undefined}>{inferenceLabel}</span>
+                ▤ {stepCount} / 5 steps · <span className={inferenceCapReached ? styles.inferenceCapReached : undefined}>{inferenceLabel}</span>
             </span>
 
             {/* Action buttons */}

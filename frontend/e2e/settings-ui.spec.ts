@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test';
+import { expect, Page, test } from '@playwright/test';
 
 async function openSettings(page: Page): Promise<void> {
     await page.goto('/');

@@ -55,10 +55,7 @@ const ProviderManagementTab: React.FC = () => {
     };
 
     const handleSaveWithToast = (p: ProviderConfig) => {
-        void runWithToast(
-            { unwrap: () => handleSave(p) },
-            { success: selectedId === NEW_ID ? 'Provider created' : 'Provider saved' },
-        );
+        void runWithToast({ unwrap: () => handleSave(p) }, { success: selectedId === NEW_ID ? 'Provider created' : 'Provider saved' });
     };
 
     const handleDelete = async (id: string) => {

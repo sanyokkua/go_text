@@ -71,11 +71,7 @@ interface BuildStoreOptions {
 
 function buildStore({ aboutOverrides = {}, catalog = [], savedStacks = [] }: BuildStoreOptions = {}) {
     return configureStore({
-        reducer: {
-            about: aboutReducer,
-            actions: actionsReducer,
-            stacksSaved: stacksSavedReducer,
-        },
+        reducer: { about: aboutReducer, actions: actionsReducer, stacksSaved: stacksSavedReducer },
         preloadedState: {
             about: {
                 activeSection: 'actions-stacks',
@@ -88,17 +84,8 @@ function buildStore({ aboutOverrides = {}, catalog = [], savedStacks = [] }: Bui
                 previewInputEnabled: false,
                 ...aboutOverrides,
             } as AboutState,
-            actions: {
-                catalog,
-                catalogStatus: 'success',
-                availableModels: [],
-                modelsStatus: 'idle',
-            } as never,
-            stacksSaved: {
-                stacks: savedStacks,
-                status: 'idle',
-                error: null,
-            } as never,
+            actions: { catalog, catalogStatus: 'success', availableModels: [], modelsStatus: 'idle' } as never,
+            stacksSaved: { stacks: savedStacks, status: 'idle', error: null } as never,
         },
     });
 }
@@ -114,9 +101,7 @@ describe('PromptInspector', () => {
     });
 
     it('shows loading spinner while inspectorLoading is true', () => {
-        const store = buildStore({
-            aboutOverrides: { selectedItemId: 'a1', selectedItemType: 'action', inspectorLoading: true },
-        });
+        const store = buildStore({ aboutOverrides: { selectedItemId: 'a1', selectedItemType: 'action', inspectorLoading: true } });
         render(
             <Provider store={store}>
                 <PromptInspector />
@@ -126,9 +111,7 @@ describe('PromptInspector', () => {
     });
 
     it('shows error message when inspectorError is set', () => {
-        const store = buildStore({
-            aboutOverrides: { selectedItemId: 'a1', selectedItemType: 'action', inspectorError: 'Action not found' },
-        });
+        const store = buildStore({ aboutOverrides: { selectedItemId: 'a1', selectedItemType: 'action', inspectorError: 'Action not found' } });
         render(
             <Provider store={store}>
                 <PromptInspector />
@@ -138,9 +121,7 @@ describe('PromptInspector', () => {
     });
 
     it('renders preview groups when inspectorData is set', () => {
-        const store = buildStore({
-            aboutOverrides: { selectedItemId: 'a1', selectedItemType: 'action', inspectorData: mockPreview },
-        });
+        const store = buildStore({ aboutOverrides: { selectedItemId: 'a1', selectedItemType: 'action', inspectorData: mockPreview } });
         render(
             <Provider store={store}>
                 <PromptInspector />
@@ -231,12 +212,7 @@ describe('PromptInspector', () => {
     it('renders a context-window badge with the formatted value when the context window is enabled', () => {
         const previewWithContextWindow = {
             ...mockPreview,
-            groups: [
-                {
-                    ...mockPreview.groups[0],
-                    parameters: { ...mockPreview.groups[0].parameters, contextWindow: 1024 },
-                },
-            ],
+            groups: [{ ...mockPreview.groups[0], parameters: { ...mockPreview.groups[0].parameters, contextWindow: 1024 } }],
         };
         const store = buildStore({
             aboutOverrides: { selectedItemId: 'a1', selectedItemType: 'action', inspectorData: previewWithContextWindow },
@@ -267,9 +243,7 @@ describe('PromptInspector', () => {
     });
 
     it('toggles previewInputEnabled when "Use current input" checkbox is clicked', async () => {
-        const store = buildStore({
-            aboutOverrides: { selectedItemId: 'a1', selectedItemType: 'action', inspectorData: mockPreview },
-        });
+        const store = buildStore({ aboutOverrides: { selectedItemId: 'a1', selectedItemType: 'action', inspectorData: mockPreview } });
         render(
             <Provider store={store}>
                 <PromptInspector />

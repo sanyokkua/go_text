@@ -92,11 +92,7 @@ const InputPane: React.FC = () => {
                     Input <span className={styles.wordCount}>· {wordCount(content)} words</span>
                     {tokenEstimate !== null && (
                         <span
-                            className={tokenEstimateClassName(
-                                tokenEstimate,
-                                modelConfig?.useContextWindow ?? false,
-                                modelConfig?.contextWindow ?? 0,
-                            )}
+                            className={tokenEstimateClassName(tokenEstimate, modelConfig?.useContextWindow ?? false, modelConfig?.contextWindow ?? 0)}
                         >
                             {' '}
                             · ~{tokenEstimate.toLocaleString()} tokens

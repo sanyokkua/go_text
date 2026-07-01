@@ -19,9 +19,7 @@ jest.mock('../../../../../../../logic/adapter', () => ({
         testModels: jest.fn().mockResolvedValue({ data: { check: 'models', ok: true, durationMs: 1, modelCount: 0 }, error: null }),
         testInference: jest.fn().mockResolvedValue({ data: { check: 'inference', ok: true, durationMs: 1, sample: 'hi' }, error: null }),
     },
-    SettingsHandlerAdapter: {
-        getSettings: jest.fn().mockResolvedValue({ data: null, error: null }),
-    },
+    SettingsHandlerAdapter: { getSettings: jest.fn().mockResolvedValue({ data: null, error: null }) },
     ClipboardServiceAdapter: { setText: jest.fn().mockResolvedValue(undefined) },
     getLogger: () => ({ logInfo: jest.fn(), logDebug: jest.fn(), logError: jest.fn(), logWarn: jest.fn() }),
     unwrap: jest.fn((r) => {

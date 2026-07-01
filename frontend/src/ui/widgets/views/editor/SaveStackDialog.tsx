@@ -24,16 +24,79 @@ const logger = getLogger('SaveStackDialog');
 
 const ICONS = [
     // Work / dev glyphs
-    '📝', '✏️', '🔧', '🐛', '🚀', '📊', '✅', '💬', '📌', '🌐',
-    '🎯', '💡', '⚡', '🔍', '📋', '🎨', '📈', '🗂️', '🏷️', '🔄',
-    '⚙️', '🛠️', '🔨', '📐', '📎', '🖇️', '🗃️', '📁', '📄', '🔖',
+    '📝',
+    '✏️',
+    '🔧',
+    '🐛',
+    '🚀',
+    '📊',
+    '✅',
+    '💬',
+    '📌',
+    '🌐',
+    '🎯',
+    '💡',
+    '⚡',
+    '🔍',
+    '📋',
+    '🎨',
+    '📈',
+    '🗂️',
+    '🏷️',
+    '🔄',
+    '⚙️',
+    '🛠️',
+    '🔨',
+    '📐',
+    '📎',
+    '🖇️',
+    '🗃️',
+    '📁',
+    '📄',
+    '🔖',
     // Symbols
-    '⭐', '🔥', '💎', '🎁', '🔔', '🧩', '🧠', '🪄', '🧪', '🔬',
-    '📚', '📖', '✒️', '🖊️', '🖋️', '✍️', '🗒️', '📰', '🧾', '📑',
+    '⭐',
+    '🔥',
+    '💎',
+    '🎁',
+    '🔔',
+    '🧩',
+    '🧠',
+    '🪄',
+    '🧪',
+    '🔬',
+    '📚',
+    '📖',
+    '✒️',
+    '🖊️',
+    '🖋️',
+    '✍️',
+    '🗒️',
+    '📰',
+    '🧾',
+    '📑',
     // Faces / people
-    '😀', '😎', '🤖', '👍', '👀', '🙌', '👋', '🙏', '💪', '🫡',
+    '😀',
+    '😎',
+    '🤖',
+    '👍',
+    '👀',
+    '🙌',
+    '👋',
+    '🙏',
+    '💪',
+    '🫡',
     // Misc objects
-    '☕', '🌟', '🌈', '🎵', '🧭', '⏱️', '⏰', '📅', '💰', '🏆',
+    '☕',
+    '🌟',
+    '🌈',
+    '🎵',
+    '🧭',
+    '⏱️',
+    '⏰',
+    '📅',
+    '💰',
+    '🏆',
 ];
 
 function defaultName(stepCount: number): string {
@@ -158,12 +221,7 @@ const SaveStackDialog: React.FC<SaveStackDialogProps> = ({ open, onOpenChange })
                         aria-label="Selected icon"
                         autoComplete="off"
                     />
-                    <button
-                        className={styles.pasteBtn}
-                        type="button"
-                        onClick={handlePaste}
-                        aria-label="Paste"
-                    >
+                    <button className={styles.pasteBtn} type="button" onClick={handlePaste} aria-label="Paste">
                         Paste
                     </button>
                 </div>

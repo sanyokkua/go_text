@@ -3,12 +3,12 @@ import React from 'react';
 import styles from './NumberStepper.module.css';
 
 interface NumberStepperProps {
-    value: number;
-    onChange: (next: number) => void;
-    min: number;
-    max: number;
-    step?: number;
-    disabled?: boolean;
+    'value': number;
+    'onChange': (next: number) => void;
+    'min': number;
+    'max': number;
+    'step'?: number;
+    'disabled'?: boolean;
     'aria-label': string;
 }
 

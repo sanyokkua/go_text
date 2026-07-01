@@ -42,10 +42,7 @@ const ActionsSidebar: React.FC = () => {
     const filteredGroups = useMemo(() => {
         if (normalizedQuery === '') return categories;
         return categories
-            .map((group) => ({
-                ...group,
-                actions: group.actions.filter((a) => a.name.toLowerCase().includes(normalizedQuery)),
-            }))
+            .map((group) => ({ ...group, actions: group.actions.filter((a) => a.name.toLowerCase().includes(normalizedQuery)) }))
             .filter((group) => group.actions.length > 0);
     }, [categories, normalizedQuery]);
 
@@ -113,7 +110,12 @@ const ActionsSidebar: React.FC = () => {
                         );
                     })}
                     {normalizedQuery === '' && (
-                        <button className={styles.buildStackBtn} onClick={handleEnterBuildMode} disabled={inferenceRunning} aria-label="Build a stack">
+                        <button
+                            className={styles.buildStackBtn}
+                            onClick={handleEnterBuildMode}
+                            disabled={inferenceRunning}
+                            aria-label="Build a stack"
+                        >
                             ＋ Build a stack
                         </button>
                     )}
@@ -132,7 +134,12 @@ const ActionsSidebar: React.FC = () => {
                         <div className={styles.list}>
                             {group.actions.map((action) => {
                                 const avail = buildMode
-                                    ? (actionAvailability[action.id] ?? { selected: false, disabled: false, disabledReason: '', addsNewInference: false })
+                                    ? (actionAvailability[action.id] ?? {
+                                          selected: false,
+                                          disabled: false,
+                                          disabledReason: '',
+                                          addsNewInference: false,
+                                      })
                                     : null;
                                 const isSelected = buildMode ? avail?.selected : armedId === action.id;
                                 const isDisabled = buildMode ? (avail?.disabled ?? false) || inferenceRunning : inferenceRunning;

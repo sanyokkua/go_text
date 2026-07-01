@@ -25,19 +25,9 @@ import AppearanceTab from '../AppearanceTab';
 
 function makeStore(uiOverride = {}) {
     return configureStore({
-        reducer: {
-            editor: editorReducer,
-            settings: settingsReducer,
-            ui: uiReducer,
-            notifications: notificationsReducer,
-        },
+        reducer: { editor: editorReducer, settings: settingsReducer, ui: uiReducer, notifications: notificationsReducer },
         preloadedState: {
-            editor: {
-                inputContent: '',
-                outputContent: '',
-                viewMode: 'preview' as const,
-                tokenEstimate: null,
-            },
+            editor: { inputContent: '', outputContent: '', viewMode: 'preview' as const, tokenEstimate: null },
             ui: {
                 layout: 'side' as const,
                 sidebarCollapsed: false,
@@ -140,9 +130,7 @@ describe('AppearanceTab — UI persistence', () => {
         await userEvent.click(screen.getByRole('radio', { name: /dark theme/i }));
 
         await waitFor(() => {
-            expect(mockUpdateUIPreferencesConfig).toHaveBeenCalledWith(
-                expect.objectContaining({ theme: 'dark' }),
-            );
+            expect(mockUpdateUIPreferencesConfig).toHaveBeenCalledWith(expect.objectContaining({ theme: 'dark' }));
         });
     });
 
@@ -156,9 +144,7 @@ describe('AppearanceTab — UI persistence', () => {
         await userEvent.click(screen.getByRole('radio', { name: /light theme/i }));
 
         await waitFor(() => {
-            expect(mockUpdateUIPreferencesConfig).toHaveBeenCalledWith(
-                expect.objectContaining({ theme: 'light' }),
-            );
+            expect(mockUpdateUIPreferencesConfig).toHaveBeenCalledWith(expect.objectContaining({ theme: 'light' }));
         });
     });
 });

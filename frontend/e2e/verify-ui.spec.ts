@@ -100,7 +100,9 @@ async function findClippedElements(page: import('@playwright/test').Page, viewpo
         document.querySelectorAll('*').forEach((el) => {
             const r = el.getBoundingClientRect();
             if (r.width > 0 && r.right > maxRight + 2) {
-                offenders.push(`${el.tagName}.${(el.className || '').toString().slice(0, 30)} "${(el.textContent || '').slice(0, 25)}" right=${Math.round(r.right)}`);
+                offenders.push(
+                    `${el.tagName}.${(el.className || '').toString().slice(0, 30)} "${(el.textContent || '').slice(0, 25)}" right=${Math.round(r.right)}`,
+                );
             }
         });
         return offenders.slice(0, 5);

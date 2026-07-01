@@ -155,11 +155,7 @@ export function TestInference(cfg: DraftProviderConfig): Promise<AnyResult> {
     // Mirror the backend contract: an empty selected model is a validation error,
     // even pre-save. A non-empty model returns a successful round-trip.
     if (!cfg || !cfg.selectedModel) {
-        return Promise.resolve({
-            data: null,
-            error: { code: 'validation', message: 'selectedModel a non-empty model name; got .' },
-        } as AnyResult);
+        return Promise.resolve({ data: null, error: { code: 'validation', message: 'selectedModel a non-empty model name; got .' } } as AnyResult);
     }
     return Promise.resolve(ok({ check: 'inference', ok: true, durationMs: 240, sample: 'Hello! …' }));
 }
-

@@ -1,9 +1,9 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { configureStore } from '@reduxjs/toolkit';
 import '@testing-library/jest-dom';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { Provider } from 'react-redux';
 import actionsReducer from '../../../../../logic/store/actions/slice';
 import editorReducer from '../../../../../logic/store/editor/slice';

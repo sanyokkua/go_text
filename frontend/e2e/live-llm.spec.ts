@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test';
+import { expect, Page, test } from '@playwright/test';
 
 /**
  * Real-LLM end-to-end matrix — LOCAL ONLY (excluded from CI).
@@ -90,7 +90,10 @@ test.describe('real-LLM matrix (Target B, local only)', () => {
         test.setTimeout(160_000);
         await boot(page);
         await page.locator('textarea').first().fill('hey team the caching thing is more or less done, lmk if u want to review b4 we ship tmrw');
-        await page.getByRole('button', { name: /Build a stack/i }).first().click();
+        await page
+            .getByRole('button', { name: /Build a stack/i })
+            .first()
+            .click();
         await expect(page.getByText(/Add step/i)).toBeVisible();
         // action rows are buttons whose name may carry a "+1" inference hint, so match loosely;
         // \b after "Professional" excludes the "Professionalize" intent action.
@@ -121,13 +124,24 @@ test.describe('real-LLM matrix (Target B, local only)', () => {
         await boot(page);
         // switch provider to Ollama
         await page.getByRole('combobox', { name: /Provider/i }).click();
-        await page.getByRole('option', { name: /^Ollama$/i }).first().click();
+        await page
+            .getByRole('option', { name: /^Ollama$/i })
+            .first()
+            .click();
         await page.waitForTimeout(2500); // auto model discovery
         // switch model to a reliable instruction model (not qwen3:0.6b)
         await page.getByRole('combobox', { name: /Model/i }).click();
         await page.waitForTimeout(500);
-        await page.getByRole('option', { name: /gemma3:1b/i }).first().click()
-            .catch(async () => { await page.getByRole('option', { name: /qwen3:1\.7b/i }).first().click(); });
+        await page
+            .getByRole('option', { name: /gemma3:1b/i })
+            .first()
+            .click()
+            .catch(async () => {
+                await page
+                    .getByRole('option', { name: /qwen3:1\.7b/i })
+                    .first()
+                    .click();
+            });
         await page.waitForTimeout(500);
         await page.locator('textarea').first().fill('teh qick borwn fox jmps over teh lazy dog. their are erors here.');
         await page.getByText('Basic proofreading', { exact: true }).first().click();
@@ -139,7 +153,10 @@ test.describe('real-LLM matrix (Target B, local only)', () => {
     test('S8 — run a seeded stack from Manage (exercises starter-stack fix end-to-end)', async ({ page }) => {
         test.setTimeout(160_000);
         await boot(page);
-        await page.locator('textarea').first().fill('hey just letting you know the caching work is more or less done, had some invalidation issues but theyre sorted');
+        await page
+            .locator('textarea')
+            .first()
+            .fill('hey just letting you know the caching work is more or less done, had some invalidation issues but theyre sorted');
         // open Manage grid and Run the first seeded stack
         await page.getByRole('button', { name: /Manage stacks/i }).click();
         await expect(page.getByText('My Stacks', { exact: false }).first()).toBeVisible();
@@ -147,11 +164,14 @@ test.describe('real-LLM matrix (Target B, local only)', () => {
         await page.getByRole('button', { name: /Run/i }).first().click();
         const outputRegion = page.getByText('Output', { exact: false }).first().locator('xpath=ancestor::*[2]');
         await expect
-            .poll(async () => {
-                const t = (await outputRegion.innerText().catch(() => '')).toLowerCase();
-                if (t.includes('generating') || t.includes('run to preview')) return 0;
-                return t.replace(/output[^\n]*\n?/, '').trim().length;
-            }, { timeout: 140_000, intervals: [2500] })
+            .poll(
+                async () => {
+                    const t = (await outputRegion.innerText().catch(() => '')).toLowerCase();
+                    if (t.includes('generating') || t.includes('run to preview')) return 0;
+                    return t.replace(/output[^\n]*\n?/, '').trim().length;
+                },
+                { timeout: 140_000, intervals: [2500] },
+            )
             .toBeGreaterThan(10);
     });
 
@@ -172,7 +192,10 @@ test.describe('real-LLM matrix (Target B, local only)', () => {
         await boot(page);
         // switch to Ollama (many local models) so discovery yields > 1 option
         await page.getByRole('combobox', { name: /Provider/i }).click();
-        await page.getByRole('option', { name: /^Ollama$/i }).first().click();
+        await page
+            .getByRole('option', { name: /^Ollama$/i })
+            .first()
+            .click();
         await page.waitForTimeout(2500); // allow auto-discovery thunk to resolve
         await page.getByRole('combobox', { name: /Model/i }).click();
         await page.waitForTimeout(800);

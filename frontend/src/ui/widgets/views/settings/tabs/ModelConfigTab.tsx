@@ -213,8 +213,8 @@ const ModelConfigTab: React.FC<Props> = ({ settings }) => {
             </div>
 
             <p className={styles.caption}>
-                Capability-aware: when the provider&apos;s catalog exposes it (Azure, LM Studio), the temperature toggle and context hint pre-fill from
-                the selected model.
+                Capability-aware: when the provider&apos;s catalog exposes it (Azure, LM Studio), the temperature toggle and context hint pre-fill
+                from the selected model.
             </p>
 
             <div className={styles.actions}>

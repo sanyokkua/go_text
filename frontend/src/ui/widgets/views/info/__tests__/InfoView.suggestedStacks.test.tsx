@@ -5,8 +5,8 @@ import { Provider } from 'react-redux';
 
 import { apperr } from '../../../../../../wailsjs/go/models';
 import aboutReducer from '../../../../../logic/store/about/slice';
-import actionsReducer from '../../../../../logic/store/actions/slice';
 import { AboutState } from '../../../../../logic/store/about/types';
+import actionsReducer from '../../../../../logic/store/actions/slice';
 import InfoView from '../InfoView';
 
 const getSuggestedStacksMock = jest.fn<Promise<apperr.SuggestedStack[]>, []>();
@@ -39,10 +39,7 @@ function makeStore(suggestedStacks: apperr.SuggestedStack[]) {
         previewInputEnabled: false,
         suggestedStacks,
     };
-    return configureStore({
-        reducer: { about: aboutReducer, actions: actionsReducer },
-        preloadedState: { about: aboutPreloaded },
-    });
+    return configureStore({ reducer: { about: aboutReducer, actions: actionsReducer }, preloadedState: { about: aboutPreloaded } });
 }
 
 describe('InfoView suggested stacks', () => {

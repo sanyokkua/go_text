@@ -20,11 +20,7 @@ const toPascalCase = (kebab: string): string =>
  * names lucide-react renamed them to. Without this, renamed icons fall through to the
  * raw-text fallback and leak a kebab name into the UI.
  */
-const LUCIDE_RENAME_ALIASES: Record<string, string> = {
-    AlertTriangle: 'TriangleAlert',
-    BarChart: 'ChartColumn',
-    HelpCircle: 'CircleQuestionMark',
-};
+const LUCIDE_RENAME_ALIASES: Record<string, string> = { AlertTriangle: 'TriangleAlert', BarChart: 'ChartColumn', HelpCircle: 'CircleQuestionMark' };
 
 /**
  * Renders a saved-stack glyph. Seeded stacks store a lucide icon name (kebab-case);

@@ -31,7 +31,14 @@ function makeEntry(overrides: Partial<apperr.HistoryEntry> = {}): apperr.History
 
 describe('HistoryEntryCard', () => {
     it('renders the inference-count badge, status, relative time and both action controls', () => {
-        render(<HistoryEntryCard entry={makeEntry({ inferences: 2, status: 'success' })} isSelected={false} onRestore={jest.fn()} onDelete={jest.fn()} />);
+        render(
+            <HistoryEntryCard
+                entry={makeEntry({ inferences: 2, status: 'success' })}
+                isSelected={false}
+                onRestore={jest.fn()}
+                onDelete={jest.fn()}
+            />,
+        );
 
         expect(screen.getByText('2 INF')).toBeInTheDocument();
         expect(screen.getByText('success')).toBeInTheDocument();
@@ -43,7 +50,14 @@ describe('HistoryEntryCard', () => {
     it('renders a long input/output preview in full as a single wrapping paragraph', () => {
         const longInput = 'we shipped the new caching layer this week and there were quite a few invalidation issues that we needed to address';
         const longOutput = 'We shipped the new caching layer this week and a number of invalidation issues came up but they are all handled now';
-        render(<HistoryEntryCard entry={makeEntry({ inputText: longInput, outputText: longOutput })} isSelected={false} onRestore={jest.fn()} onDelete={jest.fn()} />);
+        render(
+            <HistoryEntryCard
+                entry={makeEntry({ inputText: longInput, outputText: longOutput })}
+                isSelected={false}
+                onRestore={jest.fn()}
+                onDelete={jest.fn()}
+            />,
+        );
 
         // The preview text renders in full (visual clamping is handled by CSS, asserted separately).
         const preview = screen.getByText((_content, el) => el?.tagName === 'P' && (el.textContent?.includes('→') ?? false));

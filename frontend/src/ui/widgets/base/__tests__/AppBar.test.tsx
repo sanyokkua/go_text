@@ -1,8 +1,6 @@
 jest.mock('../../../../logic/adapter', () => ({
     getLogger: () => ({ logDebug: jest.fn(), logInfo: jest.fn(), logError: jest.fn(), logWarning: jest.fn() }),
-    SettingsHandlerAdapter: {
-        updateUIPreferencesConfig: jest.fn().mockResolvedValue({}),
-    },
+    SettingsHandlerAdapter: { updateUIPreferencesConfig: jest.fn().mockResolvedValue({}) },
     unwrap: (res: { data?: unknown; error?: unknown }) => {
         if (res?.error) throw res.error;
         return res?.data;
@@ -139,9 +137,7 @@ describe('AppBar — UI persistence', () => {
         renderAppBar();
         await userEvent.click(screen.getByRole('button', { name: /collapse sidebar/i }));
         await waitFor(() => {
-            expect(mockUpdateUIPreferencesConfig).toHaveBeenCalledWith(
-                expect.objectContaining({ sidebarCollapsed: true }),
-            );
+            expect(mockUpdateUIPreferencesConfig).toHaveBeenCalledWith(expect.objectContaining({ sidebarCollapsed: true }));
         });
     });
 
@@ -149,9 +145,7 @@ describe('AppBar — UI persistence', () => {
         renderAppBar({ historyOpen: false });
         await userEvent.click(screen.getByRole('button', { name: /toggle history rail/i }));
         await waitFor(() => {
-            expect(mockUpdateUIPreferencesConfig).toHaveBeenCalledWith(
-                expect.objectContaining({ historyOpen: true }),
-            );
+            expect(mockUpdateUIPreferencesConfig).toHaveBeenCalledWith(expect.objectContaining({ historyOpen: true }));
         });
     });
 
@@ -159,9 +153,7 @@ describe('AppBar — UI persistence', () => {
         renderAppBar();
         await userEvent.click(screen.getByRole('radio', { name: /source/i }));
         await waitFor(() => {
-            expect(mockUpdateUIPreferencesConfig).toHaveBeenCalledWith(
-                expect.objectContaining({ viewMode: 'source' }),
-            );
+            expect(mockUpdateUIPreferencesConfig).toHaveBeenCalledWith(expect.objectContaining({ viewMode: 'source' }));
         });
     });
 
@@ -169,9 +161,7 @@ describe('AppBar — UI persistence', () => {
         renderAppBar();
         await userEvent.click(screen.getByRole('radio', { name: /stacked/i }));
         await waitFor(() => {
-            expect(mockUpdateUIPreferencesConfig).toHaveBeenCalledWith(
-                expect.objectContaining({ layout: 'stacked' }),
-            );
+            expect(mockUpdateUIPreferencesConfig).toHaveBeenCalledWith(expect.objectContaining({ layout: 'stacked' }));
         });
     });
 });

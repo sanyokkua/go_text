@@ -79,13 +79,7 @@ const MetadataTab: React.FC = () => {
                 >
                     ⧉
                 </Button>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    aria-label="Open app folder"
-                    disabled={!metadata}
-                    onClick={handleOpenFolder}
-                >
+                <Button variant="ghost" size="sm" aria-label="Open app folder" disabled={!metadata} onClick={handleOpenFolder}>
                     📁
                 </Button>
             </div>
@@ -103,13 +97,7 @@ const MetadataTab: React.FC = () => {
                 >
                     ⧉
                 </Button>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    aria-label="Open logs folder"
-                    disabled={!metadata}
-                    onClick={handleOpenLogs}
-                >
+                <Button variant="ghost" size="sm" aria-label="Open logs folder" disabled={!metadata} onClick={handleOpenLogs}>
                     📁
                 </Button>
             </div>

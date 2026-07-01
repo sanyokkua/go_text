@@ -3,9 +3,9 @@ import '@testing-library/jest-dom';
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
-import { selectBuilderIcon } from '../../../../../logic/store/stacks/builder/selectors';
 import actionsReducer from '../../../../../logic/store/actions/slice';
 import notificationsReducer from '../../../../../logic/store/notifications/slice';
+import { selectBuilderIcon } from '../../../../../logic/store/stacks/builder/selectors';
 import stacksBuilderReducer from '../../../../../logic/store/stacks/builder/slice';
 import stacksSavedReducer from '../../../../../logic/store/stacks/saved/slice';
 import uiReducer from '../../../../../logic/store/ui/slice';
@@ -264,11 +264,7 @@ describe('SaveStackDialog', () => {
 
     describe('Paste button clipboard integration', () => {
         afterEach(() => {
-            Object.defineProperty(navigator, 'clipboard', {
-                value: undefined,
-                configurable: true,
-                writable: true,
-            });
+            Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true, writable: true });
         });
 
         it('reads clipboard and updates the icon', async () => {

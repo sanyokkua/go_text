@@ -357,7 +357,14 @@ export const updateLoggingConfig = createAsyncThunk<LoggingConfig, LoggingConfig
 );
 
 export const getUIPreferences = createAsyncThunk<
-    { mode: ThemeMode; effective: ThemeEffective; layout: UIPreferencesConfig['layout']; sidebarCollapsed: boolean; historyOpen: boolean; viewMode: UIPreferencesConfig['viewMode'] },
+    {
+        mode: ThemeMode;
+        effective: ThemeEffective;
+        layout: UIPreferencesConfig['layout'];
+        sidebarCollapsed: boolean;
+        historyOpen: boolean;
+        viewMode: UIPreferencesConfig['viewMode'];
+    },
     void,
     { rejectValue: string }
 >('settings/getUIPreferences', async (_, { rejectWithValue }) => {
@@ -378,7 +385,6 @@ export const getUIPreferences = createAsyncThunk<
         return rejectWithValue(err.message);
     }
 });
-
 
 export const persistUIPreferences = createAsyncThunk<void, void, { state: RootState; rejectValue: string }>(
     'settings/persistUIPreferences',

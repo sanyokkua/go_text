@@ -16,11 +16,7 @@ const EditorView: React.FC = () => {
     // In stacked layout the control bar sits BETWEEN the input and output panes as a bordered rounded
     // box (mockup §"stacked"); in side layout it sits below the panes as a top-divider bar.
     const stacked = layout === 'stacked';
-    const controlBar = buildMode ? (
-        <StackBuilderBar onSave={() => setSaveDialogOpen(true)} boxed={stacked} />
-    ) : (
-        <RunBar boxed={stacked} />
-    );
+    const controlBar = buildMode ? <StackBuilderBar onSave={() => setSaveDialogOpen(true)} boxed={stacked} /> : <RunBar boxed={stacked} />;
 
     return (
         <div style={{ display: 'flex', width: '100%', height: '100%', overflow: 'hidden' }}>

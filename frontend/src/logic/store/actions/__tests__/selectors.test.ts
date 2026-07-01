@@ -48,11 +48,7 @@ describe('selectCatalogByCategory', () => {
 
     it('collects every action belonging to a category into that category group', () => {
         // Arrange
-        const catalog = [
-            makeAction('tone-formal', 'Tone'),
-            makeAction('proofread-grammar', 'Proofreading'),
-            makeAction('tone-casual', 'Tone'),
-        ];
+        const catalog = [makeAction('tone-formal', 'Tone'), makeAction('proofread-grammar', 'Proofreading'), makeAction('tone-casual', 'Tone')];
 
         // Act
         const groups = selectCatalogByCategory(stateWithCatalog(catalog));

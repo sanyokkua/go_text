@@ -60,24 +60,14 @@ const MOCK_SETTINGS: Settings = {
 // getByRole('slider') ambiguous if both were shown at once.
 const MOCK_SETTINGS_WITH_CONTEXT_WINDOW: Settings = {
     ...MOCK_SETTINGS,
-    modelConfig: {
-        ...MOCK_SETTINGS.modelConfig,
-        useTemperature: false,
-        useContextWindow: true,
-        contextWindow: 4096,
-    },
+    modelConfig: { ...MOCK_SETTINGS.modelConfig, useTemperature: false, useContextWindow: true, contextWindow: 4096 },
 };
 
 // Same single-slider isolation as MOCK_SETTINGS_WITH_CONTEXT_WINDOW, but for the
 // max-output-tokens slider — only it is on, so getByRole('slider') is unambiguous.
 const MOCK_SETTINGS_WITH_MAX_OUTPUT_TOKENS: Settings = {
     ...MOCK_SETTINGS,
-    modelConfig: {
-        ...MOCK_SETTINGS.modelConfig,
-        useTemperature: false,
-        useMaxOutputTokens: true,
-        maxOutputTokens: 2048,
-    },
+    modelConfig: { ...MOCK_SETTINGS.modelConfig, useTemperature: false, useMaxOutputTokens: true, maxOutputTokens: 2048 },
 };
 
 function makeStore(settings: Settings = MOCK_SETTINGS) {

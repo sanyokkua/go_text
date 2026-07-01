@@ -1,5 +1,5 @@
-import React from 'react';
 import { ChevronLeft, History, Info, PanelLeft, Settings, X } from 'lucide-react';
+import React from 'react';
 
 import { getLogger } from '../../../logic/adapter';
 import {
@@ -20,10 +20,10 @@ import { setCurrentView, setHistoryOpen, setLayout, setSidebarCollapsed, toggleP
 import { IconButton } from '../../components/IconButton';
 import { Segmented } from '../../primitives/Segmented';
 import { Tooltip } from '../../primitives/Tooltip';
+import styles from './AppBar.module.css';
 import LanguagePicker from './LanguagePicker';
 import ModelPicker from './ModelPicker';
 import ProviderPicker from './ProviderPicker';
-import styles from './AppBar.module.css';
 
 const logger = getLogger('AppBar');
 
@@ -75,7 +75,8 @@ const AppBar: React.FC = () => {
                         }}
                         className={styles.backBtn}
                     >
-                        <ChevronLeft size={16} /><span>Editor</span>
+                        <ChevronLeft size={16} />
+                        <span>Editor</span>
                     </button>
                 )}
 

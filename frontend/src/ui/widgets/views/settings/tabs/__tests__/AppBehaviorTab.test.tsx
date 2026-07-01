@@ -69,7 +69,15 @@ const MOCK_SETTINGS: Settings = {
     },
     languageConfig: { languages: ['English'], defaultInputLanguage: 'English', defaultOutputLanguage: 'English' },
     appBehaviorConfig: { enableTaskLogging: false, logDirectory: '/tmp/logs', historyEnabled: true, historyMaxEntries: 500 },
-    loggingConfig: { logFileEnabled: false, logLevel: 'info', logDirectory: '', logMaxSizeMB: 10, logMaxBackups: 5, logMaxAgeDays: 30, logCompress: false },
+    loggingConfig: {
+        logFileEnabled: false,
+        logLevel: 'info',
+        logDirectory: '',
+        logMaxSizeMB: 10,
+        logMaxBackups: 5,
+        logMaxAgeDays: 30,
+        logCompress: false,
+    },
 };
 
 const MOCK_METADATA: AppSettingsMetadata = {

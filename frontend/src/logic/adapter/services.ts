@@ -45,7 +45,15 @@ import {
     UpdateProviderConfig,
     UpdateUIPreferencesConfig,
 } from '../../../wailsjs/go/settings/SettingsHandler';
-import { CreateStack, DeleteStack, DuplicateStack, GetStack, ListStacks, SuggestedStacks, UpdateStack } from '../../../wailsjs/go/stacks/StackHandler';
+import {
+    CreateStack,
+    DeleteStack,
+    DuplicateStack,
+    GetStack,
+    ListStacks,
+    SuggestedStacks,
+    UpdateStack,
+} from '../../../wailsjs/go/stacks/StackHandler';
 import { LogDebug, LogError, LogFatal, LogInfo, LogPrint, LogTrace, LogWarning } from '../../../wailsjs/runtime';
 import { IActionHandler, IAppHandler, IClipboardService, IHistoryHandler, ILoggerService, ISettingsHandler, IStackHandler } from './interfaces';
 import { toWireBehavior, toWireLogging, toWireProvider, toWireUIPreferences } from './mappers';
