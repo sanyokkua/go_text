@@ -23,6 +23,7 @@ import editorReducer from '../../../../../logic/store/editor/slice';
 import historyReducer from '../../../../../logic/store/history/slice';
 import notificationsReducer from '../../../../../logic/store/notifications/slice';
 import runReducer from '../../../../../logic/store/run/slice';
+import { processPromptChain } from '../../../../../logic/store/run/thunks';
 import settingsReducer from '../../../../../logic/store/settings/slice';
 import uiReducer from '../../../../../logic/store/ui/slice';
 import HistoryRail from '../HistoryRail';
@@ -101,7 +102,7 @@ function makeStore(overrides: StoreOverrides = {}) {
             run: runReducer,
         },
         preloadedState: {
-            history: { entries: entries as never, selectedId: null, loading: false, hasMore: false, total: entries.length },
+            history: { entries: entries as never, selectedId: null, loading: false, hasMore: false, total: entries.length, staleAfterRun: false },
             ui: {
                 layout: 'side' as const,
                 sidebarCollapsed: false,
@@ -336,5 +337,39 @@ describe('HistoryRail', () => {
             </Provider>,
         );
         await waitFor(() => expect(HistoryHandlerAdapter.listHistory).toHaveBeenCalledWith(100, 0));
+    });
+
+    it('refetches history automatically when a chain run completes, without toggling the rail', async () => {
+        const store = makeStore({ entries: [] });
+        render(
+            <Provider store={store}>
+                <HistoryRail />
+            </Provider>,
+        );
+        await waitFor(() => expect(HistoryHandlerAdapter.listHistory).toHaveBeenCalledTimes(1));
+
+        const newEntry = makeEntry({ id: 'new-run', title: 'Fresh run' });
+        (HistoryHandlerAdapter.listHistory as jest.Mock).mockResolvedValueOnce({ data: [newEntry], error: null });
+
+        store.dispatch({ type: processPromptChain.pending.type, meta: { arg: { runId: 'r1' } } });
+        store.dispatch({ type: processPromptChain.fulfilled.type, payload: { data: { finalText: 'ok' }, error: null } });
+
+        await waitFor(() => expect(HistoryHandlerAdapter.listHistory).toHaveBeenCalledTimes(2));
+        await waitFor(() => expect(screen.getByText('Fresh run')).toBeInTheDocument());
+    });
+
+    it('refetches history automatically when a chain run rejects, without toggling the rail', async () => {
+        const store = makeStore({ entries: [] });
+        render(
+            <Provider store={store}>
+                <HistoryRail />
+            </Provider>,
+        );
+        await waitFor(() => expect(HistoryHandlerAdapter.listHistory).toHaveBeenCalledTimes(1));
+
+        store.dispatch({ type: processPromptChain.pending.type, meta: { arg: { runId: 'r2' } } });
+        store.dispatch({ type: processPromptChain.rejected.type, payload: 'network error' });
+
+        await waitFor(() => expect(HistoryHandlerAdapter.listHistory).toHaveBeenCalledTimes(2));
     });
 });

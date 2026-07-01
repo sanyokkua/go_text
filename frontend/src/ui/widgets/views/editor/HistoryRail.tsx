@@ -6,6 +6,7 @@ import {
     selectAppBehaviorConfig,
     selectHistoryEntries,
     selectHistoryLoading,
+    selectHistoryStaleAfterRun,
     selectSelectedHistoryId,
     useAppDispatch,
     useAppSelector,
@@ -28,6 +29,7 @@ const HistoryRail: React.FC = () => {
     const entries = useAppSelector(selectHistoryEntries);
     const selectedId = useAppSelector(selectSelectedHistoryId);
     const loading = useAppSelector(selectHistoryLoading);
+    const staleAfterRun = useAppSelector(selectHistoryStaleAfterRun);
     const appBehavior = useAppSelector(selectAppBehaviorConfig);
     const catalog = useAppSelector(selectActionCatalog);
 
@@ -40,6 +42,13 @@ const HistoryRail: React.FC = () => {
         logger.logInfo('HistoryRail mounted — loading history');
         dispatch(listHistory({ limit: PAGE_LIMIT, offset: 0 }));
     }, [dispatch]);
+
+    useEffect(() => {
+        if (staleAfterRun) {
+            logger.logInfo('Run completed — refreshing history');
+            dispatch(listHistory({ limit: PAGE_LIMIT, offset: 0 }));
+        }
+    }, [staleAfterRun, dispatch]);
 
     const handleRestore = (entry: apperr.HistoryEntry) => {
         dispatch(setInputContent(entry.inputText));

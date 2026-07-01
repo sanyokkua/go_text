@@ -29,12 +29,20 @@ function mockParam(name: string): boolean {
     }
 }
 
+// Entries appended by ActionHandler.ProcessPromptChain to simulate a completed run being
+// recorded, so e2e tests can verify the History rail auto-refreshes without a page reload.
+const dynamicEntries: (typeof MOCK_E3_ENTRY)[] = [];
+
+export function appendMockHistoryEntry(entry: typeof MOCK_E3_ENTRY): void {
+    dynamicEntries.unshift(entry);
+}
+
 // Wire format: HistoryListResult.data = HistoryEntry[].
 // Returns ok(array) — never ok({ entries, total }).
 // unwrap() extracts .data; the thunk stores that as state.history.entries.
 // Returning an object instead of an array makes entries.map() throw a TypeError.
 export function ListHistory(_page: number, _pageSize: number): Promise<AnyResult> {
-    if (mockParam('history-test')) return Promise.resolve(ok([MOCK_E3_ENTRY]));
+    if (mockParam('history-test')) return Promise.resolve(ok([...dynamicEntries, MOCK_E3_ENTRY]));
     return Promise.resolve(ok([]));
 }
 

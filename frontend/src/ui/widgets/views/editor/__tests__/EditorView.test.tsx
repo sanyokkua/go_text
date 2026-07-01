@@ -80,7 +80,7 @@ function makeStore(editorOverrides = {}, uiOverrides = {}) {
             actions: { catalog: [], catalogStatus: 'idle' as const, availableModels: [], modelsStatus: 'idle' as const },
             stacksBuilder: { steps: [], name: '', icon: '' },
             stacksSaved: { stacks: [], status: 'idle' as const, error: null },
-            history: { entries: [], selectedId: null, loading: false, hasMore: false, total: 0 },
+            history: { entries: [], selectedId: null, loading: false, hasMore: false, total: 0, staleAfterRun: false },
             settings: { allSettings: { appBehaviorConfig: { historyEnabled: true, historyMaxEntries: 100 } } as never, metadata: null },
         },
     });

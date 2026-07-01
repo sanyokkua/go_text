@@ -91,7 +91,7 @@ function makeStore() {
                 activeSettingsTab: 0,
                 theme: { mode: 'auto' as const, effective: 'light' as const },
             },
-            history: { entries: [], selectedId: null, loading: false, hasMore: false, total: 0 },
+            history: { entries: [], selectedId: null, loading: false, hasMore: false, total: 0, staleAfterRun: false },
         },
     });
 }

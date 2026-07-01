@@ -1,4 +1,5 @@
 import { AnyResult, VoidResult, ok, voidOk } from '../../types';
+import { appendMockHistoryEntry } from './HistoryHandler';
 
 function mockParam(name: string): boolean {
     if (globalThis.window === undefined) return false;
@@ -8,6 +9,8 @@ function mockParam(name: string): boolean {
         return false;
     }
 }
+
+let completedRunCount = 0;
 
 const XSS_PAYLOAD = '<script>window.__xssFired = true;</script> Safe text\n\n' + '[evil link](javascript:alert(1))\n\nSafe paragraph.';
 
@@ -31,6 +34,28 @@ graph TD
 export function ProcessPromptChain(_req: unknown): Promise<AnyResult> {
     if (mockParam('xss')) return Promise.resolve(ok({ steps: [], finalText: XSS_PAYLOAD }));
     if (mockParam('markdown')) return Promise.resolve(ok({ steps: [], finalText: MARKDOWN_PAYLOAD }));
+    if (mockParam('history-test')) {
+        completedRunCount += 1;
+        appendMockHistoryEntry({
+            id: `e2e-run-${completedRunCount}`,
+            createdAt: 1_700_000_100 + completedRunCount,
+            kind: 'single',
+            title: 'E2E completed run',
+            inputText: 'Trigger a run for T58',
+            outputText: 'Mock output text.',
+            applied: [{ id: 'mock-summarise', name: 'Summarise', category: 'Writing' }],
+            providerName: 'Local',
+            model: 'llama',
+            inputLang: 'en',
+            outputLang: 'en',
+            format: 'plain',
+            durationMs: 500,
+            inferences: 1,
+            status: 'success',
+            errorCode: '',
+            failedIndex: -1,
+        });
+    }
     return Promise.resolve(ok({ steps: [], finalText: 'Mock output text.' }));
 }
 

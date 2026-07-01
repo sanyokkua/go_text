@@ -44,4 +44,17 @@ test.describe('History Rail: e2e flows', () => {
 
         expect(errors).toHaveLength(0);
     });
+
+    // T58: the rail must pick up a completed run's new entry on its own — no second toggle.
+    test('history rail auto-refreshes with the new entry after a run completes, without re-toggling', async ({ page }) => {
+        await page.getByRole('button', { name: /toggle history rail/i }).click();
+        await expect(page.getByText('E3 Proofread run')).toBeVisible();
+
+        await page.getByLabel('Input text').fill('Trigger a run for T58');
+        await page.getByRole('button', { name: /summarise/i }).click();
+        await page.getByRole('button', { name: /^run$/i }).click();
+
+        await expect(page.getByText('Mock output text.', { exact: true })).toBeVisible({ timeout: 10000 });
+        await expect(page.getByText('E2E completed run')).toBeVisible({ timeout: 10000 });
+    });
 });

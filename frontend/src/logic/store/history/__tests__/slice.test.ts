@@ -8,11 +8,12 @@ jest.mock('../../../adapter', () => ({
     tryUnwrap: jest.fn((res: { data?: unknown; error?: unknown }) => res),
 }));
 
+import { processPromptChain } from '../../run/thunks';
 import historyReducer, { clearHistorySelection, selectHistoryEntry } from '../slice';
 import { clearHistory, deleteHistoryEntry, listHistory } from '../thunks';
 import type { HistoryState } from '../types';
 
-const initialState: HistoryState = { entries: [], selectedId: null, loading: false, hasMore: true, total: 0 };
+const initialState: HistoryState = { entries: [], selectedId: null, loading: false, hasMore: true, total: 0, staleAfterRun: false };
 
 const makeEntry = (id: string) => ({ id, timestamp: '2026-01-01T00:00:00Z', prompt: 'p', result: 'r' }) as unknown as HistoryState['entries'][0];
 
@@ -77,7 +78,14 @@ describe('history slice reducer', () => {
     });
 
     it('clearHistory.fulfilled resets entries, total, selectedId, and hasMore to false', () => {
-        const populatedState: HistoryState = { entries: [makeEntry('e-1')], selectedId: 'e-1', loading: false, hasMore: true, total: 1 };
+        const populatedState: HistoryState = {
+            entries: [makeEntry('e-1')],
+            selectedId: 'e-1',
+            loading: false,
+            hasMore: true,
+            total: 1,
+            staleAfterRun: false,
+        };
         const action = { type: clearHistory.fulfilled.type };
 
         const state = historyReducer(populatedState, action);
@@ -86,5 +94,30 @@ describe('history slice reducer', () => {
         expect(state.total).toBe(0);
         expect(state.selectedId).toBeNull();
         expect(state.hasMore).toBe(false);
+    });
+
+    it('processPromptChain.fulfilled marks history stale after a run completes', () => {
+        const action = { type: processPromptChain.fulfilled.type };
+
+        const state = historyReducer(initialState, action);
+
+        expect(state.staleAfterRun).toBe(true);
+    });
+
+    it('processPromptChain.rejected marks history stale after a failed run', () => {
+        const action = { type: processPromptChain.rejected.type };
+
+        const state = historyReducer(initialState, action);
+
+        expect(state.staleAfterRun).toBe(true);
+    });
+
+    it('listHistory.fulfilled clears staleAfterRun back to false', () => {
+        const staleState: HistoryState = { ...initialState, staleAfterRun: true };
+        const action = { type: listHistory.fulfilled.type, payload: { entries: [], hasMore: false } };
+
+        const state = historyReducer(staleState, action);
+
+        expect(state.staleAfterRun).toBe(false);
     });
 });

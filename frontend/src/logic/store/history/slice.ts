@@ -1,8 +1,9 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { processPromptChain } from '../run/thunks';
 import { clearHistory, deleteHistoryEntry, getHistoryEntry, listHistory } from './thunks';
 import { HistoryState } from './types';
 
-const initialState: HistoryState = { entries: [], selectedId: null, loading: false, hasMore: true, total: 0 };
+const initialState: HistoryState = { entries: [], selectedId: null, loading: false, hasMore: true, total: 0, staleAfterRun: false };
 
 const historySlice = createSlice({
     name: 'history',
@@ -25,9 +26,16 @@ const historySlice = createSlice({
                 state.entries = action.payload.entries;
                 state.hasMore = action.payload.hasMore;
                 state.total = action.payload.entries.length;
+                state.staleAfterRun = false;
             })
             .addCase(listHistory.rejected, (state) => {
                 state.loading = false;
+            })
+            .addCase(processPromptChain.fulfilled, (state) => {
+                state.staleAfterRun = true;
+            })
+            .addCase(processPromptChain.rejected, (state) => {
+                state.staleAfterRun = true;
             })
             .addCase(deleteHistoryEntry.fulfilled, (state, action) => {
                 state.entries = state.entries.filter((entry) => entry.id !== action.payload);

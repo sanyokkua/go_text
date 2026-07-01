@@ -7,6 +7,7 @@ export const selectSelectedHistoryId = (state: RootState): string | null => stat
 export const selectHistoryHasMore = (state: RootState): boolean => state.history.hasMore;
 export const selectHistoryLoading = (state: RootState): boolean => state.history.loading;
 export const selectHistoryTotal = (state: RootState): number => state.history.total;
+export const selectHistoryStaleAfterRun = (state: RootState): boolean => state.history.staleAfterRun;
 
 export const selectSelectedHistoryEntry = createSelector(
     [selectHistoryEntries, selectSelectedHistoryId],

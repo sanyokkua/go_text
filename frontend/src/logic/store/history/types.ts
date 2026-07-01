@@ -6,6 +6,7 @@ export interface HistoryState {
     loading: boolean;
     hasMore: boolean;
     total: number;
+    staleAfterRun: boolean;
 }
 
 export interface ListHistoryArgs {
