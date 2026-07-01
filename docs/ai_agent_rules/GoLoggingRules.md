@@ -177,29 +177,27 @@ logger := zerolog.New(multi).With().Timestamp().Logger()
 In production (`wails build`), write to the file only. Level is `WarnLevel` by default.
 In development (`wails dev`), also write to stderr at `DebugLevel`.
 
-### 2.8 Wails logger bridge
+### 2.8 Wails logger interface
 
-GoText's `internal/logging` implements the `wails_logger.Logger` interface to route Wails'
-internal log output through the same zerolog pipeline:
+GoText's `internal/logging.Logger` implements the Wails `logger.Logger` interface directly (no
+separate bridge type) so Wails' internal log output routes through the same zerolog pipeline:
 
 ```go
-type WailsZerologBridge struct {
-    log zerolog.Logger
-}
-
-func (b *WailsZerologBridge) Print(message string)   { b.log.Info().Msg(message) }
-func (b *WailsZerologBridge) Trace(message string)   { b.log.Trace().Msg(message) }
-func (b *WailsZerologBridge) Debug(message string)   { b.log.Debug().Msg(message) }
-func (b *WailsZerologBridge) Info(message string)    { b.log.Info().Msg(message) }
-func (b *WailsZerologBridge) Warning(message string) { b.log.Warn().Msg(message) }
-func (b *WailsZerologBridge) Error(message string)   { b.log.Error().Msg(message) }
-func (b *WailsZerologBridge) Fatal(message string)   { b.log.Fatal().Msg(message) }
+func (l *Logger) Print(m string)   { /* ... */ zl.Log().Msg(m) }
+func (l *Logger) Trace(m string)   { /* ... */ zl.Trace().Msg(m) }
+func (l *Logger) Debug(m string)   { /* ... */ zl.Debug().Msg(m) }
+func (l *Logger) Info(m string)    { /* ... */ zl.Info().Msg(m) }
+func (l *Logger) Warning(m string) { /* ... */ zl.Warn().Msg(m) }
+func (l *Logger) Error(m string)   { /* ... */ zl.Error().Msg(m) }
+func (l *Logger) Fatal(m string)   { /* ... */ zl.Fatal().Msg(m) }
 ```
 
-Pass the bridge to Wails in `main.go`:
+Pass the logger straight to Wails in `main.go`:
 ```go
+appLogger, err := logging.New(logging.DefaultConfig(), true)
+// ...
 wails.Run(&options.App{
-    Logger: &logging.WailsZerologBridge{Log: logger},
+    Logger: appLogger,
     // ...
 })
 ```
@@ -219,15 +217,17 @@ log file rather than being silently dropped.
     - **macOS:** `~/Library/Logs/YourApp`
     - **Linux:** `~/.local/state/YourApp` (XDG State Home)
 
-**GoText log paths** (resolved by `internal/file`):
+**GoText log paths** (resolved by `internal/file.ResolveAppLogsFolderPath`, via `os.UserConfigDir()`
+joined with `AppName` (`"GoTextApp"` — see `internal/file/constants.go`) and `LogsDirName` (`"logs"`)):
 
 | Platform | Log folder |
 |---|---|
-| macOS | `~/Library/Logs/GoText/` |
-| Linux | `~/.local/state/GoText/` |
-| Windows | `%APPDATA%\GoText\logs\` |
+| macOS | `~/Library/Application Support/GoTextApp/logs/` |
+| Linux | `~/.config/GoTextApp/logs/` |
+| Windows | `%APPDATA%\GoTextApp\logs\` |
 
-The log file inside that folder is `app.log`. Rotation creates `app-YYYY-MM-DDTHH-MM-SS.log.gz` backups.
+The log file inside that folder is `app.log`. Rotation creates timestamped `.log.gz` backups per
+the `Config.MaxBackups`/`MaxAgeDays` settings.
 
 ### 3.2 Rotation & Size Limits
 

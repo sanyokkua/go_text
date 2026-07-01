@@ -50,6 +50,7 @@ truth is known — not in the handler:
 | `apperr.Internal(err)` | Unexpected / programming error (panic recovery) |
 | `apperr.InvalidPlan(err)` | Planner rejected the chain plan (cap/exclusivity violation) |
 | `apperr.EmptyCompletion(err)` | Provider returned empty content |
+| `apperr.Busy()` | `InferenceGate` already has an inference in progress |
 
 ---
 
@@ -93,9 +94,12 @@ func (h *Handler) DoThing() (string, error) { ... }
 func (h *Handler) DoThing() (res apperr.StringResult) { ... }
 ```
 
-Available envelope types: `VoidResult`, `StringResult`, `ModelsResult`, `CatalogResult`,
-`SettingsResult`, `ChainResultEnv`, `StacksResult`, `StackResult`, `HistoryListResult`,
-`HistoryEntryResult`, `PromptPreviewResult`.
+Available envelope types (`internal/apperr/results.go`): `VoidResult`, `StringResult`,
+`ModelsResult`, `CatalogResult`, `SettingsResult`, `ChainResultEnv`, `StacksResult`,
+`StackResult`, `SuggestedStacksResult`, `HistoryListResult`, `HistoryEntryResult`,
+`PromptPreviewResult`, `ProviderResult`, `ProvidersResult`, `ProviderPresetsResult`,
+`InferenceResult`, `ModelConfigResult`, `AppBehaviorResult`, `UIPreferencesResult`,
+`LanguageResult`, `LanguagesResult`, `MetadataResult`, `VerifyResult`, `LoggingResult`.
 
 ---
 

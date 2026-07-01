@@ -55,9 +55,8 @@ Every color, spacing, radius, and font comes from CSS variables defined in
 }
 ```
 
-Token names are defined normatively in `docs/V3_Temp_Docs/SpecificationFolder/11-mockup-documentation.md §1`
-and in `frontend/src/ui/styles/tokens.css`. Use those exact names; never invent aliases like
-`--accent` or `--primary`.
+Token names are defined normatively in `frontend/src/ui/styles/tokens.css`. Use those exact
+names; never invent aliases like `--accent` or `--primary`.
 
 ---
 

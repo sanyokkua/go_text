@@ -24,7 +24,7 @@ The application connects to **any OpenAI-compatible LLM provider**, giving you t
 Built with Go for efficient backend processing and React for a responsive UI, GoText delivers native
 performance with a small distribution footprint.
 
-![Application Screenshot](docs/screenshots/App_03.png)
+*(v3 screenshot pending — see [docs/screenshots](docs/screenshots/README.md))*
 
 ---
 
@@ -92,35 +92,38 @@ Restore any past result with a single click.
 
 ## Screenshots
 
+> Screenshots below are pending capture for the v3 redesign — see
+> [docs/screenshots](docs/screenshots/README.md) for the full list of shots to be added.
+
 ### Main Application Interface
 
-![Main Interface - Before processing clicked](docs/screenshots/App_01.png)
-![Main Interface - Processing the action](docs/screenshots/App_02.png)
-![Main Interface - result of the previous action](docs/screenshots/App_03.png)
-![Main Interface - another result of the summary](docs/screenshots/App_04.png)
+- *Main Interface - Before processing clicked* — pending
+- *Main Interface - Processing the action* — pending
+- *Main Interface - result of the previous action* — pending
+- *Main Interface - another result of the summary* — pending
 
 ### Prompt Change and Results
 
-![Main Interface - improving prompt for image generation](docs/screenshots/App_05.png)
+- *Main Interface - improving prompt for image generation* — pending
 
 Good example — an improved prompt can produce a great result:
 
-![Generated Image using improved prompt](docs/screenshots/App_05_Res.png)
+- *Generated Image using improved prompt* — pending
 
 ### Translation Example
 
-![Translation](docs/screenshots/App_06.png)
+- *Translation* — pending
 
 ### Multi-Provider Configuration
 
-![Provider Settings - Current Provider Info](docs/screenshots/Settings_01.png)
-![Provider Settings - Providers List](docs/screenshots/Settings_02.png)
-![Provider Settings - Creation of the New Provider](docs/screenshots/Settings_03.png)
-![Provider Settings - Creation of the New Provider Extended](docs/screenshots/Settings_04.png)
+- *Provider Settings - Current Provider Info* — pending
+- *Provider Settings - Providers List* — pending
+- *Provider Settings - Creation of the New Provider* — pending
+- *Provider Settings - Creation of the New Provider Extended* — pending
 
 ### Model Configuration
 
-![Model Settings](docs/screenshots/Settings_05.png)
+- *Model Settings* — pending
 
 ---
 
@@ -161,7 +164,7 @@ Download the latest release from the [GitHub Releases Page](https://github.com/s
 | Windows (64-bit) | `GoText-*-windows-amd64.exe` |
 | Linux (64-bit) | `GoText-*-linux-amd64` |
 
-![Release Page](docs/screenshots/ReleasePage_1.png)
+*(Release page screenshot pending)*
 
 #### macOS Installation Notes
 
