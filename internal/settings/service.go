@@ -313,10 +313,10 @@ func (s *SettingsService) GetModelConfig() (*ModelConfig, error) {
 func (s *SettingsService) UpdateModelConfig(cfg *ModelConfig) (*ModelConfig, error) {
 	const op = "SettingsService.UpdateModelConfig"
 	if cfg.UseTemperature && (cfg.Temperature < 0 || cfg.Temperature > 2) {
-		return nil, fmt.Errorf("%s: temperature must be 0–2 when enabled", op)
+		return nil, apperr.Validation("temperature", "0–2 when enabled", fmt.Sprintf("%v", cfg.Temperature))
 	}
 	if cfg.UseContextWindow && (cfg.ContextWindow < 1024 || cfg.ContextWindow > 200000) {
-		return nil, fmt.Errorf("%s: contextWindow must be 1024–200000 when enabled", op)
+		return nil, apperr.Validation("contextWindow", "1024–200000 when enabled", fmt.Sprintf("%d", cfg.ContextWindow))
 	}
 	if err := s.settingsRepo.UpdateModelConfig(cfg); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)

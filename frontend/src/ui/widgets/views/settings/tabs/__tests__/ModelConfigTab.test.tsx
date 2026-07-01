@@ -1,6 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
 import '@testing-library/jest-dom';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { Settings } from '../../../../../../logic/adapter/models';
 import notificationsReducer from '../../../../../../logic/store/notifications/slice';
@@ -46,11 +46,24 @@ const MOCK_SETTINGS: Settings = {
     appBehaviorConfig: { enableTaskLogging: false, logDirectory: '/tmp/logs', historyEnabled: true, historyMaxEntries: 500 },
 };
 
-function makeStore() {
+// useTemperature is off here so only the context-window slider renders —
+// both sliders share the same accessible name ("Value"), which would make
+// getByRole('slider') ambiguous if both were shown at once.
+const MOCK_SETTINGS_WITH_CONTEXT_WINDOW: Settings = {
+    ...MOCK_SETTINGS,
+    modelConfig: {
+        ...MOCK_SETTINGS.modelConfig,
+        useTemperature: false,
+        useContextWindow: true,
+        contextWindow: 4096,
+    },
+};
+
+function makeStore(settings: Settings = MOCK_SETTINGS) {
     return configureStore({
         reducer: { settings: settingsReducer, ui: uiReducer, notifications: notificationsReducer },
         preloadedState: {
-            settings: { allSettings: MOCK_SETTINGS, metadata: null },
+            settings: { allSettings: settings, metadata: null },
             ui: {
                 layout: 'side' as const,
                 sidebarCollapsed: false,
@@ -138,5 +151,31 @@ describe('ModelConfigTab', () => {
         );
 
         expect(screen.getByRole('switch', { name: /use context window/i })).not.toBeChecked();
+    });
+
+    it('context-window slider reaches exactly 1024 when pressed Home, not the old 512 bound', () => {
+        render(
+            <Provider store={makeStore(MOCK_SETTINGS_WITH_CONTEXT_WINDOW)}>
+                <ModelConfigTab settings={MOCK_SETTINGS_WITH_CONTEXT_WINDOW} />
+            </Provider>,
+        );
+
+        const slider = screen.getByRole('slider', { name: /value/i });
+        fireEvent.keyDown(slider, { key: 'Home' });
+
+        expect(slider).toHaveAttribute('aria-valuenow', '1024');
+    });
+
+    it('context-window slider reaches exactly 200000 when pressed End, not the old 131072 bound', () => {
+        render(
+            <Provider store={makeStore(MOCK_SETTINGS_WITH_CONTEXT_WINDOW)}>
+                <ModelConfigTab settings={MOCK_SETTINGS_WITH_CONTEXT_WINDOW} />
+            </Provider>,
+        );
+
+        const slider = screen.getByRole('slider', { name: /value/i });
+        fireEvent.keyDown(slider, { key: 'End' });
+
+        expect(slider).toHaveAttribute('aria-valuenow', '200000');
     });
 });

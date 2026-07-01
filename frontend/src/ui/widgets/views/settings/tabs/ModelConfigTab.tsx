@@ -169,9 +169,9 @@ const ModelConfigTab: React.FC<Props> = ({ settings }) => {
                     <Slider
                         value={[form.contextWindow]}
                         onValueChange={([v]) => setForm((prev) => ({ ...prev, contextWindow: v }))}
-                        min={512}
-                        max={131072}
-                        step={512}
+                        min={1024}
+                        max={200000}
+                        step={4096}
                     />
                 )}
             </div>

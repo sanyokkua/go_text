@@ -1,10 +1,12 @@
 package settings_test
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"go_text/internal/apperr"
 	"go_text/internal/settings"
 )
 
@@ -63,6 +65,50 @@ func TestSettingsService_SetAsCurrentProviderConfig_SyncsModel(t *testing.T) {
 	}
 	if got.Name != "qwen3:0.6b" {
 		t.Errorf("expected active model synced to provider's selectedModel %q, got %q", "qwen3:0.6b", got.Name)
+	}
+}
+
+// Regression: an out-of-range contextWindow must surface as a classified
+// apperr.CodeValidation error, not a plain fmt.Errorf that apperr.ToWire would
+// log as "unclassified error" and mask behind a generic message at the handler
+// boundary (T61).
+func TestSettingsService_UpdateModelConfig_ContextWindowBoundaries(t *testing.T) {
+	tests := []struct {
+		name          string
+		contextWindow int
+		wantErr       bool
+	}{
+		{name: "just below min is rejected", contextWindow: 1023, wantErr: true},
+		{name: "exact min is accepted", contextWindow: 1024, wantErr: false},
+		{name: "exact max is accepted", contextWindow: 200000, wantErr: false},
+		{name: "just above max is rejected", contextWindow: 200001, wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := newRepo(t)
+			svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+
+			_, err := svc.UpdateModelConfig(&settings.ModelConfig{
+				Name:             "gpt-4o",
+				UseContextWindow: true,
+				ContextWindow:    tt.contextWindow,
+			})
+
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("UpdateModelConfig() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !tt.wantErr {
+				return
+			}
+			var ae *apperr.AppError
+			if !errors.As(err, &ae) {
+				t.Fatalf("want *apperr.AppError, got %T: %v", err, err)
+			}
+			if ae.Code != apperr.CodeValidation {
+				t.Errorf("expected CodeValidation, got %q", ae.Code)
+			}
+		})
 	}
 }
 
