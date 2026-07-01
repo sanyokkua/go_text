@@ -1,3 +1,4 @@
+import { createSelector } from '@reduxjs/toolkit';
 import { RootState } from '../index';
 import { RunState, StepProgress } from './types';
 
@@ -8,8 +9,14 @@ export const selectRunErrorCode = (state: RootState): RunState['errorCode'] => s
 export const selectRunErrorMessage = (state: RootState): string | null => state.run.errorMessage;
 export const selectRunFailedIndex = (state: RootState): number | null => state.run.failedIndex;
 
-export const selectRunProgress = (state: RootState): Pick<StepProgress, 'groupIndex' | 'totalGroups' | 'family'> | null => {
-    const { currentGroupIndex, totalGroups, currentGroupFamily } = state.run;
-    if (currentGroupIndex === null || totalGroups === null || currentGroupFamily === null) return null;
-    return { groupIndex: currentGroupIndex, totalGroups, family: currentGroupFamily };
-};
+const selectCurrentGroupIndex = (state: RootState): number | null => state.run.currentGroupIndex;
+const selectTotalGroups = (state: RootState): number | null => state.run.totalGroups;
+const selectCurrentGroupFamily = (state: RootState): string | null => state.run.currentGroupFamily;
+
+export const selectRunProgress = createSelector(
+    [selectCurrentGroupIndex, selectTotalGroups, selectCurrentGroupFamily],
+    (currentGroupIndex, totalGroups, currentGroupFamily): Pick<StepProgress, 'groupIndex' | 'totalGroups' | 'family'> | null => {
+        if (currentGroupIndex === null || totalGroups === null || currentGroupFamily === null) return null;
+        return { groupIndex: currentGroupIndex, totalGroups, family: currentGroupFamily };
+    },
+);

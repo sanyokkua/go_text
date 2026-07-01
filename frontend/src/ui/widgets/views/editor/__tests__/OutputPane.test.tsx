@@ -2,9 +2,9 @@ import { configureStore } from '@reduxjs/toolkit';
 import '@testing-library/jest-dom';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { Provider } from 'react-redux';
-import editorReducer from '../../../../../logic/store/editor/slice';
+import editorReducer, { setInputContent } from '../../../../../logic/store/editor/slice';
 import notificationsReducer from '../../../../../logic/store/notifications/slice';
 import runReducer from '../../../../../logic/store/run/slice';
 import uiReducer from '../../../../../logic/store/ui/slice';
@@ -56,6 +56,30 @@ describe('OutputPane', () => {
         expect(status).toBeInTheDocument();
         expect(status).toHaveTextContent(/Generating/i);
         expect(status).toHaveTextContent(/Step 1 of 2/i);
+    });
+
+    it('does not emit a react-redux "different result" warning when an unrelated slice updates while progress values stay unchanged', () => {
+        const store = makeStore({}, { status: 'running', runId: 'r1', currentGroupIndex: 0, totalGroups: 2, currentGroupFamily: 'Proofreading' });
+        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+        render(
+            <Provider store={store}>
+                <OutputPane />
+            </Provider>,
+        );
+
+        // Dispatch an update to an unrelated slice; run progress values are unchanged.
+        act(() => {
+            store.dispatch(setInputContent('updated input'));
+        });
+
+        const differentResultPattern = /different result/i;
+        expect(errorSpy.mock.calls.some((call) => differentResultPattern.test(String(call[0])))).toBe(false);
+        expect(warnSpy.mock.calls.some((call) => differentResultPattern.test(String(call[0])))).toBe(false);
+
+        errorSpy.mockRestore();
+        warnSpy.mockRestore();
     });
 
     it('renders output text in Source view mode', () => {
