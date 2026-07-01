@@ -48,7 +48,7 @@ func newChatCompletionRequest(cfg *settings.Settings, userPrompt, systemPrompt s
 		req.Temperature = &temperature
 		if isOllama {
 			req.Options = &llms.Options{
-				Temperature: temperature,
+				Temperature: &temperature,
 			}
 		}
 	}

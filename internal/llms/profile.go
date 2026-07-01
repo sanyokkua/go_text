@@ -27,6 +27,11 @@ type ProviderProfile struct {
 	DiscoveryStrategy DiscoveryStrategy
 
 	Capabilities ProviderCapabilities
+
+	// NativeChatPath, when non-empty, is the path to a kind-specific native chat endpoint
+	// used instead of CompletionPathTemplate. T63: Ollama's OpenAI-compatible endpoint
+	// silently ignores options.num_ctx; its native endpoint honors it.
+	NativeChatPath string
 }
 
 var ollamaProfile = ProviderProfile{
@@ -42,6 +47,7 @@ var ollamaProfile = ProviderProfile{
 		DeploymentInURL:       false,
 		StripThinkTags:        true,
 	},
+	NativeChatPath: "api/chat",
 }
 
 var lmStudioProfile = ProviderProfile{

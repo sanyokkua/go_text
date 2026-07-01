@@ -43,6 +43,10 @@ func (p *OpenAICompatibleProvider) buildCompletionURL() string {
 	return base + strings.TrimPrefix(tmpl, "/")
 }
 
+func (p *OpenAICompatibleProvider) buildNativeChatURL() string {
+	return p.buildBaseURL() + strings.TrimPrefix(p.profile.NativeChatPath, "/")
+}
+
 func (p *OpenAICompatibleProvider) buildModelsURL() string {
 	base := p.buildBaseURL()
 	tmpl := p.cfg.Config.ModelsPath
@@ -84,6 +88,10 @@ func (p *OpenAICompatibleProvider) buildHeaders() map[string]string {
 }
 
 func (p *OpenAICompatibleProvider) Chat(ctx context.Context, req ChatRequest) (ChatResponse, error) {
+	if p.profile.NativeChatPath != "" {
+		return p.chatNative(ctx, req)
+	}
+
 	start := time.Now()
 	url := p.buildCompletionURL()
 	headers := p.buildHeaders()
@@ -112,10 +120,6 @@ func (p *OpenAICompatibleProvider) Chat(ctx context.Context, req ChatRequest) (C
 			wireReq.MaxCompletionTokens = req.MaxTokens
 		}
 	}
-	if p.profile.Kind == KindOllama && req.NumCtx != nil {
-		wireReq.Options = &Options{NumCtx: req.NumCtx}
-	}
-
 	var wireResp ChatCompletionResponse
 	resp, err := p.client.R().
 		SetContext(ctx).

@@ -47,6 +47,16 @@ func successChatBody(content string) []byte {
 	return b
 }
 
+// successNativeChatBody builds an Ollama native /api/chat non-streaming response body.
+func successNativeChatBody(content string) []byte {
+	resp := OllamaNativeChatResponse{
+		Message:    CompletionRequestMessage{Role: "assistant", Content: content},
+		DoneReason: "stop",
+	}
+	b, _ := json.Marshal(resp)
+	return b
+}
+
 // --- Chat: 200 success ---
 
 func TestOpenAICompatibleProvider_Chat_Success(t *testing.T) {
@@ -67,13 +77,15 @@ func TestOpenAICompatibleProvider_Chat_Success(t *testing.T) {
 	}
 }
 
-// --- Chat: think-tag stripping for ollama ---
+// --- Chat: think-tag stripping for ollama (native endpoint, see T63) ---
 
 func TestOpenAICompatibleProvider_Chat_StripsThinkTags(t *testing.T) {
 	t.Parallel()
+	var gotPath string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(successChatBody("<think>reasoning</think>Final answer"))
+		w.Write(successNativeChatBody("<think>reasoning</think>Final answer"))
 	}))
 	defer srv.Close()
 
@@ -84,6 +96,9 @@ func TestOpenAICompatibleProvider_Chat_StripsThinkTags(t *testing.T) {
 	}
 	if resp.Content != "Final answer" {
 		t.Errorf("think tags not stripped, got: %q", resp.Content)
+	}
+	if gotPath != "/api/chat" {
+		t.Errorf("want ollama to hit native /api/chat, got: %q", gotPath)
 	}
 }
 

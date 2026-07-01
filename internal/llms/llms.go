@@ -17,8 +17,9 @@ type CompletionRequestMessage struct {
 }
 
 type Options struct {
-	Temperature float64 `json:"temperature,omitempty"`
-	NumCtx      *int    `json:"num_ctx,omitempty"` // ollama context window
+	Temperature *float64 `json:"temperature,omitempty"`
+	NumCtx      *int     `json:"num_ctx,omitempty"`     // ollama context window (native endpoint only, see T63)
+	NumPredict  *int     `json:"num_predict,omitempty"` // ollama output-token cap; native equivalent of max_tokens
 }
 
 // ChatCompletionRequest represents the structure for OpenAI-compatible API requests

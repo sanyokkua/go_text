@@ -348,21 +348,26 @@ func TestLLMServiceAPI_GetCompletionResponse(t *testing.T) {
 
 // TestLLMServiceAPI_GetCompletionResponse_ContextWindowDecoupledFromMaxTokens is the
 // T62 regression guard at the llms layer: a large ContextWindow must route only to
-// options.num_ctx (Ollama), never to max_tokens/max_completion_tokens. The request
-// passed in here already carries a small MaxTokens value, as the fixed
-// actions.newChatCompletionRequest now produces — this test proves the llms layer
-// forwards it unchanged and does not substitute ContextWindow anywhere along the way.
+// options.num_ctx, never to a top-level max_tokens/max_completion_tokens field. Since
+// T63, Ollama chat requests go through the native /api/chat endpoint (options.num_ctx
+// is silently ignored by Ollama's OpenAI-compatible endpoint) — the output-token cap
+// travels as options.num_predict there, not as a top-level field. This test proves the
+// llms layer forwards the small output-token cap unchanged and never substitutes
+// ContextWindow for it.
 func TestLLMServiceAPI_GetCompletionResponse_ContextWindowDecoupledFromMaxTokens(t *testing.T) {
 	log := &TestLogger{}
 	restyClient := resty.New()
 
 	var capturedBody map[string]any
+	var capturedPath string
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
 		require.NoError(t, json.NewDecoder(r.Body).Decode(&capturedBody))
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(&ChatCompletionResponse{
-			Choices: []Choice{{Message: CompletionRequestMessage{Role: "assistant", Content: "ok"}}},
+		_ = json.NewEncoder(w).Encode(&OllamaNativeChatResponse{
+			Message:    CompletionRequestMessage{Role: "assistant", Content: "ok"},
+			DoneReason: "stop",
 		})
 	}))
 	defer mockServer.Close()
@@ -396,15 +401,16 @@ func TestLLMServiceAPI_GetCompletionResponse_ContextWindowDecoupledFromMaxTokens
 	_, err := llmService.GetCompletionResponse(request)
 	require.NoError(t, err)
 
-	require.Contains(t, capturedBody, "max_completion_tokens")
-	assert.NotEqual(t, float64(largeContextWindow), capturedBody["max_completion_tokens"],
-		"max_completion_tokens must never equal ContextWindow")
-	assert.Equal(t, float64(smallMaxOutputTokens), capturedBody["max_completion_tokens"])
+	assert.Equal(t, "/api/chat", capturedPath, "ollama requests must hit the native chat endpoint")
+	assert.NotContains(t, capturedBody, "max_completion_tokens")
 	assert.NotContains(t, capturedBody, "max_tokens")
 
 	options, ok := capturedBody["options"].(map[string]any)
 	require.True(t, ok, "expected options object for ollama request")
 	assert.Equal(t, float64(largeContextWindow), options["num_ctx"], "ContextWindow must route to num_ctx")
+	assert.NotEqual(t, float64(largeContextWindow), options["num_predict"],
+		"num_predict must never equal ContextWindow")
+	assert.Equal(t, float64(smallMaxOutputTokens), options["num_predict"])
 }
 
 // TestLLMServiceAPI_GetModelsListForProvider tests the GetModelsListForProvider method
