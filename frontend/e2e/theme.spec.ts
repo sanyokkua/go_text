@@ -38,13 +38,19 @@ test.describe('Theme: no-FOUC and live OS follow', () => {
         expect(hasDarkAfterFlip, '.dark class not applied after OS flip to dark').toBe(true);
     });
 
-    test('stored dark preference is applied before first paint', async ({ page }) => {
-        await page.addInitScript(() => globalThis.localStorage.setItem('ui.theme', 'dark'));
+    test('stored dark preference (persisted backend setting) overrides a light OS default once loaded', async ({ page }) => {
+        // Theme is persisted via the backend UIPreferences (SQLite), not localStorage — see
+        // frontend/src/main.tsx and frontend/src/logic/store/settings/thunks.ts:getUIPreferences.
+        // Seed the bridge-mock's GetUIPreferencesConfig response the same way appbar.spec.ts does
+        // for layout/sidebarCollapsed/etc.
+        await page.addInitScript(() => {
+            (window as Window & { __bridgeMockUIPrefs?: Record<string, unknown> }).__bridgeMockUIPrefs = { theme: 'dark' };
+        });
         await page.emulateMedia({ colorScheme: 'light' });
         await page.goto('/');
         await page.waitForLoadState('networkidle');
 
         const hasDarkClass = await page.evaluate(() => document.documentElement.classList.contains('dark'));
-        expect(hasDarkClass, 'stored dark preference should override light OS').toBe(true);
+        expect(hasDarkClass, 'stored dark preference should override light OS once the backend value loads').toBe(true);
     });
 });

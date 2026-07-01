@@ -6,8 +6,11 @@
     <title>GoText</title>
     <script>
         (function () {
-            var m = globalThis.localStorage.getItem('ui.theme') || 'auto';
-            if (m === 'dark' || (m !== 'light' && globalThis.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            // Pre-paint OS-preference guess, matching main.tsx's initTheme('auto') — avoids a flash
+            // of the wrong theme in the gap between HTML parse and the deferred module executing.
+            // The persisted theme (backend UIPreferences, not localStorage) is applied a moment
+            // later once getUIPreferences resolves.
+            if (globalThis.matchMedia('(prefers-color-scheme: dark)').matches) {
                 document.documentElement.classList.add('dark');
             }
         })();

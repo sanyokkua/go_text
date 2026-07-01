@@ -52,9 +52,7 @@ const AppearanceTab: React.FC = () => {
                 </div>
             </div>
 
-            <p className={styles.helper}>
-                Applies instantly and persists (<code>ui.theme</code>); the chosen theme is used everywhere in the app.
-            </p>
+            <p className={styles.helper}>Applies instantly and persists across restarts; the chosen theme is used everywhere in the app.</p>
         </section>
     );
 };
