@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test';
+import { expect, Page, test } from '@playwright/test';
 
 async function loadEditor(page: Page): Promise<void> {
     await page.goto('/');
@@ -178,8 +178,8 @@ test.describe('Editor UI interactions', () => {
         await page.getByRole('button', { name: /^run$/i }).click();
         await expect(page.getByText('Mock output text.')).toBeVisible({ timeout: 10000 });
 
-        // Act – switch view using OutputPane's own view buttons (aria-label based)
-        await page.getByRole('button', { name: /source view/i }).click();
+        // Act – switch view using the AppBar's Preview/Source/Diff radio group
+        await page.getByRole('radio', { name: 'Source' }).click();
 
         // Assert – output is inside a <pre> element (source mode)
         await expect(page.locator('pre')).toHaveText(/mock output text\./i, { timeout: 5000 });
