@@ -183,6 +183,40 @@ describe('ActionsSidebar — normal mode', () => {
         expect(store.getState().ui.armedActionId).toBe('proofread');
         expect(store.getState().ui.armedStackId).toBeNull();
     });
+
+    it('clicking an already-armed action deselects it', async () => {
+        const store = makeStore({ ui: { armedActionId: 'proofread' } });
+        render(
+            <Provider store={store}>
+                <ActionsSidebar />
+            </Provider>,
+        );
+        await userEvent.click(screen.getByRole('button', { name: /proofread/i }));
+        expect(store.getState().ui.armedActionId).toBeNull();
+    });
+
+    it('clicking a different, unarmed action still arms it', async () => {
+        const secondAction = {
+            id: 'summarize',
+            name: 'Summarize',
+            category: 'Writing',
+            family: 'summarize',
+            directive: '',
+            orderRank: 20,
+            exclusivityGroup: '',
+            mergeable: false,
+            terminal: true,
+            requires: [],
+        };
+        const store = makeStore({ catalog: [MOCK_ACTION, secondAction], ui: { armedActionId: 'proofread' } });
+        render(
+            <Provider store={store}>
+                <ActionsSidebar />
+            </Provider>,
+        );
+        await userEvent.click(screen.getByRole('button', { name: /summarize/i }));
+        expect(store.getState().ui.armedActionId).toBe('summarize');
+    });
 });
 
 describe('ActionsSidebar — build mode', () => {

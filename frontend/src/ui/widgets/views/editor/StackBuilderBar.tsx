@@ -79,6 +79,7 @@ const StackBuilderBar: React.FC<StackBuilderBarProps> = ({ onSave, boxed = false
     };
 
     const inferenceLabel = inferenceCount === 1 ? '1 inference' : `${inferenceCount} inferences`;
+    const inferenceCapReached = inferenceCount >= 3;
     const barClass = [styles.bar, boxed ? styles.boxed : ''].filter(Boolean).join(' ');
 
     return (
@@ -116,7 +117,8 @@ const StackBuilderBar: React.FC<StackBuilderBarProps> = ({ onSave, boxed = false
 
             {/* Live counter */}
             <span className={styles.counter}>
-                ▤ {stepCount} / 5 steps · {inferenceLabel}
+                ▤ {stepCount} / 5 steps ·{' '}
+                <span className={inferenceCapReached ? styles.inferenceCapReached : undefined}>{inferenceLabel}</span>
             </span>
 
             {/* Action buttons */}

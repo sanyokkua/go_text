@@ -143,10 +143,14 @@ const ActionsSidebar: React.FC = () => {
                                         key={action.id}
                                         className={`${styles.actionRow} ${isSelected ? styles.actionArmed : ''} ${isDisabled && !isSelected ? styles.actionDisabled : ''}`}
                                         onClick={() => {
-                                            if (isDisabled || isSelected) return;
+                                            if (isDisabled) return;
                                             if (buildMode) {
+                                                if (isSelected) return; // removal happens via the chip ✕ in StackBuilderBar
                                                 dispatch(addStep(action.id));
                                                 logger.logInfo(`Build: added step ${action.id}`);
+                                            } else if (isSelected) {
+                                                dispatch(armAction(null));
+                                                logger.logInfo(`Deselected action: ${action.id}`);
                                             } else {
                                                 dispatch(armAction(action.id));
                                                 logger.logInfo(`Armed action: ${action.id}`);

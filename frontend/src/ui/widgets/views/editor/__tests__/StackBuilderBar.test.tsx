@@ -47,6 +47,30 @@ const TONE = {
     terminal: false,
     requires: [],
 };
+const SUMMARIZE = {
+    id: 'summarize',
+    name: 'Summarize',
+    category: 'Condense',
+    family: 'summarize',
+    directive: '',
+    orderRank: 40,
+    exclusivityGroup: '',
+    mergeable: false,
+    terminal: true,
+    requires: [],
+};
+const TRANSLATE = {
+    id: 'translate',
+    name: 'Translate',
+    category: 'Language',
+    family: 'translate',
+    directive: '',
+    orderRank: 50,
+    exclusivityGroup: '',
+    mergeable: false,
+    terminal: true,
+    requires: [],
+};
 
 interface StoreOverrides {
     steps?: string[];
@@ -54,6 +78,7 @@ interface StoreOverrides {
     runStatus?: string;
     runId?: string;
     inputContent?: string;
+    catalog?: object[];
 }
 
 function makeStore(overrides: StoreOverrides = {}) {
@@ -95,7 +120,12 @@ function makeStore(overrides: StoreOverrides = {}) {
                 errorMessage: null,
             },
             editor: { inputContent: overrides.inputContent ?? 'some text', outputContent: '', viewMode: 'preview' as const },
-            actions: { catalog: [PROOFREAD, TONE], catalogStatus: 'success' as const, availableModels: [], modelsStatus: 'idle' as const },
+            actions: {
+                catalog: (overrides.catalog ?? [PROOFREAD, TONE]) as never,
+                catalogStatus: 'success' as const,
+                availableModels: [],
+                modelsStatus: 'idle' as const,
+            },
             stacksBuilder: { steps: overrides.steps ?? [], name: '', icon: '' },
             stacksSaved: { stacks: [], status: 'idle' as const, error: null },
         },
@@ -201,6 +231,24 @@ describe('StackBuilderBar', () => {
         const removeBtns = screen.getAllByRole('button', { name: /remove/i });
         await userEvent.click(removeBtns[0]);
         expect(store.getState().stacksBuilder.steps).toHaveLength(1);
+    });
+
+    it('highlights the inference counter once the 3-inference cap is reached', () => {
+        render(
+            <Provider store={makeStore({ steps: ['proofread', 'summarize', 'translate'], catalog: [PROOFREAD, TONE, SUMMARIZE, TRANSLATE] })}>
+                <StackBuilderBar onSave={jest.fn()} />
+            </Provider>,
+        );
+        expect(screen.getByText(/^3 inferences$/)).toHaveClass('inferenceCapReached');
+    });
+
+    it('does not highlight the inference counter below the 3-inference cap', () => {
+        render(
+            <Provider store={makeStore({ steps: ['proofread', 'summarize'], catalog: [PROOFREAD, TONE, SUMMARIZE, TRANSLATE] })}>
+                <StackBuilderBar onSave={jest.fn()} />
+            </Provider>,
+        );
+        expect(screen.getByText(/^2 inferences$/)).not.toHaveClass('inferenceCapReached');
     });
 
     it('shows Cancel run button while run is in progress', () => {

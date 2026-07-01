@@ -107,6 +107,11 @@
     flex-shrink: 0;
 }
 
+.inferenceCapReached {
+    color: var(--warn);
+    font-weight: 700;
+}
+
 .actions {
     display: flex;
     align-items: center;
