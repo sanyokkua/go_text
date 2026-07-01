@@ -93,7 +93,7 @@ needs.
 | Target | How it is launched | Backend | Wails bridge (`window.go.*`, `window.runtime`) | What it is for |
 |---|---|---|---|---|
 | **A — Frontend-only dev server** | `cd frontend && npm run dev` (Vite, e.g. `http://localhost:5173`) | **None** — no Go process | **Mocked**: a dev-only **browser bridge mock** implements every bound method signature and the event API (`EventsOn`/`EventsEmit`), returning fixtures | Fast, deterministic UI: component states, responsive/visual checks, every error/loading/empty/partial state, theming — without a backend |
-| **B — Backend-connected dev server** | `wails dev` (serves the rendered app with the live bridge at `http://localhost:34115`) | **Real** Go backend, all handlers bound | **Real** — generated bindings call the running Go code | Full end-to-end journeys through the real backend; provider HTTP is the only thing faked (httptest-style local stub) |
+| **B — Backend-connected dev server** | `wails dev` (serves the rendered app with the live bridge at `http://localhost:34115`) | **Real** Go backend, all handlers bound | **Real** — generated bindings call the running Go code | Full end-to-end journeys through the real backend against **real local providers** (Ollama / LM Studio) — see `frontend/e2e/live-llm.spec.ts` (`npm run verify:live`). Local-only; not run in CI (no local LLM runtime available there) |
 
 Rules for the two targets:
 
@@ -104,10 +104,20 @@ Rules for the two targets:
    `frontend/src/dev/bridge-mock/` and is injected only in dev/test builds (never shipped).
 2. **Target A proves the UI; Target B proves the wiring.** Pure UI gates (responsive, visual, console,
    focus, theming, state rendering) run against **A** because they must be deterministic and need no
-   Go. Integration journeys that must exercise the real bridge, events, and cancellation run against
-   **B**.
-3. **No real LLM in either.** Target A uses fixtures; Target B uses a local/mock stub provider at the
-   network boundary. Neither contacts a real external provider.
+   Go. Integration journeys that must exercise the real bridge, events, cancellation, and actual model
+   behavior run against **B**.
+3. **Target A never contacts a real provider; Target B does (local only).** Target A uses the frontend
+   bridge-mock's fixtures exclusively — never a real or even local LLM — so its scripted flows
+   (`frontend/e2e/verify-ui.spec.ts` via `npm run verify:ui`, `frontend/e2e/smoke-tests.spec.ts` via
+   `npm run verify:smoke`, both against `npm run dev`) stay fully deterministic and CI-safe. Target B's
+   dedicated live suite
+   (`frontend/e2e/live-llm.spec.ts`, `npm run verify:live`) talks to real local providers (Ollama, LM
+   Studio) and is intentionally **not** run in CI — it requires local LLM runtimes CI doesn't have, and
+   its assertions are written to tolerate non-deterministic model output (checking for absence of
+   error sentinels and presence of expected substrings, not exact text). `smoke-tests.spec.ts`
+   historically carried a "Target B, bridge-dependent journeys" label in this document, but its
+   scripted flows (`?history-test=1`, `?xss=1`, `?markdown=1`) are implemented by the frontend
+   bridge-mock and only work when that mock is active — i.e. it is Target A only, corrected below.
 4. **Same component, both targets.** A view's `MarkdownView`, dialogs, and run lifecycle behave
    identically in A and B; tests assert that the rendered behavior matches across targets for the
    shared flows (run a single action, render Markdown, switch theme).
@@ -228,7 +238,10 @@ pipeline. The view↔test mapping is enumerated in §2.3.
 
 Each rendered surface has a **unit test** (RTL, Target-A logic in jsdom) **and** a **UI test**
 (Playwright/Chromium, §4, Target A unless a real-bridge journey is required, then Target B). This table
-is the checklist the §11 pipeline enforces.
+is the checklist the §11 pipeline enforces. Rows marked **(B)** below are CI-gated only for their
+Target-A coverage; the Target-B portion is verified via `frontend/e2e/live-llm.spec.ts` (§4.1.1),
+which is local-only and not exhaustive — treat unmarked gaps between this checklist and that suite's
+actual test list as tracked follow-up work, not a silent pass.
 
 | Surface (component / view) | Unit test (Jest + RTL) | UI test (Playwright / Chromium) |
 |---|---|---|
@@ -343,8 +356,9 @@ whole status matrix. Each row asserts the **typed code** surfaced through the ha
 
 End-to-end tests validate complete user journeys through the rendered application (the built
 webview). They are **scripted scenarios** that may be run **manually** against a debug build or
-**automated** by driving the webview. Each scenario uses a mocked or local stub provider — no real
-external LLM. Each scenario lists pre-conditions, numbered steps, and expected observable outcomes.
+**automated** by driving the webview — against a bridge-mocked frontend (Target A) or a real local
+provider (Target B, §1.5); see §4.1 for the automated equivalents of these journeys. Each scenario
+lists pre-conditions, numbered steps, and expected observable outcomes.
 
 | # | Journey | Scripted steps (abridged) | Expected outcome |
 |---|---|---|---|
@@ -362,23 +376,39 @@ triggered during a happy-path run.
 ### 4.1 Headless-Chromium UI verification (Playwright)
 Because the frontend runs in a webview, automated UI checks drive the rendered app in **headless
 Chromium via Playwright** against a running dev server. The scripts accept a `BASE_URL` so they run
-against either run target from §1.5: **Target A** (`npm run dev`, mocked bridge) for the deterministic
-responsive/visual/state gates, and **Target B** (`wails dev`, real backend) for the bridge-dependent
-journeys. CI runs the gates against Target A by default and the integration journeys against Target B.
-Two scripts under `frontend/scripts/`:
+against either run target from §1.5. Both of the CI-gated scripts below run against **Target A**
+(`npm run dev`, mocked bridge) and are fully deterministic — CI runs both headless. Target B's
+integration/live journeys are a separate suite (§4.1.1) and are **not** run in CI. Playwright specs
+live under `frontend/e2e/`:
 
-- **Responsive/visual gate** (`verify-ui.mjs`): for every primary route × at least three viewport widths
-  (narrow / tablet / wide) × **both themes** (light, dark), assert: (1) **no horizontal overflow**
-  (`scrollWidth ≤ clientWidth + 1`); (2) **no console errors / page errors**; (3) the expected key
-  element is present (e.g. the editor on the main view); (4) body font is the sans-serif token, not a
-  fallback serif. Capture a screenshot per combination for review.
-- **Interaction smoke flows** (`smoke-tests.mjs`): scripted user flows (run a single action with a
-  mocked/local stub provider; build + run a stack; open the History rail; add + verify a provider;
-  switch theme; open the Prompt Inspector; **render Markdown output in Preview**) — each performs
-  type/click/assert and captures before/after screenshots.
+- **Responsive/visual gate** (`verify-ui.spec.ts`, run via `npm run verify:ui`): for every primary
+  route × at least three viewport widths (narrow / tablet / wide) × **both themes** (light, dark),
+  assert: (1) **no horizontal overflow** (`scrollWidth ≤ clientWidth + 1`); (2) **no console errors /
+  page errors**; (3) the expected key element is present (e.g. the editor on the main view); (4) body
+  font is the sans-serif token, not a fallback serif. Capture a screenshot per combination for review.
+- **Interaction smoke flows** (`smoke-tests.spec.ts`, run via `npm run verify:smoke`, **Target A
+  only**): scripted user flows against the frontend bridge-mock's deterministic fixtures (triggered via
+  URL params such as `?history-test=1`, `?xss=1`, `?markdown=1`) — app loads without a JS error; run a
+  single action end-to-end; open the History rail and restore a seeded entry; open the Prompt
+  Inspector from About·Info; untrusted `<script>`/`javascript:` output stays inert; Markdown output
+  (table + fenced code) renders and re-themes correctly. Each performs type/click/assert and captures
+  a screenshot. Because it depends on the frontend bridge-mock's fixture-injection mechanism, this
+  suite only runs meaningfully against Target A — running it with `BASE_URL` pointed at a real
+  `wails dev` backend fails, since the mock-only URL params and canned response text have no
+  real-backend equivalent.
 
-Both run via an aggregate `verify:ui` script and in CI (headless). They use a mocked or local stub
-provider — never a real external LLM.
+#### 4.1.1 Target B live verification (local only, not in CI)
+
+`frontend/e2e/live-llm.spec.ts` (run via `npm run verify:live` with `wails dev` already running at
+`:34115` and Ollama/LM Studio available locally) is the real-backend counterpart: real bridge reachable
++ editor renders; a real proofread produces non-sentinel corrected output; provider diagnostics
+(connection/models/inference) pass; a 2-step stack builds and runs with real multi-inference; theme
+toggle applies to `documentElement`; a seeded stack runs from Manage; a run is recorded to history and
+is restorable; the AppBar model dropdown lists real discovered models; and the same proofread journey
+is repeated against Ollama. Assertions are written to tolerate non-deterministic model text (checking
+for the absence of known model-artifact sentinels and the presence of expected substrings, not exact
+strings) — this is what makes it viable against a real, non-deterministic LLM where
+`smoke-tests.spec.ts`'s exact-string assertions are not.
 
 ### 4.2 Markdown rendering (E2E)
 | # | Journey | Steps (abridged) | Expected outcome |
@@ -661,12 +691,16 @@ a prerequisite for all feature tasks.
 | 4 | **Frontend unit + a11y** | `npm test` (Jest + RTL + `jest-axe`, coverage) | a test fails or coverage drops below §1.4 |
 | 5 | **Codegen drift** | `sqlc diff`; `wails generate module` (tree clean) | generated `store`/bindings differ from source |
 | 6 | **Build** | `go build ./...` and `cd frontend && npm run build` (and a `wails build` smoke before release) | either build fails |
-| 7 | **UI verification — Target A** | start `npm run dev`, then `npm run verify:ui` (Playwright: routes × ≥3 widths × 2 themes + interaction smoke incl. Markdown) | overflow, console/page error, fallback-serif font, missing key element, or a smoke flow fails |
-| 8 | **UI verification — Target B** | start `wails dev`, then `BASE_URL=http://localhost:34115 npm run verify:smoke` (bridge-dependent journeys) | a backend-connected journey fails |
+| 7 | **UI verification — Target A** | start `npm run dev`, then `npm run verify:ui` (Playwright: routes × ≥3 widths × 2 themes) and `npm run verify:smoke` (interaction smoke incl. Markdown) | overflow, console/page error, fallback-serif font, missing key element, or a smoke flow fails |
+| 8 | **Live verification — Target B (local only)** | start `wails dev` with Ollama/LM Studio running locally, then `npm run verify:live` (`frontend/e2e/live-llm.spec.ts`) | a real-backend journey fails (non-deterministic model text is tolerated; see §4.1.1) |
 | 9 | **CI guards** | `@mui`/`@emotion` absent · `govulncheck ./...` · `npm audit` · `wails doctor` | any guard reports a violation |
 | 10 | **Clean tree** | `git status` | uncommitted generated/formatted files remain after the pipeline |
 
-CI runs the same gates (gates 7–8 headless). A change merges only when the whole pipeline is green.
+CI runs gate 7 headless (both `verify:ui` and `verify:smoke`, Target A only). Gate 8 requires local
+Ollama/LM Studio and is **not** run in CI — it is a mandatory local step before a context-window- or
+provider-facing change is considered done (§11.2), verified manually or via `verify:live` on the
+developer's machine. A change merges only when gates 1–7 and 9–10 are green in CI and gate 8 has been
+run locally for any change touching provider/inference behavior.
 
 ### 11.2 Per-task live verification (after every task)
 
