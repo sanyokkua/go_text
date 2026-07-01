@@ -119,7 +119,7 @@ function makeStore(overrides: StoreOverrides = {}) {
                 errorCode: null,
                 errorMessage: null,
             },
-            editor: { inputContent: overrides.inputContent ?? 'some text', outputContent: '', viewMode: 'preview' as const },
+            editor: { inputContent: overrides.inputContent ?? 'some text', outputContent: '', viewMode: 'preview' as const, tokenEstimate: null },
             actions: {
                 catalog: (overrides.catalog ?? [PROOFREAD, TONE]) as never,
                 catalogStatus: 'success' as const,

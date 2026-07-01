@@ -36,6 +36,7 @@ function makeStore(uiOverride = {}) {
                 inputContent: '',
                 outputContent: '',
                 viewMode: 'preview' as const,
+                tokenEstimate: null,
             },
             ui: {
                 layout: 'side' as const,

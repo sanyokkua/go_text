@@ -50,7 +50,7 @@ function makeStore(editorOverrides = {}, uiOverrides = {}) {
             history: historyReducer,
         },
         preloadedState: {
-            editor: { inputContent: '', outputContent: '', viewMode: 'preview' as const, ...editorOverrides },
+            editor: { inputContent: '', outputContent: '', viewMode: 'preview' as const, tokenEstimate: null, ...editorOverrides },
             ui: {
                 layout: 'side' as const,
                 sidebarCollapsed: false,

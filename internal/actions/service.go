@@ -506,6 +506,7 @@ func (a *ActionService) BuildPlanAndPrompts(req apperr.PromptPreviewRequest) (*a
 			groupInput = prevStepPlaceholder
 		}
 		sys, user := a.composer.Compose(g, groupInput, chainReq, req.UseMarkdown)
+		estimatedTokens := prompts.EstimateTokenCount(sys) + prompts.EstimateTokenCount(user)
 
 		applied := make([]apperr.AppliedAction, len(g.Steps))
 		for j, s := range g.Steps {
@@ -518,12 +519,13 @@ func (a *ActionService) BuildPlanAndPrompts(req apperr.PromptPreviewRequest) (*a
 		}
 
 		groups[i] = apperr.PreviewGroup{
-			Index:          i,
-			Family:         g.Family,
-			AppliedActions: applied,
-			SystemPrompt:   sys,
-			UserPrompt:     user,
-			Parameters:     params,
+			Index:           i,
+			Family:          g.Family,
+			AppliedActions:  applied,
+			SystemPrompt:    sys,
+			UserPrompt:      user,
+			Parameters:      params,
+			EstimatedTokens: estimatedTokens,
 		}
 	}
 

@@ -117,7 +117,7 @@ function makeStore(overrides: StoreOverrides = {}) {
                 activeSettingsTab: 0,
                 theme: { mode: 'auto' as const, effective: 'light' as const },
             },
-            editor: { inputContent: '', outputContent: '', viewMode: 'preview' as const },
+            editor: { inputContent: '', outputContent: '', viewMode: 'preview' as const, tokenEstimate: null },
             actions: {
                 catalog: (overrides.catalog ?? [MOCK_ACTION]) as never,
                 catalogStatus: 'idle' as const,

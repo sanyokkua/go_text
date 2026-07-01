@@ -102,7 +102,19 @@ export function GetModels(_providerId: string): Promise<AnyResult> {
     return Promise.resolve(ok([]));
 }
 
-export function PreviewPrompt(_req: unknown): Promise<AnyResult> {
+interface PreviewPromptRequestLike {
+    sampleInput?: string;
+}
+
+// Mirrors the real backend's rough "chars / 4" fallback heuristic closely enough
+// that Playwright fixtures can trigger the warn/err thresholds by typing text of
+// a known length against a mocked contextWindow, without needing the real tokenizer.
+const MOCK_FIXED_PROMPT_TEXT = 'You are a helpful assistant that summarises text.Summarise the following:\n\n';
+const MOCK_CHARS_PER_TOKEN = 4;
+
+export function PreviewPrompt(req: unknown): Promise<AnyResult> {
+    const sampleInput = (req as PreviewPromptRequestLike)?.sampleInput ?? '';
+    const estimatedTokens = Math.ceil((MOCK_FIXED_PROMPT_TEXT.length + sampleInput.length) / MOCK_CHARS_PER_TOKEN);
     return Promise.resolve(
         ok({
             kind: 'single',
@@ -115,6 +127,7 @@ export function PreviewPrompt(_req: unknown): Promise<AnyResult> {
                     systemPrompt: 'You are a helpful assistant that summarises text.',
                     userPrompt: 'Summarise the following:\n\n{{user_text}}',
                     parameters: { model: 'mock-model', format: 'text', tokenParam: 'max_tokens', stream: false },
+                    estimatedTokens,
                 },
             ],
             summary: 'Summarise action preview',

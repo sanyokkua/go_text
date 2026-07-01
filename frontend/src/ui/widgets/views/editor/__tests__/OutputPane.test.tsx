@@ -19,7 +19,7 @@ function makeStore(editorOverrides = {}, runOverrides = {}) {
     return configureStore({
         reducer: { editor: editorReducer, ui: uiReducer, run: runReducer, notifications: notificationsReducer },
         preloadedState: {
-            editor: { inputContent: 'hello', outputContent: '', viewMode: 'preview' as const, ...editorOverrides },
+            editor: { inputContent: 'hello', outputContent: '', viewMode: 'preview' as const, tokenEstimate: null, ...editorOverrides },
             run: {
                 status: 'idle' as const,
                 runId: null,

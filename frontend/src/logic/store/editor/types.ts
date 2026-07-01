@@ -4,4 +4,5 @@ export interface EditorState {
     inputContent: string;
     outputContent: string;
     viewMode: EditorViewMode;
+    tokenEstimate: number | null;
 }

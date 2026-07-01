@@ -30,6 +30,24 @@
     font-weight: 400;
 }
 
+.tokenEstimate {
+    font-size: 0.7rem;
+    color: var(--ink-3);
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: 400;
+}
+
+.tokenEstimateWarn {
+    color: var(--warn);
+    font-weight: 700;
+}
+
+.tokenEstimateErr {
+    color: var(--err);
+    font-weight: 700;
+}
+
 .body {
     flex: 1;
     min-height: 0;

@@ -191,12 +191,13 @@ type PreviewParams struct {
 }
 
 type PreviewGroup struct {
-	Index          int             `json:"index"`
-	Family         string          `json:"family"`
-	AppliedActions []AppliedAction `json:"appliedActions"`
-	SystemPrompt   string          `json:"systemPrompt"`
-	UserPrompt     string          `json:"userPrompt"`
-	Parameters     PreviewParams   `json:"parameters"`
+	Index           int             `json:"index"`
+	Family          string          `json:"family"`
+	AppliedActions  []AppliedAction `json:"appliedActions"`
+	SystemPrompt    string          `json:"systemPrompt"`
+	UserPrompt      string          `json:"userPrompt"`
+	Parameters      PreviewParams   `json:"parameters"`
+	EstimatedTokens int             `json:"estimatedTokens"`
 }
 
 type PromptPreview struct {

@@ -230,3 +230,56 @@ test.describe('Editor UI interactions', () => {
         expect(jsErrors).toHaveLength(0);
     });
 });
+
+test.describe('Live token estimate + context-window highlight (T67)', () => {
+    // ?context-window-test=1 makes the bridge mock's GetSettings report useContextWindow=true,
+    // contextWindow=1024 (see SettingsHandler.ts) — the mock estimates ~chars/4 tokens, so a
+    // long sample clears 100% of that window while a short one stays comfortably under 80%.
+    const OVER_LIMIT_INPUT = 'x'.repeat(4300);
+    const UNDER_WARN_INPUT = 'Hi';
+
+    async function loadEditorWithSmallContextWindow(page: Page): Promise<void> {
+        await page.goto('/?context-window-test=1');
+        await page.waitForLoadState('networkidle');
+    }
+
+    test('typing input that exceeds the configured context window shows a red highlight', async ({ page }) => {
+        // Arrange
+        const jsErrors: string[] = [];
+        page.on('pageerror', (err) => jsErrors.push(err.message));
+
+        await loadEditorWithSmallContextWindow(page);
+        await page.getByRole('button', { name: /summarise/i }).click();
+
+        // Act
+        await page.getByLabel('Input text').fill(OVER_LIMIT_INPUT);
+
+        // Assert – the token estimate renders in error (red) styling once it clears 100% of the window.
+        const estimate = page.getByText(/~[\d,]+ tokens/);
+        await expect(estimate).toBeVisible({ timeout: 5000 });
+        await expect(estimate).toHaveCSS('color', 'rgb(208, 83, 83)');
+
+        expect(jsErrors).toHaveLength(0);
+    });
+
+    test('typing input well under 80% of the configured context window stays neutral', async ({ page }) => {
+        // Arrange
+        const jsErrors: string[] = [];
+        page.on('pageerror', (err) => jsErrors.push(err.message));
+
+        await loadEditorWithSmallContextWindow(page);
+        await page.getByRole('button', { name: /summarise/i }).click();
+
+        // Act
+        await page.getByLabel('Input text').fill(UNDER_WARN_INPUT);
+
+        // Assert – the token estimate renders, but without the warn/err color.
+        const estimate = page.getByText(/~[\d,]+ tokens/);
+        await expect(estimate).toBeVisible({ timeout: 5000 });
+        const color = await estimate.evaluate((el) => getComputedStyle(el).color);
+        expect(color).not.toBe('rgb(208, 83, 83)');
+        expect(color).not.toBe('rgb(201, 130, 26)');
+
+        expect(jsErrors).toHaveLength(0);
+    });
+});

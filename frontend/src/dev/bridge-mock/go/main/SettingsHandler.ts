@@ -1,5 +1,14 @@
 import { AnyResult, VoidResult, ok, voidOk } from '../../types';
 
+function mockParam(name: string): boolean {
+    if (globalThis.window === undefined) return false;
+    try {
+        return new URL(globalThis.window.location.href).searchParams.has(name);
+    } catch {
+        return false;
+    }
+}
+
 const defaultProvider = {
     id: 'mock-provider-1',
     name: 'Mock Provider',
@@ -47,12 +56,21 @@ const defaultSettings = {
     appBehaviorConfig: defaultBehavior,
 };
 
+// Lets Playwright fixtures exercise the T67 context-window highlight without depending
+// on UpdateModelConfig, which (like the other mock Update* handlers) always echoes its
+// static default rather than persisting the caller's payload.
+const smallContextWindowSettings = {
+    ...defaultSettings,
+    modelConfig: { ...defaultModel, useContextWindow: true, contextWindow: 1024 },
+};
+
 export function GetSettings(): Promise<AnyResult> {
     // Simulates real backend being slower for GetSettings than GetLoggingConfig.
     // GetLoggingConfig (7 DB reads) always returns before GetSettings in the real app.
     // This delay ensures bridge-mock tests exercise the same async ordering so the
     // sequential dispatch fix is actually tested.
-    return new Promise(resolve => setTimeout(() => resolve(ok(defaultSettings)), 0));
+    const settings = mockParam('context-window-test') ? smallContextWindowSettings : defaultSettings;
+    return new Promise(resolve => setTimeout(() => resolve(ok(settings)), 0));
 }
 export function ResetSettingsToDefault(): Promise<AnyResult> {
     return Promise.resolve(ok(defaultSettings));

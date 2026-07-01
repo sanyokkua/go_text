@@ -21,10 +21,11 @@ jest.mock('../../../adapter', () => ({
 }));
 
 import { getUIPreferences } from '../../settings/thunks';
-import editorReducer, { clearInput, clearOutput, setInputContent, setOutputContent, setViewMode, useOutputAsInput } from '../slice';
+import editorReducer, { clearInput, clearOutput, clearTokenEstimate, setInputContent, setOutputContent, setViewMode, useOutputAsInput } from '../slice';
+import { previewTokenEstimate } from '../thunks';
 import type { EditorState } from '../types';
 
-const initialState: EditorState = { inputContent: '', outputContent: '', viewMode: 'preview' };
+const initialState: EditorState = { inputContent: '', outputContent: '', viewMode: 'preview', tokenEstimate: null };
 
 describe('editor slice reducer', () => {
     it('returns initial state with viewMode preview for unknown action', () => {
@@ -97,5 +98,67 @@ describe('editor slice reducer', () => {
         const state = editorReducer(initialState, action);
 
         expect(state.viewMode).toBe('source');
+    });
+
+    it('clearTokenEstimate resets tokenEstimate to null', () => {
+        const stateWithEstimate: EditorState = { ...initialState, tokenEstimate: 42 };
+
+        const state = editorReducer(stateWithEstimate, clearTokenEstimate());
+
+        expect(state.tokenEstimate).toBeNull();
+    });
+
+    it('previewTokenEstimate.fulfilled sets tokenEstimate from the first group when the request matches current input', () => {
+        const currentState: EditorState = { ...initialState, inputContent: 'hello world' };
+        const mockPreview = { kind: 'single', inferences: 1, groups: [{ estimatedTokens: 7 }], summary: '' };
+        const action = {
+            type: previewTokenEstimate.fulfilled.type,
+            payload: mockPreview,
+            meta: { arg: { sampleInput: 'hello world' } },
+        };
+
+        const state = editorReducer(currentState, action);
+
+        expect(state.tokenEstimate).toBe(7);
+    });
+
+    it('previewTokenEstimate.fulfilled ignores a stale response for input the user has since changed', () => {
+        const currentState: EditorState = { ...initialState, inputContent: 'new text', tokenEstimate: 3 };
+        const mockPreview = { kind: 'single', inferences: 1, groups: [{ estimatedTokens: 99 }], summary: '' };
+        const action = {
+            type: previewTokenEstimate.fulfilled.type,
+            payload: mockPreview,
+            meta: { arg: { sampleInput: 'old text' } },
+        };
+
+        const state = editorReducer(currentState, action);
+
+        expect(state.tokenEstimate).toBe(3);
+    });
+
+    it('previewTokenEstimate.rejected clears tokenEstimate when the request matches current input', () => {
+        const currentState: EditorState = { ...initialState, inputContent: 'hello world', tokenEstimate: 7 };
+        const action = {
+            type: previewTokenEstimate.rejected.type,
+            payload: 'no provider configured',
+            meta: { arg: { sampleInput: 'hello world' } },
+        };
+
+        const state = editorReducer(currentState, action);
+
+        expect(state.tokenEstimate).toBeNull();
+    });
+
+    it('previewTokenEstimate.rejected ignores a stale rejection for input the user has since changed', () => {
+        const currentState: EditorState = { ...initialState, inputContent: 'new text', tokenEstimate: 7 };
+        const action = {
+            type: previewTokenEstimate.rejected.type,
+            payload: 'no provider configured',
+            meta: { arg: { sampleInput: 'old text' } },
+        };
+
+        const state = editorReducer(currentState, action);
+
+        expect(state.tokenEstimate).toBe(7);
     });
 });

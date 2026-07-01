@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"go_text/internal/apperr"
+	"go_text/internal/prompts"
 	v3 "go_text/internal/prompts/v3"
 	"go_text/internal/settings"
 )
@@ -435,6 +436,53 @@ func TestActionService_BuildPlanAndPrompts_ContextWindowDisabled_OmitsValue(t *t
 	p := preview.Groups[0].Parameters
 	if p.ContextWindow != nil {
 		t.Errorf("Parameters.ContextWindow should be nil when UseContextWindow=false, got %v", *p.ContextWindow)
+	}
+}
+
+func TestActionService_BuildPlanAndPrompts_EstimatedTokens_ScalesWithSampleInput(t *testing.T) {
+	svc := buildTestService(t)
+
+	shortPreview, err := svc.BuildPlanAndPrompts(apperr.PromptPreviewRequest{
+		ActionID:    "rewrite.proofread.basic",
+		SampleInput: "Hi",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	longPreview, err := svc.BuildPlanAndPrompts(apperr.PromptPreviewRequest{
+		ActionID:    "rewrite.proofread.basic",
+		SampleInput: strings.Repeat("Hello world, this is a much longer sample input. ", 50),
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	shortTokens := shortPreview.Groups[0].EstimatedTokens
+	longTokens := longPreview.Groups[0].EstimatedTokens
+	if shortTokens <= 0 {
+		t.Errorf("EstimatedTokens for short input = %d, want > 0", shortTokens)
+	}
+	if longTokens <= shortTokens {
+		t.Errorf("EstimatedTokens should scale with SampleInput length: short=%d long=%d", shortTokens, longTokens)
+	}
+}
+
+func TestActionService_BuildPlanAndPrompts_EstimatedTokens_MatchesTokenizerHelper(t *testing.T) {
+	svc := buildTestService(t)
+
+	preview, err := svc.BuildPlanAndPrompts(apperr.PromptPreviewRequest{
+		ActionID:    "rewrite.proofread.basic",
+		SampleInput: "Hello world",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	g := preview.Groups[0]
+	want := prompts.EstimateTokenCount(g.SystemPrompt) + prompts.EstimateTokenCount(g.UserPrompt)
+	if g.EstimatedTokens != want {
+		t.Errorf("EstimatedTokens = %d, want %d (EstimateTokenCount(SystemPrompt) + EstimateTokenCount(UserPrompt))", g.EstimatedTokens, want)
 	}
 }
 
