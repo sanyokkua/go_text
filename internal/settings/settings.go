@@ -33,6 +33,8 @@ type ModelConfig struct {
 	UseContextWindow   bool    `json:"useContextWindow"`
 	ContextWindow      int     `json:"contextWindow"`
 	UseLegacyMaxTokens bool    `json:"useLegacyMaxTokens"`
+	UseMaxOutputTokens bool    `json:"useMaxOutputTokens"`
+	MaxOutputTokens    int     `json:"maxOutputTokens"`
 }
 
 // AppBehaviorConfig — v3 adds HistoryEnabled/HistoryMaxEntries;

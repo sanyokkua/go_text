@@ -31,6 +31,7 @@ func (l *TestLogger) Fatal(message string)   {}
 type MockSettingsService struct {
 	baseConfig     *settings.InferenceBaseConfig
 	providerConfig *settings.ProviderConfig
+	modelConfig    *settings.ModelConfig
 }
 
 func (m *MockSettingsService) GetLoggingConfig() (*settings.LoggingConfig, error) {
@@ -104,6 +105,9 @@ func (m *MockSettingsService) GetInferenceBaseConfig() (*settings.InferenceBaseC
 }
 
 func (m *MockSettingsService) GetModelConfig() (*settings.ModelConfig, error) {
+	if m.modelConfig != nil {
+		return m.modelConfig, nil
+	}
 	return &settings.ModelConfig{}, nil
 }
 
@@ -340,6 +344,67 @@ func TestLLMServiceAPI_GetCompletionResponse(t *testing.T) {
 		assert.Error(t, err, "GetCompletionResponse should fail with nil request")
 		assert.Contains(t, err.Error(), "completion request cannot be nil", "Error should mention nil request")
 	})
+}
+
+// TestLLMServiceAPI_GetCompletionResponse_ContextWindowDecoupledFromMaxTokens is the
+// T62 regression guard at the llms layer: a large ContextWindow must route only to
+// options.num_ctx (Ollama), never to max_tokens/max_completion_tokens. The request
+// passed in here already carries a small MaxTokens value, as the fixed
+// actions.newChatCompletionRequest now produces — this test proves the llms layer
+// forwards it unchanged and does not substitute ContextWindow anywhere along the way.
+func TestLLMServiceAPI_GetCompletionResponse_ContextWindowDecoupledFromMaxTokens(t *testing.T) {
+	log := &TestLogger{}
+	restyClient := resty.New()
+
+	var capturedBody map[string]any
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.NoError(t, json.NewDecoder(r.Body).Decode(&capturedBody))
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(&ChatCompletionResponse{
+			Choices: []Choice{{Message: CompletionRequestMessage{Role: "assistant", Content: "ok"}}},
+		})
+	}))
+	defer mockServer.Close()
+
+	const smallMaxOutputTokens = 512
+	const largeContextWindow = 32768
+
+	settingsService := &MockSettingsService{
+		providerConfig: &settings.ProviderConfig{
+			Name:           "Test Ollama Provider",
+			Kind:           "ollama",
+			BaseURL:        mockServer.URL + "/",
+			ModelsPath:     "v1/models",
+			CompletionPath: "v1/chat/completions",
+			AuthScheme:     "none",
+		},
+		modelConfig: &settings.ModelConfig{
+			UseContextWindow: true,
+			ContextWindow:    largeContextWindow,
+		},
+	}
+	llmService := newTestService(log, restyClient, settingsService)
+
+	maxTokens := smallMaxOutputTokens
+	request := &ChatCompletionRequest{
+		Model:               "model-1",
+		Messages:            []CompletionRequestMessage{{Role: "user", Content: "hello"}},
+		MaxCompletionTokens: &maxTokens,
+	}
+
+	_, err := llmService.GetCompletionResponse(request)
+	require.NoError(t, err)
+
+	require.Contains(t, capturedBody, "max_completion_tokens")
+	assert.NotEqual(t, float64(largeContextWindow), capturedBody["max_completion_tokens"],
+		"max_completion_tokens must never equal ContextWindow")
+	assert.Equal(t, float64(smallMaxOutputTokens), capturedBody["max_completion_tokens"])
+	assert.NotContains(t, capturedBody, "max_tokens")
+
+	options, ok := capturedBody["options"].(map[string]any)
+	require.True(t, ok, "expected options object for ollama request")
+	assert.Equal(t, float64(largeContextWindow), options["num_ctx"], "ContextWindow must route to num_ctx")
 }
 
 // TestLLMServiceAPI_GetModelsListForProvider tests the GetModelsListForProvider method

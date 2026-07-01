@@ -54,8 +54,10 @@ func TestMigration_RemapsStaleCamelCaseActionID(t *testing.T) {
 
 	ctx := context.Background()
 
-	// Roll back the remap migration (0003) so we can simulate a pre-remap DB.
-	_, err = database.provider.Down(ctx)
+	// Roll back to before the remap migration (0003) so we can simulate a
+	// pre-remap DB. DownTo(2), not Down() — Down() only undoes the single most
+	// recent migration, which is 0004 (T62) now that 0003 is no longer latest.
+	_, err = database.provider.DownTo(ctx, 2)
 	require.NoError(t, err)
 
 	// Insert a stack with a stale camelCase action_id (as the old seeder wrote).
@@ -130,8 +132,10 @@ func TestMigration_RemapsEveryStaleActionID(t *testing.T) {
 	ctx := context.Background()
 	ids := catalogIDSet()
 
-	// Roll back the remap migration to simulate a pre-remap DB.
-	_, err = database.provider.Down(ctx)
+	// Roll back to before the remap migration to simulate a pre-remap DB.
+	// DownTo(2), not Down() — Down() only undoes the single most recent
+	// migration, which is 0004 (T62) now that 0003 is no longer latest.
+	_, err = database.provider.DownTo(ctx, 2)
 	require.NoError(t, err)
 
 	const stackID = "all-stale-stack"
@@ -186,8 +190,10 @@ func TestMigration_RemapDownReversesMapping(t *testing.T) {
 		stackID, "rewrite.intent.concise")
 	require.NoError(t, err)
 
-	// Roll back the remap migration: dotted -> camelCase.
-	_, err = database.provider.Down(ctx)
+	// Roll back to before the remap migration: dotted -> camelCase.
+	// DownTo(2), not Down() — Down() only undoes the single most recent
+	// migration, which is 0004 (T62) now that 0003 is no longer latest.
+	_, err = database.provider.DownTo(ctx, 2)
 	require.NoError(t, err)
 
 	var got string

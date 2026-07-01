@@ -318,6 +318,9 @@ func (s *SettingsService) UpdateModelConfig(cfg *ModelConfig) (*ModelConfig, err
 	if cfg.UseContextWindow && (cfg.ContextWindow < 1024 || cfg.ContextWindow > 200000) {
 		return nil, apperr.Validation("contextWindow", "1024–200000 when enabled", fmt.Sprintf("%d", cfg.ContextWindow))
 	}
+	if cfg.UseMaxOutputTokens && (cfg.MaxOutputTokens < 1 || cfg.MaxOutputTokens > 32000) {
+		return nil, apperr.Validation("maxOutputTokens", "1–32000 when enabled", fmt.Sprintf("%d", cfg.MaxOutputTokens))
+	}
 	if err := s.settingsRepo.UpdateModelConfig(cfg); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}

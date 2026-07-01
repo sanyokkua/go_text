@@ -40,10 +40,10 @@ func TestOpen_FreshDB_MigratesAndSeeds(t *testing.T) {
 	assert.Contains(t, langs, "English")
 	assert.Contains(t, langs, "Ukrainian")
 
-	// Settings: 26 defaults seeded
+	// Settings: 28 defaults seeded
 	settings, err := database.Queries.ListSettings(ctx)
 	require.NoError(t, err)
-	assert.Len(t, settings, 26)
+	assert.Len(t, settings, 28)
 
 	// app_state: current provider is set, and it is the Ollama provider.
 	provID, err := database.Queries.GetCurrentProviderID(ctx)
@@ -78,6 +78,15 @@ func TestOpen_ExistingDB_DoesNotReseed(t *testing.T) {
 	assert.Equal(t, int64(2), count, "second open must not reseed")
 }
 
+// settingsKeyExists reports whether a KV row with the given key is present.
+func settingsKeyExists(t *testing.T, database *Database, ctx context.Context, key string) bool {
+	t.Helper()
+	var count int
+	err := database.DB.QueryRowContext(ctx, "SELECT COUNT(1) FROM settings WHERE key = ?", key).Scan(&count)
+	require.NoError(t, err)
+	return count > 0
+}
+
 func TestMigrationRoundTrip(t *testing.T) {
 	dbPath := filepath.Join(t.TempDir(), "roundtrip.db")
 
@@ -86,6 +95,27 @@ func TestMigrationRoundTrip(t *testing.T) {
 	defer database.Close()
 
 	ctx := context.Background()
+
+	// T62: migration 0004 is data-only (EAV rows, not a schema column). Verify its
+	// own Up/Down in isolation before the full schema round-trip below.
+	assert.True(t, settingsKeyExists(t, database, ctx, "model.useMaxOutputTokens"), "key present after fresh Open (migration 0004 applied)")
+	assert.True(t, settingsKeyExists(t, database, ctx, "model.maxOutputTokens"), "key present after fresh Open (migration 0004 applied)")
+
+	downResults, err := database.provider.DownTo(ctx, 3)
+	require.NoError(t, err)
+	for _, r := range downResults {
+		require.NoError(t, r.Error, "down migration %s failed", r.Source.Path)
+	}
+	assert.False(t, settingsKeyExists(t, database, ctx, "model.useMaxOutputTokens"), "key removed after migration 0004 Down")
+	assert.False(t, settingsKeyExists(t, database, ctx, "model.maxOutputTokens"), "key removed after migration 0004 Down")
+
+	reupResults, err := database.provider.Up(ctx)
+	require.NoError(t, err)
+	for _, r := range reupResults {
+		require.NoError(t, r.Error, "up migration %s failed", r.Source.Path)
+	}
+	assert.True(t, settingsKeyExists(t, database, ctx, "model.useMaxOutputTokens"), "key restored after migration 0004 Up")
+	assert.True(t, settingsKeyExists(t, database, ctx, "model.maxOutputTokens"), "key restored after migration 0004 Up")
 
 	// Roll back all migrations (Down to version 0)
 	results, err := database.provider.DownTo(ctx, 0)
@@ -150,7 +180,7 @@ func TestSeed_FactoryReset_RepopulatesDefaults(t *testing.T) {
 
 	settings, err := database.Queries.ListSettings(ctx)
 	require.NoError(t, err)
-	assert.Len(t, settings, 26)
+	assert.Len(t, settings, 28)
 
 	langs, err := database.Queries.ListLanguages(ctx)
 	require.NoError(t, err)

@@ -55,6 +55,8 @@ function makeStore(discoveredModels: DiscoveredModel[]) {
                         useContextWindow: false,
                         contextWindow: 0,
                         useLegacyMaxTokens: false,
+                        useMaxOutputTokens: false,
+                        maxOutputTokens: 2048,
                     },
                     languageConfig: { languages: [], defaultInputLanguage: '', defaultOutputLanguage: '' },
                     appBehaviorConfig: { enableTaskLogging: false, logDirectory: '' },

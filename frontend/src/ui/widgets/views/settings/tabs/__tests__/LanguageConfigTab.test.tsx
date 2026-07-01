@@ -48,7 +48,16 @@ const MOCK_SETTINGS: Settings = {
     availableProviderConfigs: [MOCK_PROVIDER],
     currentProviderConfig: MOCK_PROVIDER,
     inferenceBaseConfig: { timeout: 120, maxRetries: 3, useMarkdownForOutput: true },
-    modelConfig: { name: 'gpt-4o', useTemperature: true, temperature: 0.7, useContextWindow: false, contextWindow: 4096, useLegacyMaxTokens: false },
+    modelConfig: {
+        name: 'gpt-4o',
+        useTemperature: true,
+        temperature: 0.7,
+        useContextWindow: false,
+        contextWindow: 4096,
+        useLegacyMaxTokens: false,
+        useMaxOutputTokens: false,
+        maxOutputTokens: 2048,
+    },
     languageConfig: { languages: ['English', 'French'], defaultInputLanguage: 'English', defaultOutputLanguage: 'English' },
     appBehaviorConfig: { enableTaskLogging: false, logDirectory: '/tmp/logs', historyEnabled: true, historyMaxEntries: 500 },
 };

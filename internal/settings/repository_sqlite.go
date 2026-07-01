@@ -336,6 +336,8 @@ func (r *SqliteSettingsRepository) GetModelConfig() (*ModelConfig, error) {
 		UseContextWindow:   r.getBool("model.useContextWindow", false),
 		ContextWindow:      r.getInt("model.contextWindow", 4096),
 		UseLegacyMaxTokens: r.getBool("model.useLegacyMaxTokens", false),
+		UseMaxOutputTokens: r.getBool("model.useMaxOutputTokens", false),
+		MaxOutputTokens:    r.getInt("model.maxOutputTokens", 2048),
 	}, nil
 }
 
@@ -347,6 +349,8 @@ func (r *SqliteSettingsRepository) UpdateModelConfig(cfg *ModelConfig) error {
 		{Key: "model.useContextWindow", Value: strconv.FormatBool(cfg.UseContextWindow), Type: "bool"},
 		{Key: "model.contextWindow", Value: strconv.Itoa(cfg.ContextWindow), Type: "int"},
 		{Key: "model.useLegacyMaxTokens", Value: strconv.FormatBool(cfg.UseLegacyMaxTokens), Type: "bool"},
+		{Key: "model.useMaxOutputTokens", Value: strconv.FormatBool(cfg.UseMaxOutputTokens), Type: "bool"},
+		{Key: "model.maxOutputTokens", Value: strconv.Itoa(cfg.MaxOutputTokens), Type: "int"},
 	}
 	for _, row := range rows {
 		if err := r.database.Queries.UpsertSetting(bg(), row); err != nil {

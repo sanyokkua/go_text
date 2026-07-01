@@ -53,14 +53,17 @@ func newChatCompletionRequest(cfg *settings.Settings, userPrompt, systemPrompt s
 		}
 	}
 
-	// Include a context window when enabled
-	if cfg.ModelConfig.UseContextWindow {
-		contextWindow := cfg.ModelConfig.ContextWindow
+	// Include a max output token cap when enabled. This is independent of
+	// ContextWindow (which only ever informs NumCtx, downstream in chatRequestFrom) —
+	// see T62: reusing ContextWindow here silently reserved most of the model's real
+	// context for "completion", truncating the prompt before generation.
+	if cfg.ModelConfig.UseMaxOutputTokens {
+		maxOutputTokens := cfg.ModelConfig.MaxOutputTokens
 		// User chooses which parameter to use
 		if cfg.ModelConfig.UseLegacyMaxTokens {
-			req.MaxTokens = &contextWindow
+			req.MaxTokens = &maxOutputTokens
 		} else {
-			req.MaxCompletionTokens = &contextWindow
+			req.MaxCompletionTokens = &maxOutputTokens
 		}
 	}
 

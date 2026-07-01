@@ -112,6 +112,48 @@ func TestSettingsService_UpdateModelConfig_ContextWindowBoundaries(t *testing.T)
 	}
 }
 
+// T62 regression: MaxOutputTokens must validate independently of ContextWindow —
+// it is a separate field with its own 1-32000 range, never derived from it.
+func TestSettingsService_UpdateModelConfig_MaxOutputTokensBoundaries(t *testing.T) {
+	tests := []struct {
+		name            string
+		maxOutputTokens int
+		wantErr         bool
+	}{
+		{name: "just below min is rejected", maxOutputTokens: 0, wantErr: true},
+		{name: "exact min is accepted", maxOutputTokens: 1, wantErr: false},
+		{name: "exact max is accepted", maxOutputTokens: 32000, wantErr: false},
+		{name: "just above max is rejected", maxOutputTokens: 32001, wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := newRepo(t)
+			svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+
+			_, err := svc.UpdateModelConfig(&settings.ModelConfig{
+				Name:               "gpt-4o",
+				UseMaxOutputTokens: true,
+				MaxOutputTokens:    tt.maxOutputTokens,
+			})
+
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("UpdateModelConfig() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !tt.wantErr {
+				return
+			}
+			var ae *apperr.AppError
+			if !errors.As(err, &ae) {
+				t.Fatalf("want *apperr.AppError, got %T: %v", err, err)
+			}
+			if ae.Code != apperr.CodeValidation {
+				t.Errorf("expected CodeValidation, got %q", ae.Code)
+			}
+		})
+	}
+}
+
 // ensuringFileUtils returns an existing temp dir from EnsureAppLogsFolderExists
 // and a deliberately non-existent path from ResolveAppLogsFolderPath, so a test
 // can verify which one GetAppSettingsMetadata uses for the logs folder.

@@ -24,6 +24,8 @@ const defaultModel = {
     useContextWindow: false,
     contextWindow: 4096,
     useLegacyMaxTokens: false,
+    useMaxOutputTokens: false,
+    maxOutputTokens: 2048,
 };
 const defaultBehavior = { enableTaskLogging: false, historyEnabled: true, historyMaxEntries: 50 };
 const defaultLanguage = { defaultInputLanguage: 'English', defaultOutputLanguage: 'English', languages: ['English'] };

@@ -41,7 +41,16 @@ const MOCK_SETTINGS: Settings = {
     availableProviderConfigs: [MOCK_PROVIDER],
     currentProviderConfig: MOCK_PROVIDER,
     inferenceBaseConfig: { timeout: 120, maxRetries: 3, useMarkdownForOutput: true },
-    modelConfig: { name: 'gpt-4o', useTemperature: true, temperature: 0.7, useContextWindow: false, contextWindow: 4096, useLegacyMaxTokens: false },
+    modelConfig: {
+        name: 'gpt-4o',
+        useTemperature: true,
+        temperature: 0.7,
+        useContextWindow: false,
+        contextWindow: 4096,
+        useLegacyMaxTokens: false,
+        useMaxOutputTokens: false,
+        maxOutputTokens: 2048,
+    },
     languageConfig: { languages: ['English', 'French'], defaultInputLanguage: 'English', defaultOutputLanguage: 'English' },
     appBehaviorConfig: { enableTaskLogging: false, logDirectory: '/tmp/logs', historyEnabled: true, historyMaxEntries: 500 },
 };
@@ -56,6 +65,18 @@ const MOCK_SETTINGS_WITH_CONTEXT_WINDOW: Settings = {
         useTemperature: false,
         useContextWindow: true,
         contextWindow: 4096,
+    },
+};
+
+// Same single-slider isolation as MOCK_SETTINGS_WITH_CONTEXT_WINDOW, but for the
+// max-output-tokens slider — only it is on, so getByRole('slider') is unambiguous.
+const MOCK_SETTINGS_WITH_MAX_OUTPUT_TOKENS: Settings = {
+    ...MOCK_SETTINGS,
+    modelConfig: {
+        ...MOCK_SETTINGS.modelConfig,
+        useTemperature: false,
+        useMaxOutputTokens: true,
+        maxOutputTokens: 2048,
     },
 };
 
@@ -177,5 +198,67 @@ describe('ModelConfigTab', () => {
         fireEvent.keyDown(slider, { key: 'End' });
 
         expect(slider).toHaveAttribute('aria-valuenow', '200000');
+    });
+
+    it('renders the Use max output tokens label', () => {
+        render(
+            <Provider store={makeStore()}>
+                <ModelConfigTab settings={MOCK_SETTINGS} />
+            </Provider>,
+        );
+
+        expect(screen.getByText('Use max output tokens')).toBeInTheDocument();
+    });
+
+    it('hides the max-output-tokens slider when the toggle is off', () => {
+        render(
+            <Provider store={makeStore()}>
+                <ModelConfigTab settings={MOCK_SETTINGS} />
+            </Provider>,
+        );
+
+        // MOCK_SETTINGS has useTemperature on (its slider renders); only the
+        // max-output-tokens slider must stay hidden while its toggle is off.
+        expect(screen.getAllByRole('slider')).toHaveLength(1);
+    });
+
+    it('max-output-tokens slider reaches exactly 1 when pressed Home, matching the backend validation floor', () => {
+        render(
+            <Provider store={makeStore(MOCK_SETTINGS_WITH_MAX_OUTPUT_TOKENS)}>
+                <ModelConfigTab settings={MOCK_SETTINGS_WITH_MAX_OUTPUT_TOKENS} />
+            </Provider>,
+        );
+
+        const slider = screen.getByRole('slider', { name: /value/i });
+        fireEvent.keyDown(slider, { key: 'Home' });
+
+        expect(slider).toHaveAttribute('aria-valuenow', '1');
+    });
+
+    it('max-output-tokens slider reaches exactly 32000 when pressed End, matching the backend validation ceiling', () => {
+        render(
+            <Provider store={makeStore(MOCK_SETTINGS_WITH_MAX_OUTPUT_TOKENS)}>
+                <ModelConfigTab settings={MOCK_SETTINGS_WITH_MAX_OUTPUT_TOKENS} />
+            </Provider>,
+        );
+
+        const slider = screen.getByRole('slider', { name: /value/i });
+        fireEvent.keyDown(slider, { key: 'End' });
+
+        expect(slider).toHaveAttribute('aria-valuenow', '32000');
+    });
+
+    it('toggling Use max output tokens marks the form dirty independently of the context-window toggle', () => {
+        render(
+            <Provider store={makeStore()}>
+                <ModelConfigTab settings={MOCK_SETTINGS} />
+            </Provider>,
+        );
+
+        expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled();
+        fireEvent.click(screen.getByRole('switch', { name: /use max output tokens/i }));
+
+        expect(screen.getByRole('button', { name: /^save$/i })).not.toBeDisabled();
+        expect(screen.getByRole('switch', { name: /use context window/i })).not.toBeChecked();
     });
 });

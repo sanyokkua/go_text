@@ -103,6 +103,9 @@ export interface ModelConfig {
     useContextWindow: boolean;
     contextWindow: number;
     useLegacyMaxTokens: boolean;
+    // Output-length cap — independent of the context window (T62)
+    useMaxOutputTokens: boolean;
+    maxOutputTokens: number;
 }
 
 /**

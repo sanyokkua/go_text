@@ -81,7 +81,16 @@ const fullSettings: Settings = {
         customModels: [],
     },
     inferenceBaseConfig: { timeout: 60, maxRetries: 3, useMarkdownForOutput: false },
-    modelConfig: { name: '', useTemperature: false, temperature: 0, useContextWindow: false, contextWindow: 0, useLegacyMaxTokens: false },
+    modelConfig: {
+        name: '',
+        useTemperature: false,
+        temperature: 0,
+        useContextWindow: false,
+        contextWindow: 0,
+        useLegacyMaxTokens: false,
+        useMaxOutputTokens: false,
+        maxOutputTokens: 2048,
+    },
     languageConfig: { languages: [], defaultInputLanguage: '', defaultOutputLanguage: '' },
     appBehaviorConfig: { enableTaskLogging: false, logDirectory: '' },
 };

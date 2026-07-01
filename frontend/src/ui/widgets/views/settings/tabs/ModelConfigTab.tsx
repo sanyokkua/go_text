@@ -24,6 +24,8 @@ interface ModelForm {
     useContextWindow: boolean;
     contextWindow: number;
     useLegacyMaxTokens: boolean;
+    useMaxOutputTokens: boolean;
+    maxOutputTokens: number;
 }
 
 function toForm(cfg: Settings['modelConfig']): ModelForm {
@@ -34,6 +36,8 @@ function toForm(cfg: Settings['modelConfig']): ModelForm {
         useContextWindow: cfg.useContextWindow,
         contextWindow: cfg.contextWindow,
         useLegacyMaxTokens: cfg.useLegacyMaxTokens,
+        useMaxOutputTokens: cfg.useMaxOutputTokens,
+        maxOutputTokens: cfg.maxOutputTokens,
     };
 }
 
@@ -44,7 +48,9 @@ function isFormDirty(form: ModelForm, original: Settings['modelConfig']): boolea
         form.temperature !== original.temperature ||
         form.useContextWindow !== original.useContextWindow ||
         form.contextWindow !== original.contextWindow ||
-        form.useLegacyMaxTokens !== original.useLegacyMaxTokens
+        form.useLegacyMaxTokens !== original.useLegacyMaxTokens ||
+        form.useMaxOutputTokens !== original.useMaxOutputTokens ||
+        form.maxOutputTokens !== original.maxOutputTokens
     );
 }
 
@@ -172,6 +178,27 @@ const ModelConfigTab: React.FC<Props> = ({ settings }) => {
                         min={1024}
                         max={200000}
                         step={4096}
+                    />
+                )}
+            </div>
+
+            <div className={styles.toggleBlock}>
+                <div className={styles.toggleHead}>
+                    <Switch
+                        checked={form.useMaxOutputTokens}
+                        onCheckedChange={(checked) => setForm((prev) => ({ ...prev, useMaxOutputTokens: checked }))}
+                        aria-label="Use max output tokens"
+                    />
+                    <span className={styles.toggleLabel}>Use max output tokens</span>
+                    {form.useMaxOutputTokens && <span className={styles.numericDisplay}>{form.maxOutputTokens.toLocaleString()}</span>}
+                </div>
+                {form.useMaxOutputTokens && (
+                    <Slider
+                        value={[form.maxOutputTokens]}
+                        onValueChange={([v]) => setForm((prev) => ({ ...prev, maxOutputTokens: v }))}
+                        min={1}
+                        max={32000}
+                        step={256}
                     />
                 )}
             </div>

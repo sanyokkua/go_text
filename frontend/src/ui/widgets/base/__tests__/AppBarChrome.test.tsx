@@ -84,6 +84,8 @@ function makeStore() {
                         useContextWindow: false,
                         contextWindow: 0,
                         useLegacyMaxTokens: false,
+                        useMaxOutputTokens: false,
+                        maxOutputTokens: 2048,
                     },
                     languageConfig: { languages: ['EN', 'UK'], defaultInputLanguage: 'EN', defaultOutputLanguage: 'UK' },
                     appBehaviorConfig: { enableTaskLogging: false, logDirectory: '', historyEnabled: true, historyMaxEntries: 100 },
