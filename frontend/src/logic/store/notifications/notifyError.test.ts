@@ -1,8 +1,8 @@
 import { apperr } from '../../../../wailsjs/go/models';
 import { enqueueNotification, notifyError } from './slice';
 
-function wire(code: apperr.ErrorCode, details?: Record<string, string>): apperr.WireError {
-    return apperr.WireError.createFrom({ code, title: '', message: '', retryable: false, details });
+function wire(code: apperr.ErrorCode, details?: Record<string, string>, message = ''): apperr.WireError {
+    return apperr.WireError.createFrom({ code, title: '', message, retryable: false, details });
 }
 
 describe('notifyError', () => {
@@ -44,10 +44,11 @@ describe('notifyError', () => {
         expect(action.payload.surface).toBe('toast');
     });
 
-    it('maps CodeCancelled to info toast with stepIndex', () => {
+    it('maps CodeCancelled to info toast with 1-based step number', () => {
         const action = notifyError(wire(apperr.ErrorCode.CodeCancelled, { stepIndex: '3' }));
         expect(action.payload.severity).toBe('info');
-        expect(action.payload.message).toContain('step 3');
+        // stepIndex is 0-based in Details; the toast displays 1-based, matching apperr.Cancelled's own Message.
+        expect(action.payload.message).toContain('step 4');
     });
 
     it('maps CodeTimeout to error toast with provider and timeout', () => {
@@ -99,12 +100,35 @@ describe('notifyError', () => {
         expect(action.payload.message).toContain('LM Studio');
     });
 
-    it('maps CodeStepFailed to error toast with step index in title', () => {
+    it('maps CodeStepFailed to error toast with 1-based step number in title', () => {
         const action = notifyError(wire(apperr.ErrorCode.CodeStepFailed, { stepIndex: '2', family: 'inference' }));
         expect(action.payload.severity).toBe('error');
         expect(action.payload.surface).toBe('toast');
         expect(action.payload.title).toMatch(/^Step/);
-        expect(action.payload.title).toContain('2');
+        // stepIndex is 0-based in Details; the toast displays 1-based, matching apperr.StepFailed's own Title.
+        expect(action.payload.title).toBe('Step 3 failed');
+    });
+
+    it('maps CodeStepFailed message with the inner error text exactly once, not double-wrapped', () => {
+        const action = notifyError(
+            wire(apperr.ErrorCode.CodeStepFailed, {
+                stepIndex: '0',
+                family: 'rewrite',
+                inner: "The text exceeds the model's context window.",
+            }),
+        );
+        expect(action.payload.title).toBe('Step 1 failed');
+        expect(action.payload.message).toBe("Step 1 (rewrite) failed: The text exceeds the model's context window.. Earlier steps completed.");
+        // Guard against regressing to the doubled-template bug: the inner message must appear once.
+        const occurrences = action.payload.message.split("The text exceeds the model's context window.").length - 1;
+        expect(occurrences).toBe(1);
+    });
+
+    it('falls back to wire.message for CodeStepFailed when Details lacks "inner"', () => {
+        const action = notifyError(
+            wire(apperr.ErrorCode.CodeStepFailed, { stepIndex: '0', family: 'rewrite' }, 'fallback inner text'),
+        );
+        expect(action.payload.message).toBe('Step 1 (rewrite) failed: fallback inner text. Earlier steps completed.');
     });
 
     it('maps CodeUpstream to error toast with provider error title', () => {

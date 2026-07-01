@@ -19,6 +19,10 @@ function buildNotification(wire: apperr.WireError): Omit<Notification, 'id'> {
     const statusCode = d['statusCode'] ?? '5xx';
     const reason = d['reason'];
     const stepIndex = d['stepIndex'] ?? '?';
+    // The backend stores stepIndex 0-based (Details is raw/machine-readable) but its own
+    // Title/Message display 1-based; mirror that here so the toast never disagrees with the
+    // backend's own wording for the same error.
+    const stepNumber = /^\d+$/.test(stepIndex) ? String(Number(stepIndex) + 1) : stepIndex;
     const family = d['family'] ?? 'step';
     const field = d['field'] ?? 'field';
     const expected = d['expected'] ?? 'valid value';
@@ -129,8 +133,8 @@ function buildNotification(wire: apperr.WireError): Omit<Notification, 'id'> {
             return {
                 severity: 'error',
                 surface: 'toast',
-                title: `Step ${stepIndex} failed`,
-                message: `Step ${stepIndex} (${family}) failed: ${innerMsg}. Earlier steps completed.`,
+                title: `Step ${stepNumber} failed`,
+                message: `Step ${stepNumber} (${family}) failed: ${innerMsg}. Earlier steps completed.`,
                 ...withDetails(wire),
             };
         case apperr.ErrorCode.CodeCancelled:
@@ -138,7 +142,7 @@ function buildNotification(wire: apperr.WireError): Omit<Notification, 'id'> {
                 severity: 'info',
                 surface: 'toast',
                 title: 'Cancelled',
-                message: `Run cancelled after step ${stepIndex}. Partial result kept.`,
+                message: `Run cancelled after step ${stepNumber}. Partial result kept.`,
                 ...withDetails(wire),
             };
         case apperr.ErrorCode.CodeInternal:

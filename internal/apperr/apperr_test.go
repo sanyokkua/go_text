@@ -258,6 +258,9 @@ func TestStepFailed(t *testing.T) {
 	if e.Details["family"] != "rewrite" {
 		t.Errorf("Details[family]: got %q", e.Details["family"])
 	}
+	if e.Details["inner"] != inner.Message {
+		t.Errorf("Details[inner]: want raw inner message %q, got %q", inner.Message, e.Details["inner"])
+	}
 	// Check that the inner Timeout AppError is accessible via Unwrap.
 	unwrapped := errors.Unwrap(e)
 	if unwrapped == nil {

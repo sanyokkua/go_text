@@ -230,6 +230,7 @@ func StepFailed(index int, family string, inner *AppError) *AppError {
 		Details: map[string]string{
 			"stepIndex": strconv.Itoa(index),
 			"family":    family,
+			"inner":     inner.Message,
 		},
 		Retryable: inner.Retryable,
 		cause:     inner,
