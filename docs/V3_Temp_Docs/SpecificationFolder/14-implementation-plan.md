@@ -780,3 +780,401 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
      disabled — users see the limit approaching.
   2. Clicking an armed action in the sidebar deselects it; RunBar enters the null-armed state
      with a disabled Run button.
+
+---
+
+## Phase 11 — Context-Window Feature: Fixes & Live Input Token Estimate (Live-Tested 2026-07-01)
+
+> **Discovery:** a feature-scoped live-testing session on 2026-07-01 (`docs/V3_Temp_Docs/2026-07-01-context-window-live-testing.md`)
+> exercised the "Use context window" setting (Settings > Model) against real Ollama and LM Studio
+> inference, using a reverse-logging HTTP proxy in front of Ollama and LM Studio's own `server-logs`
+> to inspect exact wire-level request bodies — not just UI behavior. All 6 issues flagged by a prior
+> static-analysis investigation were confirmed with live evidence, plus 2 new defects were discovered
+> (T63 Ollama `num_ctx` no-op, T62's silent-truncation consequence). This phase fixes all of them and
+> adds a live input-token-estimate widget (user-requested directly in response to these findings) that
+> gives users visibility into prompt size vs. the configured limit before they hit send.
+> **Sequence:** T61, T64, T65, T66 are independent and may run in parallel. T62 (decouple
+> context-window from the output-token cap) is the most invasive fix (new settings field + migration)
+> and should land before or alongside T67 (token estimate) for conceptual clarity, though T67 is not
+> hard-blocked on it. T63 (Ollama `num_ctx` investigation) is independent. T68 is the closing gate and
+> must run last, after all of T61–T67.
+
+### T61 — Context-window Settings UI/backend range mismatch + misclassified validation error
+
+- **Severity:** Medium
+- **Discovery:** Live-tested by dragging the Settings > Model context-window slider to its minimum
+  (512) with "Use context window" ON, for `ministral-3:3b-instruct` on Ollama, and clicking Save. The
+  value appeared to save (slider stayed at 512, no visible error anywhere on screen — checked both
+  corners immediately after Save) but reloading Settings > Model afterward showed it had silently
+  reverted to the last valid value (4096). Backend log for that exact save:
+  ```
+  {"level":"error","error":"SettingsService.UpdateModelConfig: contextWindow must be 1024–200000 when enabled","time":"2026-07-01T15:00:59+02:00","message":"unclassified error"}
+  [FrontendLogger].SettingsThunks: updateModelConfig failed: An unexpected error occurred. Please try again.
+  ```
+- **Root cause (two coupled bugs, same code path):**
+  1. **Range mismatch:** `frontend/src/ui/widgets/views/settings/tabs/ModelConfigTab.tsx:172-173`
+     configures the context-window `Slider` with `min={512} max={131072} step={512}`, but
+     `internal/settings/service.go:315-320`'s `UpdateModelConfig` validates
+     `cfg.ContextWindow < 1024 || cfg.ContextWindow > 200000` when enabled. Values 512–1023 are
+     reachable via the UI slider and always rejected by the backend; values 131073–200000 are
+     inversely unreachable via the UI even though the backend would accept them.
+  2. **Misclassified error:** the same validation block returns a plain `fmt.Errorf(...)`, not an
+     `*apperr.AppError`. Per `docs/ai_agent_rules/ErrorEnvelopeRules.md`, `apperr.ToWire`
+     (`internal/apperr/wire.go:25-49`) classifies any non-`*AppError` as `CodeInternal` and logs it as
+     `"unclassified error"` — so even once the range is fixed, any other client sending an
+     out-of-range value would still surface as "An unexpected error occurred. Please try again."
+     instead of a specific message.
+- **Fix (1) — align the range (`ts-engineer`):** change the slider bounds in `ModelConfigTab.tsx` to
+  `min={1024} max={200000}`, matching the backend exactly (do not keep a separate, looser UI range).
+  Pick a `step` that divides evenly into the new range (the existing 512 does not land exactly on
+  200000) — a UI-feel decision, not a contract change.
+- **Fix (2) — classify the validation error (`go-engineer`):** in `internal/settings/service.go:315-320`,
+  replace both `fmt.Errorf` validation returns (temperature and context-window) with
+  `apperr.Validation(...)` (see `internal/apperr/apperr.go` constructors /
+  `docs/ai_agent_rules/ErrorEnvelopeRules.md`), carrying the field name and allowed range in `Details`
+  (no secrets). The handler boundary (`internal/settings/handler.go`) already calls `apperr.ToWire`
+  correctly — the bug is purely in what error type reaches it.
+- **Files:** `frontend/src/ui/widgets/views/settings/tabs/ModelConfigTab.tsx`,
+  `internal/settings/service.go`, `internal/apperr/apperr.go` (reuse existing constructor or add one
+  if the exact shape isn't available yet).
+- **Tests:**
+  - `go-tester`: table test over `UpdateModelConfig` boundaries — 1023 (reject, `CodeValidation`), 1024
+    (accept), 200000 (accept), 200001 (reject, `CodeValidation`); assert the error carries
+    `CodeValidation`, not `CodeInternal`.
+  - `ts-tester`: RTL — drag/set the slider to its min and max, assert the DOM value is 1024/200000
+    (not 512/131072); assert an out-of-range condition (once bounds are fixed, confirm the slider
+    physically cannot represent an invalid value) never reaches the generic error path.
+- **Acceptance:** the UI can only ever submit 1024–200000; any out-of-range submission from any client
+  surfaces a clear "contextWindow must be 1024–200000" style message, not "An unexpected error
+  occurred."
+
+### T62 — Decouple `ContextWindow` from the output-token cap (`max_tokens`/`max_completion_tokens`)
+
+- **Severity:** Critical
+- **Discovery:** Live-tested on Ollama with `ministral-3:3b-instruct-2512-q4_K_M`, context window =
+  32768, and a 24,955-word / 217-repetition input (~33K estimated tokens). A reverse-logging HTTP
+  proxy placed in front of Ollama confirmed the app sent the **full** input (all 217 repetitions,
+  167KB body — nothing truncated on the way out). Ollama's own `~/.ollama/logs/server.log` showed it
+  only actually **processed `task.n_tokens = 8195`** of that prompt (`truncated = 0` — no error, no
+  warning of any kind): roughly three-quarters of the user's input was silently dropped before
+  generation, because reserving room for a 32768-token completion inside the model's real (fixed —
+  see T63) 16384-token context left almost no room for the prompt.
+- **Root cause:** `internal/actions/service.go:56-65` (`newChatCompletionRequest`) sets
+  `req.MaxTokens`/`req.MaxCompletionTokens` **directly to the `ContextWindow` value** whenever
+  `cfg.ModelConfig.UseContextWindow` is true:
+  ```go
+  if cfg.ModelConfig.UseContextWindow {
+      contextWindow := cfg.ModelConfig.ContextWindow
+      if cfg.ModelConfig.UseLegacyMaxTokens {
+          req.MaxTokens = &contextWindow
+      } else {
+          req.MaxCompletionTokens = &contextWindow
+      }
+  }
+  ```
+  There is no independent "max output tokens" setting anywhere in the app — one number is asked to do
+  two jobs (bound the model's context AND cap the completion length), and the two jobs conflict
+  whenever the requested completion cap approaches or exceeds the model's real usable context.
+- **Fix (`go-engineer` + `ts-engineer`, DB migration required):**
+  1. **Backend schema:** add an independent field to `ModelConfig` (`internal/settings/settings.go`):
+     `UseMaxOutputTokens bool`, `MaxOutputTokens int` (sensible default e.g. 2048, validated range
+     e.g. 1–32000 — pick a range that comfortably covers normal completions without re-creating the
+     original overloaded-number problem). Add a **new** goose migration
+     `internal/db/migrations/0004_add_max_output_tokens.sql` (next available number; follow the
+     `0003_remap_stack_action_ids.sql` pattern exactly — new file, working `-- +goose Down`, never edit
+     an existing migration) with seed defaults added in `internal/db/db.go`.
+  2. **Backend request building:** in `internal/actions/service.go`'s `newChatCompletionRequest`, stop
+     deriving `MaxTokens`/`MaxCompletionTokens` from `ContextWindow`. Derive it from the new
+     `MaxOutputTokens` field instead (same legacy/modern field-name branch, `UseLegacyMaxTokens`
+     unchanged). `ContextWindow` should only ever inform `NumCtx` (Ollama, and only once T63 lands),
+     never the output-token field. If `UseMaxOutputTokens` is off, do not send
+     `MaxTokens`/`MaxCompletionTokens` at all (matches today's toggle-off behavior for context window,
+     confirmed live: no token-limit field is sent to either provider when its toggle is off).
+  3. **Frontend:** `ModelConfigTab.tsx` gets a new "Use max output tokens" `Switch` + `Slider`, styled
+     and positioned consistent with the existing temperature/context-window controls
+     (`ModelConfigTab.tsx:139-180`), wired via `updateModelConfig`.
+  4. **Wire types:** update `apperr.ModelConfig` (`internal/apperr/results.go`),
+     `frontend/src/logic/adapter/models.ts`, and re-run `wails generate module`.
+- **Files:** `internal/settings/settings.go`, `internal/settings/service.go`,
+  `internal/db/migrations/0004_add_max_output_tokens.sql` (new), `internal/db/db.go`,
+  `internal/actions/service.go`, `internal/apperr/results.go`,
+  `frontend/src/ui/widgets/views/settings/tabs/ModelConfigTab.tsx`,
+  `frontend/src/logic/adapter/models.ts`, `frontend/wailsjs/go/models.ts` (regenerated).
+- **Tests:**
+  - `go-tester`: `newChatCompletionRequest` table tests — context-window ON + max-output-tokens OFF ⇒
+    no `MaxTokens`/`MaxCompletionTokens` field; both ON ⇒ each field carries its **own** independent
+    value (never the context-window value); migration round-trip (Up creates the column with a
+    default, Down drops it cleanly) on a temp DB.
+  - `ts-tester`: RTL for the new switch+slider (toggle shows/hides slider; persists independently of
+    the context-window control).
+  - **Regression test reproducing the exact silent-truncation scenario found live:** an
+    `internal/llms` `httptest` integration test asserting that with context-window=32768 and a
+    default/small max-output-tokens, the outgoing request's `max_tokens`/`max_completion_tokens` is
+    **not** 32768 — proving the two values can no longer collide.
+- **Edge cases:** existing DBs upgrading via migration must get a sane default for the new field so
+  behavior doesn't silently change for users who never touch the new control.
+- **Acceptance:** setting a large context window no longer affects how many tokens the model is asked
+  to generate; the two concepts are fully independent in settings, storage, and the outgoing request.
+
+### T63 — Ollama ignores `options.num_ctx` sent via the OpenAI-compatible endpoint
+
+- **Severity:** High (root-cause investigation; the fix may be a behavior change or a documented
+  limitation, not pure code)
+- **Discovery:** A reverse-logging HTTP proxy was placed in front of Ollama (`127.0.0.1:11435` → real
+  Ollama `127.0.0.1:11434`) and GoText's Ollama provider Base URL was pointed at the proxy. Captured
+  request bodies confirmed the app correctly builds and sends `"options":{"num_ctx":1024}` and, in a
+  separate run, `"options":{"num_ctx":4096}` — the Go request-construction code
+  (`internal/llms/openai_provider.go:99-117`, `internal/llms/service.go:298-303`) is correct as
+  written. Despite this, `~/.ollama/logs/server.log` showed **`n_ctx_slot = 16384`** for every single
+  request regardless of the requested value — including immediately after `ollama stop <model>` +
+  reload (ruling out an already-loaded model retaining a stale context). Reproduced identically on a
+  second, larger model (`qwen2.5:7b-instruct`, native max 32768) with a requested `num_ctx` of 32768:
+  still `n_ctx_slot = 16384`. Also confirmed via `ollama ps` (`CONTEXT` column always 16384 regardless
+  of the app's setting).
+- **Root cause (external, not in this codebase):** Ollama's OpenAI-compatible `/v1/chat/completions`
+  endpoint appears to silently ignore the `options.num_ctx` field and always falls back to its own
+  auto-sized context. The one provider-specific mechanism believed to give Ollama a real
+  context-length change (`internal/llms/openai_provider.go:112-117`, `Kind == KindOllama` branch) does
+  not work in practice via this endpoint.
+- **Fix — investigate and choose one (`go-engineer`):**
+  1. **Preferred if it works:** switch Ollama traffic to its **native** `/api/chat` endpoint (not the
+     OpenAI-compatible shim) for the `KindOllama` provider profile, documented to honor
+     `options.num_ctx`. Requires a small native-request/response shape adapter scoped to the Ollama
+     profile only (`internal/llms/`); every other provider kind keeps using `OpenAICompatibleProvider`
+     unchanged. Live-test against the same repro (two models, three `num_ctx` values, `ollama
+     ps`/`server.log` confirmation) before considering this fixed.
+  2. **Fallback if the native endpoint doesn't help, or is out of scope right now:** document the
+     limitation explicitly — update the Model Config UI copy/tooltip for "Use context window" to state
+     it only reliably affects output-length capping (post-T62) on all providers including Ollama today,
+     and log a one-time warning when a `KindOllama` request sets `NumCtx`
+     (`internal/llms/service.go`) so this doesn't regress silently again if a future Ollama version
+     changes behavior.
+- **Files:** `internal/llms/openai_provider.go`, `internal/llms/service.go`, `internal/llms/profile.go`,
+  (if native-endpoint path chosen) a new file such as `internal/llms/ollama_native.go`; otherwise
+  `ModelConfigTab.tsx` copy.
+- **Tests:**
+  - `go-tester`: if the native endpoint is adopted — `httptest` integration test posting to
+    `/api/chat`, asserting `num_ctx` is honored in the request and the native response maps correctly
+    to the common `ChatResponse` shape; regression test confirming non-Ollama kinds are unaffected.
+  - If the fallback/documentation path is chosen — a test asserting the one-time warning log fires
+    when `NumCtx` is set for a `KindOllama` request.
+- **Acceptance:** either (a) a live-tested, reproducible confirmation that `num_ctx` now changes
+  Ollama's actual loaded context (checked via `ollama ps`/`server.log` exactly as this bug was found),
+  or (b) the limitation is explicitly documented in-app and logged, with no code claiming a capability
+  that doesn't work.
+
+### T64 — Wire real HTTP-400 "context exceeded" classification (unreachable `apperr.ContextWindow`)
+
+- **Severity:** Medium
+- **Discovery:** Forced a genuine overflow live: LM Studio loaded with
+  `lms load qwen2.5-7b-instruct -c 2048` (fixed real context 2048), app context window = 8192, input
+  ≈8,400 tokens. LM Studio returned HTTP 400 with body:
+  ```
+  request (8087 tokens) exceeds the available context size (2048 tokens), try increasing it
+  ```
+  GoText's backend log recorded:
+  ```
+  {"level":"error","code":"step_failed","retryable":true,"error":"Step 1 (rewrite) failed: LM Studio had a server error (400). Please retry.. Earlier steps completed.","cause":"LM Studio had a server error (400). Please retry."}
+  ```
+  The user-facing message was the generic Upstream-style "LM Studio had a server error (400). Please
+  retry.", not the friendly, already-built context-window toast.
+- **Root cause:** `internal/llms/http_errors.go:28-43` (`mapHTTPStatus`) has no case for a
+  context-length HTTP 400; every 400 falls into the `default: apperr.Upstream(...)` branch.
+  `apperr.ContextWindow(...)`/`CodeContextWindow` (`internal/apperr/apperr.go:204-215`) and the
+  matching friendly frontend toast (`frontend/src/logic/store/notifications/slice.ts:120-127`,
+  "Input too long... shorten it or raise the context size") are fully built but **provably
+  unreachable** — confirmed by grep across `internal/` finding no production caller.
+- **Fix (`go-engineer`):** in `mapHTTPStatus` (or a new helper it calls for 400s specifically),
+  inspect the response body for provider-specific "context exceeded" phrasing before falling back to
+  `apperr.Upstream`. Phrasing differs per provider/server (llama.cpp's "exceeds the available context
+  size"; verify Ollama's exact 400 wording with a live repro similar to T63's, since this session did
+  not capture an Ollama-side 400 for this scenario) — match on a reasonably broad set of
+  case-insensitive substrings (e.g. `"context"` + `"exceed"`, `"too long"`,
+  `"context_length_exceeded"` for OpenAI-style responses) and return `apperr.ContextWindow(...)` in
+  those cases, `apperr.Upstream(...)` otherwise. Add the model name and limit to `Details` if available
+  in the body (no secrets).
+- **Files:** `internal/llms/http_errors.go`.
+- **Tests:**
+  - `go-tester`: table test feeding the exact LM Studio body captured above (and an Ollama-equivalent
+    once captured), asserting `CodeContextWindow` is returned; a generic/unrelated 400 body still
+    returns `apperr.Upstream` unchanged (no over-matching).
+  - `ts-tester`: notification slice test confirming `CodeContextWindow` renders the friendly copy.
+  - **Live regression:** re-run this session's exact repro (LM Studio `-c 2048`, context window 8192,
+    ~8.4K-token input) and confirm the friendly "Input too long..." toast now appears.
+- **Acceptance:** a genuine context-overflow 400 from either provider surfaces the friendly,
+  already-designed toast instead of a generic server-error message.
+
+### T65 — "Test inference" verification button ignores Model Config entirely
+
+- **Severity:** Low–Medium
+- **Discovery:** With context window ON (1024, legacy `max_tokens` mode) and temperature ON (0.5) for
+  the current provider/model, live capture of the "Test inference" request body (LM Studio
+  `server-logs`) showed exactly:
+  ```json
+  {"messages":[{"role":"user","content":"Hi"}],"stream":false,"n":1}
+  ```
+  No `temperature`, `max_tokens`/`max_completion_tokens`, or `options`/`num_ctx` field at all — the
+  button cannot be used as a proxy for verifying what a real run would actually do with the
+  currently-configured Model Config.
+- **Root cause:** `internal/verification/service.go:186-189` (`TestInference`) constructs a bare
+  `llms.ChatRequest{Model: ..., Messages: [...]}` and never reads `ModelConfig` at all. The doc
+  comment on `TestInference` even lists `context_window` as a possible failure code
+  (`internal/verification/service.go:151-152`), which is stale relative to this behavior.
+- **Fix (`go-engineer`):** pass the current `ModelConfig` into `TestInference` and apply the same
+  temperature / context-window(→`NumCtx` only, post-T62) / max-output-tokens / legacy-flag logic that
+  `newChatCompletionRequest` applies for a real run, so the diagnostic check is representative. Update
+  the stale doc comment to accurately describe what is and isn't exercised.
+- **Files:** `internal/verification/service.go`.
+- **Tests:**
+  - `go-tester`: `TestInference` request-construction test asserting the built request carries
+    `Temperature`/`MaxTokens or MaxCompletionTokens`/`NumCtx` (post-T62 semantics) matching the
+    supplied `ModelConfig`, mirroring the existing `newChatCompletionRequest` table tests.
+  - **Live regression:** repeat this session's capture (LM Studio `server-logs`) with context window
+    and temperature ON, confirm the Test Inference request body now includes those fields.
+- **Acceptance:** "Test inference" exercises the same parameters a real run would use.
+
+### T66 — Prompt Inspector never surfaces the context-window value or on/off state
+
+- **Severity:** Low
+- **Discovery:** Live-tested: Prompt Inspector for "Concise" (LM Studio, `qwen2.5-7b-instruct`,
+  context window ON = 1024, legacy mode) showed parameter badges `model`, `temperature 0.5`,
+  `format plain`, `input`/`output` language, `max_tokens`, `stream false` — a `max_tokens` badge names
+  the token-limit **field**, but the context-window **value** (1024) and whether it's even enabled are
+  never shown anywhere in the preview.
+- **Root cause:** `internal/actions/service.go:421-443` (`buildPreviewParams`, backing
+  `apperr.PreviewParams`) has no `contextWindow`/`useContextWindow` field; `PreviewParams`
+  (`internal/apperr/results.go:180-188`) doesn't define one either.
+- **Fix (`go-engineer` + `ts-engineer`):** add `ContextWindow *int` (nil when disabled) to
+  `apperr.PreviewParams`, populate it in `buildPreviewParams` from the same `ModelConfig` already in
+  scope, and render a new badge in `frontend/src/ui/widgets/views/info/PromptInspector.tsx` — e.g.
+  `context 1,024` — next to the existing `max_tokens`/`temperature` badges, following the existing
+  `buildParameterBadges` pattern exactly. Omit the badge when the context window is disabled (mirrors
+  how `temperature` is already omitted when off).
+- **Files:** `internal/actions/service.go`, `internal/apperr/results.go`,
+  `frontend/src/ui/widgets/views/info/PromptInspector.tsx`.
+- **Tests:**
+  - `go-tester`: `buildPreviewParams` test asserting `ContextWindow` is populated when enabled, nil
+    when disabled.
+  - `ts-tester`: RTL — Prompt Inspector renders a context-window badge with the right value when
+    enabled, omits it when disabled.
+- **Acceptance:** a user can see, from the Prompt Inspector alone, both the token-limit field name and
+  the actual context-window value/on-off state that will be used for a real run.
+
+### T67 — Live input token estimate + context-window highlight (new feature)
+
+- **Severity:** N/A — feature, user-requested 2026-07-01 directly in response to the findings above
+  (specifically to give users the visibility that would have surfaced T62's silent truncation and
+  T64's swallowed-error scenarios themselves, before hitting Run).
+- **Goal:** Show a live "~N tokens" estimate next to the existing "N words" counter in
+  `InputPane.tsx:41` (`Input · {wordCount(content)} words`), computed against the **actual composed
+  prompt** (system + user, exactly what would really be sent for the first step of the
+  currently-armed action/stack — reuses the same `Composer`/`Planner` pipeline as a real run, not just
+  the raw textarea text), and visually highlight it (amber "approaching", red "over") once the
+  estimate nears/exceeds the configured context window.
+- **Design decisions (from user brainstorming session, 2026-07-01):**
+  1. **Estimate scope:** the full composed system+user prompt for the **first step only** (for both
+     single actions and stacks — later stack steps' input doesn't exist yet, so they aren't
+     estimated).
+  2. **Where counting happens:** in the **Go backend** (single source of truth, reuses existing
+     prompt-composition code) — it returns a plain integer; the frontend does not tokenize anything
+     itself.
+  3. **Tokenizer:** **one universal Go BPE tokenizer** (a `cl100k_base`/`o200k_base`-family port such
+     as `pkoukk/tiktoken-go` or the current best-maintained equivalent — verify and pin at
+     implementation time) applied uniformly across all providers/models. Exact for OpenAI/Azure, a
+     close approximation for everything else; label the UI value with "~" to signal it's an estimate.
+     **Offline requirement:** many Go tiktoken ports fetch BPE rank files over the network on first
+     use — this is a **local-first desktop app** (works fully with local Ollama/LM Studio, no internet
+     required) — so the chosen library's vocab/rank data **must** be embedded via `go:embed` and
+     loaded from an offline loader, never fetched at runtime. Verify this explicitly before pinning a
+     library version.
+  4. **"Use context window" OFF:** show the plain "~N tokens" count with no highlight (neutral
+     styling, same as the word count) — there is no configured budget to compare against, and
+     reliably discovering each model's true native context isn't available across all providers
+     today.
+  5. **"Use context window" ON:** two-tier highlight — `var(--warn)` + bold at ≥80% of the configured
+     `ContextWindow` value, `var(--err)` + bold at ≥100%. The early 80% warning is a deliberate safety
+     margin given T62/T63 (the real usable room for the prompt can be less than the full configured
+     number even after those fixes land, e.g. once max-output-tokens is reserved from the same real
+     context).
+- **Backend scope (`go-engineer`):**
+  - Add the tokenizer dependency (offline-embedded, see above) and a small helper, e.g.
+    `internal/prompts.EstimateTokenCount(text string) int`.
+  - Extend `apperr.PreviewGroup` (`internal/apperr/results.go:190-197`) with `EstimatedTokens int`.
+  - In `BuildPlanAndPrompts` (used by the existing `PreviewPrompt` handler,
+    `internal/actions/handler.go:84-114`, `internal/actions/service.go`), after composing each group's
+    `SystemPrompt`/`UserPrompt`, compute `EstimatedTokens` via the helper and set it on the group.
+    **No new bound method** — `PreviewPrompt` already accepts `SampleInput`
+    (`apperr.PromptPreviewRequest`, `internal/apperr/results.go:206-214`) and returns per-group
+    composed text; this reuses that exact path with the live InputPane text as `SampleInput`.
+  - `wails generate module` to add `estimatedTokens` to the generated TS types.
+- **Frontend scope (`ts-engineer`):**
+  - `InputPane.tsx`: a debounced (≈300-400ms after typing stops) effect that calls `PreviewPrompt` with
+    `{ actionId or stackId (from the currently armed action/stack), sampleInput: content,
+    inputLanguageId, outputLanguageId, useMarkdown }` whenever `content` or the armed action/stack
+    changes; reads `Groups[0].EstimatedTokens` from the result. No call is made (and no estimate is
+    shown beyond the plain word count) when nothing is armed yet.
+  - New display next to `.wordCount` (`InputPane.module.css:25-31` convention) showing
+    `~{estimatedTokens.toLocaleString()} tokens`, reading `selectModelConfig`
+    (`frontend/src/logic/store/settings/selectors.ts:23`) for `useContextWindow`/`contextWindow` to
+    compute the percentage and choose the neutral/warn/err class — mirror the existing
+    `.inferenceCapReached` pattern (`StackBuilderBar.tsx:82,121` /
+    `StackBuilderBar.module.css:110-113`) for the two-tier styling.
+  - Gracefully degrade on a failed/erroring `PreviewPrompt` call (e.g. no provider configured) — hide
+    the token estimate, keep the word count, no crash or error toast (this is a passive UI hint, not a
+    user-initiated action).
+- **Files:** `internal/prompts/` (new tokenizer helper + embedded data), `internal/apperr/results.go`,
+  `internal/actions/service.go`, `internal/actions/handler.go` (no signature change expected —
+  `PreviewPrompt`'s signature stays the same, only its response shape gains a field),
+  `frontend/src/ui/widgets/views/editor/InputPane.tsx`,
+  `frontend/src/ui/widgets/views/editor/InputPane.module.css`,
+  `frontend/wailsjs/go/models.ts` (regenerated).
+- **Tests:**
+  - `go-tester`: tokenizer helper unit tests (empty string ⇒ 0; known short strings ⇒ expected count
+    for the chosen encoding; confirms fully offline — run with network disabled/mocked, e.g. via a
+    build-tag or CI network-block, to catch any accidental runtime fetch); `BuildPlanAndPrompts`/
+    `PreviewPrompt` test asserting `EstimatedTokens` scales with `SampleInput` length and matches a
+    hand-computed reference count for a fixed input.
+  - `ts-tester`: RTL — typing debounces the `PreviewPrompt` call (fake timers); no call when nothing is
+    armed; count renders neutral/warn/err class at the right percentages of a mocked `contextWindow`;
+    a rejected/erroring call hides the estimate without throwing.
+  - **Playwright (Target A, bridge-mock):** type input exceeding the mocked context window, confirm the
+    red highlight appears; type under 80%, confirm neutral.
+  - **Live (Target B, per this session's exact repro fixtures):** re-run against real Ollama and LM
+    Studio with the `CTX-S`/`CTX-M`/`CTX-L` fixtures from
+    `docs/V3_Temp_Docs/2026-07-01-context-window-live-testing.md` (regenerate from `.tmp/` if no
+    longer present) and confirm the on-screen estimate tracks the real behavior observed in that
+    session (e.g. visibly warns before the T62/T63 scenarios would otherwise silently truncate).
+- **Acceptance:** typing or pasting text shows a live, debounced "~N tokens" estimate based on the real
+  composed prompt for the first step; it is neutral when no budget is configured, and clearly
+  warns/errors as the estimate approaches/exceeds the configured context window; works fully offline.
+
+### T68 — Tests green + full-stack live re-test (closing gate)
+
+- **Deterministic gates:** `go build ./...`; `wails generate module && git diff --exit-code
+  frontend/wailsjs/`; `! grep -rq "@mui\|@emotion" frontend/src`; `cd frontend && npm run test`;
+  `go test -race ./...`; the new goose migration (T62) round-trips Up/Down on a temp DB.
+- **Playwright Target A (bridge-mock):** all new/changed RTL+Playwright specs from T61–T67 green;
+  existing responsive/theme gates unaffected.
+- **Live (Target B, per `CLAUDE.md` "Finishing task", using `wails dev` + real Ollama + LM Studio):**
+  re-execute the relevant phases of `docs/V3_Temp_Docs/2026-07-01-context-window-live-testing.md`
+  end-to-end (boundary/validation matrix, small/native/too-big windows on both providers, real
+  overflow error surfacing, verification button, Prompt Inspector) and confirm every finding (#1–#8)
+  is now fixed or explicitly documented as a known limitation (T63 fallback path). Confirm the new
+  token-estimate widget behaves correctly against the same fixtures. Update the Findings table in that
+  doc with final verdicts (Fixed/Documented-limitation) and a pointer to this phase's task IDs.
+- **Acceptance:** every finding from the 2026-07-01 live-testing session is either fixed and
+  regression-tested, or explicitly documented as a known provider limitation; the token-estimate
+  feature works end-to-end against real local providers; the doc's Findings table reflects the final
+  state.
+- **Status: DONE this session (2026-07-02).** All deterministic gates green (`go test -race ./...`
+  806 tests, `npm run test:coverage` 672 tests, `gofmt`/`go vet`/`go build`/`wails generate module`
+  bindings-in-sync/`@mui`-`@emotion` guard/`sqlc diff`/T62 migration round-trip/`govulncheck`/`npm
+  audit` all clean); full Target-A Playwright suite green (112 tests); all 8 findings plus the T67
+  token-estimate feature re-verified live against real Ollama (native `/api/chat`, `n_ctx_slot`
+  tracking the configured value exactly) and LM Studio (forced overflow surfaced the typed
+  `apperr.ContextWindow` toast) via `wails dev` — see the T68 verdicts table in
+  `docs/V3_Temp_Docs/2026-07-01-context-window-live-testing.md`. Two unrelated pre-existing issues
+  found during the branch-wide verification pass were fixed incidentally: a Prettier-formatting drift
+  across 55 files from earlier T61–T67 commits, and 4 stale theme-persistence e2e tests
+  (`theme.spec.ts`/`theme-manual.spec.ts`) asserting a legacy `localStorage` model no longer used now
+  that theme persists via backend `UIPreferences`.
