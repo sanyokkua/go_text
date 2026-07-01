@@ -228,6 +228,44 @@ describe('PromptInspector', () => {
         expect(screen.getByText('text')).toBeInTheDocument();
     });
 
+    it('renders a context-window badge with the formatted value when the context window is enabled', () => {
+        const previewWithContextWindow = {
+            ...mockPreview,
+            groups: [
+                {
+                    ...mockPreview.groups[0],
+                    parameters: { ...mockPreview.groups[0].parameters, contextWindow: 1024 },
+                },
+            ],
+        };
+        const store = buildStore({
+            aboutOverrides: { selectedItemId: 'a1', selectedItemType: 'action', inspectorData: previewWithContextWindow },
+            catalog: [SUMMARISE_ACTION],
+        });
+        render(
+            <Provider store={store}>
+                <PromptInspector />
+            </Provider>,
+        );
+
+        expect(screen.getByText('context')).toBeInTheDocument();
+        expect(screen.getByText('1,024')).toBeInTheDocument();
+    });
+
+    it('omits the context-window badge when the context window is disabled', () => {
+        const store = buildStore({
+            aboutOverrides: { selectedItemId: 'a1', selectedItemType: 'action', inspectorData: mockPreview },
+            catalog: [SUMMARISE_ACTION],
+        });
+        render(
+            <Provider store={store}>
+                <PromptInspector />
+            </Provider>,
+        );
+
+        expect(screen.queryByText('context')).not.toBeInTheDocument();
+    });
+
     it('toggles previewInputEnabled when "Use current input" checkbox is clicked', async () => {
         const store = buildStore({
             aboutOverrides: { selectedItemId: 'a1', selectedItemType: 'action', inspectorData: mockPreview },

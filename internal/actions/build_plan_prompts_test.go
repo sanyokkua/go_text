@@ -387,6 +387,57 @@ func TestActionService_BuildPlanAndPrompts_LegacyMaxTokens(t *testing.T) {
 	}
 }
 
+func TestActionService_BuildPlanAndPrompts_ContextWindowEnabled_PopulatesValue(t *testing.T) {
+	mockSvc := &minimalSettingsService{
+		cfg: &settings.Settings{
+			ModelConfig: settings.ModelConfig{
+				Name:             "gpt-4o",
+				UseContextWindow: true,
+				ContextWindow:    1024,
+			},
+		},
+	}
+	svc := buildTestServiceWithSettings(t, mockSvc)
+
+	preview, err := svc.BuildPlanAndPrompts(apperr.PromptPreviewRequest{
+		ActionID: "rewrite.proofread.basic",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	p := preview.Groups[0].Parameters
+	if p.ContextWindow == nil {
+		t.Fatal("Parameters.ContextWindow should be set when UseContextWindow=true")
+	}
+	if *p.ContextWindow != 1024 {
+		t.Errorf("Parameters.ContextWindow = %v, want %v", *p.ContextWindow, 1024)
+	}
+}
+
+func TestActionService_BuildPlanAndPrompts_ContextWindowDisabled_OmitsValue(t *testing.T) {
+	mockSvc := &minimalSettingsService{
+		cfg: &settings.Settings{
+			ModelConfig: settings.ModelConfig{
+				Name:             "gpt-4o",
+				UseContextWindow: false,
+				ContextWindow:    1024,
+			},
+		},
+	}
+	svc := buildTestServiceWithSettings(t, mockSvc)
+
+	preview, err := svc.BuildPlanAndPrompts(apperr.PromptPreviewRequest{
+		ActionID: "rewrite.proofread.basic",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	p := preview.Groups[0].Parameters
+	if p.ContextWindow != nil {
+		t.Errorf("Parameters.ContextWindow should be nil when UseContextWindow=false, got %v", *p.ContextWindow)
+	}
+}
+
 func TestActionService_BuildPlanAndPrompts_SettingsError_ReturnsError(t *testing.T) {
 	mockSvc := &minimalSettingsService{err: fmt.Errorf("db unavailable")}
 	svc := buildTestServiceWithSettings(t, mockSvc)

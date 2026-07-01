@@ -442,6 +442,10 @@ func buildPreviewParams(cfg *settings.Settings, req apperr.PromptPreviewRequest)
 		t := cfg.ModelConfig.Temperature
 		p.Temperature = &t
 	}
+	if cfg.ModelConfig.UseContextWindow {
+		cw := cfg.ModelConfig.ContextWindow
+		p.ContextWindow = &cw
+	}
 	return p
 }
 

@@ -180,13 +180,14 @@ type HistoryEntry struct {
 }
 
 type PreviewParams struct {
-	Model       string   `json:"model"`
-	Temperature *float64 `json:"temperature,omitempty"`
-	Format      string   `json:"format"`
-	InputLang   string   `json:"inputLang,omitempty"`
-	OutputLang  string   `json:"outputLang,omitempty"`
-	TokenParam  string   `json:"tokenParam"`
-	Stream      bool     `json:"stream"`
+	Model         string   `json:"model"`
+	Temperature   *float64 `json:"temperature,omitempty"`
+	ContextWindow *int     `json:"contextWindow,omitempty"`
+	Format        string   `json:"format"`
+	InputLang     string   `json:"inputLang,omitempty"`
+	OutputLang    string   `json:"outputLang,omitempty"`
+	TokenParam    string   `json:"tokenParam"`
+	Stream        bool     `json:"stream"`
 }
 
 type PreviewGroup struct {

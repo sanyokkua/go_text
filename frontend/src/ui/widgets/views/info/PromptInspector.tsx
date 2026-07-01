@@ -30,6 +30,9 @@ function buildParameterBadges(params: apperr.PreviewParams): ParameterBadge[] {
     if (params.temperature !== undefined) {
         optional.push({ label: 'temperature', value: String(params.temperature) });
     }
+    if (params.contextWindow !== undefined) {
+        optional.push({ label: 'context', value: params.contextWindow.toLocaleString('en-US') });
+    }
     if (params.inputLang) {
         optional.push({ label: 'input', value: params.inputLang });
     }
@@ -39,7 +42,7 @@ function buildParameterBadges(params: apperr.PreviewParams): ParameterBadge[] {
 
     return [
         { label: 'model', value: params.model },
-        ...optional.filter((b) => b.label === 'temperature'),
+        ...optional.filter((b) => b.label === 'temperature' || b.label === 'context'),
         { label: 'format', value: params.format },
         ...optional.filter((b) => b.label === 'input' || b.label === 'output'),
         { label: '', value: params.tokenParam },
