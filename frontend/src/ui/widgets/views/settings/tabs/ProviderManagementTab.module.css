@@ -8,3 +8,12 @@
     padding: var(--space-4);
     color: var(--ink-3);
 }
+
+/* Narrow settings-dialog column (e.g. mobile viewport): the list+form
+ * master-detail layout no longer fits side by side, so stack instead. */
+@media (max-width: 600px) {
+    .root {
+        flex-direction: column;
+        overflow-y: auto;
+    }
+}

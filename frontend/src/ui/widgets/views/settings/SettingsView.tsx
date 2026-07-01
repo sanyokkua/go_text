@@ -3,6 +3,7 @@ import React from 'react';
 import { selectActiveSettingsTab, useAppDispatch, useAppSelector } from '../../../../logic/store';
 import { selectAllSettings, selectSettingsMetadata } from '../../../../logic/store/settings/selectors';
 import { setActiveSettingsTab } from '../../../../logic/store/ui';
+import styles from './SettingsView.module.css';
 import SettingsTabs from './SettingsTabs';
 import AppBehaviorTab from './tabs/AppBehaviorTab';
 import AppearanceTab from './tabs/AppearanceTab';
@@ -23,7 +24,7 @@ const SettingsView: React.FC = () => {
     };
 
     if (!settings) {
-        return <div style={{ padding: 'var(--space-4)', color: 'var(--ink-3)' }}>Loading settings…</div>;
+        return <div className={styles.loading}>Loading settings…</div>;
     }
 
     let activeTabView: React.ReactElement;
@@ -50,13 +51,13 @@ const SettingsView: React.FC = () => {
             activeTabView = <MetadataTab />;
             break;
         default:
-            activeTabView = <div style={{ padding: 'var(--space-4)', color: 'var(--ink-3)' }}>Unknown tab</div>;
+            activeTabView = <div className={styles.unknown}>Unknown tab</div>;
     }
 
     return (
-        <div style={{ width: '100%', height: '100%', display: 'flex', overflow: 'hidden', background: 'var(--bg)' }}>
+        <div className={styles.root}>
             <SettingsTabs activeTab={activeTab} onChange={handleTabChange} />
-            <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 'var(--space-4)', background: 'var(--surface)' }}>{activeTabView}</div>
+            <div className={styles.content}>{activeTabView}</div>
         </div>
     );
 };

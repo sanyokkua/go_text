@@ -43,3 +43,17 @@
     display: flex;
     justify-content: flex-end;
 }
+
+/* Narrow settings-dialog column (e.g. mobile viewport): the fixed 240px label
+ * no longer fits beside its value, so stack label above value instead. */
+@media (max-width: 600px) {
+    .fieldRow {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-1);
+    }
+
+    .fieldLabel {
+        min-width: 0;
+    }
+}

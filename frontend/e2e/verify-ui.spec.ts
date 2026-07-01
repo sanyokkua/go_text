@@ -86,3 +86,54 @@ for (const route of ROUTES) {
         }
     }
 }
+
+// Settings dialog: a fixed-width tab rail + no-min-width-0 content pane let
+// elements visually clip past the viewport edge while document.scrollWidth
+// stayed unchanged (an ancestor clips overflow rather than scrolling it), so
+// the route-level Gate 1 above never caught it. Check every element's own
+// bounding box against the viewport instead of relying on document scrollWidth.
+const SETTINGS_TABS = ['Appearance', 'Logging', 'Providers', 'Model', 'Generation', 'Languages', 'About & data'];
+
+async function findClippedElements(page: import('@playwright/test').Page, viewportWidth: number): Promise<string[]> {
+    return page.evaluate((maxRight) => {
+        const offenders: string[] = [];
+        document.querySelectorAll('*').forEach((el) => {
+            const r = el.getBoundingClientRect();
+            if (r.width > 0 && r.right > maxRight + 2) {
+                offenders.push(`${el.tagName}.${(el.className || '').toString().slice(0, 30)} "${(el.textContent || '').slice(0, 25)}" right=${Math.round(r.right)}`);
+            }
+        });
+        return offenders.slice(0, 5);
+    }, viewportWidth);
+}
+
+for (const vp of VIEWPORTS) {
+    for (const theme of THEMES) {
+        test(`/ settings dialog @ ${vp.name}(${vp.width}px)/${theme} — no tab clips content past the viewport`, async ({ page }) => {
+            await page.setViewportSize({ width: vp.width, height: vp.height });
+            await page.emulateMedia({ colorScheme: theme === 'dark' ? 'dark' : 'light' });
+            await page.addInitScript(WAILS_RUNTIME_STUB);
+
+            const consoleErrors: string[] = [];
+            page.on('console', (msg) => {
+                if (msg.type() === 'error') consoleErrors.push(msg.text());
+            });
+            page.on('pageerror', (err) => consoleErrors.push(err.message));
+
+            await page.goto('/');
+            await page.waitForLoadState('networkidle');
+            await page.locator('button[aria-label="Open settings"]').click();
+            await expect(page.getByRole('tab', { name: 'Model' })).toBeVisible();
+
+            for (const tabName of SETTINGS_TABS) {
+                await page.getByRole('tab', { name: tabName }).click();
+                // Give the tab's own effects (discovery, etc.) a moment to settle.
+                await page.waitForTimeout(100);
+                const offenders = await findClippedElements(page, vp.width);
+                expect(offenders, `"${tabName}" tab clips content past the ${vp.width}px viewport: ${offenders.join('; ')}`).toHaveLength(0);
+            }
+
+            expect(consoleErrors, `console errors: ${consoleErrors.join('; ')}`).toHaveLength(0);
+        });
+    }
+}

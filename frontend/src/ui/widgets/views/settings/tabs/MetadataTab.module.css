@@ -50,6 +50,7 @@
 .fieldRow {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: var(--space-3);
     padding: var(--space-3) 0;
     border-bottom: 1px solid var(--line);
@@ -73,11 +74,13 @@
     color: var(--ink-2);
     word-break: break-all;
     flex: 1;
+    min-width: 0;
 }
 
 .dangerZone {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: var(--space-4);
     padding: var(--space-2) 0;
 }
@@ -85,6 +88,7 @@
 .dangerText {
     margin: 0;
     flex: 1;
+    min-width: 0;
     font-size: 0.875rem;
     color: var(--ink-2);
     line-height: 1.45;

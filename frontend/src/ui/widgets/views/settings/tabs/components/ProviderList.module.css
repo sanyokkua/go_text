@@ -8,6 +8,18 @@
     overflow: hidden;
 }
 
+/* Matches the ProviderManagementTab.root stacking breakpoint: the list
+ * becomes a bounded-height panel above the form instead of a side rail. */
+@media (max-width: 600px) {
+    .nav {
+        width: 100%;
+        height: auto;
+        max-height: 240px;
+        border-right: none;
+        border-bottom: 1px solid var(--line);
+    }
+}
+
 .header {
     margin: 0;
     padding: var(--space-3) var(--space-3) var(--space-2);
