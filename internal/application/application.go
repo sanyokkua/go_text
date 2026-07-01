@@ -61,7 +61,7 @@ func NewApplicationContextHolder(appLogger *logging.Logger, restyClient *resty.C
 	actionService := actions.NewActionService(appLogger, promptService, llmService, settingsService, taskLogService, historyService)
 
 	inferenceGate := gate.New()
-	verificationService := verification.NewService(appLogger, providerFactory, inferenceGate)
+	verificationService := verification.NewService(appLogger, providerFactory, settingsService, inferenceGate)
 	actionHandler := actions.NewActionHandler(appLogger, zlog.Logger, actionService, verificationService, inferenceGate)
 
 	catalog := actionService.GetActionCatalog()

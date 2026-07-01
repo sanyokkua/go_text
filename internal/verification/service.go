@@ -23,25 +23,32 @@ const verifyTimeout = 30 * time.Second
 // All three checks take the in-flight draft ProviderConfig (not a saved
 // provider ID) so the user can verify edits — base URL, auth, selected model —
 // before saving. The config carries only the env-var name, never a secret.
+// TestConnection and TestModels are stateless with respect to saved settings;
+// TestInference additionally reads the saved ModelConfig (see below) so its
+// request mirrors a real chain run.
 type ServiceAPI interface {
 	TestConnection(cfg settings.ProviderConfig) (*apperr.VerifyOutcome, error)
 	TestModels(cfg settings.ProviderConfig) (*apperr.VerifyOutcome, error)
 	TestInference(cfg settings.ProviderConfig) (*apperr.VerifyOutcome, error)
 }
 
-// Service runs the three provider diagnostic checks. It is stateless with
-// respect to saved settings — every check operates on the draft ProviderConfig
-// supplied by the caller, so verification works before a provider is saved.
+// Service runs the three provider diagnostic checks. TestConnection and
+// TestModels are stateless with respect to saved settings — they operate only
+// on the draft ProviderConfig supplied by the caller, so verification works
+// before a provider is saved. TestInference also reads the saved ModelConfig
+// so its request exercises the same parameters a real chain run would use.
 type Service struct {
-	wlog    logger.Logger
-	factory *llms.ProviderFactory
-	gate    *gate.InferenceGate
+	wlog            logger.Logger
+	factory         *llms.ProviderFactory
+	settingsService settings.SettingsServiceAPI
+	gate            *gate.InferenceGate
 }
 
 // NewService constructs a VerificationService. All arguments are required.
 func NewService(
 	wlog logger.Logger,
 	factory *llms.ProviderFactory,
+	settingsService settings.SettingsServiceAPI,
 	g *gate.InferenceGate,
 ) ServiceAPI {
 	const op = "verification.NewService"
@@ -51,10 +58,13 @@ func NewService(
 	if factory == nil {
 		panic(fmt.Sprintf("%s: provider factory cannot be nil", op))
 	}
+	if settingsService == nil {
+		panic(fmt.Sprintf("%s: settings service cannot be nil", op))
+	}
 	if g == nil {
 		panic(fmt.Sprintf("%s: inference gate cannot be nil", op))
 	}
-	return &Service{wlog: wlog, factory: factory, gate: g}
+	return &Service{wlog: wlog, factory: factory, settingsService: settingsService, gate: g}
 }
 
 // TestConnection verifies that the provider endpoint is reachable and
@@ -148,8 +158,13 @@ func (s *Service) TestModels(cfg settings.ProviderConfig) (*apperr.VerifyOutcome
 // full inference path. It acquires the InferenceGate first; if the gate is
 // held it returns immediately with CodeBusy (no LLM call). The gate is always
 // released via defer — on success, failure, timeout, or panic.
+//
+// The request applies the same saved ModelConfig a real chain run would use
+// (temperature, max output tokens / legacy-flag, context window → NumCtx) so
+// this diagnostic exercises the same parameters as production traffic, not an
+// unconstrained bare prompt.
 // Failure codes: busy, missing_credential, auth, model_not_found, timeout,
-// rate_limited, context_window, empty_completion.
+// rate_limited, context_window, empty_completion, internal.
 func (s *Service) TestInference(cfg settings.ProviderConfig) (*apperr.VerifyOutcome, error) {
 	if !s.gate.TryAcquire() {
 		return &apperr.VerifyOutcome{Check: "inference", OK: false, DurationMs: 0},
@@ -180,12 +195,31 @@ func (s *Service) TestInference(cfg settings.ProviderConfig) (*apperr.VerifyOutc
 		return outcome, err
 	}
 
+	modelCfg, err := s.settingsService.GetModelConfig()
+	if err != nil {
+		outcome.DurationMs = time.Since(start).Milliseconds()
+		outcome.OK = false
+		return outcome, apperr.Internal(fmt.Errorf("get model config: %w", err))
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), verifyTimeout)
 	defer cancel()
 
 	req := llms.ChatRequest{
 		Model:    cfg.SelectedModel,
 		Messages: []llms.Message{{Role: "user", Content: "Hi"}},
+	}
+	if modelCfg.UseTemperature {
+		t := modelCfg.Temperature
+		req.Temperature = &t
+	}
+	if modelCfg.UseMaxOutputTokens {
+		maxOut := modelCfg.MaxOutputTokens
+		req.MaxTokens = &maxOut
+		req.UseLegacyMaxTokens = modelCfg.UseLegacyMaxTokens
+	}
+	if modelCfg.UseContextWindow && modelCfg.ContextWindow > 0 {
+		req.NumCtx = &modelCfg.ContextWindow
 	}
 
 	resp, chatErr := p.Chat(ctx, req)

@@ -26,17 +26,95 @@ func (l *testLogger) Warning(msg string) {}
 func (l *testLogger) Error(msg string)   {}
 func (l *testLogger) Fatal(msg string)   {}
 
-// newTestService builds a stateless Service and finalizes the draft config to
-// point at the given httptest server. The returned config is what callers pass
-// to the check methods — the service reads no saved settings.
+// stubSettingsService implements settings.SettingsServiceAPI, exposing only
+// GetModelConfig as configurable; every other method is unused by the
+// verification package and returns zero values. Defaults GetModelConfig to a
+// zero-value ModelConfig (every Use* flag off) so tests that don't care about
+// ModelConfig see the pre-fix request shape (no optional fields set).
+type stubSettingsService struct {
+	modelCfg *settings.ModelConfig
+	modelErr error
+}
+
+func (s *stubSettingsService) GetModelConfig() (*settings.ModelConfig, error) {
+	if s.modelErr != nil {
+		return nil, s.modelErr
+	}
+	if s.modelCfg != nil {
+		return s.modelCfg, nil
+	}
+	return &settings.ModelConfig{}, nil
+}
+func (s *stubSettingsService) GetAppSettingsMetadata() (*settings.AppSettingsMetadata, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) GetSettings() (*settings.Settings, error)            { return nil, nil }
+func (s *stubSettingsService) ResetSettingsToDefault() (*settings.Settings, error) { return nil, nil }
+func (s *stubSettingsService) GetAllProviderConfigs() ([]settings.ProviderConfig, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) GetCurrentProviderConfig() (*settings.ProviderConfig, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) GetProviderConfig(_ string) (*settings.ProviderConfig, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) CreateProviderConfig(_ *settings.ProviderConfig) (*settings.ProviderConfig, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) UpdateProviderConfig(_ *settings.ProviderConfig) (*settings.ProviderConfig, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) DeleteProviderConfig(_ string) error { return nil }
+func (s *stubSettingsService) SetAsCurrentProviderConfig(_ string) (*settings.ProviderConfig, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) GetInferenceBaseConfig() (*settings.InferenceBaseConfig, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) UpdateInferenceBaseConfig(_ *settings.InferenceBaseConfig) (*settings.InferenceBaseConfig, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) UpdateModelConfig(_ *settings.ModelConfig) (*settings.ModelConfig, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) GetLanguageConfig() (*settings.LanguageConfig, error) { return nil, nil }
+func (s *stubSettingsService) SetDefaultInputLanguage(_ string) error               { return nil }
+func (s *stubSettingsService) SetDefaultOutputLanguage(_ string) error              { return nil }
+func (s *stubSettingsService) AddLanguage(_ string) ([]string, error)               { return nil, nil }
+func (s *stubSettingsService) RemoveLanguage(_ string) ([]string, error)            { return nil, nil }
+func (s *stubSettingsService) GetAppBehaviorConfig() (*settings.AppBehaviorConfig, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) UpdateAppBehaviorConfig(_ *settings.AppBehaviorConfig) (*settings.AppBehaviorConfig, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) GetUIPreferencesConfig() (*settings.UIPreferencesConfig, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) UpdateUIPreferencesConfig(_ *settings.UIPreferencesConfig) (*settings.UIPreferencesConfig, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) GetLoggingConfig() (*settings.LoggingConfig, error) { return nil, nil }
+func (s *stubSettingsService) UpdateLoggingConfig(_ *settings.LoggingConfig) (*settings.LoggingConfig, error) {
+	return nil, nil
+}
+
+// newTestService builds a Service and finalizes the draft config to point at
+// the given httptest server. The returned config is what callers pass to the
+// check methods. TestConnection/TestModels read no saved settings;
+// TestInference reads ModelConfig via a stub defaulting to all-flags-off (see
+// stubSettingsService) unless a test builds a Service literal directly with a
+// configured stub.
 func newTestService(t *testing.T, baseURL string, kind llms.ProviderKind, cfg settings.ProviderConfig, g *gate.InferenceGate) (*Service, settings.ProviderConfig) {
 	t.Helper()
 	cfg.BaseURL = baseURL
 	cfg.Kind = string(kind)
 	return &Service{
-		wlog:    &testLogger{},
-		factory: llms.NewProviderFactory(resty.New()),
-		gate:    g,
+		wlog:            &testLogger{},
+		factory:         llms.NewProviderFactory(resty.New()),
+		settingsService: &stubSettingsService{},
+		gate:            g,
 	}, cfg
 }
 
@@ -489,4 +567,182 @@ func TestService_TestInference_GateReleasedOnError(t *testing.T) {
 		t.Fatal("gate must be released after TestInference even on error")
 	}
 	g.Release()
+}
+
+// --- TestInference now applies the saved ModelConfig, mirroring a real chain run (T65) ---
+
+func TestService_TestInference_AppliesModelConfig_OpenAICompatible(t *testing.T) {
+	t.Parallel()
+	var capturedBody map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&capturedBody); err != nil {
+			t.Fatalf("decode request body: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(successChatBody("ok"))
+	}))
+	defer srv.Close()
+
+	cfg := baseProviderCfg("TestProv")
+	cfg.SelectedModel = "gpt-4o"
+	cfg.BaseURL = srv.URL
+	cfg.Kind = string(llms.KindOpenAI)
+	svc := &Service{
+		wlog:    &testLogger{},
+		factory: llms.NewProviderFactory(resty.New()),
+		settingsService: &stubSettingsService{modelCfg: &settings.ModelConfig{
+			UseTemperature:     true,
+			Temperature:        0.7,
+			UseMaxOutputTokens: true,
+			MaxOutputTokens:    256,
+			UseLegacyMaxTokens: true,
+		}},
+		gate: gate.New(),
+	}
+
+	outcome, err := svc.TestInference(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !outcome.OK {
+		t.Error("expected OK=true")
+	}
+	if capturedBody["temperature"] != 0.7 {
+		t.Errorf("want temperature=0.7, got %v", capturedBody["temperature"])
+	}
+	if capturedBody["max_tokens"] != float64(256) {
+		t.Errorf("want max_tokens=256, got %v", capturedBody["max_tokens"])
+	}
+	if _, ok := capturedBody["max_completion_tokens"]; ok {
+		t.Error("max_completion_tokens must not be set when UseLegacyMaxTokens is true")
+	}
+}
+
+func TestService_TestInference_AppliesModelConfig_OllamaNative(t *testing.T) {
+	t.Parallel()
+	var capturedBody map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&capturedBody); err != nil {
+			t.Fatalf("decode request body: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(successNativeChatBody("ok"))
+	}))
+	defer srv.Close()
+
+	cfg := baseProviderCfg("TestProv")
+	cfg.SelectedModel = "llama3"
+	cfg.BaseURL = srv.URL
+	cfg.Kind = string(llms.KindOllama)
+	svc := &Service{
+		wlog:    &testLogger{},
+		factory: llms.NewProviderFactory(resty.New()),
+		settingsService: &stubSettingsService{modelCfg: &settings.ModelConfig{
+			UseTemperature:   true,
+			Temperature:      0.3,
+			UseContextWindow: true,
+			ContextWindow:    8192,
+		}},
+		gate: gate.New(),
+	}
+
+	outcome, err := svc.TestInference(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !outcome.OK {
+		t.Error("expected OK=true")
+	}
+	if _, ok := capturedBody["temperature"]; ok {
+		t.Error("temperature must not be a top-level field for the native endpoint")
+	}
+	options, ok := capturedBody["options"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected options object, got body: %v", capturedBody)
+	}
+	if options["temperature"] != 0.3 {
+		t.Errorf("want options.temperature=0.3, got %v", options["temperature"])
+	}
+	if options["num_ctx"] != float64(8192) {
+		t.Errorf("want options.num_ctx=8192, got %v", options["num_ctx"])
+	}
+}
+
+func TestService_TestInference_ModelConfigDisabled_OmitsFields(t *testing.T) {
+	t.Parallel()
+	var capturedBody map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&capturedBody); err != nil {
+			t.Fatalf("decode request body: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(successChatBody("ok"))
+	}))
+	defer srv.Close()
+
+	cfg := baseProviderCfg("TestProv")
+	cfg.SelectedModel = "gpt-4o"
+	svc, cfg := newTestService(t, srv.URL, llms.KindOpenAI, cfg, gate.New())
+
+	outcome, err := svc.TestInference(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !outcome.OK {
+		t.Error("expected OK=true")
+	}
+	for _, field := range []string{"temperature", "max_tokens", "max_completion_tokens", "options"} {
+		if _, ok := capturedBody[field]; ok {
+			t.Errorf("want %q omitted when ModelConfig has every Use* flag off, got: %v", field, capturedBody[field])
+		}
+	}
+}
+
+func TestService_TestInference_ModelConfigFetchError(t *testing.T) {
+	t.Parallel()
+	g := gate.New()
+	cfg := baseProviderCfg("TestProv")
+	cfg.SelectedModel = "gpt-4o"
+	cfg.Kind = string(llms.KindOpenAI)
+	svc := &Service{
+		wlog:            &testLogger{},
+		factory:         llms.NewProviderFactory(resty.New()),
+		settingsService: &stubSettingsService{modelErr: errors.New("db unavailable")},
+		gate:            g,
+	}
+
+	outcome, err := svc.TestInference(cfg)
+	if err == nil {
+		t.Fatal("expected error when ModelConfig cannot be read")
+	}
+	if outcome.OK {
+		t.Error("expected OK=false")
+	}
+	var ae *apperr.AppError
+	if !errors.As(err, &ae) {
+		t.Fatalf("expected *apperr.AppError, got %T", err)
+	}
+	if ae.Code != apperr.CodeInternal {
+		t.Errorf("expected code=internal, got %q", ae.Code)
+	}
+
+	// The gate must still be released even though the check failed before the LLM call.
+	if !g.TryAcquire() {
+		t.Fatal("gate must be released after a ModelConfig fetch error")
+	}
+	g.Release()
+}
+
+// successNativeChatBody builds a minimal Ollama native /api/chat response body.
+func successNativeChatBody(content string) []byte {
+	type msg struct {
+		Role    string `json:"role"`
+		Content string `json:"content"`
+	}
+	body := map[string]any{
+		"message":     msg{Role: "assistant", Content: content},
+		"done_reason": "stop",
+	}
+	b, _ := json.Marshal(body)
+	return b
 }
