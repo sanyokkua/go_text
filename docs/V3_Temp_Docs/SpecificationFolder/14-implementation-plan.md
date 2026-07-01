@@ -1183,4 +1183,131 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
   phase's changes — `smoke-tests.spec.ts` asserts against bridge-mock-only fixtures (`"Mock output
   text."`, the `?history-test=1` seeded entry, canned XSS payloads) that a real LLM cannot reproduce.
   Substituted with extensive manual live verification for this pass; logged as a separate follow-up
-  task rather than fixed here (see the findings doc's "Target-B gate 8 status" note).
+  task rather than fixed here (see the findings doc's "Target-B gate 8 status" note). **Follow-up
+  (2026-07-02):** the gate-8 gap above was fixed — `13-testing-specification.md` §11.1 gate 8 now
+  points at `frontend/e2e/live-llm.spec.ts` (`npm run verify:live`), `smoke-tests.spec.ts` is
+  reclassified Target-A-only and added to CI, and §1.5's Target-B definition is corrected to match:
+  real local providers (Ollama/LM Studio), local-only, intentionally never in CI (CI has no LLM
+  runtime available — confirmed as the intended design, not a gap to close). See commit
+  `e93eed5` and `docs/V3_Temp_Docs/2026-07-01-context-window-live-testing.md`'s "Target-B gate 8
+  status" note. A follow-up correction to finding #4's toast-path wording (commit `5f76166`)
+  additionally surfaced three new gaps, tracked as T69–T71 below.
+
+### T69 — Chain-run toast collapses every classified inner error into the generic "Step N failed" title
+
+- **Severity:** Low–Medium (UX only — the message body is already specific; only the toast title is
+  generic).
+- **Discovery:** Per finding #4's corrected note (`docs/V3_Temp_Docs/2026-07-01-context-window-live-testing.md`,
+  2026-07-03), a chain-run step failure always gets wrapped by `apperr.StepFailed`
+  (`internal/actions/orchestrator.go:114`), which sets `Code: CodeStepFailed` and copies only the
+  inner error's **message** text into `Details["inner"]` — never its **Code** or **Title**. So
+  `notifications/slice.ts`'s dedicated per-code toast cases (e.g. `CodeContextWindow` → "Input too
+  long", `CodeAuth` → "Authentication failed") never fire for a chain-run failure; the frontend only
+  ever sees `CodeStepFailed` and renders the generic "Step N failed" title, no matter what actually
+  went wrong. This isn't ContextWindow-specific — every classified inner error type (auth failure,
+  timeout, rate limit, provider unreachable, model not found, upstream error, empty completion,
+  missing credential, invalid plan) loses its specific title the same way once it reaches a chain
+  step. Test inference (a single, unwrapped call — see T70) does **not** have this problem; it shows
+  the dedicated title directly. That asymmetry is the bug.
+- **Root cause:** `apperr.StepFailed(index, family, inner *AppError)`
+  (`internal/apperr/apperr.go:222-238`) never preserves `inner.Code` or `inner.Title` in the
+  wire-visible `Details` map, so `WireError.Code` is always `CodeStepFailed` for any chain-run
+  failure and the frontend has no way to recover which specific error occurred without re-parsing
+  the message text (fragile, not attempted anywhere today).
+- **Fix (`go-engineer` then `ts-engineer`):**
+  - Backend (`internal/apperr/apperr.go`, `StepFailed`): add two keys to the returned `Details` map
+    alongside the existing `stepIndex`/`family`/`inner`:
+    - `"innerCode": string(inner.Code)` — the classification enum value (safe, allowlist-clean).
+    - `"innerTitle": inner.Title` — the inner error's **already-fully-rendered** title string. Every
+      `AppError` constructor renders `Title` as a plain string at construction time (e.g.
+      `Validation`'s title is already `"Invalid " + field`, not a template) — this is important:
+      don't rebuild a title-formatting map on the frontend, since that would either duplicate
+      backend logic or produce a wrong/incomplete title for parameterized cases like
+      `CodeValidation` ("Invalid {field}"), which needs the `field` value the frontend doesn't have
+      unless the full inner `Details` were also threaded through (out of scope here — just reuse the
+      backend's already-rendered string).
+  - Frontend (`frontend/src/logic/store/notifications/slice.ts`, `buildNotification`'s
+    `CodeStepFailed` case): read `d['innerTitle']`. If present, build the toast title as
+    `` `Step ${stepNumber}: ${innerTitle}` `` (e.g. "Step 1: Input too long"); the message body stays
+    exactly as it is today (`Step N (family) failed: <inner message>. Earlier steps completed.`) —
+    only the title changes. If `innerTitle` is absent (older wire payloads, or any future caller that
+    constructs `CodeStepFailed` without going through the updated `StepFailed` constructor), keep the
+    current generic `` `Step ${stepNumber} failed` `` title unchanged — no regression.
+- **Files:** `internal/apperr/apperr.go`, `frontend/src/logic/store/notifications/slice.ts`.
+- **Tests:**
+  - `go-tester`: extend `apperr`'s `StepFailed` tests asserting `Details["innerCode"]` and
+    `Details["innerTitle"]` match the inner `AppError`'s `Code`/`Title` for at least two different
+    inner codes (e.g. `ContextWindow`, `Auth`, and `Validation` specifically — to confirm the
+    parameterized-title case round-trips correctly); confirm `stepIndex`/`family`/`inner` are
+    unaffected.
+  - `ts-tester`: table test on `buildNotification` — `CodeStepFailed` with
+    `innerTitle: 'Input too long'` → title `"Step 1: Input too long"`; with
+    `innerTitle: 'Authentication failed'` → title `"Step 2: Authentication failed"`; with
+    `innerTitle` absent → title stays `"Step N failed"` (regression case, unchanged behavior).
+  - **Live regression:** force the same LM Studio context-overflow repro used in T64/finding #4
+    (tiny loaded context + oversized input) through a normal Editor chain run; confirm the toast
+    title now reads "Step 1: Input too long" instead of "Step 1 failed", with the message body
+    unchanged from today's wording.
+- **Acceptance:** a chain-run failure whose inner error is classified shows that error's specific
+  title, step-prefixed; unclassified/generic errors are unaffected; nothing beyond a classification
+  enum value and an already-public title string is added to the wire (still allowlist-safe per
+  `ErrorEnvelopeRules.md`).
+
+### T70 — Empirically verify Test inference fires the `CodeContextWindow` toast on a forced overflow
+
+- **Severity:** Low (verification only; no code change expected unless the live test disproves the
+  source trace).
+- **Discovery:** finding #4's note (corrected 2026-07-03) traces, **from source only**, that a
+  genuine context overflow surfaced through Settings > Providers > "Test inference" fires **both**
+  `VerificationPanel.tsx`'s inline `✗ message` row **and** the dedicated `CodeContextWindow` "Input
+  too long" toast — because `testProviderInference`'s thunk (`settings/thunks.ts`) calls `unwrap()`
+  (not `tryUnwrap()`), and `unwrap()` (`logic/adapter/envelope.ts`) unconditionally dispatches
+  `notifyError(res.error)` before throwing, while `TestInference`
+  (`internal/verification/service.go`) returns its error unwrapped (no `StepFailed` involved on this
+  path at all). This was never confirmed against an actual forced overflow — doing so requires
+  loading the target model with an artificially tiny context outside the app (as in T64's original
+  live repro: `lms load <model> -c 512` or similar), which wasn't set up during the
+  documentation-only correction pass that produced the note.
+- **Fix:** none anticipated — this is a verification-only task. If live behavior contradicts the
+  source trace (e.g. some intervening logic suppresses the toast, or the dispatch happens but
+  nothing renders), that discrepancy becomes a new bug to root-cause and fix, and the finding-doc
+  note needs correcting again.
+- **Files:** none expected to change in `internal/`/`frontend/src/`;
+  `docs/V3_Temp_Docs/2026-07-01-context-window-live-testing.md`'s finding #4 note gets a one-line
+  live-confirmation (or a further correction) appended.
+- **Tests (live-only, per `CLAUDE.md`'s "During Application Live Testing" section):**
+  - Start `wails dev`; load a small local model in LM Studio (or Ollama) with a deliberately tiny
+    context (e.g. `-c 256`–`512`); in Settings > Providers, select that provider/model with `Use
+    context window` ON at a value exceeding the tiny loaded context; click "Test inference"; capture
+    via `preview_console_logs`/`preview_network`/`preview_screenshot` whether (a) the inline
+    `✗ message` row appears in `VerificationPanel.tsx`, and (b) a toast titled "Input too long"
+    appears simultaneously.
+  - `TestInference`'s request is a minimal one-word prompt ("Hi"), so a tiny loaded context alone may
+    not reliably trigger a real HTTP 400 from every provider/server combination — if the straightforward
+    repro doesn't reproduce an overflow, document the actual provider behavior observed (including "no
+    overflow reachable via this minimal request" as a valid, useful finding) rather than forcing an
+    artificial failure.
+- **Acceptance:** the finding-doc note is either confirmed accurate against a real forced overflow
+  (append "confirmed live" with the date and repro details) or corrected again if reality differs,
+  with the specific discrepancy documented.
+
+### T71 — Audit §2.3 coverage-matrix "(B)"-tagged rows against `live-llm.spec.ts`'s actual scenario list
+
+- **Severity:** Low (documentation accuracy, not a functional bug).
+- **Discovery:** `13-testing-specification.md` §2.3's coverage checklist has multiple rows tagged
+  "(B)" (e.g. "Settings — 7 sections: add+verify provider (B)") implying Target-B coverage, written
+  before `live-llm.spec.ts`'s actual scenario list (S0–S8, see §4.1.1) was finalized and before
+  Target B's definition itself was corrected (see the T68 follow-up note above). The intro sentence
+  added during the gate-8 fix (2026-07-02) flags this as "tracked follow-up work, not a silent pass"
+  but does not resolve it — no row-by-row reconciliation has been done yet.
+- **Fix:** none anticipated beyond the doc itself — this pass is reconciliation only. Any real
+  coverage gap found becomes a new, separately-numbered follow-up task rather than being fixed
+  inline here (matches how this session scoped the gate-8 fix).
+- **Files:** `docs/V3_Temp_Docs/SpecificationFolder/13-testing-specification.md` (§2.3).
+- **Tests:** none (documentation task) — the "test" is the audit itself: cross-reference every
+  "(B)"-tagged row in §2.3 against `frontend/e2e/live-llm.spec.ts`'s S0–S8 scenarios (and any
+  scenarios added since), and mark each row as **Covered** / **Partially covered** / **Gap** / **Not
+  applicable** (e.g. a row that only made sense under the old stub-provider model), with a one-line
+  note per row citing which `live-llm.spec.ts` test, if any, covers it.
+- **Acceptance:** every "(B)"-tagged row in §2.3 has an explicit, evidence-backed status; any genuine
+  gaps are logged as new numbered follow-up tasks in this file rather than left as a vague caveat.
