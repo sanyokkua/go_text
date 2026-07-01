@@ -57,7 +57,7 @@
 | Frontend UI / E2E (rendered app) | **Playwright** driving **headless Chromium** against a running dev server |
 | Frontend audit | `npm audit` |
 | Wails health | `wails doctor` |
-| SQL codegen drift | `sqlc generate --diff` |
+| SQL codegen drift | `sqlc diff` |
 
 > The frontend test runner is already wired (`frontend/package.json` exposes `npm test`,
 > `test:watch`, `test:coverage` on Jest 30 + ts-jest). `@testing-library/react`,
@@ -319,7 +319,7 @@ whole status matrix. Each row asserts the **typed code** surfaced through the ha
 | `Up` clean | `goose.Up` on an empty temp/in-memory DB creates all tables (`settings`, `providers`, `app_state`, `languages`, `stacks`, `stack_steps`, `history`) and indexes; `goose_db_version` tracks the applied versions |
 | `Down` clean | `goose.Down` reverses each migration (incl. `0002_history`) leaving no application tables |
 | Round-trip | `Up → Down → Up` is idempotent and leaves a consistent schema |
-| sqlc parity | the schema sqlc reads (the migration files) matches the generated `store` — verified by the `sqlc generate --diff` CI guard (§5.2) |
+| sqlc parity | the schema sqlc reads (the migration files) matches the generated `store` — verified by the `sqlc diff` CI guard (§5.2) |
 
 ### 3.6 Provider CRUD + delete-current repoint (handler boundary)
 
@@ -406,7 +406,7 @@ provider — never a real external LLM.
 | Guard | Command / check | Fails the build when |
 |---|---|---|
 | **No MUI / Emotion** | grep the frontend dependency tree and source for `@mui` and `@emotion` | any `@mui/*` or `@emotion/*` import or dependency is present (MUI is removed in v3; Radix + tokens replace it) |
-| **sqlc drift** | `sqlc generate --diff` | the committed `internal/db/store` differs from what the migrations + queries would generate |
+| **sqlc drift** | `sqlc diff` | the committed `internal/db/store` differs from what the migrations + queries would generate |
 | **Go data races** | `go test -race ./...` | any test trips the race detector |
 | **Wails health** | `wails doctor` | the Wails toolchain/environment is unhealthy |
 | **Go vulnerabilities** | `govulncheck ./...` | a known vulnerability affects a reachable symbol |
@@ -622,7 +622,7 @@ violations**, in both light and dark themes:
 5. **Shared path proven.** Inspector preview and real run are asserted identical (no drift).
 6. **Race-clean.** The whole Go suite passes under `-race`.
 7. **Generated code excluded** from coverage and not hand-edited; drift is caught by
-   `sqlc generate --diff` and `wails generate module`.
+   `sqlc diff` and `wails generate module`.
 8. **Source paths are repo-root-relative** throughout (`internal/…`, `frontend/src/…`).
 
 ---
@@ -659,7 +659,7 @@ a prerequisite for all feature tasks.
 | 2 | **Lint / type-check** | `npm run lint` + `tsc --noEmit` (FE) · `go vet ./...` | a lint or type error exists |
 | 3 | **Backend unit + integration** | `go test -race ./...` | any Go test fails or the race detector trips |
 | 4 | **Frontend unit + a11y** | `npm test` (Jest + RTL + `jest-axe`, coverage) | a test fails or coverage drops below §1.4 |
-| 5 | **Codegen drift** | `sqlc generate --diff`; `wails generate module` (tree clean) | generated `store`/bindings differ from source |
+| 5 | **Codegen drift** | `sqlc diff`; `wails generate module` (tree clean) | generated `store`/bindings differ from source |
 | 6 | **Build** | `go build ./...` and `cd frontend && npm run build` (and a `wails build` smoke before release) | either build fails |
 | 7 | **UI verification — Target A** | start `npm run dev`, then `npm run verify:ui` (Playwright: routes × ≥3 widths × 2 themes + interaction smoke incl. Markdown) | overflow, console/page error, fallback-serif font, missing key element, or a smoke flow fails |
 | 8 | **UI verification — Target B** | start `wails dev`, then `BASE_URL=http://localhost:34115 npm run verify:smoke` (bridge-dependent journeys) | a backend-connected journey fails |

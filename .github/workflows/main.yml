@@ -303,7 +303,7 @@ jobs:
         run: go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 
       - name: Go – sqlc drift check
-        run: sqlc generate --diff
+        run: sqlc diff
 
       - name: Go – wails bindings drift check
         run: |
