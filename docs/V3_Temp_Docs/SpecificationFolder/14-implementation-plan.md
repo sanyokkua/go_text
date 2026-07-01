@@ -1171,10 +1171,16 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
   bindings-in-sync/`@mui`-`@emotion` guard/`sqlc diff`/T62 migration round-trip/`govulncheck`/`npm
   audit` all clean); full Target-A Playwright suite green (112 tests); all 8 findings plus the T67
   token-estimate feature re-verified live against real Ollama (native `/api/chat`, `n_ctx_slot`
-  tracking the configured value exactly) and LM Studio (forced overflow surfaced the typed
-  `apperr.ContextWindow` toast) via `wails dev` — see the T68 verdicts table in
-  `docs/V3_Temp_Docs/2026-07-01-context-window-live-testing.md`. Two unrelated pre-existing issues
-  found during the branch-wide verification pass were fixed incidentally: a Prettier-formatting drift
-  across 55 files from earlier T61–T67 commits, and 4 stale theme-persistence e2e tests
+  tracking the configured value exactly) and LM Studio (forced overflow surfaced the specific
+  `apperr.ContextWindow` message via the step-failure toast) via `wails dev` — see the T68 verdicts
+  table in `docs/V3_Temp_Docs/2026-07-01-context-window-live-testing.md`. Three unrelated pre-existing
+  issues found during the branch-wide verification pass were fixed incidentally: a Prettier-formatting
+  drift across 55 files from earlier T61–T67 commits, 4 stale theme-persistence e2e tests
   (`theme.spec.ts`/`theme-manual.spec.ts`) asserting a legacy `localStorage` model no longer used now
-  that theme persists via backend `UIPreferences`.
+  that theme persists via backend `UIPreferences`, and a broken `sqlc generate --diff` CI invocation
+  (corrected to `sqlc diff` for the current sqlc CLI). **One gap not closed:** §11.1 gate 8
+  (`verify:smoke` against a real `wails dev`) fails 6/9 as literally specified, independent of this
+  phase's changes — `smoke-tests.spec.ts` asserts against bridge-mock-only fixtures (`"Mock output
+  text."`, the `?history-test=1` seeded entry, canned XSS payloads) that a real LLM cannot reproduce.
+  Substituted with extensive manual live verification for this pass; logged as a separate follow-up
+  task rather than fixed here (see the findings doc's "Target-B gate 8 status" note).
