@@ -268,17 +268,18 @@ reconciliation (task T71).
 #### 2.3.1 (B)-row audit (T71, 2026-07-02)
 
 Row-by-row reconciliation of every **(B)**-tagged UI-test cell above against
-`frontend/e2e/live-llm.spec.ts`'s actual scenario list (`S0`–`S8`). Evidence is the specific
-scenario(s) exercised at the time of this audit; genuine gaps (coverage that is missing with no
-by-design rationale) are logged as new numbered follow-up tasks rather than left as a caveat.
+`frontend/e2e/live-llm.spec.ts`'s actual scenario list (`S0`–`S8` at the time of this audit; `S9`
+added subsequently by T78 to close the last row's gap). Evidence is the specific scenario(s)
+exercised at the time of this audit; genuine gaps (coverage that is missing with no by-design
+rationale) are logged as new numbered follow-up tasks rather than left as a caveat.
 
 | Row | Status | Evidence (`live-llm.spec.ts`) | Note |
 |---|---|---|---|
 | **Editor view** — "full run via real bridge" | **Covered** | `S1` | Type → pick action → Run → real inference → non-sentinel, content-preserving output. `S7` repeats the same journey on Ollama (bonus coverage, not required by this row). |
 | **`StackBuilderBar`** — "build → run → save → manage" | **Partially covered — by design** | `S3` (build 2 steps + run, real multi-inference); `S8` (run a seeded stack from Manage) | The **Save** step (persisting a newly built stack) is never exercised. This is intentional: the suite's own file-header comment classifies persisting writes as flows that "mutate the real GoTextApp DB/settings and must be run manually against an isolated config dir... per plan T45," and T45's scenario list (`14-implementation-plan.md`, "build/run/manage stacks") already tracks this manually. Not a new gap. |
-| **History rail** — "open rail → restore populates editors" | **Gap (restore step unverified)** | `S5` | `S5` opens the rail, confirms a run was recorded, and asserts a "Restore" control is *visible* — it never clicks it and never asserts the input/output editors actually populate. Restoring doesn't mutate persistent state, so there's no by-design rationale for the omission. **Logged as T72.** |
+| **History rail** — "open rail → restore populates editors" | **Covered** | `S5` | `S5` records a run, clears both editors, opens the rail (toggling only if not already open), clicks the most-recent entry's Restore control, and asserts the input textarea and the output pane both repopulate with the original submitted content. Fixed under **T72** (executed by T78). |
 | **Settings — 7 sections** — "add+verify provider" | **Partially covered — by design** | `S2` | "Verify" (Test connection/models/inference against the existing LM Studio provider; asserts ≥3 ✓ and no ✗) is fully covered. "Add" (New → choose kind → base URL/env-var → Save) is never exercised — same persisting-flow rationale as the `StackBuilderBar` row, and explicitly listed in T45's scenario 1 ("provider CRUD + ... + Save/Set current"). Not a new gap. |
-| **About·Info + Prompt Inspector** — "⌘K run/add" | **Gap** | none | No scenario in `live-llm.spec.ts` touches About·Info, the Prompt Inspector, or the ⌘K command palette. Confirmed via `frontend/src/ui/widgets/views/AppMainView.tsx` (`handlePaletteRun` — Enter, real `ChainRequest` inference; `handlePaletteAddToStack` — Shift+Enter, in-memory `addStep`) that both actions are non-destructive and non-persisting, so unlike the two rows above there is no by-design rationale for the omission. **Logged as T73.** |
+| **About·Info + Prompt Inspector** — "⌘K run/add" | **Covered** | `S9` | `S9` opens the ⌘K palette, hovers and presses `Enter` on an action to trigger a real `handlePaletteRun` inference, then hovers and presses `Shift+Enter` on a different action to trigger `handlePaletteAddToStack`, asserting the stack builder registers the step. Fixed under **T73** (executed by T78). |
 
 ---
 

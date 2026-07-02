@@ -1378,6 +1378,12 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Acceptance:** `S5` clicks Restore on a recorded history entry and asserts both the input and
   output editors are populated with the expected restored content, passing against a real local
   provider.
+- **Status: DONE (2026-07-02).** Implemented under T78: `S5` now clears both editors after recording
+  a run, opens the History rail (toggling only if not already open — see T81 for the related
+  cross-run persisted-state issue found in `S2`), clicks the most-recent entry's `Restore entry…`
+  button, and asserts the input textarea's value and the output pane's normalized text both match the
+  original submitted content. Verified via `npm run verify:live` against `wails dev` + real Ollama/LM
+  Studio providers.
 
 ### T73 — No live Target-B coverage exists for the ⌘K command-palette "run" and "add-to-stack" journeys
 
@@ -1404,6 +1410,14 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Acceptance:** a new live scenario exists that exercises both ⌘K-triggered run and ⌘K-triggered
   add-to-stack against the real bridge and passes against a real local provider; §2.3.1's audit row
   for About·Info + Prompt Inspector can be updated from Gap to Covered once this lands.
+- **Status: DONE (2026-07-02).** Implemented under T78: new `S9` opens the palette via the AppBar's
+  `Open command palette` button, hovers the `Basic proofreading` option (cmdk highlights by pointer
+  hover) and presses `Enter` to trigger a real `handlePaletteRun` inference, then reopens the palette,
+  hovers `Friendly`, and presses `Shift+Enter` to trigger `handlePaletteAddToStack`, asserting the
+  builder shows `1 / 5 steps`. (Typing the display label into the search box does not work here — cmdk
+  filters against each item's internal `value`, i.e. the action id, not its label — so the scenario
+  targets items by hovering their rendered option instead.) Verified via `npm run verify:live` against
+  `wails dev` + a real local provider; `13-testing-specification.md`'s audit row updated to Covered.
 
 ## Phase 12 · Post-completeness-audit remediation (2026-07-02)
 
@@ -1550,6 +1564,12 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
   `qwen3:0.6b`).
 - **Acceptance:** both scenarios pass against a real backend; T72 and T73 above are each updated
   with a "Status: DONE" marker once verified.
+- **Status: DONE (2026-07-02).** Both `S5` (T72) and the new `S9` (T73) implemented exactly as
+  specced and verified passing via `npm run verify:live` against `wails dev` with real Ollama/LM
+  Studio providers, alongside the full existing `S0`/`S1`/`S3`/`S4`/`S6`/`S7`/`S8` scenarios (no
+  regressions). `S2` failed on both verification runs for a pre-existing, unrelated reason (a
+  persisted-Settings-tab cross-run flakiness, not touched by this task) — logged separately as
+  **T81** rather than fixed here, consistent with this task's test-only, T72/T73-scoped mandate.
 
 ### T79 — Retroactively mark completion status across T00–T67
 
@@ -1595,3 +1615,32 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
   rule/edge case) with each divergence either fixed with a regression test or explicitly accepted
   with a documented rationale — matching the precedent set by T63/T68's "documented limitation"
   pattern elsewhere in this plan.
+
+### T81 — `live-llm.spec.ts`'s `S2` is flaky when re-run against an already-used `wails dev` session
+
+- **Severity:** Low (test-flakiness only; the underlying Settings/diagnostics feature is not known to
+  be broken).
+- **Discovery:** found while executing T78. `S2` (`frontend/e2e/live-llm.spec.ts:71-87`) opens
+  Settings and immediately clicks the `"LM Studio"` provider row, assuming Settings always opens on
+  the **Providers** tab. `activeSettingsTab` is a persisted UI preference (`internal/settings` /
+  `logic/store/ui/slice.ts`'s `getUIPreferences.fulfilled`-style hydration), same mechanism as
+  `historyOpen` (see T72's fix). If a prior `verify:live` run (e.g. `S4`, which navigates to the
+  Appearance tab) leaves that tab persisted, a *subsequent* `verify:live` invocation against the
+  same still-running `wails dev` process boots straight into Appearance instead of Providers, so
+  `S2` times out waiting for `"LM Studio"` to appear. Reproduced twice while verifying T78: passed on
+  a fresh `wails dev` start, failed identically (90s timeout on the same locator) on a second
+  back-to-back run against the same session. Not caused by, or a regression from, T78's changes —
+  `S2` is untouched by that task.
+- **Fix (`ts-tester`):** make `S2` explicitly select the Providers tab (e.g.
+  `page.getByRole('tab', { name: /Providers/i }).click()`) before looking for `"LM Studio"`, the same
+  defensive pattern T72 applied to `S5`'s history-rail toggle for the same class of cross-run
+  state-persistence issue.
+- **Files:** `frontend/e2e/live-llm.spec.ts`.
+- **Tests:** this task's deliverable is itself a test change. Verify by running `npm run verify:live`
+  twice in a row against the same `wails dev` process (not restarting it between runs) and confirming
+  `S2` passes both times.
+- **Acceptance:** `S2` passes deterministically regardless of which Settings tab was last active in a
+  prior run against the same backend session.
+- **Status: OPEN (discovered 2026-07-02 during T78 verification).** Not fixed by T78 — out of that
+  task's scope (T72/T73 only); logged here as a new follow-up per this document's own precedent for
+  genuine gaps found outside a task's stated scope.
