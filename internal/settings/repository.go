@@ -23,6 +23,8 @@ type SettingsRepositoryAPI interface {
 	UpdateUIPreferencesConfig(cfg *UIPreferencesConfig) error
 	GetLoggingConfig() (*LoggingConfig, error)
 	UpdateLoggingConfig(cfg *LoggingConfig) error
+	GetWindowSizeConfig() (*WindowSizeConfig, error)
+	UpdateWindowSizeConfig(cfg *WindowSizeConfig) error
 
 	// Languages (list from languages table; defaults from lang.* KV settings)
 	GetLanguageConfig() (*LanguageConfig, error)

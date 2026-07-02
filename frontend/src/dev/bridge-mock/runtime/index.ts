@@ -65,6 +65,9 @@ export function WindowUnmaximise(): void {}
 export function WindowToggleMaximise(): void {}
 export function WindowCenter(): void {}
 export function WindowSetSize(_width: number, _height: number): void {}
+export function WindowGetSize(): Promise<{ w: number; h: number }> {
+    return Promise.resolve({ w: 830, h: 550 });
+}
 export function WindowSetMinSize(_width: number, _height: number): void {}
 export function WindowSetMaxSize(_width: number, _height: number): void {}
 export function WindowHide(): void {}

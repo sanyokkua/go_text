@@ -12,6 +12,11 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/logger"
 )
 
+// minWindowWidth/minWindowHeight are the app's minimum native window
+// dimensions. They must stay in sync with MinimalWidth/MinimalHeight in main.go.
+const minWindowWidth = 830
+const minWindowHeight = 550
+
 // ── Validation helpers ─────────────────────────────────────────────────────
 
 // ValidateBaseURL checks URL format, scheme, and trailing slash.
@@ -87,6 +92,8 @@ type SettingsServiceAPI interface {
 	UpdateUIPreferencesConfig(cfg *UIPreferencesConfig) (*UIPreferencesConfig, error)
 	GetLoggingConfig() (*LoggingConfig, error)
 	UpdateLoggingConfig(cfg *LoggingConfig) (*LoggingConfig, error)
+	GetWindowSizeConfig() (*WindowSizeConfig, error)
+	SaveWindowSize(width, height int) error
 }
 
 // ── Service implementation ─────────────────────────────────────────────────
@@ -482,4 +489,20 @@ func (s *SettingsService) UpdateLoggingConfig(cfg *LoggingConfig) (*LoggingConfi
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	return cfg, nil
+}
+
+func (s *SettingsService) GetWindowSizeConfig() (*WindowSizeConfig, error) {
+	return s.settingsRepo.GetWindowSizeConfig()
+}
+
+func (s *SettingsService) SaveWindowSize(width, height int) error {
+	const op = "SettingsService.SaveWindowSize"
+	if width < minWindowWidth || height < minWindowHeight {
+		return apperr.Validation("windowSize", "at least 830x550", fmt.Sprintf("%dx%d", width, height))
+	}
+	cfg := &WindowSizeConfig{Width: width, Height: height}
+	if err := s.settingsRepo.UpdateWindowSizeConfig(cfg); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	return nil
 }

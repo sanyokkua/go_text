@@ -156,6 +156,14 @@ func (m *MockSettingsService) UpdateUIPreferencesConfig(cfg *settings.UIPreferen
 	return cfg, nil
 }
 
+func (m *MockSettingsService) GetWindowSizeConfig() (*settings.WindowSizeConfig, error) {
+	return &settings.WindowSizeConfig{}, nil
+}
+
+func (m *MockSettingsService) SaveWindowSize(width, height int) error {
+	return nil
+}
+
 // MockServerBehavior controls the mock HTTP server responses
 type MockServerBehavior struct {
 	StatusCode         int

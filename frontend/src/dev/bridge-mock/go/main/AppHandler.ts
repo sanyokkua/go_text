@@ -19,3 +19,7 @@ export function BrowserOpenURL(_url: string): Promise<VoidResult> {
 export function OpenPath(_path: string): Promise<VoidResult> {
     return Promise.resolve(voidOk());
 }
+
+export function SaveWindowSize(_width: number, _height: number): Promise<VoidResult> {
+    return Promise.resolve(voidOk());
+}

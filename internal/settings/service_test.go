@@ -202,3 +202,73 @@ func TestSettingsService_GetAppSettingsMetadata_LogsFolderExists(t *testing.T) {
 		t.Errorf("logs folder must exist on disk, os.Stat failed: %v", statErr)
 	}
 }
+
+// SaveWindowSize must reject any dimension below the app's minimum native
+// window size (830x550, kept in sync with MinimalWidth/MinimalHeight in
+// main.go) with a classified apperr.CodeValidation error.
+func TestSettingsService_SaveWindowSize_RejectsBelowMinimum(t *testing.T) {
+	tests := []struct {
+		name   string
+		width  int
+		height int
+	}{
+		{name: "zero width and height", width: 0, height: 0},
+		{name: "width one below minimum", width: 829, height: 550},
+		{name: "height one below minimum", width: 830, height: 549},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := newRepo(t)
+			svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+
+			err := svc.SaveWindowSize(tt.width, tt.height)
+
+			if err == nil {
+				t.Fatalf("SaveWindowSize(%d, %d) = nil, want validation error", tt.width, tt.height)
+			}
+			var ae *apperr.AppError
+			if !errors.As(err, &ae) {
+				t.Fatalf("want *apperr.AppError, got %T: %v", err, err)
+			}
+			if ae.Code != apperr.CodeValidation {
+				t.Errorf("expected CodeValidation, got %q", ae.Code)
+			}
+		})
+	}
+}
+
+// SaveWindowSize must accept any dimension at or above the minimum and
+// persist it through to the repository.
+func TestSettingsService_SaveWindowSize_AcceptsValidSize(t *testing.T) {
+	tests := []struct {
+		name   string
+		width  int
+		height int
+	}{
+		{name: "exact minimum", width: 830, height: 550},
+		{name: "well above minimum", width: 1600, height: 900},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := newRepo(t)
+			svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+
+			if err := svc.SaveWindowSize(tt.width, tt.height); err != nil {
+				t.Fatalf("SaveWindowSize(%d, %d): %v", tt.width, tt.height, err)
+			}
+
+			got, err := svc.GetWindowSizeConfig()
+			if err != nil {
+				t.Fatalf("GetWindowSizeConfig: %v", err)
+			}
+			if got.Width != tt.width {
+				t.Errorf("persisted Width: want %d, got %d", tt.width, got.Width)
+			}
+			if got.Height != tt.height {
+				t.Errorf("persisted Height: want %d, got %d", tt.height, got.Height)
+			}
+		})
+	}
+}

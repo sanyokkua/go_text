@@ -6,4 +6,5 @@ module.exports = {
     EventsOff: jest.fn(),
     EventsOnce: jest.fn(),
     EventsEmit: jest.fn(),
+    WindowGetSize: jest.fn(),
 };

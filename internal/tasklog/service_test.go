@@ -103,6 +103,10 @@ func (m *mockSettingsService) GetUIPreferencesConfig() (*settings.UIPreferencesC
 func (m *mockSettingsService) UpdateUIPreferencesConfig(cfg *settings.UIPreferencesConfig) (*settings.UIPreferencesConfig, error) {
 	return cfg, nil
 }
+func (m *mockSettingsService) GetWindowSizeConfig() (*settings.WindowSizeConfig, error) {
+	return nil, nil
+}
+func (m *mockSettingsService) SaveWindowSize(_, _ int) error { return nil }
 
 // mockFileUtilsService stubs file.FileUtilsServiceAPI.
 // EnsureAppLogsFolderExists records the call and returns configured values.

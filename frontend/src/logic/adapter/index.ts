@@ -20,6 +20,11 @@ export function openExternal(url: string): void {
     AppHandlerAdapter.browserOpenURL(url).catch(() => {});
 }
 
+/** Silent background save — no toast, no thrown error; not a user-initiated settings write. */
+export function saveWindowSize(width: number, height: number): void {
+    AppHandlerAdapter.saveWindowSize(width, height).catch(() => {});
+}
+
 /**
  * Opens a folder/file path in the OS file manager.
  *

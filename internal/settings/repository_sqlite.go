@@ -408,6 +408,26 @@ func (r *SqliteSettingsRepository) UpdateUIPreferencesConfig(cfg *UIPreferencesC
 	return nil
 }
 
+func (r *SqliteSettingsRepository) GetWindowSizeConfig() (*WindowSizeConfig, error) {
+	return &WindowSizeConfig{
+		Width:  r.getInt("window.width", 830),  // must match main.go MinimalWidth
+		Height: r.getInt("window.height", 550), // must match main.go MinimalHeight
+	}, nil
+}
+
+func (r *SqliteSettingsRepository) UpdateWindowSizeConfig(cfg *WindowSizeConfig) error {
+	rows := []store.UpsertSettingParams{
+		{Key: "window.width", Value: strconv.Itoa(cfg.Width), Type: "int"},
+		{Key: "window.height", Value: strconv.Itoa(cfg.Height), Type: "int"},
+	}
+	for _, row := range rows {
+		if err := r.database.Queries.UpsertSetting(bg(), row); err != nil {
+			return apperr.Internal(fmt.Errorf("UpdateWindowSizeConfig %q: %w", row.Key, err))
+		}
+	}
+	return nil
+}
+
 func (r *SqliteSettingsRepository) GetLoggingConfig() (*LoggingConfig, error) {
 	return &LoggingConfig{
 		LogFileEnabled: r.getBool("log.fileEnabled", false),

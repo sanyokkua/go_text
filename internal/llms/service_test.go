@@ -80,6 +80,10 @@ func (s *stubSettingsService) GetLoggingConfig() (*settings.LoggingConfig, error
 func (s *stubSettingsService) UpdateLoggingConfig(_ *settings.LoggingConfig) (*settings.LoggingConfig, error) {
 	return nil, nil
 }
+func (s *stubSettingsService) GetWindowSizeConfig() (*settings.WindowSizeConfig, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) SaveWindowSize(_, _ int) error { return nil }
 
 func newTestLLMService(t *testing.T) *LLMService {
 	t.Helper()

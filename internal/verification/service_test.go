@@ -99,6 +99,10 @@ func (s *stubSettingsService) GetLoggingConfig() (*settings.LoggingConfig, error
 func (s *stubSettingsService) UpdateLoggingConfig(_ *settings.LoggingConfig) (*settings.LoggingConfig, error) {
 	return nil, nil
 }
+func (s *stubSettingsService) GetWindowSizeConfig() (*settings.WindowSizeConfig, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) SaveWindowSize(_, _ int) error { return nil }
 
 // newTestService builds a Service and finalizes the draft config to point at
 // the given httptest server. The returned config is what callers pass to the

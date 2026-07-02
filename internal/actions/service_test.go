@@ -88,6 +88,10 @@ func (s *stubSettingsService) GetLoggingConfig() (*settings.LoggingConfig, error
 func (s *stubSettingsService) UpdateLoggingConfig(cfg *settings.LoggingConfig) (*settings.LoggingConfig, error) {
 	return nil, nil
 }
+func (s *stubSettingsService) GetWindowSizeConfig() (*settings.WindowSizeConfig, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) SaveWindowSize(_, _ int) error { return nil }
 
 // stubLLMService stubs LLMServiceAPI for GetModelsInfo tests.
 // GetModelsInfoForProvider captures the provider argument so tests can assert

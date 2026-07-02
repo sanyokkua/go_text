@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo } from 'react';
 import { apperr } from '../../../../wailsjs/go/models';
 import { getLogger } from '../../../logic/adapter';
 import { useChainEvents } from '../../../logic/hooks/useChainEvents';
+import { useWindowSizePersistence } from '../../../logic/hooks/useWindowSizePersistence';
 import {
     selectActionCatalog,
     selectInferenceRunning,
@@ -37,6 +38,7 @@ const AppMainView: React.FC = () => {
     const paletteOpen = useAppSelector(selectPaletteOpen);
 
     useChainEvents();
+    useWindowSizePersistence();
 
     useEffect(() => {
         const initializeApp = async () => {

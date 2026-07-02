@@ -15,6 +15,7 @@ import {
     ClipboardGetText,
     ClipboardSetText,
     OpenPath,
+    SaveWindowSize,
 } from '../../../wailsjs/go/application/ApplicationContextHolder';
 import { ClearHistory, DeleteHistoryEntry, GetHistoryEntry, ListHistory } from '../../../wailsjs/go/history/HistoryHandler';
 import { apperr } from '../../../wailsjs/go/models';
@@ -128,6 +129,10 @@ export class AppHandler implements IAppHandler {
     openPath(path: string): Promise<apperr.VoidResult> {
         this.logger.logDebug(`AppHandler.openPath: ${path}`);
         return OpenPath(path);
+    }
+
+    saveWindowSize(width: number, height: number): Promise<apperr.VoidResult> {
+        return SaveWindowSize(width, height);
     }
 }
 

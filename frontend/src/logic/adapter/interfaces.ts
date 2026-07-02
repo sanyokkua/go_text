@@ -80,4 +80,5 @@ export interface IAppHandler {
     clipboardSetText(text: string): Promise<apperr.VoidResult>;
     browserOpenURL(url: string): Promise<apperr.VoidResult>;
     openPath(path: string): Promise<apperr.VoidResult>;
+    saveWindowSize(width: number, height: number): Promise<apperr.VoidResult>;
 }

@@ -56,6 +56,12 @@ type UIPreferencesConfig struct {
 	ViewMode         string `json:"viewMode"`
 }
 
+// WindowSizeConfig holds the persisted native window dimensions.
+type WindowSizeConfig struct {
+	Width  int `json:"width"`
+	Height int `json:"height"`
+}
+
 // LoggingConfig maps the log.* KV rows from the settings table.
 type LoggingConfig struct {
 	LogFileEnabled bool   `json:"logFileEnabled"`

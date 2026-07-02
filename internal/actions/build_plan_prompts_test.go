@@ -296,6 +296,12 @@ func (m *minimalSettingsService) GetLoggingConfig() (*settings.LoggingConfig, er
 func (m *minimalSettingsService) UpdateLoggingConfig(_ *settings.LoggingConfig) (*settings.LoggingConfig, error) {
 	panic("not implemented in test")
 }
+func (m *minimalSettingsService) GetWindowSizeConfig() (*settings.WindowSizeConfig, error) {
+	panic("not implemented in test")
+}
+func (m *minimalSettingsService) SaveWindowSize(_, _ int) error {
+	panic("not implemented in test")
+}
 
 func buildTestServiceWithSettings(t *testing.T, svc settings.SettingsServiceAPI) *ActionService {
 	t.Helper()

@@ -140,6 +140,9 @@ func (a *ApplicationContextHolder) Init(ctx context.Context) error {
 	// Wire SQLite-backed settings into the already-bound handler/service.
 	sqliteRepo := settings.NewSqliteSettingsRepository(database)
 	a.SettingsService.SetRepository(sqliteRepo)
+	if err := a.restoreWindowSize(ctx); err != nil {
+		a.appLogger.Warning(fmt.Sprintf("restore window size: %v", err))
+	}
 	a.SettingsHandler.Configure(a.appLogger, zlog.Logger, a.SettingsService)
 
 	historyRepo := history.NewSqliteHistoryRepository(database)
@@ -180,6 +183,18 @@ func (a *ApplicationContextHolder) Init(ctx context.Context) error {
 		a.appLogger.Warning(fmt.Sprintf("reconfigure logger: %v", err))
 	}
 
+	return nil
+}
+
+// restoreWindowSize applies the last-persisted window size on startup, falling
+// back to the options.App defaults (already applied at window creation) if no
+// settings-backed size can be read.
+func (a *ApplicationContextHolder) restoreWindowSize(ctx context.Context) error {
+	cfg, err := a.SettingsService.GetWindowSizeConfig()
+	if err != nil {
+		return fmt.Errorf("get window size: %w", err)
+	}
+	runtime.WindowSetSize(ctx, cfg.Width, cfg.Height)
 	return nil
 }
 
@@ -254,6 +269,23 @@ func (a *ApplicationContextHolder) BrowserOpenURL(url string) (res apperr.VoidRe
 		return apperr.VoidResult{Error: &wire}
 	}
 	runtime.BrowserOpenURL(a.ctx, url)
+	return apperr.VoidResult{}
+}
+
+// SaveWindowSize persists the native window's current dimensions so they can
+// be restored on next launch. Called by the frontend (debounced) on resize.
+func (a *ApplicationContextHolder) SaveWindowSize(width, height int) (res apperr.VoidResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(zlog.Logger, ae)
+			res = apperr.VoidResult{Error: &wire}
+		}
+	}()
+	if err := a.SettingsService.SaveWindowSize(width, height); err != nil {
+		wire := apperr.ToWire(zlog.Logger, err)
+		return apperr.VoidResult{Error: &wire}
+	}
 	return apperr.VoidResult{}
 }
 

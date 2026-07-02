@@ -376,6 +376,80 @@ func TestSqliteSettingsRepository_UIPreferencesConfig_FullRoundTrip(t *testing.T
 	}
 }
 
+// ── Window size ────────────────────────────────────────────────────────────
+
+func TestSqliteSettingsRepository_GetWindowSizeConfig_Default(t *testing.T) {
+	t.Parallel()
+	// Arrange: a freshly-seeded DB has never written window.width/window.height.
+	repo := newRepo(t)
+
+	// Act
+	got, err := repo.GetWindowSizeConfig()
+
+	// Assert
+	if err != nil {
+		t.Fatalf("GetWindowSizeConfig: %v", err)
+	}
+	if got.Width != 830 {
+		t.Errorf("default Width: want %d, got %d", 830, got.Width)
+	}
+	if got.Height != 550 {
+		t.Errorf("default Height: want %d, got %d", 550, got.Height)
+	}
+}
+
+func TestSqliteSettingsRepository_WindowSizeConfig_RoundTrip(t *testing.T) {
+	t.Parallel()
+	// Arrange
+	repo := newRepo(t)
+	want := &settings.WindowSizeConfig{Width: 1600, Height: 900}
+
+	// Act
+	if err := repo.UpdateWindowSizeConfig(want); err != nil {
+		t.Fatalf("UpdateWindowSizeConfig: %v", err)
+	}
+	got, err := repo.GetWindowSizeConfig()
+
+	// Assert
+	if err != nil {
+		t.Fatalf("GetWindowSizeConfig: %v", err)
+	}
+	if got.Width != want.Width {
+		t.Errorf("Width: want %d, got %d", want.Width, got.Width)
+	}
+	if got.Height != want.Height {
+		t.Errorf("Height: want %d, got %d", want.Height, got.Height)
+	}
+}
+
+func TestSqliteSettingsRepository_WindowSizeConfig_UpdateOverwritesPreviousValue(t *testing.T) {
+	t.Parallel()
+	// Arrange: write an initial value, proving the update path is an upsert.
+	repo := newRepo(t)
+	first := &settings.WindowSizeConfig{Width: 1024, Height: 768}
+	second := &settings.WindowSizeConfig{Width: 1920, Height: 1080}
+
+	// Act
+	if err := repo.UpdateWindowSizeConfig(first); err != nil {
+		t.Fatalf("UpdateWindowSizeConfig (first): %v", err)
+	}
+	if err := repo.UpdateWindowSizeConfig(second); err != nil {
+		t.Fatalf("UpdateWindowSizeConfig (second): %v", err)
+	}
+	got, err := repo.GetWindowSizeConfig()
+
+	// Assert: the second write overwrote the first (upsert, not insert-only).
+	if err != nil {
+		t.Fatalf("GetWindowSizeConfig: %v", err)
+	}
+	if got.Width != second.Width {
+		t.Errorf("Width: want %d, got %d", second.Width, got.Width)
+	}
+	if got.Height != second.Height {
+		t.Errorf("Height: want %d, got %d", second.Height, got.Height)
+	}
+}
+
 // ── Languages ──────────────────────────────────────────────────────────────
 
 func TestSqliteSettingsRepository_Languages(t *testing.T) {
