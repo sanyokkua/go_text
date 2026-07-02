@@ -465,6 +465,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 | P6 FE Views | T21 editor+diff (Output Preview = `MarkdownView`) · T22 stack builder+manage · T23 history rail · T24 settings · T25 about+inspector+⌘K (Guide = `MarkdownView`) · T26 toasts/confirms |
 | P7 Completion | T27 bindings/events · T28 docs · T29 tests/CI · T30 acceptance |
 | P8 v3.1 Fidelity | T32 top-bar chrome · T33 remove StatusBar · T34 sidebar · T35 pane icon-controls · T36 diff parity · T37 run/builder parity · T38 settings left-tabs+theme · T39 provider form+test-inference full-stack · T40 provider-switch resets · T41 settings tabs parity · T42 about·info parity · T43 history rail parity · T44 unit+UI tests · T45 real-provider E2E |
+| P9 Post-audit (2026-07-02) | T74 remove dead v2 prompt subsystem · T75 `internal/application` unit tests · T76 untested-but-live FE component tests · T77 remove orphaned `MarkdownView.module.css` · T78 execute T72+T73 · T79 retroactive status markers T00–T67 · T80 spec-conformance spot audit |
 
 ---
 
@@ -1403,3 +1404,194 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Acceptance:** a new live scenario exists that exercises both ⌘K-triggered run and ⌘K-triggered
   add-to-stack against the real bridge and passes against a real local provider; §2.3.1's audit row
   for About·Info + Prompt Inspector can be updated from Gap to Covered once this lands.
+
+## Phase 12 · Post-completeness-audit remediation (2026-07-02)
+
+> **Discovery:** a full-repo completeness audit (three parallel codebase/spec-inventory passes plus
+> targeted manual verification of the two most ambiguous findings) confirmed the implemented surface
+> is complete and consistent with the spec — zero TODO/FIXME markers, zero stubs, zero unconditionally
+> disabled tests, zero placeholder UI copy, and a clean `go build` / `go vet` / `go test -race ./...`
+> (837 tests, 19 packages) / frontend suite (68 suites, 680 tests). The audit did surface a bounded set
+> of real gaps: one dead legacy code path, two test-coverage gaps on genuinely live code, one orphaned
+> file, two tasks (T72, T73 above) that were fully specced in a prior session but never marked done,
+> and a process gap (only 5 of ~78 tasks in this document carry an explicit status marker). This phase
+> also adds a deeper spec-conformance spot audit (T80), since existence/wiring checks cannot by
+> themselves prove per-action prompt fidelity or continued adherence to the V1–V11/E1–E25 rules in
+> `02-functional-requirements.md` — and this app has a track record (Phases 8–11) of exactly that kind
+> of silent drift.
+> **Sequence:** T74–T78 are independent and may run in parallel. T79 should run last among T74–T78 so
+> its status markers reflect their outcomes. T80 is independent of all of the above and may run at any
+> time.
+
+### T74 — Remove dead v2 single-action prompt subsystem (fully superseded by the v3 catalog)
+
+- **Severity:** Low (dead code; no functional bug, but violates YAGNI and creates a latent
+  catalog-duplication risk — two prompt catalogs that must independently be kept in sync in an
+  engineer's head even though only one is reachable).
+- **Discovery:** traced both prompt-catalog paths end to end. `ActionHandler.GetActionCatalog`
+  (`internal/actions/handler.go`) — the only bound, reachable catalog method — calls
+  `ActionService.GetActionCatalog` → `promptService.Catalog()` → `v3.Catalog()`
+  (`internal/prompts/service.go:254-256`). The only reachable prompt-composition path
+  (`ProcessPromptChain` → `ChainOrchestrator` → `Composer.Compose`) imports exclusively from
+  `internal/prompts/v3` (`internal/actions/composer.go:8`, `v3.Sys*`/`v3.Family*` constants).
+  Separately, the entire v2 registry — `internal/prompts/constants.go`'s `ApplicationPrompts` map
+  plus all 10 files under `internal/prompts/categories/` — is reachable *only* through
+  `PromptService.GetAppPrompts` / `GetSystemPromptByCategory` / `GetUserPromptById` / `GetPrompt` /
+  `GetSystemPrompt` / `BuildPrompt` / `ReplaceTemplateParameter` (`internal/prompts/service.go`),
+  which are called *only* from `ActionService.processAction` (`internal/actions/service.go:236-365`),
+  which is called *only* from `ActionService.ProcessPromptActionRequest` / `GetPromptGroups`
+  (`internal/actions/service.go:190-235`) — **neither of which appears in
+  `internal/actions/handler.go`'s bound-method set** (`PreviewPrompt`, `CancelAllRuns`,
+  `TestConnection`, `TestModels`, `TestInference`, `GetActionCatalog`, `GetModels`,
+  `ProcessPromptChain`, `CancelChain` only). Confirmed via repo-wide grep that no other production
+  code calls `GetPromptGroups` or `ProcessPromptActionRequest`. This is 100% unreachable from the
+  frontend — legacy from the pre-v3 single-action architecture, superseded when v3 made every action
+  a "single-action-as-degenerate-chain" through `ProcessPromptChain` (per `01-product-scope.md`'s
+  Modified-scope entry for the single-action flow). Only `SanitizeReasoningBlock` and `Catalog()` on
+  `PromptService` are live and must be preserved.
+- **Fix (`go-engineer`):** delete `internal/prompts/categories/*.go` (10 files) and the
+  `ApplicationPrompts` registry plus the `Prompts`/`PromptGroup`/`Prompt`/`PromptType` types in
+  `internal/prompts/constants.go`, keeping only whatever `v3.Catalog()` and `SanitizeReasoningBlock`
+  still depend on (verify before deleting — do not assume). Remove `GetAppPrompts`,
+  `GetSystemPromptByCategory`, `GetUserPromptById`, `GetPrompt`, `GetSystemPrompt`, `BuildPrompt`,
+  `ReplaceTemplateParameter`, and `validateActionRequest` from `PromptService` and
+  `PromptServiceAPI`. Remove `GetPromptGroups`, `ProcessPromptActionRequest`, and `processAction`
+  from `ActionService` and `ActionServiceAPI`. Update or delete tests that exercise only the removed
+  surface (`internal/prompts/constants_test.go`, the relevant cases in
+  `internal/actions/service_test.go`, and the mock methods in `internal/actions/handler_test.go`).
+  Update the stale comment in `internal/actions/chain_models.go:28` referencing "single-action
+  `ProcessPromptActionRequest` calls."
+- **Files:** `internal/prompts/categories/` (delete directory), `internal/prompts/constants.go`,
+  `internal/prompts/service.go`, `internal/prompts/constants_test.go`, `internal/actions/service.go`,
+  `internal/actions/chain_models.go`, `internal/actions/handler_test.go`,
+  `internal/actions/service_test.go`.
+- **Tests:** `go build ./...`, `go vet ./...`, `go test -race ./...` must stay green with zero
+  regressions; finish with `grep -rn "ProcessPromptActionRequest\|GetPromptGroups\|GetAppPrompts" internal/`
+  to confirm zero remaining references outside the removed files.
+- **Acceptance:** the v2 registry and its entire call chain are removed; `GetActionCatalog` /
+  `ProcessPromptChain` / `PreviewPrompt` (the only reachable prompt paths) are unaffected and every
+  existing test still passes; no dead methods remain on `PromptServiceAPI` or `ActionServiceAPI`.
+
+### T75 — Unit tests for `internal/application`'s Wails-bound methods
+
+- **Severity:** Medium — this is the top-level `app` struct bound directly into Wails' `Bind` list
+  in `main.go`, yet only 1 of its ~10 bound methods has any test.
+- **Discovery:** `internal/application/application.go`'s `ApplicationContextHolder` exposes
+  `SetContext`, `Init`, `CancelAllRuns`, `EnableLoggingForDev`, `LogError`, `ClipboardGetText`,
+  `ClipboardSetText`, `BrowserOpenURL`, and `SaveWindowSize` (plus the unexported
+  `restoreWindowSize`, exercised only through `Init`) as bound methods. Only `OpenPath`
+  (`internal/application/openpath_test.go`) has a test. Notably, `SaveWindowSize`/
+  `restoreWindowSize` — added by the recent window-size-persistence feature — has zero coverage of
+  its actual persistence round-trip.
+- **Fix (`go-tester`):** add table-driven tests per `docs/ai_agent_rules/GoUnitTestsRules.md` for
+  each bound method above. Wrap Wails runtime calls (`ClipboardGetText`/`SetText`, `BrowserOpenURL`)
+  behind a minimal interface only if required for testability — flag the need rather than
+  restructure unprompted, per that document's "Read-Only Production" constraint. Verify the
+  `SaveWindowSize`/`restoreWindowSize` round-trip against a real sqlite temp DB, consistent with
+  existing repository test patterns elsewhere in the codebase (e.g. `internal/settings/repository_sqlite_test.go`).
+  Verify `CancelAllRuns` actually invokes the chain run registry's cancel path, and that
+  `EnableLoggingForDev`/`LogError` delegate correctly.
+- **Files:** `internal/application/application_test.go` (new or extended); `internal/application/application.go`
+  only if a minimal testability seam is required, and only with that need called out explicitly.
+- **Tests:** `go test -race ./internal/application/...`.
+- **Acceptance:** every exported bound method on `ApplicationContextHolder` has at least one test
+  covering its success path (and failure path where one exists); package coverage materially
+  increases from the current 1-of-10-methods baseline.
+
+### T76 — RTL/unit tests for live-but-untested frontend components
+
+- **Severity:** Medium — all six items below were confirmed this session to be genuinely rendered
+  in production, not dead code, via direct grep against non-test source.
+- **Discovery:** cross-referenced the full frontend test-file inventory; these are the only files
+  under `ui/widgets/base/` and `ui/widgets/views/settings/tabs/components/` (plus one utility
+  module) with zero matching test files and zero references from any existing test:
+  `LanguagePicker.tsx` and `ProviderPicker.tsx` (both rendered in `AppBar.tsx`), `KvEditor.tsx` and
+  `TagInput.tsx` (both rendered in `ProviderForm.tsx`), `ProviderList.tsx` (rendered in
+  `ProviderManagementTab.tsx`), and `logic/utils/stack_utils.ts` (used in `StacksManageView.tsx` and
+  `RunBar.tsx`).
+- **Fix (`ts-tester`):** add tests per `docs/ai_agent_rules/TypescriptReactTestingRules.md` —
+  behavioral focus, accessibility-role queries, no implementation-detail assertions. `LanguagePicker`
+  / `ProviderPicker`: render and selection-dispatch behavior. `KvEditor` / `TagInput`: add/edit/
+  remove-entry behavior and Redux-bound value sync. `ProviderList`: list rendering and select/
+  delete/duplicate/set-current actions. `stack_utils.ts`: plain unit tests for its exported pure
+  functions (no RTL needed).
+- **Files:** new colocated `*.test.tsx` files for each of the five components; a new
+  `stack_utils.test.ts` for the utility module.
+- **Tests:** `cd frontend && npm run test -- --coverage`.
+- **Acceptance:** all six files have dedicated test coverage; the frontend suite's passing-test
+  count increases accordingly with zero regressions against the existing 680 passing tests.
+
+### T77 — Remove orphaned dead file `MarkdownView.module.css`
+
+- **Severity:** Low (pure dead-code cleanup; zero functional impact).
+- **Discovery:** `frontend/src/ui/components/MarkdownView.module.css` is the only `*.module.css`
+  file under `frontend/src` with zero importers anywhere in the codebase, confirmed against all 51
+  `*.module.css` files present. `MarkdownView.tsx` uses only a global `markdown-body` class and
+  imports no CSS module. Its `.stub` class name strongly suggests leftover scaffolding from an
+  earlier, abandoned implementation of the component.
+- **Fix (`ts-engineer`):** delete the file.
+- **Files:** `frontend/src/ui/components/MarkdownView.module.css` (delete).
+- **Tests:** `cd frontend && npx tsc --noEmit && npm run test` to confirm nothing referenced it.
+- **Acceptance:** file removed; build and full test suite unaffected.
+
+### T78 — Execute the already-specced T72 and T73
+
+- **Severity:** as originally assessed in each task (Low–Medium).
+- **Discovery:** T71's 2026-07-02 audit wrote T72 and T73 out in full (severity/discovery/fix/
+  files/tests/acceptance) but — unlike T46/T68–T71 from that same session — neither carries a
+  "Status: DONE" marker. They read as authored-but-not-yet-implemented.
+- **Fix (`ts-tester`):** implement T72 (strengthen `live-llm.spec.ts`'s `S5` to click Restore and
+  assert the input/output editors are repopulated with the restored content, not just check that the
+  control is visible) and T73 (add a new live scenario exercising ⌘K-triggered run and ⌘K-triggered
+  add-to-stack) exactly as already specified above.
+- **Files:** `frontend/e2e/live-llm.spec.ts`.
+- **Tests:** `npm run verify:live` against `wails dev` plus a real local provider (per this
+  document's model guidance — a reliable small model, e.g. Ollama `gemma3:1b`/`qwen3:1.7b`, not
+  `qwen3:0.6b`).
+- **Acceptance:** both scenarios pass against a real backend; T72 and T73 above are each updated
+  with a "Status: DONE" marker once verified.
+
+### T79 — Retroactively mark completion status across T00–T67
+
+- **Severity:** Low (process/auditability improvement only; no code change).
+- **Discovery:** only 5 of the ~78 tasks in this document (T46, T68, T69, T70, T71) carry an
+  explicit "Status: DONE" marker — the rest have no in-document signal of whether they were ever
+  executed. This is why confirming "is everything implemented" for this document required a full
+  multi-agent re-audit of the codebase (this Phase 12 preface) instead of being answerable by simply
+  reading the file.
+- **Fix (any engineer, documentation-only):** for each task T00–T67, add a one-line status marker —
+  `Status: DONE (verified <mechanism>)` or `Status: OPEN` — based on this session's audit finding
+  that the implemented surface is complete and consistent with spec for all of T00–T67 (no evidence
+  any is unimplemented), performing whatever additional spot-checks are needed to confirm each
+  individually before marking it.
+- **Files:** `docs/V3_Temp_Docs/SpecificationFolder/14-implementation-plan.md`.
+- **Tests:** none (documentation only).
+- **Acceptance:** every task in this document carries an explicit status marker, so future
+  completeness checks don't require a full-repo re-audit.
+
+### T80 — Spec-conformance spot audit: prompts and functional rules
+
+- **Severity:** Medium — existence and wiring are confirmed complete (this Phase 12 preface), but
+  behavioral fidelity to spec has not been re-verified since the Phase 8–11 remediation rounds, and
+  those rounds are direct evidence this app has drifted from spec/mockup silently before.
+- **Discovery:** this audit's method (package/handler/prompt/view inventory, dead-code sweep, and
+  test-suite health check) proves nothing is missing or stubbed, but does not prove per-action
+  prompt text matches `09-prompts.md`'s per-action table (purpose/sub-group/requires/tokens/output/
+  safety/format/version), nor that all 11 validation rules (V1–V11) and 25 edge cases (E1–E25) in
+  `02-functional-requirements.md` still hold against current behavior.
+- **Fix (`go-engineer` + `ts-tester` pairing, following `15-ai-agent-execution-template.md`'s
+  lifecycle):** sample representative actions spanning all 5 families (Rewrite, Structure,
+  Summarize, Translate, Prompt-Engineering) and every exclusivity sub-group. For each sampled
+  action: (a) trace its actual composed system+user prompt via `Composer.Compose`
+  (`internal/actions/composer.go`) against the corresponding `09-prompts.md` table entry and flag
+  any drift; (b) walk V1–V11 against the current validation code paths (`internal/actions/planner.go`
+  caps/exclusivity handling, `internal/actions/handler.go` request validation); (c) walk E1–E25
+  against current handling, writing a regression test for any edge case found unhandled or handled
+  differently than specified.
+- **Files:** to be determined per finding; likely `internal/actions/composer.go`,
+  `internal/actions/planner.go`, `internal/prompts/v3/*.go`, plus new or extended tests.
+- **Tests:** `go test -race ./...` plus any new regression tests added for confirmed findings.
+- **Acceptance:** a written findings table (spec row vs. actual behavior, for every sampled action/
+  rule/edge case) with each divergence either fixed with a regression test or explicitly accepted
+  with a documented rationale — matching the precedent set by T63/T68's "documented limitation"
+  pattern elsewhere in this plan.
