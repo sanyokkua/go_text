@@ -1311,6 +1311,22 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Acceptance:** the finding-doc note is either confirmed accurate against a real forced overflow
   (append "confirmed live" with the date and repro details) or corrected again if reality differs,
   with the specific discrepancy documented.
+- **Status: DONE (2026-07-02).** Confirmed live against real LM Studio via `wails dev`. `google/gemma-3-1b`
+  loaded with `lms load google/gemma-3-1b --context-length 1` (`-c 16` was tried first and did **not**
+  overflow — LM Studio's context-overflow/rolling-window handling absorbed it silently, `200 OK` with
+  `total_tokens=49` against a declared 16-token window; only `-c 1` reliably produced a genuine `400`).
+  With that model selected under Settings > Providers > LM Studio and "Test inference" clicked, the
+  backend log recorded `code=context_window, message="Input too long"`, and the frontend rendered
+  **both** `VerificationPanel.tsx`'s inline `✗ The text exceeds the model's context window.` row **and**
+  a toast (title "Input too long", message "The text exceeds the model's context window — shorten it or
+  raise the context size.") simultaneously — verified via a Redux `notifications.queue` subscription plus
+  a DOM read of the rendered toast, since the 5s auto-dismiss window is easy to miss with sequential
+  manual checks. This matches the corrected note's source trace exactly. One refinement folded into the
+  finding-doc note: the app's own "Use context window" setting turned out to be irrelevant to forcing
+  this overflow on LM Studio — `ChatRequest.NumCtx` (`internal/llms/provider.go`) is ignored by
+  non-Ollama provider kinds, confirmed in `internal/llms/openai_provider.go`; the overflow was purely a
+  function of LM Studio's own server-side loaded context vs. the minimal "Hi" prompt. Full repro details
+  appended to `docs/V3_Temp_Docs/2026-07-01-context-window-live-testing.md`'s finding #4 row.
 
 ### T71 — Audit §2.3 coverage-matrix "(B)"-tagged rows against `live-llm.spec.ts`'s actual scenario list
 
