@@ -496,7 +496,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 | P6 FE Views | T21 editor+diff (Output Preview = `MarkdownView`) · T22 stack builder+manage · T23 history rail · T24 settings · T25 about+inspector+⌘K (Guide = `MarkdownView`) · T26 toasts/confirms |
 | P7 Completion | T27 bindings/events · T28 docs · T29 tests/CI · T30 acceptance |
 | P8 v3.1 Fidelity | T32 top-bar chrome · T33 remove StatusBar · T34 sidebar · T35 pane icon-controls · T36 diff parity · T37 run/builder parity · T38 settings left-tabs+theme · T39 provider form+test-inference full-stack · T40 provider-switch resets · T41 settings tabs parity · T42 about·info parity · T43 history rail parity · T44 unit+UI tests · T45 real-provider E2E |
-| P9 Post-audit (2026-07-02) | T74 remove dead v2 prompt subsystem · T75 `internal/application` unit tests · T76 untested-but-live FE component tests · T77 remove orphaned `MarkdownView.module.css` · T78 execute T72+T73 · T79 retroactive status markers T00–T67 · T80 spec-conformance spot audit |
+| P9 Post-audit (2026-07-02) | T74 remove dead v2 prompt subsystem · T75 `internal/application` unit tests · T76 untested-but-live FE component tests · T77 remove orphaned `MarkdownView.module.css` · T78 execute T72+T73 · T79 retroactive status markers T00–T67 · T80 spec-conformance spot audit · T81 fix flaky `S2` live test · T82 convert Settings tabs to real Radix Tabs (closes T38 gap) · T83 Prompt Inspector family chip + Copy all (closes T42 gap) |
 
 ---
 
@@ -569,7 +569,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 ### T38 · Settings shell → LEFT tabs + theme fix
 - **Scope:** Convert `SettingsTabs.tsx`/`SettingsView.tsx` to a **left vertical Radix Tabs** nav with emoji glyphs + `‹ Editor` header. Fix settings surface tokens so panels use `--surface`/`--bg` in light & dark (resolves near-black regression).
 - **Acceptance:** settings match mockup layout/colors in both themes.
-- **Status: OPEN (partial — 2026-07-02, verified file-level).** `SettingsTabs.tsx` correctly implements a left vertical tab nav with emoji glyphs, and the surface-token/theme fix is in place. However the nav is a hand-rolled `<button role="tab">` element — confirmed via grep, no `radix-ui` `Tabs` import exists anywhere in the settings tree — not an actual Radix Tabs primitive as this task explicitly specifies and `docs/ai_agent_rules/RadixUICSSRules.md` requires ("let Radix own accessibility... for Dialog, Select, Menu, or Tabs").
+- **Status: DONE (2026-07-02).** Originally left `OPEN` (partial) because the tab nav was a hand-rolled `<button role="tab">` element, not an actual Radix Tabs primitive. Closed by **T82**, which converted `SettingsView.tsx` to render the shared `primitives/Tabs.tsx` Radix wrapper directly (mirroring `InfoView.tsx`) — see T82's own entry/marker below for verification detail.
 
 ### T41 · Remaining settings tabs parity
 - **Scope:** Model, Generation, Languages, Logging (rotation + task-logging + history), About & data (paths+copy+Factory reset), Appearance (Auto/Light/Dark + preview swatches) — align to mockup screens; theme applies instantly via `logic/theme/init.ts`.
@@ -579,7 +579,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 ### T42 · About·Info window parity
 - **Scope:** Prompt inspector — family chips, inference grouping note, parameter chips, **Copy all**, **"Use current editor input as a preview"** toggle, Guide/Actions&Stacks left nav.
 - **Acceptance:** inspector matches mockup About·Info screen.
-- **Status: OPEN (partial — 2026-07-02, verified file-level).** `InfoView.tsx`'s Guide/Actions&Stacks left nav and `PromptInspector.tsx`'s preview toggle are implemented. Not implemented: no dedicated family-chip UI element (family is shown only as inline text, "Inference N — {family}") and no "Copy all" button exists anywhere under `ui/widgets/views/info/` — confirmed via grep for "Copy"/"chip".
+- **Status: DONE (2026-07-02).** Originally left `OPEN` (partial) because the Prompt Inspector had no dedicated family-chip UI element and no "Copy all" button. Closed by **T83**, which added both to `PromptInspector.tsx` — see T83's own entry/marker below for verification detail.
 
 ### T43 · History rail parity
 - **Scope:** Cards — INF badge, status (success/partial/PARTIAL), relative time, restore+delete icons, "100 MAX", Clear; rail coexists with panes without overlapping the run bar.
@@ -1711,3 +1711,96 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Status: OPEN (discovered 2026-07-02 during T78 verification).** Not fixed by T78 — out of that
   task's scope (T72/T73 only); logged here as a new follow-up per this document's own precedent for
   genuine gaps found outside a task's stated scope.
+
+### T82 — Convert Settings tabs to a real Radix Tabs primitive (closes T38's gap)
+
+- **Severity:** Low–Medium (accessibility/conformance gap, not a functional bug — keyboard nav and
+  ARIA work today via hand-rolled code, but not via the project's mandated Radix primitive).
+- **Discovery:** found while independently re-verifying T38 during T79's audit (rather than trusting
+  the blanket "everything is done" claim). `frontend/src/ui/widgets/views/settings/SettingsTabs.tsx`
+  hand-rolls `role="tab"`/`aria-selected` on plain `<button>` elements driven by a numeric
+  `activeTab: number` prop — confirmed via grep, no `radix-ui` `Tabs` import exists anywhere in the
+  settings tree. This violates T38's explicit "Convert `SettingsTabs.tsx`/`SettingsView.tsx` to a
+  left vertical **Radix Tabs** nav" deliverable and `docs/ai_agent_rules/RadixUICSSRules.md` ("let
+  Radix own accessibility... for Dialog, Select, Menu, or Tabs").
+- **Root cause:** `SettingsTabs.tsx` predates (or was never migrated to) the shared
+  `frontend/src/ui/primitives/Tabs.tsx` wrapper that was built under T18 specifically for this
+  purpose and is already proven in production by `frontend/src/ui/widgets/views/info/InfoView.tsx`'s
+  vertical-tabs layout.
+- **Fix (`ts-engineer`):** widen `Tabs.tsx`'s `TabDef.label` from `string` to `React.ReactNode`
+  (backward-compatible — `InfoView.tsx`'s plain-string labels keep working unchanged) so Settings
+  tabs can compose an emoji glyph + label. In `SettingsView.tsx`, replace the `<SettingsTabs>` render
+  plus the separate `switch (activeTab)` content block with a single `<Tabs>` call mirroring
+  `InfoView.tsx`'s pattern: one `tabs` array entry per section with `value` (stringified Redux index,
+  e.g. `'0'`..`'6'` — the Redux `activeSettingsTab: number` shape stays untouched, converted only at
+  the render boundary via `String(activeTab)` / `Number(value)`), `label`, and `content` (the
+  existing per-tab panel component, moved inline from the old switch cases). Delete
+  `SettingsTabs.tsx`/`.module.css`, fully superseded.
+- **Files:** `frontend/src/ui/primitives/Tabs.tsx`, `frontend/src/ui/widgets/views/settings/SettingsView.tsx`
+  (+ `.module.css` if double-padding needs trimming against `Tabs.module.css`'s vertical content
+  padding), delete `SettingsTabs.tsx`/`SettingsTabs.module.css`/`__tests__/SettingsTabs.test.tsx`.
+- **Tests (`ts-tester`):** replace `SettingsTabs.test.tsx` (tests the removed numeric-index contract)
+  with RTL coverage against `SettingsView.tsx`: renders 7 tabs with correct glyph+label, active tab
+  carries `data-state="active"`, clicking a tab dispatches `setActiveSettingsTab` with the right index
+  and swaps the visible panel. `cd frontend && npm run test`; Playwright `verify-ui.spec.ts` (Settings
+  route, both themes) since this changes DOM structure/ARIA roles.
+- **Acceptance:** Settings tab nav is a real `radix-ui` `Tabs` instance (no hand-rolled `role="tab"`
+  remains); keyboard arrow-navigation works (free from Radix); visual behavior unchanged from the
+  user's perspective; T38's `Status: OPEN` marker above is updated to point here.
+- **Status: DONE (2026-07-02).** `SettingsView.tsx` now renders `primitives/Tabs.tsx` directly
+  (`grep` confirms zero remaining `SettingsTabs`/hand-rolled `role="tab"` references anywhere in
+  `frontend/src`); `TabDef.label` widened to `React.ReactNode` with no impact on `InfoView.tsx`. New
+  `SettingsView.test.tsx` (6 tests: all 7 tabs render, correct tab active, click dispatches
+  `setActiveSettingsTab`, panel content swaps, loading-guard branch) passes; full Jest suite green
+  (74 suites/724 tests); `npx tsc --noEmit` and `eslint` clean. **A real regression was found and
+  fixed during this pass**: the initial conversion dropped the `min-width: 0` the original
+  `SettingsView.module.css`'s flex-child `.content` had, so `primitives/Tabs.module.css`'s new
+  `.content` flex item (nested one level deeper than before) couldn't shrink below its content's
+  intrinsic width — at the narrow (375px) viewport the Appearance tab's `Segmented` theme control
+  clipped past the viewport edge. Confirmed via `git stash` that this did NOT reproduce on the
+  pre-T82 code (i.e. a genuine regression, not pre-existing), root-caused, and fixed by adding
+  `min-width: 0` to `primitives/Tabs.module.css`'s `.content` class. Re-ran `npm run verify:ui`
+  (Playwright, bridge-mock dev server): all 12 checks green across narrow/tablet/wide × light/dark,
+  including the settings-dialog clipping gate.
+
+### T83 — Prompt Inspector: family chip + "Copy all" (closes T42's gap)
+
+- **Severity:** Low (missing UI affordances, not a correctness bug — the underlying preview data is
+  accurate and complete).
+- **Discovery:** found while independently re-verifying T42 during T79's audit.
+  `frontend/src/ui/widgets/views/info/PromptInspector.tsx` renders each inference group's family as
+  plain inline text (`Inference {g.index + 1} — {g.family}`) with no distinct chip styling, and has
+  no button to copy the full composed preview — confirmed via grep for "Copy"/"chip" finding neither
+  anywhere under `ui/widgets/views/info/`. `PreviewGroup.Family` (`internal/apperr/results.go`,
+  populated via `internal/actions/composer.go`/`service.go:357` from `v3.FamilyRewrite` etc. —
+  `"rewrite"`, `"structure"`, `"summarize"`, `"translate"`, `"prompteng"`) is a real, meaningful value,
+  so a dedicated chip is worth building.
+- **Fix (`ts-engineer`):** add a local `styles.familyChip` span (new class in
+  `PromptInspector.module.css`, visually distinct from the existing teal `.actionChip`, e.g. a
+  purple/violet token) rendering the title-cased family in `groupHeader`, alongside the existing
+  "Inference N" label. Add a local `styles.copyAllBtn` `<button>` in the title/meta header area
+  (matching this file's and `OutputPane.tsx`/`DiffView.tsx`'s existing convention of local
+  `styles.*`-classed buttons, not the shared `Button`/`IconButton` components) that builds the full
+  preview text client-side via a small local helper joining each group's family/system/user prompt,
+  calls `ClipboardServiceAdapter.setText(...)`, and dispatches a success/error
+  `enqueueNotification(...)` toast (mirroring `OutputPane.tsx`'s complete copy-with-toast pattern).
+- **Files:** `frontend/src/ui/widgets/views/info/PromptInspector.tsx`,
+  `frontend/src/ui/widgets/views/info/PromptInspector.module.css`,
+  `frontend/src/ui/widgets/views/info/PromptInspector.test.tsx`.
+- **Tests (`ts-tester`):** extend the existing adapter mock with
+  `ClipboardServiceAdapter: { setText: jest.fn() }`; add tests asserting the family chip renders per
+  group, clicking "Copy all" calls `setText` with the expected composed text and dispatches a success
+  notification, and a failed/rejected `setText` shows the error path. `cd frontend && npm run test`;
+  Playwright `verify-ui.spec.ts` (About/Info route).
+- **Acceptance:** every inference group shows a distinct family chip; a visible "Copy all" button
+  copies the full composed system+user prompt text for every group and shows a toast on
+  success/failure; T42's `Status: OPEN` marker above is updated to point here.
+- **Status: DONE (2026-07-02).** `PromptInspector.tsx` renders a title-cased `styles.familyChip` per
+  group (purple/violet token, distinct from the teal `actionChip`s) and a `styles.copyAllBtn` in the
+  meta header that builds the full composed text via a local `buildFullPromptText` helper, calls
+  `ClipboardServiceAdapter.setText(...)`, and dispatches a success/error `enqueueNotification` toast.
+  4 new tests added to `PromptInspector.test.tsx` (chip renders per group with a two-family fixture;
+  Copy-all calls `setText` with the exact expected composed string; success and failure paths both
+  dispatch the correct notification against a real `notifications` reducer, not a mock). Full Jest
+  suite green (74 suites/724 tests); `npx tsc --noEmit` and `eslint` clean; `npm run verify:ui`
+  (Playwright, bridge-mock dev server) green across all 12 checks.

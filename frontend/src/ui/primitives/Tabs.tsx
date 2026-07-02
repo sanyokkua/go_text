@@ -5,7 +5,8 @@ import styles from './Tabs.module.css';
 
 export interface TabDef {
     value: string;
-    label: string;
+    /** Accepts composed nodes (e.g. glyph + text), not just plain strings. */
+    label: React.ReactNode;
     content: React.ReactNode;
 }
 

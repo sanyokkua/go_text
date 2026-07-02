@@ -1,5 +1,6 @@
 import React, { memo } from 'react';
 import { apperr } from '../../../../../wailsjs/go/models';
+import { ClipboardServiceAdapter, getLogger } from '../../../../logic/adapter';
 import {
     selectAboutInspectorData,
     selectAboutInspectorError,
@@ -14,7 +15,11 @@ import {
 } from '../../../../logic/store';
 import { togglePreviewInput } from '../../../../logic/store/about/slice';
 import type { AboutItemType } from '../../../../logic/store/about/types';
+import { enqueueNotification } from '../../../../logic/store/notifications/slice';
+import { parseError } from '../../../../logic/utils/error_utils';
 import styles from './PromptInspector.module.css';
+
+const logger = getLogger('PromptInspector');
 
 /**
  * Builds the badge list for an inference group's parameters, omitting optional
@@ -62,6 +67,20 @@ function resolveDisplayName(id: string, type: AboutItemType | null, catalog: app
     return catalog.find((a) => a.id === id)?.name ?? id;
 }
 
+function titleCase(value: string): string {
+    return value.length === 0 ? value : value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+/**
+ * Joins every inference group's system/user prompt into one plain-text block so
+ * "Copy all" can place the full composed preview on the clipboard in one shot.
+ */
+function buildFullPromptText(groups: apperr.PreviewGroup[]): string {
+    return groups
+        .map((g) => `Inference ${g.index + 1} — ${titleCase(g.family)}\nSystem:\n${g.systemPrompt}\n\nUser:\n${g.userPrompt}`)
+        .join('\n\n');
+}
+
 const PromptInspector: React.FC = memo(function PromptInspector() {
     const dispatch = useAppDispatch();
     const selectedId = useAppSelector(selectAboutSelectedItemId);
@@ -82,6 +101,20 @@ const PromptInspector: React.FC = memo(function PromptInspector() {
     }
 
     const displayName = resolveDisplayName(selectedId, selectedType, catalog, savedStacks);
+
+    const handleCopyAll = async () => {
+        if (!data) return;
+        try {
+            const ok = await ClipboardServiceAdapter.setText(buildFullPromptText(data.groups));
+            if (ok) {
+                dispatch(enqueueNotification({ message: 'Copied full prompt to clipboard', severity: 'success' }));
+            }
+        } catch (copyError: unknown) {
+            const err = parseError(copyError);
+            logger.logError(`Copy all failed: ${err.message}`);
+            dispatch(enqueueNotification({ message: 'Failed to copy prompt', severity: 'error' }));
+        }
+    };
 
     return (
         <div className={styles.root}>
@@ -112,14 +145,16 @@ const PromptInspector: React.FC = memo(function PromptInspector() {
                             {data.inferences} inference{data.inferences !== 1 ? 's' : ''}
                         </span>
                         <span className={styles.metaBadge}>{data.kind}</span>
+                        <button className={styles.copyAllBtn} onClick={handleCopyAll} type="button">
+                            Copy all
+                        </button>
                     </div>
 
                     {data.groups.map((g, i) => (
                         <div key={i} className={styles.group}>
                             <div className={styles.groupHeader}>
-                                <span>
-                                    Inference {g.index + 1} — {g.family}
-                                </span>
+                                <span>Inference {g.index + 1}</span>
+                                <span className={styles.familyChip}>{titleCase(g.family)}</span>
                                 {g.appliedActions.map((a) => (
                                     <span key={a.id} className={styles.actionChip}>
                                         {a.name}
