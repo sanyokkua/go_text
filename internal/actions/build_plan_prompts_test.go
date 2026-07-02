@@ -52,6 +52,9 @@ func TestActionService_BuildPlanAndPrompts_SingleAction(t *testing.T) {
 	if !strings.Contains(g.UserPrompt, "Hello world") {
 		t.Error("user prompt should contain sample input")
 	}
+	if !strings.Contains(g.UserPrompt, userGuardrailSuffix) {
+		t.Error("previewed user prompt should contain the same guardrail suffix Compose appends, proving preview and production share composition")
+	}
 	if g.SystemPrompt == "" {
 		t.Error("system prompt should not be empty")
 	}

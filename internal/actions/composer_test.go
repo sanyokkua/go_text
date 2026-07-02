@@ -229,6 +229,33 @@ func TestComposer_PromptEngInjectsTargetModelAndGoal(t *testing.T) {
 	}
 }
 
+func TestComposer_Compose_AppendsGuardrailSuffix(t *testing.T) {
+	c := NewComposer(composerTestCatalog())
+	tests := []struct {
+		name  string
+		group Group
+		req   apperr.ChainRequest
+	}{
+		{"rewrite", groupOf(v3.FamilyRewrite, "rewrite.proofread.basic"), apperr.ChainRequest{}},
+		{"structure", groupOf(v3.FamilyStructure, "structure.format.bullets"), apperr.ChainRequest{}},
+		{"summarize", groupOf(v3.FamilySummarize, "summarize.summary"), apperr.ChainRequest{}},
+		{"translate", groupOf(v3.FamilyTranslate, "translate.text"), apperr.ChainRequest{InputLanguageID: "English", OutputLanguageID: "Spanish"}},
+		{"prompteng", groupOf(v3.FamilyPromptEng, "prompteng.text.improve"), apperr.ChainRequest{}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			_, user := c.Compose(tt.group, "sample text", tt.req, false)
+			if !strings.Contains(user, userGuardrailSuffix) {
+				t.Errorf("user prompt should contain guardrail suffix, got: %q", user)
+			}
+			if strings.Count(user, "<<<UserText Start>>>") != 1 {
+				t.Errorf("context block should appear exactly once, got %d", strings.Count(user, "<<<UserText Start>>>"))
+			}
+		})
+	}
+}
+
 func TestComposer_FormatMarkdown(t *testing.T) {
 	c := NewComposer(composerTestCatalog())
 	req := apperr.ChainRequest{}

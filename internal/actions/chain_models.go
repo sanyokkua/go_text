@@ -25,4 +25,5 @@ type ChatStepRequest struct {
 	InputText   string   // text entering this step (for logging)
 	InputLang   string
 	OutputLang  string
+	RunID       string // chain-run correlation id; empty for single-action ProcessPromptActionRequest calls
 }

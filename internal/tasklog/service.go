@@ -31,6 +31,7 @@ type TaskLogEntry struct {
 	DurationMs     int64  `json:"durationMs"`
 	InputLanguage  string `json:"inputLanguage,omitempty"`
 	OutputLanguage string `json:"outputLanguage,omitempty"`
+	RunID          string `json:"runId,omitempty"`
 }
 
 // TaskLogServiceAPI is the contract for appending task log entries to disk.

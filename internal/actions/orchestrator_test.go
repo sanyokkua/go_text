@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"go_text/internal/apperr"
 	"go_text/internal/gate"
 	"go_text/internal/llms"
+	"go_text/internal/logging"
 	"go_text/internal/prompts"
 	"go_text/internal/settings"
 	"go_text/internal/tasklog"
@@ -30,6 +32,28 @@ import (
 type noopTaskLog struct{}
 
 func (n *noopTaskLog) LogTaskExecution(_ tasklog.TaskLogEntry) error { return nil }
+
+// captureTaskLog is a spy satisfying tasklog.TaskLogServiceAPI that records every
+// entry it receives. It is the observation seam used to verify that RunID threads
+// from apperr.ChainRequest through ChatStepRequest into the tasklog entry runStep
+// builds — the LLM completion request itself carries no RunID field.
+type captureTaskLog struct {
+	mu      sync.Mutex
+	entries []tasklog.TaskLogEntry
+}
+
+func (c *captureTaskLog) LogTaskExecution(entry tasklog.TaskLogEntry) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.entries = append(c.entries, entry)
+	return nil
+}
+
+func (c *captureTaskLog) capturedEntries() []tasklog.TaskLogEntry {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return append([]tasklog.TaskLogEntry(nil), c.entries...)
+}
 
 // noopHistoryService satisfies history.HistoryServiceAPI with no side effects.
 type noopHistoryService struct{}
@@ -105,13 +129,33 @@ func completionServerFor(t *testing.T, responses []string) *httptest.Server {
 // newTestChainService creates a real ActionService wired to the given server URL.
 func newTestChainService(t *testing.T, serverURL string) ActionServiceAPI {
 	t.Helper()
-	wlog := logger.NewDefaultLogger()
+	wlog, err := logging.New(logging.DefaultConfig(), false)
+	if err != nil {
+		t.Fatalf("failed to create logger: %v", err)
+	}
 	settingsSvc := &orchestratorSettings{cfg: testSettingsCfg(serverURL)}
 	restyClient := resty.New().SetTimeout(10 * time.Second)
 	factory := llms.NewProviderFactory(restyClient)
 	llmSvc := llms.NewLLMApiService(wlog, factory, settingsSvc)
 	promptSvc := prompts.NewPromptService(wlog)
 	return NewActionService(wlog, promptSvc, llmSvc, settingsSvc, &noopTaskLog{}, &noopHistoryService{})
+}
+
+// newTestChainServiceWithTaskLog is a variant of newTestChainService that wires in
+// a caller-supplied tasklog.TaskLogServiceAPI so tests can observe data threaded
+// into runStep's ChatStepRequest (e.g. RunID) via the resulting TaskLogEntry.
+func newTestChainServiceWithTaskLog(t *testing.T, serverURL string, taskLog tasklog.TaskLogServiceAPI) ActionServiceAPI {
+	t.Helper()
+	wlog, err := logging.New(logging.DefaultConfig(), false)
+	if err != nil {
+		t.Fatalf("failed to create logger: %v", err)
+	}
+	settingsSvc := &orchestratorSettings{cfg: testSettingsCfg(serverURL)}
+	restyClient := resty.New().SetTimeout(10 * time.Second)
+	factory := llms.NewProviderFactory(restyClient)
+	llmSvc := llms.NewLLMApiService(wlog, factory, settingsSvc)
+	promptSvc := prompts.NewPromptService(wlog)
+	return NewActionService(wlog, promptSvc, llmSvc, settingsSvc, taskLog, &noopHistoryService{})
 }
 
 // twoFamilySteps returns action IDs for two steps from different families
@@ -324,6 +368,87 @@ func TestRunChain_EmptyInput_ReturnsValidationError(t *testing.T) {
 	var ae *apperr.AppError
 	require.True(t, errors.As(err, &ae))
 	assert.Equal(t, apperr.CodeValidation, ae.Code)
+}
+
+// TestRunChain_RunID_FlowsIntoTaskLogEntry verifies that apperr.ChainRequest.RunID
+// is threaded into ChatStepRequest.RunID for every step runStep executes. The
+// LLM completion request itself carries no RunID field, so the tasklog entry
+// (built directly from ChatStepRequest inside runStep) is the observable seam.
+func TestRunChain_RunID_FlowsIntoTaskLogEntry(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		runID string
+	}{
+		{name: "non_empty_run_id", runID: "run-correlation-42"},
+		{name: "empty_run_id", runID: ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Arrange
+			server := completionServerFor(t, []string{"transformed output"})
+			defer server.Close()
+
+			capture := &captureTaskLog{}
+			svc := newTestChainServiceWithTaskLog(t, server.URL, capture)
+			actionID := oneFamilyStep(t, svc)
+
+			req := apperr.ChainRequest{
+				RunID:     tt.runID,
+				InputText: "hello world",
+				Steps:     []apperr.ChainStep{{ActionID: actionID}},
+			}
+
+			// Act
+			result, err := svc.RunChain(context.Background(), req, nil)
+
+			// Assert
+			require.NoError(t, err)
+			require.NotNil(t, result)
+
+			entries := capture.capturedEntries()
+			require.Len(t, entries, 1, "one tasklog entry expected for a single-group chain")
+			assert.Equal(t, tt.runID, entries[0].RunID, "tasklog entry RunID must match ChainRequest.RunID")
+		})
+	}
+}
+
+// TestRunChain_RunID_FlowsIntoEachGroupsTaskLogEntry verifies RunID is threaded
+// consistently across every group in a multi-group chain, not just the first.
+func TestRunChain_RunID_FlowsIntoEachGroupsTaskLogEntry(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	server := completionServerFor(t, []string{"step0out", "step1out"})
+	defer server.Close()
+
+	capture := &captureTaskLog{}
+	svc := newTestChainServiceWithTaskLog(t, server.URL, capture)
+	id0, id1 := twoFamilySteps(t, svc)
+
+	const wantRunID = "run-multi-correlation"
+	req := apperr.ChainRequest{
+		RunID:     wantRunID,
+		InputText: "original",
+		Steps:     []apperr.ChainStep{{ActionID: id0}, {ActionID: id1}},
+	}
+
+	// Act
+	result, err := svc.RunChain(context.Background(), req, nil)
+
+	// Assert
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	entries := capture.capturedEntries()
+	require.Len(t, entries, 2, "one tasklog entry expected per completed group")
+	for i, e := range entries {
+		assert.Equal(t, wantRunID, e.RunID, "tasklog entry %d must carry the chain's RunID", i)
+	}
 }
 
 func TestRunChain_SameLanguageTranslate_NoLLMCall(t *testing.T) {

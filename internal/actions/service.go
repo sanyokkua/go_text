@@ -6,6 +6,7 @@ import (
 	"go_text/internal/apperr"
 	"go_text/internal/history"
 	"go_text/internal/llms"
+	"go_text/internal/logging"
 	"go_text/internal/prompts"
 	"go_text/internal/prompts/categories"
 	"go_text/internal/settings"
@@ -13,8 +14,6 @@ import (
 	"slices"
 	"strings"
 	"time"
-
-	"github.com/wailsapp/wails/v2/pkg/logger"
 )
 
 func newMessage(role, content string) llms.CompletionRequestMessage {
@@ -84,7 +83,7 @@ type ActionServiceAPI interface {
 }
 
 type ActionService struct {
-	logger          logger.Logger
+	logger          *logging.Logger
 	promptService   prompts.PromptServiceAPI
 	llmService      llms.LLMServiceAPI
 	settingsService settings.SettingsServiceAPI
@@ -96,7 +95,7 @@ type ActionService struct {
 }
 
 func NewActionService(
-	logger logger.Logger,
+	logger *logging.Logger,
 	promptService prompts.PromptServiceAPI,
 	llmService llms.LLMServiceAPI,
 	settingsService settings.SettingsServiceAPI,
@@ -373,22 +372,29 @@ func (a *ActionService) runStep(ctx context.Context, cfg *settings.Settings, req
 	startTime := time.Now()
 	_ = ctx // accepted for T13 cancellation; propagation added when LLMService gains context support
 
-	a.logger.Debug(fmt.Sprintf("[%s] Starting LLM inference family=%s actions=%v", op, req.GroupFamily, req.ActionIDs))
+	lg := a.logger.WithOp(op).With().
+		Str("component", "actions").
+		Str("run_id", req.RunID).
+		Str("family", req.GroupFamily).
+		Str("provider", string(cfg.CurrentProviderConfig.Kind)).
+		Logger()
+
+	lg.Debug().Strs("actions", req.ActionIDs).Msg("starting LLM inference")
 
 	llmReq := newChatCompletionRequest(cfg, req.User, req.System)
 	rawResp, err := a.llmService.GetCompletionResponse(&llmReq)
 	if err != nil {
-		a.logger.Error(fmt.Sprintf("[%s] LLM call failed family=%s error=%v", op, req.GroupFamily, err))
+		lg.Error().Err(err).Msg("LLM call failed")
 		return "", fmt.Errorf("%s: LLM call failed: %w", op, err)
 	}
 
 	if strings.TrimSpace(rawResp) == "" {
-		a.logger.Warning(fmt.Sprintf("[%s] Received empty response from LLM family=%s", op, req.GroupFamily))
+		lg.Warn().Msg("received empty response from LLM")
 	}
 
 	result, err := a.promptService.SanitizeReasoningBlock(rawResp)
 	if err != nil {
-		a.logger.Error(fmt.Sprintf("[%s] Sanitize failed: %v", op, err))
+		lg.Error().Err(err).Msg("sanitize failed")
 		return "", fmt.Errorf("%s: sanitize failed: %w", op, err)
 	}
 
@@ -410,10 +416,13 @@ func (a *ActionService) runStep(ctx context.Context, cfg *settings.Settings, req
 		DurationMs:     time.Since(startTime).Milliseconds(),
 		InputLanguage:  req.InputLang,
 		OutputLanguage: req.OutputLang,
+		RunID:          req.RunID,
 	})
 
-	a.logger.Debug(fmt.Sprintf("[%s] Done family=%s duration_ms=%d result_len=%d",
-		op, req.GroupFamily, time.Since(startTime).Milliseconds(), len(result)))
+	lg.Debug().
+		Int64("duration_ms", time.Since(startTime).Milliseconds()).
+		Int("result_len", len(result)).
+		Msg("step completed")
 
 	return result, nil
 }

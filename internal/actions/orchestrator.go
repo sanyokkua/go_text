@@ -12,6 +12,15 @@ import (
 	"go_text/internal/settings"
 )
 
+// Chain-run outcome statuses logged and reported alongside run_id correlation.
+const (
+	chainStatusDone      = "done"
+	chainStatusFailed    = "failed"
+	chainStatusCancelled = "cancelled"
+
+	chainFinishedMsg = "chain run finished"
+)
+
 // RunChain executes req sequentially through planned inference groups.
 //
 //   - Settings are resolved once and fixed for the whole chain.
@@ -27,6 +36,11 @@ func (a *ActionService) RunChain(
 ) (*apperr.ChainResult, error) {
 	const op = "ActionService.RunChain"
 	startTime := time.Now()
+
+	lg := a.logger.WithOp(op).With().
+		Str("component", "actions").
+		Str("run_id", req.RunID).
+		Logger()
 
 	if strings.TrimSpace(req.InputText) == "" {
 		return nil, apperr.Validation("inputText", "non-empty text", "empty string")
@@ -45,6 +59,12 @@ func (a *ActionService) RunChain(
 		return nil, fmt.Errorf("%s: resolve settings: %w", op, err)
 	}
 
+	total := len(plan.Groups)
+	lg.Info().
+		Int("groups", total).
+		Int("steps", len(req.Steps)).
+		Msg("chain run starting")
+
 	emit := func(i, total int, family, status string) {
 		if emitProgress == nil {
 			return
@@ -60,7 +80,20 @@ func (a *ActionService) RunChain(
 
 	input := req.InputText
 	completed := 0
-	total := len(plan.Groups)
+
+	logFinished := func(status string, runErr error) {
+		ev := lg.Info()
+		if status == chainStatusFailed {
+			ev = lg.Error()
+		}
+		if runErr != nil {
+			ev = ev.Err(runErr)
+		}
+		ev.Str("status", status).
+			Int("completed", completed).
+			Int64("duration_ms", time.Since(startTime).Milliseconds()).
+			Msg(chainFinishedMsg)
+	}
 
 	for i, group := range plan.Groups {
 		// Cooperative cancellation: checked before each group so the current group always finishes.
@@ -73,6 +106,7 @@ func (a *ActionService) RunChain(
 				Error:     cancelErr.Message,
 			}
 			a.recordChainHistory(req, plan, cfg, partialResult, cancelErr, completed, time.Since(startTime))
+			logFinished(chainStatusCancelled, cancelErr)
 			return partialResult, cancelErr
 		default:
 		}
@@ -102,6 +136,7 @@ func (a *ActionService) RunChain(
 			InputText:   input,
 			InputLang:   req.InputLanguageID,
 			OutputLang:  req.OutputLanguageID,
+			RunID:       req.RunID,
 		})
 		if stepErr != nil {
 			emit(i, total, group.Family, "failed")
@@ -119,6 +154,7 @@ func (a *ActionService) RunChain(
 				Error:       wrapped.Message,
 			}
 			a.recordChainHistory(req, plan, cfg, failedResult, wrapped, completed, time.Since(startTime))
+			logFinished(chainStatusFailed, wrapped)
 			return failedResult, wrapped
 		}
 
@@ -129,6 +165,7 @@ func (a *ActionService) RunChain(
 
 	successResult := &apperr.ChainResult{FinalText: input, Completed: completed}
 	a.recordChainHistory(req, plan, cfg, successResult, nil, completed, time.Since(startTime))
+	logFinished(chainStatusDone, nil)
 	return successResult, nil
 }
 

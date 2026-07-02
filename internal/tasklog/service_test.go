@@ -445,6 +445,86 @@ func TestTaskLogService_LogTaskExecution(t *testing.T) {
 		}
 	})
 
+	t.Run("run_id_included_when_set", func(t *testing.T) {
+		t.Parallel()
+
+		// Arrange
+		tmpDir, err := os.MkdirTemp("", "tasklog_runid_set_*")
+		assert.NoError(t, err)
+		defer os.RemoveAll(tmpDir)
+
+		mockSettings := &mockSettingsService{
+			cfg:    &settings.AppBehaviorConfig{EnableTaskLogging: true},
+			cfgErr: nil,
+			logCfg: &settings.LoggingConfig{LogDirectory: tmpDir},
+		}
+		mockFile := &mockFileUtilsService{
+			ensurePath: tmpDir,
+			ensureErr:  nil,
+		}
+		svc := newService(t, mockSettings, mockFile)
+		entry := makeEntry()
+		entry.RunID = "run-abc-123"
+
+		// Act
+		logErr := svc.LogTaskExecution(entry)
+
+		// Assert: no error returned
+		assert.NoError(t, logErr)
+
+		logFilePath := filepath.Join(tmpDir, todayFilename)
+		rawBytes, readErr := os.ReadFile(logFilePath)
+		assert.NoError(t, readErr)
+
+		lines := filterNonEmpty(strings.Split(string(rawBytes), "\n"))
+		assert.Len(t, lines, 1, "exactly one log line expected")
+
+		// Assert: the raw JSON line carries the runId key with the expected value
+		assert.Contains(t, lines[0], `"runId":"run-abc-123"`, "runId key must be present when RunID is set")
+
+		// Assert: unmarshalling round-trips the RunID onto the struct
+		var decoded TaskLogEntry
+		assert.NoError(t, json.Unmarshal([]byte(lines[0]), &decoded))
+		assert.Equal(t, entry, decoded)
+	})
+
+	t.Run("run_id_omitted_when_empty", func(t *testing.T) {
+		t.Parallel()
+
+		// Arrange
+		tmpDir, err := os.MkdirTemp("", "tasklog_runid_empty_*")
+		assert.NoError(t, err)
+		defer os.RemoveAll(tmpDir)
+
+		mockSettings := &mockSettingsService{
+			cfg:    &settings.AppBehaviorConfig{EnableTaskLogging: true},
+			cfgErr: nil,
+			logCfg: &settings.LoggingConfig{LogDirectory: tmpDir},
+		}
+		mockFile := &mockFileUtilsService{
+			ensurePath: tmpDir,
+			ensureErr:  nil,
+		}
+		svc := newService(t, mockSettings, mockFile)
+		entry := makeEntry() // RunID left at its zero value ""
+
+		// Act
+		logErr := svc.LogTaskExecution(entry)
+
+		// Assert: no error returned
+		assert.NoError(t, logErr)
+
+		logFilePath := filepath.Join(tmpDir, todayFilename)
+		rawBytes, readErr := os.ReadFile(logFilePath)
+		assert.NoError(t, readErr)
+
+		lines := filterNonEmpty(strings.Split(string(rawBytes), "\n"))
+		assert.Len(t, lines, 1, "exactly one log line expected")
+
+		// Assert: the omitempty tag drops the key entirely when RunID is ""
+		assert.NotContains(t, lines[0], `"runId"`, "runId key must be absent when RunID is empty")
+	})
+
 	t.Run("concurrent_writes_no_data_race", func(t *testing.T) {
 		// Do NOT call t.Parallel() here: the test already exercises concurrency
 		// via goroutines and the race detector validates the mutex correctness.

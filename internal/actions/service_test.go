@@ -6,9 +6,8 @@ import (
 
 	"go_text/internal/apperr"
 	"go_text/internal/llms"
+	"go_text/internal/logging"
 	"go_text/internal/settings"
-
-	"github.com/wailsapp/wails/v2/pkg/logger"
 )
 
 // ── stubs ──────────────────────────────────────────────────────────────────
@@ -127,9 +126,14 @@ func (s *stubLLMService) GetCompletionResponseForProvider(_ *settings.ProviderCo
 // newTestActionService builds an ActionService with only the dependencies
 // needed by GetModelsInfo. promptService and taskLogService are intentionally
 // nil because GetModelsInfo never touches them.
-func newTestActionService(stg *stubSettingsService, llm *stubLLMService) *ActionService {
+func newTestActionService(t *testing.T, stg *stubSettingsService, llm *stubLLMService) *ActionService {
+	t.Helper()
+	l, err := logging.New(logging.DefaultConfig(), false)
+	if err != nil {
+		t.Fatalf("failed to create logger: %v", err)
+	}
 	return &ActionService{
-		logger:          logger.NewDefaultLogger(),
+		logger:          l,
 		settingsService: stg,
 		llmService:      llm,
 	}
@@ -187,7 +191,7 @@ func TestActionService_GetModelsInfo_DelegationPaths(t *testing.T) {
 				byIDProvider:    tt.byIDProvider,
 			}
 			llm := &stubLLMService{models: wantModels}
-			svc := newTestActionService(stg, llm)
+			svc := newTestActionService(t, stg, llm)
 
 			// Act
 			got, err := svc.GetModelsInfo(tt.providerID)
@@ -240,7 +244,7 @@ func TestActionService_GetModelsInfo_ProviderByID_NotFound_ReturnsValidationErro
 		byIDErr: errors.New("not found in store"),
 	}
 	llm := &stubLLMService{}
-	svc := newTestActionService(stg, llm)
+	svc := newTestActionService(t, stg, llm)
 
 	// Act
 	got, err := svc.GetModelsInfo("unknown-id")
@@ -283,7 +287,7 @@ func TestActionService_GetModelsInfo_CurrentProvider_Error_ReturnsWrappedError(t
 		currentProviderErr: sentinel,
 	}
 	llm := &stubLLMService{}
-	svc := newTestActionService(stg, llm)
+	svc := newTestActionService(t, stg, llm)
 
 	// Act
 	got, err := svc.GetModelsInfo("")
@@ -326,7 +330,7 @@ func TestActionService_GetModelsInfo_LLMError_IsReturnedVerbatim(t *testing.T) {
 	// Arrange
 	stg := &stubSettingsService{currentProvider: provider}
 	llm := &stubLLMService{err: llmErr}
-	svc := newTestActionService(stg, llm)
+	svc := newTestActionService(t, stg, llm)
 
 	// Act
 	got, err := svc.GetModelsInfo("")

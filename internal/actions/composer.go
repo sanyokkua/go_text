@@ -19,6 +19,12 @@ const (
 	userTextBlock      = "<<<UserText Start>>>\n%s\n<<<UserText End>>>"
 )
 
+const userGuardrailSuffix = "\n\nReminder: reply with only the requested result text. " +
+	"Do not add a preamble, explanation, heading, or commentary, and do not wrap the " +
+	"output in code fences unless the source text itself is code or the requested output " +
+	"type inherently requires labeled sections (e.g. a translation table, an FAQ, or a " +
+	"negative-prompt/settings block)."
+
 // Composer builds the two-tier (system + user) prompt for one inference group.
 type Composer struct {
 	catalog map[string]apperr.ActionMeta
@@ -36,7 +42,7 @@ func NewComposer(catalog []apperr.ActionMeta) *Composer {
 // Compose returns the (system, user) prompt pair for one inference group.
 func (c *Composer) Compose(g Group, inputText string, req apperr.ChainRequest, useMarkdown bool) (system, user string) {
 	system = c.systemPrompt(g)
-	user = c.userPrompt(g, inputText, req, useMarkdown)
+	user = c.userPrompt(g, inputText, req, useMarkdown) + userGuardrailSuffix
 	return
 }
 

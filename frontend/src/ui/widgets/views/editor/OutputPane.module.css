@@ -4,6 +4,9 @@
     height: 100%;
     background: transparent;
     padding: var(--space-3);
+    overflow: hidden;
+    min-height: 0;
+    min-width: 0;
 }
 
 .header {
@@ -25,6 +28,7 @@
 .body {
     flex: 1;
     min-height: 0;
+    min-width: 0;
     overflow: auto;
     position: relative;
     background: var(--surface-2);

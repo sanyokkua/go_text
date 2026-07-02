@@ -9,9 +9,9 @@ import (
 
 	"go_text/internal/apperr"
 	"go_text/internal/llms"
+	"go_text/internal/logging"
 	"go_text/internal/prompts"
 
-	"github.com/wailsapp/wails/v2/pkg/logger"
 	"resty.dev/v3"
 )
 
@@ -32,7 +32,10 @@ func (r *recordingHistoryService) Count() (int64, error)                        
 // Reuses orchestratorSettings and testSettingsCfg from orchestrator_test.go (same package).
 func newChainServiceWithRecording(t *testing.T, serverURL string, hist *recordingHistoryService) ActionServiceAPI {
 	t.Helper()
-	wlog := logger.NewDefaultLogger()
+	wlog, err := logging.New(logging.DefaultConfig(), false)
+	if err != nil {
+		t.Fatalf("failed to create logger: %v", err)
+	}
 	settingsSvc := &orchestratorSettings{cfg: testSettingsCfg(serverURL)}
 	restyClient := resty.New().SetTimeout(10 * time.Second)
 	factory := llms.NewProviderFactory(restyClient)

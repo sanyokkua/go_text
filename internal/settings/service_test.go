@@ -154,6 +154,83 @@ func TestSettingsService_UpdateModelConfig_MaxOutputTokensBoundaries(t *testing.
 	}
 }
 
+// Regression: when both UseContextWindow and UseMaxOutputTokens are enabled,
+// MaxOutputTokens must be strictly less than ContextWindow — a chain prompt
+// budget cannot allow the max-output reservation to consume (or exceed) the
+// entire context window.
+func TestSettingsService_UpdateModelConfig_MaxOutputTokensVsContextWindow(t *testing.T) {
+	tests := []struct {
+		name               string
+		useContextWindow   bool
+		contextWindow      int
+		useMaxOutputTokens bool
+		maxOutputTokens    int
+		wantErr            bool
+	}{
+		{
+			name:               "both enabled, maxOutputTokens greater than contextWindow is rejected",
+			useContextWindow:   true,
+			contextWindow:      4096,
+			useMaxOutputTokens: true,
+			maxOutputTokens:    8192,
+			wantErr:            true,
+		},
+		{
+			name:               "both enabled, equal values is rejected",
+			useContextWindow:   true,
+			contextWindow:      4096,
+			useMaxOutputTokens: true,
+			maxOutputTokens:    4096,
+			wantErr:            true,
+		},
+		{
+			name:               "both enabled, one less than contextWindow is accepted",
+			useContextWindow:   true,
+			contextWindow:      4096,
+			useMaxOutputTokens: true,
+			maxOutputTokens:    4095,
+			wantErr:            false,
+		},
+		{
+			name:               "only maxOutputTokens enabled, cross-check does not apply",
+			useContextWindow:   false,
+			contextWindow:      0,
+			useMaxOutputTokens: true,
+			maxOutputTokens:    32000,
+			wantErr:            false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := newRepo(t)
+			svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+
+			_, err := svc.UpdateModelConfig(&settings.ModelConfig{
+				Name:               "gpt-4o",
+				UseContextWindow:   tt.useContextWindow,
+				ContextWindow:      tt.contextWindow,
+				UseMaxOutputTokens: tt.useMaxOutputTokens,
+				MaxOutputTokens:    tt.maxOutputTokens,
+			})
+
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("UpdateModelConfig() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !tt.wantErr {
+				return
+			}
+			var ae *apperr.AppError
+			if !errors.As(err, &ae) {
+				t.Fatalf("want *apperr.AppError, got %T: %v", err, err)
+			}
+			if ae.Code != apperr.CodeValidation {
+				t.Errorf("expected CodeValidation, got %q", ae.Code)
+			}
+		})
+	}
+}
+
 // ensuringFileUtils returns an existing temp dir from EnsureAppLogsFolderExists
 // and a deliberately non-existent path from ResolveAppLogsFolderPath, so a test
 // can verify which one GetAppSettingsMetadata uses for the logs folder.
