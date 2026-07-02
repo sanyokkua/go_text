@@ -1348,3 +1348,58 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
   note per row citing which `live-llm.spec.ts` test, if any, covers it.
 - **Acceptance:** every "(B)"-tagged row in §2.3 has an explicit, evidence-backed status; any genuine
   gaps are logged as new numbered follow-up tasks in this file rather than left as a vague caveat.
+- **Status: DONE (2026-07-02).** Added §2.3.1 to `13-testing-specification.md` with the full
+  row-by-row audit table. Outcome for the 5 "(B)"-tagged rows: **Editor view** — Covered (`S1`, `S7`).
+  **`StackBuilderBar`** — Partially covered by design (`S3` build+run, `S8` run-from-Manage; the Save
+  step is an intentionally-manual persisting flow already tracked under T45). **History rail** — Gap
+  on the restore step (`S5` only asserts the Restore control is visible, never clicks it or checks
+  editor population) — logged as **T72**. **Settings** — Partially covered by design (`S2` covers
+  "verify" fully; "add provider" is an intentionally-manual persisting flow already tracked under
+  T45). **About·Info + Prompt Inspector** — Gap, zero coverage of ⌘K run/add — logged as **T73**. No
+  row was "Not applicable"; no code changed, per this task's own scope.
+
+### T72 — `live-llm.spec.ts`'s `S5` never actually restores a history entry or verifies editor population
+
+- **Severity:** Low (test-coverage gap; the underlying Restore feature itself is not known to be
+  broken — it is simply unverified against a real backend).
+- **Discovery:** T71's audit found `S5` (`frontend/e2e/live-llm.spec.ts:178-188`) opens the history
+  rail after recording a run and asserts a "Restore" control is *visible*, but never clicks it and
+  never asserts the input/output editors are repopulated with the restored content. This falls short
+  of §2.3's own row wording for the History rail: "open rail → restore populates editors (B)."
+- **Fix (`ts-tester`):** extend `S5` to click the "Restore" affordance on the most-recent (or a
+  specifically seeded) history card, then assert the input textarea's value matches the original
+  submitted text and the output pane shows non-empty content reflecting the restored run — matching
+  the row's exact claim rather than only checking that the control exists.
+- **Files:** `frontend/e2e/live-llm.spec.ts`.
+- **Tests:** this task's deliverable is itself a test change; no production code is touched. Verify by
+  running `npm run verify:live` against `wails dev` + LM Studio and confirming the strengthened `S5`
+  passes and genuinely exercises restore.
+- **Acceptance:** `S5` clicks Restore on a recorded history entry and asserts both the input and
+  output editors are populated with the expected restored content, passing against a real local
+  provider.
+
+### T73 — No live Target-B coverage exists for the ⌘K command-palette "run" and "add-to-stack" journeys
+
+- **Severity:** Low–Medium (a documented "(B)" coverage requirement has zero automated Target-B
+  coverage today; the Prompt Inspector's own render/`PreviewPrompt` logic is otherwise covered via
+  RTL unit tests and the untagged Target-A UI-test cell in §2.3).
+- **Discovery:** T71's audit found no scenario in `frontend/e2e/live-llm.spec.ts` references
+  About·Info, the Prompt Inspector, or the ⌘K command palette at all, despite §2.3 tagging "⌘K
+  run/add" as a Target-B requirement for that row. Confirmed via
+  `frontend/src/ui/widgets/views/AppMainView.tsx:89-130` that the palette wires two real, non-
+  destructive actions: `handlePaletteRun` (Enter → dispatches a real `ChainRequest` against the
+  bridge) and `handlePaletteAddToStack` (Shift+Enter → `addStep`, in-memory stack-builder state only).
+  Neither mutates persisted DB/settings state, so — unlike the `StackBuilderBar` Save and Settings
+  add-provider gaps closed out as by-design/T45 in this same audit — there is no rationale for this
+  omission; it is a genuine, previously-silent gap.
+- **Fix (`ts-tester`):** add a new scenario to `live-llm.spec.ts` (e.g. `S9`) that opens the ⌘K
+  command palette, selects an action to run it directly (Enter → `handlePaletteRun`) and confirms a
+  real inference completes with non-sentinel output, and separately exercises add-to-stack (Shift+
+  Enter → `handlePaletteAddToStack`) confirming the builder registers the added step.
+- **Files:** `frontend/e2e/live-llm.spec.ts`.
+- **Tests:** this task's deliverable is itself a test change; no production code is touched. Verify by
+  running `npm run verify:live` against `wails dev` + a real local provider and confirming the new
+  scenario passes.
+- **Acceptance:** a new live scenario exists that exercises both ⌘K-triggered run and ⌘K-triggered
+  add-to-stack against the real bridge and passes against a real local provider; §2.3.1's audit row
+  for About·Info + Prompt Inspector can be updated from Gap to Covered once this lands.

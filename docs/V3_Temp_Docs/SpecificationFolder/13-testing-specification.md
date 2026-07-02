@@ -241,7 +241,8 @@ Each rendered surface has a **unit test** (RTL, Target-A logic in jsdom) **and**
 is the checklist the §11 pipeline enforces. Rows marked **(B)** below are CI-gated only for their
 Target-A coverage; the Target-B portion is verified via `frontend/e2e/live-llm.spec.ts` (§4.1.1),
 which is local-only and not exhaustive — treat unmarked gaps between this checklist and that suite's
-actual test list as tracked follow-up work, not a silent pass.
+actual test list as tracked follow-up work, not a silent pass. §2.3.1 below is that row-by-row
+reconciliation (task T71).
 
 | Surface (component / view) | Unit test (Jest + RTL) | UI test (Playwright / Chromium) |
 |---|---|---|
@@ -263,6 +264,21 @@ actual test list as tracked follow-up work, not a silent pass.
 > Surfaces marked **(B)** must additionally pass against the backend-connected server because they
 > depend on real bridge calls, events, or cancellation; all surfaces pass their deterministic gates
 > against **(A)**.
+
+#### 2.3.1 (B)-row audit (T71, 2026-07-02)
+
+Row-by-row reconciliation of every **(B)**-tagged UI-test cell above against
+`frontend/e2e/live-llm.spec.ts`'s actual scenario list (`S0`–`S8`). Evidence is the specific
+scenario(s) exercised at the time of this audit; genuine gaps (coverage that is missing with no
+by-design rationale) are logged as new numbered follow-up tasks rather than left as a caveat.
+
+| Row | Status | Evidence (`live-llm.spec.ts`) | Note |
+|---|---|---|---|
+| **Editor view** — "full run via real bridge" | **Covered** | `S1` | Type → pick action → Run → real inference → non-sentinel, content-preserving output. `S7` repeats the same journey on Ollama (bonus coverage, not required by this row). |
+| **`StackBuilderBar`** — "build → run → save → manage" | **Partially covered — by design** | `S3` (build 2 steps + run, real multi-inference); `S8` (run a seeded stack from Manage) | The **Save** step (persisting a newly built stack) is never exercised. This is intentional: the suite's own file-header comment classifies persisting writes as flows that "mutate the real GoTextApp DB/settings and must be run manually against an isolated config dir... per plan T45," and T45's scenario list (`14-implementation-plan.md`, "build/run/manage stacks") already tracks this manually. Not a new gap. |
+| **History rail** — "open rail → restore populates editors" | **Gap (restore step unverified)** | `S5` | `S5` opens the rail, confirms a run was recorded, and asserts a "Restore" control is *visible* — it never clicks it and never asserts the input/output editors actually populate. Restoring doesn't mutate persistent state, so there's no by-design rationale for the omission. **Logged as T72.** |
+| **Settings — 7 sections** — "add+verify provider" | **Partially covered — by design** | `S2` | "Verify" (Test connection/models/inference against the existing LM Studio provider; asserts ≥3 ✓ and no ✗) is fully covered. "Add" (New → choose kind → base URL/env-var → Save) is never exercised — same persisting-flow rationale as the `StackBuilderBar` row, and explicitly listed in T45's scenario 1 ("provider CRUD + ... + Save/Set current"). Not a new gap. |
+| **About·Info + Prompt Inspector** — "⌘K run/add" | **Gap** | none | No scenario in `live-llm.spec.ts` touches About·Info, the Prompt Inspector, or the ⌘K command palette. Confirmed via `frontend/src/ui/widgets/views/AppMainView.tsx` (`handlePaletteRun` — Enter, real `ChainRequest` inference; `handlePaletteAddToStack` — Shift+Enter, in-memory `addStep`) that both actions are non-destructive and non-persisting, so unlike the two rows above there is no by-design rationale for the omission. **Logged as T73.** |
 
 ---
 
