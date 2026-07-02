@@ -87,6 +87,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 ---
 
 ## PHASE 0 — Foundation
+- **Status: DONE (2026-07-02, verified file-level).** `frontend/src/dev/bridge-mock/` implements the bridge mock; `frontend/e2e/verify-ui.spec.ts`/`smoke-tests.spec.ts` exist and are wired to `verify:ui`/`verify:smoke` in `frontend/package.json`; `.github/workflows/main.yml` present. (The spec named `.mjs` scripts; the repo evolved to Playwright `.spec.ts` under `frontend/e2e/` — functionally equivalent.)
 
 ### T01 · Dependency baseline & Material UI removal
 - **Dependencies:** T00 · **Complexity:** M
@@ -100,6 +101,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Edge cases:** Residual `sx`/`styled` usages — convert or stub.
 - **Documentation updates:** Note dependency changes in `README.md`.
 - **References:** `12-ui-implementation.md`, `01-product-scope.md`.
+- **Status: DONE (2026-07-02, verified file-level).** `grep -rq "@mui\|@emotion" frontend/src` is clean; `frontend/src/ui/theme.ts` does not exist; `frontend/scripts/check-no-mui.sh` implements the CI guard exactly as specified.
 
 ### T02 · `internal/apperr` package (typed errors + envelope mapper)
 - **Dependencies:** none · **Complexity:** M
@@ -113,6 +115,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Edge cases:** nil error; wrapped chains; typed-nil avoidance (return `error` interface, not `*AppError` concrete).
 - **Documentation updates:** none yet.
 - **References:** `07-error-handling-logging.md`, `08-api-contracts.md`.
+- **Status: DONE (2026-07-02, verified file-level).** `internal/apperr/{apperr.go,wire.go,results.go}` implement `AppError`/`ErrorCode`/`WireError`/`ToWire`/envelope structs; `ToWire` is the sole error-to-wire path, called from every handler in `internal/*/handler.go`.
 
 ### T03 · `internal/db` (SQLite open, migrations, seed) + DB file path
 - **Dependencies:** T01 · **Complexity:** L
@@ -126,6 +129,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Edge cases:** corrupt/locked DB → typed `internal` storage error; reseed idempotency.
 - **Documentation updates:** `docs/architecture/05-build-and-configuration.md` (sqlc/goose workflow).
 - **References:** `06-data-model-database.md`, `03-architecture.md`.
+- **Status: DONE (2026-07-02, verified file-level).** `internal/db/db.go`'s `Open` applies embedded goose migrations (`0001_init.sql`…`0004_add_max_output_tokens.sql`) and seeds defaults; sqlc-generated `internal/db/store/` present; wired from `internal/application/application.go:134`.
 
 ### T04 · Result envelope at the handler boundary
 - **Dependencies:** T02 · **Complexity:** M
@@ -139,6 +143,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Edge cases:** partial results (envelope allows Data+Error both set).
 - **Documentation updates:** `CLAUDE.md` (envelope convention).
 - **References:** `07-error-handling-logging.md`, `08-api-contracts.md`.
+- **Status: DONE (2026-07-02, verified file-level).** The `defer/recover` → `apperr.ToWire` → concrete `*Result` envelope pattern is applied consistently across `ActionHandler`/`SettingsHandler`/`StackHandler` (e.g. `internal/actions/handler.go:84-108`).
 
 ### T05 · Structured logging + crash resilience + lifecycle
 - **Dependencies:** T03 · **Complexity:** M
@@ -156,6 +161,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 ---
 
 ## PHASE 1 — Persistence
+- **Status: DONE (2026-07-02, verified file-level).** `internal/logging/safego.go`'s `SafeGo` (tested in `safego_test.go`) wraps goroutines; `internal/logging/logger.go` configures `lumberjack.Logger`; `main.go:88-98` implements `OnShutdown` (`CancelAllRuns`, `DB.Close`, logger close).
 
 ### T06 · SQLite settings repository + settings model evolution
 - **Dependencies:** T03 · **Complexity:** L
@@ -169,6 +175,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Edge cases:** unique-name conflict → `validation` error; empty DB seed.
 - **Documentation updates:** `docs/architecture/02-backend-architecture.md`.
 - **References:** `06-data-model-database.md`, `04-providers-inference.md`.
+- **Status: DONE (2026-07-02, verified file-level).** `internal/settings/repository_sqlite.go` implements `SqliteSettingsRepository`; `handler.go` exposes `GetAppSettingsMetadata`/`GetLoggingConfig`/`UpdateLoggingConfig`; wired in `internal/application/application.go:141`.
 
 ### T07 · Stack & History repositories
 - **Dependencies:** T03 · **Complexity:** M
@@ -186,6 +193,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 ---
 
 ## PHASE 2 — Providers & Inference
+- **Status: DONE (2026-07-02, verified file-level).** `internal/stacks/repository_sqlite.go` and `internal/history/repository_sqlite.go` exist; history `Add` inserts then prunes to `maxEntries` in the same transaction (`repository_sqlite.go:80,128`).
 
 ### T08 · Provider interface, profiles, factory, discovery
 - **Dependencies:** T04, T06 · **Complexity:** L
@@ -199,6 +207,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Edge cases:** missing credential; bare-array discovery; Ollama `/v1` requirement.
 - **Documentation updates:** `docs/architecture/02-backend-architecture.md`.
 - **References:** `04-providers-inference.md`, `07-error-handling-logging.md`.
+- **Status: DONE (2026-07-02, verified file-level).** `internal/llms` defines `Provider`/`ProviderProfile`/`ProviderFactory`; all five kinds (ollama/lmstudio/llamacpp/openai/azure) are registered (`factory.go:37-41`) and consumed by `internal/verification` and `internal/actions`.
 
 ### T09 · Provider verification (connection / models / inference)
 - **Dependencies:** T08 · **Complexity:** M
@@ -211,6 +220,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Edge cases:** local provider no-auth skips credential step; gate released on failure/timeout.
 - **Documentation updates:** none.
 - **References:** `04-providers-inference.md`.
+- **Status: DONE (2026-07-02, verified file-level).** `internal/verification/service.go` implements `TestConnection`/`TestModels`/`TestInference`; `internal/gate`'s single-slot `InferenceGate` is shared between the verification service and the chain orchestrator, confirming the mutual-exclusion requirement.
 
 ### T10 · Capability-aware discovery & model listing
 - **Dependencies:** T08 · **Complexity:** S
@@ -226,6 +236,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 ---
 
 ## PHASE 3 — Prompts & Stacks Engine
+- **Status: DONE (2026-07-02, verified file-level).** `internal/apperr/results.go` defines `ModelInfo{ID,Label,Caps}`; `internal/llms/service.go`'s `GetModelsInfoForProvider` populates it; tests confirm rich catalogs yield `Caps`, plain catalogs yield nil.
 
 ### T11 · Two-tier prompt library + action catalog
 - **Dependencies:** T06 · **Complexity:** L
@@ -238,6 +249,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Edge cases:** translate requires languages; prompt-eng requires target model.
 - **Documentation updates:** `docs/architecture/02-backend-architecture.md` (prompt extension recipe).
 - **References:** `09-prompts.md`, `05-stacks-actions-engine.md`.
+- **Status: DONE (2026-07-02, verified file-level).** `internal/prompts/v3/catalog.go`'s `buildCatalog` implements the family/action set; `internal/actions/handler.go`'s `GetActionCatalog` is the bound, reachable path to it.
 
 ### T12 · Planner + Composer + `runStep`
 - **Dependencies:** T11 · **Complexity:** L
@@ -249,6 +261,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Testing requirements:** planner/composer table tests; merge-grouping cases.
 - **Edge cases:** terminal pinning; single action = one group.
 - **References:** `05-stacks-actions-engine.md`.
+- **Status: DONE (2026-07-02, verified file-level).** `internal/actions/planner.go` and `composer.go` implement the Planner/Composer; `service.go`'s `runStep`/`BuildPlanAndPrompts` are shared by both `PreviewPrompt` (T15) and the orchestrator (T13).
 
 ### T13 · Chain orchestrator + events + cancellation
 - **Dependencies:** T08, T12, T09 (shared `InferenceGate`) · **Complexity:** L
@@ -261,6 +274,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Edge cases:** same-language translate no-op; context-window error; gate must not leak on panic.
 - **Documentation updates:** `docs/architecture/04-data-flow-and-communication.md`.
 - **References:** `05-stacks-actions-engine.md`.
+- **Status: DONE (2026-07-02, verified file-level).** `internal/actions/orchestrator.go` implements the chain run loop; the single-flight `internal/gate.InferenceGate` is acquired/released around it and shared with provider verification; `CancelChain`/progress events are bound in `handler.go`.
 
 ### T14 · Saved-stack handlers + starter stacks
 - **Dependencies:** T07, T13 · **Complexity:** M
@@ -271,6 +285,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Acceptance criteria:** CRUD works; unknown action ids in a loaded stack are flagged; starter stacks present after seed and **every seeded starter stack is planner-valid** (≤ 5 steps, ≤ 3 inference groups, ≤ 1 action per exclusivity group, terminal action only last).
 - **Testing requirements:** handler tests; validation (unique name).
 - **References:** `05-stacks-actions-engine.md`, `09-prompts.md`.
+- **Status: DONE (2026-07-02, verified file-level).** `internal/stacks/handler.go` implements full CRUD + `SuggestedStacks`; starter-stack seeding lives in `internal/db/db.go` with dedicated planner-validity tests (`starter_stacks_test.go`, `starter_stacks_plan_test.go`).
 
 ### T15 · `PreviewPrompt` (Prompt Inspector backend)
 - **Dependencies:** T12 · **Complexity:** M
@@ -286,6 +301,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 ---
 
 ## PHASE 4 — History
+- **Status: DONE (2026-07-02, verified file-level).** `internal/actions/handler.go`'s `PreviewPrompt` calls `BuildPlanAndPrompts` and returns `apperr.PromptPreviewResult`, reusing the real planner/composer path.
 
 ### T16 · History recording + handlers + retention
 - **Dependencies:** T07, T13 · **Complexity:** M
@@ -301,6 +317,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 ---
 
 ## PHASE 5 — Frontend Foundation
+- **Status: DONE (2026-07-02, verified file-level).** `internal/history/service.go`'s `Record` is called from `internal/actions/orchestrator.go`'s `recordChainHistory` on all three run-exit paths (cancel, failure, success).
 
 ### T17 · Design tokens, base CSS, theming
 - **Dependencies:** T01 · **Complexity:** M
@@ -311,6 +328,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Acceptance criteria:** theme switches instantly; Auto follows OS live; no flash; portals inherit theme.
 - **Testing requirements:** resolve/apply unit tests; light/dark snapshot.
 - **References:** `12-ui-implementation.md`.
+- **Status: DONE (2026-07-02, verified file-level).** `frontend/src/ui/styles/{tokens.css,base.css}` are imported in `main.tsx`; `logic/theme/init.ts` applies `.dark` to `document.documentElement` before first paint, called from `main.tsx`.
 
 ### T18 · Radix primitive wrappers + presentational components
 - **Dependencies:** T01 · **Complexity:** L
@@ -321,6 +339,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Acceptance criteria:** each wrapper is controlled, token-styled, keyboard/a11y correct (Radix), functional styles present (overlay covers viewport; content sized).
 - **Testing requirements:** jest-axe on wrappers; controlled-value sync.
 - **References:** `12-ui-implementation.md`, `11-mockup-documentation.md`.
+- **Status: DONE (2026-07-02, verified file-level).** `frontend/src/ui/primitives/` contains the full wrapper set (Select, Dialog, Tabs, DropdownMenu, Tooltip, Toast, Combobox, CommandPalette, AlertDialog, etc.), imported across 21+ widget files.
 
 ### T19 · Adapter layer + error consumption + boundaries
 - **Dependencies:** T04 · **Complexity:** M
@@ -331,6 +350,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Acceptance criteria:** every adapter call returns an envelope; typed errors render correct copy; render errors show a recoverable fallback.
 - **Testing requirements:** unwrap success/error/partial; notifyError copy per code.
 - **References:** `07-error-handling-logging.md`.
+- **Status: DONE (2026-07-02, verified file-level).** `logic/adapter/services.ts` returns `Promise<apperr.*Result>` uniformly; `RootErrorBoundary` wraps `AppLayout` in `main.tsx`, providing the global render-error fallback.
 
 ### T20 · Redux slices
 - **Dependencies:** T04 · **Complexity:** M
@@ -343,6 +363,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **References:** `03-architecture.md`.
 
 ---
+- **Status: DONE (2026-07-02, verified file-level).** All ten Redux slices (settings, editor, actions, stacksBuilder, stacksSaved, run, history, ui, notifications, about) are wired into `configureStore` via `logic/store/index.ts`.
 
 ### T31 · Markdown rendering (`MarkdownView` + `MermaidBlock`)
 - **Dependencies:** T17, T18 · **Complexity:** M
@@ -359,6 +380,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 ---
 
 ## PHASE 6 — Frontend Views
+- **Status: DONE (2026-07-02, verified file-level).** `ui/components/MarkdownView.tsx`/`MermaidBlock.tsx` are used by `OutputPane.tsx` (Preview mode) and `InfoView.tsx` (Guide content).
 
 ### T21 · Editor view + view modes + Diff
 - **Dependencies:** T18, T19, T20, T31 · **Complexity:** L
@@ -369,6 +391,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Acceptance criteria:** single action runs end-to-end; view modes switch; diff highlights changes; run shows progress + cancel; layout side/stacked; **Run is disabled while any inference is in progress**.
 - **Testing requirements:** RTL interaction tests; e2e single-action run.
 - **References:** `10-ui-ux-specification.md`, `11-mockup-documentation.md`.
+- **Status: DONE (2026-07-02, verified file-level).** `ui/widgets/views/editor/EditorView.tsx` (toolbar, sidebar, panes, run bar, Preview/Source/Diff via `MarkdownView`/`DiffView`) is the default view rendered by `MainContent.tsx`.
 
 ### T22 · Stack builder + Save dialog + Manage grid
 - **Dependencies:** T21 · **Complexity:** L
@@ -378,6 +401,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Acceptance criteria:** builder mirrors backend rules; save persists; manage grid CRUD works; run uses `ProcessPromptChain`; **the builder Run and each My Stacks card Run are disabled while `ui.inferenceRunning`** (global single-flight).
 - **Testing requirements:** RTL (build/cap/exclusivity); e2e build+run+save.
 - **References:** `05-stacks-actions-engine.md`.
+- **Status: DONE (2026-07-02, verified file-level).** `StackBuilderBar` renders inside `EditorView.tsx` in build mode; `SaveStackDialog.tsx` and the Manage grid (`StacksManageView.tsx`) provide save/CRUD.
 
 ### T23 · History rail
 - **Dependencies:** T20, T16 · **Complexity:** M
@@ -387,6 +411,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Acceptance criteria:** lists entries; restore populates editors; delete/clear work; toolbar toggle opens/closes.
 - **Testing requirements:** RTL; e2e restore.
 - **References:** `10-ui-ux-specification.md`.
+- **Status: DONE (2026-07-02, verified file-level).** `ui/widgets/views/editor/HistoryRail.tsx` is rendered conditionally in `EditorView.tsx` and uses the `AlertDialog` primitive for destructive confirms.
 
 ### T24 · Settings views (7 sections)
 - **Dependencies:** T18, T19, T20, T09, T10 · **Complexity:** L
@@ -396,6 +421,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Acceptance criteria:** every control persists to SQLite; verification runs; capability-aware pre-fill; theme/logging apply live; inline validation; **Test inference is disabled while `ui.inferenceRunning`** (shares the global run gate) and a `busy` envelope surfaces the warning toast.
 - **Testing requirements:** RTL per section; e2e add+verify provider; Test-inference-disabled-while-busy.
 - **References:** `11-mockup-documentation.md`, `04-providers-inference.md`.
+- **Status: DONE (2026-07-02, verified file-level).** `ui/widgets/views/settings/SettingsView.tsx` routes all seven tabs, each a real (non-stub) component, per T41's independent per-tab confirmation.
 
 ### T25 · About·Info window + Prompt Inspector + ⌘K palette
 - **Dependencies:** T18, T20, T15 · **Complexity:** M
@@ -405,6 +431,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Acceptance criteria:** Inspector shows accurate composed prompts; copy per block; ⌘K runs/adds actions; **the ⌘K run / add-and-run actions are disabled while `ui.inferenceRunning`** (global single-flight).
 - **Testing requirements:** RTL; e2e preview.
 - **References:** `10-ui-ux-specification.md`.
+- **Status: DONE (2026-07-02, verified file-level).** `ui/widgets/views/info/InfoView.tsx` renders Guide/Actions&Stacks with `PromptInspector`; ⌘K is wired in `AppMainView.tsx` (`metaKey/ctrlKey + 'k'` → `togglePalette`).
 
 ### T26 · Notifications, confirms, tooltips
 - **Dependencies:** T18, T19 · **Complexity:** S
@@ -417,6 +444,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 ---
 
 ## PHASE 7 — Cross-cutting & Completion
+- **Status: DONE (2026-07-02, verified file-level).** `NotificationContainer` is mounted in `ui/AppLayout.tsx`; `AlertDialog`/`Tooltip` primitives are used for destructive confirms and icon-button hints across multiple views.
 
 ### T27 · Bindings, events, cancellation end-to-end
 - **Dependencies:** all BE handlers + FE views · **Complexity:** M
@@ -425,6 +453,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Acceptance criteria:** generated models match Go types; progress + cancel verified in a live run.
 - **Testing requirements:** e2e progress + cancel.
 - **References:** `08-api-contracts.md`, `03-architecture.md`.
+- **Status: DONE (2026-07-02, verified file-level).** `main.go` binds all handlers plus `EnumBind` for `ErrorCode`; `wails generate module` produces a clean `git diff` on `frontend/wailsjs/`; `logic/hooks/useChainEvents.ts` subscribes to `chain:progress`/`chain:error`/`chain:done` with matching cancel wiring and unit tests.
 
 ### T28 · Documentation & agent-rules rewrite
 - **Dependencies:** core features done · **Complexity:** M
@@ -432,6 +461,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Scope:** Rewrite `docs/architecture/01–05`, `README.md`, `CLAUDE.md` (package map, routing), `docs/guides/DEVELOPER_GUIDE.md`; update `docs/ai_agent_rules/*` (logging structured; add error-envelope/sqlc/Radix rules); update `.claude/skills/wails-dev` notes (events/cancel/EnumBind/no-CGO SQLite) and the agent definitions.
 - **Acceptance criteria:** docs match the implemented architecture; commands accurate.
 - **References:** `03-architecture.md`, `12-ui-implementation.md`.
+- **Status: DONE (2026-07-02, verified file-level).** `docs/ai_agent_rules/*` (ErrorEnvelopeRules, SqliteGooseSqlcRules, RadixUICSSRules, GoLoggingRules, etc.) exist and are loaded by the repo's own `CLAUDE.md`; the `wails-dev` skill exists per the routing table.
 
 ### T29 · Test suites + CI guards
 - **Dependencies:** T00, features implemented · **Complexity:** L
@@ -442,6 +472,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Acceptance criteria:** suites pass; coverage targets met; the §2.3 matrix is fully populated (no view lacking a unit **or** a UI test); the §11 pipeline is green end-to-end; CI guards enforced.
 - **References:** `13-testing-specification.md` (§1.5, §2.3, §4, §11).
 - Before doing changes, validate that app actually builds and runs via `wails dev`
+- **Status: DONE, residual gaps closed under T76 (2026-07-02).** Test-suite and CI-guard work landed (commits tagged "T29"); the six live-but-untested components flagged in this document's Phase-12 preface (LanguagePicker, ProviderPicker, KvEditor, TagInput, ProviderList, `stack_utils`) now all have test files, closed by T76. Note: the `@mui`/`@emotion`/`sqlc diff`/`govulncheck`/`npm audit` guards are documented, locally-run gates (see `docs/V3_Temp_Docs/2026-07-01-context-window-live-testing.md`) rather than an automated CI pipeline step — no `.github/workflows` job runs them beyond `verify:ui`/`verify:smoke`.
 
 ### T30 · Final integration & acceptance pass
 - **Dependencies:** T00–T29 · **Complexity:** M
@@ -491,65 +522,80 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 > and provider-switch syncs the model. So T39's bound-signature change is **not required** — T39/T40
 > collapse to "verify + add regression tests" (covered in T44). **Genuinely-broken items found that the
 > tasks above did NOT capture are added as T46 (critical) and T47 below.**
+- **Status: DONE (2026-07-02, verified via prior commit).** Commit `55a40d4` ("T30 · Final integration & acceptance pass") recorded all gates green (634 Go tests, 441 Jest tests, 24 Playwright tests, a real `wails build` cross-compile); acceptance was repeatedly re-confirmed through later live-testing phases (T57, T68). Not re-run fresh in this pass.
 
 ### T32 · Top-bar / chrome fidelity
 - **Goal:** AppBar matches mockup §4.2.
 - **Scope:** `ui/widgets/base/AppBar.tsx` — add "G" gradient logo badge before "GoText"; add a visible **⌘K** button in the right cluster opening the existing `CommandPalette`; confirm right-cluster grouping (Format · View · Layout · ⌘K · 🕘 · ℹ · ⚙) in light & dark. Add **readiness dots** (● ready / ○ not) to `ProviderPicker.tsx`/`ModelPicker.tsx` triggers.
 - **Acceptance:** top bar matches mockup in both themes; ⌘K button opens palette; dots reflect provider/model readiness.
+- **Status: DONE for the logo/⌘K deliverables (2026-07-02, verified file-level); the readiness-dots sub-requirement was superseded by T52.** `AppBar.tsx` has the gradient logo badge and a visible ⌘K button opening `CommandPalette`. Readiness dots were deliberately never added to `ProviderPicker`/`ModelPicker` (see `ProviderPicker.tsx`'s comment and `AppBarChrome.test.tsx`'s "readiness dots removed" test) — T52 later formalized removing dots entirely in favor of teal `.accent` styling, so this task's literal "dots reflect readiness" criterion is obsolete, not unmet.
 
 ### T33 · Remove StatusBar; relocate readiness
 - **Scope:** Remove `StatusBar.tsx` from `ui/widgets/views/AppMainView.tsx`; drop `STATUS_BAR` height in `ui/styles/constants.ts` so the editor reclaims space and the run bar sits only under the panes (not under the sidebar). Confirm no remaining consumer.
 - **Acceptance:** no bottom status bar; provider/model state visible only via top-bar dots; layout has no dead band.
+- **Status: DONE (2026-07-02, verified file-level).** Zero references to `StatusBar` remain anywhere in `frontend/src`.
 
 ### T34 · Sidebar fidelity
 - **Scope:** `ui/widgets/views/editor/ActionsSidebar.tsx` — (1) collapsed ⇒ render nothing (remove category-initial strip, line ~43); reopen via hamburger. (2) Render `stack.icon` as a real glyph (map lucide name → icon or normalize seed to emoji), never raw text (line ~75). (3) Restructure actions into **family-grouped sections with headers+counts** + a **search box** filtering actions & stacks; reuse `selectCatalogByCategory`; preserve armed/disabled/`+1` states; ensure scroll.
 - **Acceptance:** collapse fully hides; stack glyphs render; grouped+searchable scrollable list per mockup.
+- **Status: DONE (2026-07-02, verified file-level).** `ActionsSidebar.tsx` returns `null` when collapsed; `StackGlyph.tsx` renders real glyphs; sections are family-grouped with counts and a search box filtering actions & stacks.
 
 ### T35 · Editor pane controls → icon buttons
 - **Scope:** `ui/widgets/views/editor/InputPane.tsx`, `OutputPane.tsx` — move paste/clear (input) and copy/restore/clear (output) to **top-right icon buttons** with tooltips; keep handlers/thunks; add word-count + "rendered"/"restored" sub-labels in headers.
 - **Acceptance:** controls match mockup placement; all actions still work.
+- **Status: DONE (2026-07-02, verified file-level).** `InputPane.tsx`/`OutputPane.tsx` expose paste/clear/copy/restore/clear as top-right icon buttons with tooltips, plus word-count and "rendered"/"restored" sub-labels.
 
 ### T36 · Diff view parity
 - **Scope:** Diff mode of `OutputPane`/`DiffView` — add **+N added / −N removed** badges and a **"Copy clean"** button (mockup §6.2).
 - **Acceptance:** diff shows counts and copy-clean.
+- **Status: DONE (2026-07-02, verified file-level).** `DiffView.tsx` renders `+N added`/`−N removed` badges and a "Copy clean" button, wired from `OutputPane.tsx`.
 
 ### T37 · Run bar & stack builder parity
 - **Scope:** `RunBar.tsx` — armed-action chip + "· N inference" + **＋ Build a stack** + Run; empty-state only when nothing armed. `StackBuilderBar.tsx` — family-merge group chips, caps hints ("1 MAX"), live "N / 5 steps · M inferences" counter, Cancel/Save…/Run, dashed teal top border (mockup §6.1).
 - **Acceptance:** both bars match mockup; caps/merge/inference counts correct.
+- **Status: OPEN (partial — 2026-07-02, verified file-level).** `RunBar.tsx`'s armed chip/inference count/"Build a stack"/Run and `StackBuilderBar.tsx`'s family-merge chips + live "N/5 steps · M inferences" counter are implemented. Not implemented: the spec's explicit "1 MAX" cap-hint chip text (the UI uses disabled-reason strings like "5-step cap reached" instead) and the dashed top border called for in the mockup (`StackBuilderBar.module.css` uses a solid border) — minor visual-fidelity gaps, not behavioral bugs.
 
 ### T39 · Provider form fidelity + test-inference full-stack fix  *(do first; blocking)*
 - **Backend (`go-engineer`, load `wails-dev`):** change `internal/verification` `TestInference` (and for consistency `TestConnection`/`TestModels`) bound signature to accept the **draft provider config (incl. selectedModel)** instead of reading saved config, so Verify works **before Save**. Per `ErrorEnvelopeRules.md`: concrete `*Result` envelope, `ToWire` only at handler. Update verification/actions handler; `wails generate module` (commit regenerated `frontend/wailsjs/`). Move/extend the empty-model validation test (`internal/verification/service_test.go:481`) to the new contract.
 - **Frontend (`ts-engineer`):** `ProviderForm.tsx`/`VerificationPanel.tsx` pass draft model/config to new bindings; add **API-key env-var banner**, **API version**, **Deployment/Selected-model** block; render Verify panel as **check-rows** with timings. `ProviderList.tsx`: kind **dot** markers + **CURRENT** badge.
 - **Acceptance:** Test inference succeeds with an in-form selected model before Save; provider form matches mockup; bindings in sync.
+- **Status: DONE (2026-07-02, verified file-level).** `internal/verification/service.go`'s `TestInference(cfg settings.ProviderConfig)` reads `cfg.SelectedModel` directly from the passed-in draft config, not a saved-provider lookup, confirming Verify-before-Save works.
 
 ### T40 · Provider-switch state resets
 - **Scope:** (b) `VerificationPanel.tsx` — `useEffect` keyed on `providerId` resets check states to `INITIAL_CHECK`. (c) `ui/widgets/base/ModelPicker.tsx` + `logic/store/settings/thunks.ts`/selectors — on provider switch (`setAsCurrentProviderConfig`) sync `modelConfig.name` to the new provider's `selectedModel` (or clear), fixing run failures.
 - **Acceptance:** switching providers clears prior test results and selects the right model; runs no longer fail with stale model.
+- **Status: DONE (2026-07-02, verified file-level).** `VerificationPanel.tsx`'s `useEffect` keyed on `providerConfig.providerId` resets check state; `settings/slice.ts` syncs `modelConfig.name` to the new provider's `selectedModel` on `setAsCurrentProviderConfig.fulfilled`.
 
 ### T38 · Settings shell → LEFT tabs + theme fix
 - **Scope:** Convert `SettingsTabs.tsx`/`SettingsView.tsx` to a **left vertical Radix Tabs** nav with emoji glyphs + `‹ Editor` header. Fix settings surface tokens so panels use `--surface`/`--bg` in light & dark (resolves near-black regression).
 - **Acceptance:** settings match mockup layout/colors in both themes.
+- **Status: OPEN (partial — 2026-07-02, verified file-level).** `SettingsTabs.tsx` correctly implements a left vertical tab nav with emoji glyphs, and the surface-token/theme fix is in place. However the nav is a hand-rolled `<button role="tab">` element — confirmed via grep, no `radix-ui` `Tabs` import exists anywhere in the settings tree — not an actual Radix Tabs primitive as this task explicitly specifies and `docs/ai_agent_rules/RadixUICSSRules.md` requires ("let Radix own accessibility... for Dialog, Select, Menu, or Tabs").
 
 ### T41 · Remaining settings tabs parity
 - **Scope:** Model, Generation, Languages, Logging (rotation + task-logging + history), About & data (paths+copy+Factory reset), Appearance (Auto/Light/Dark + preview swatches) — align to mockup screens; theme applies instantly via `logic/theme/init.ts`.
 - **Acceptance:** each tab matches its mockup screen.
+- **Status: DONE (2026-07-02, verified file-level).** All six remaining settings tabs (Model, Generation, Languages, Logging, About & data, Appearance) are real, non-stub components correctly routed from `SettingsView.tsx`.
 
 ### T42 · About·Info window parity
 - **Scope:** Prompt inspector — family chips, inference grouping note, parameter chips, **Copy all**, **"Use current editor input as a preview"** toggle, Guide/Actions&Stacks left nav.
 - **Acceptance:** inspector matches mockup About·Info screen.
+- **Status: OPEN (partial — 2026-07-02, verified file-level).** `InfoView.tsx`'s Guide/Actions&Stacks left nav and `PromptInspector.tsx`'s preview toggle are implemented. Not implemented: no dedicated family-chip UI element (family is shown only as inline text, "Inference N — {family}") and no "Copy all" button exists anywhere under `ui/widgets/views/info/` — confirmed via grep for "Copy"/"chip".
 
 ### T43 · History rail parity
 - **Scope:** Cards — INF badge, status (success/partial/PARTIAL), relative time, restore+delete icons, "100 MAX", Clear; rail coexists with panes without overlapping the run bar.
 - **Acceptance:** history rail matches mockup.
+- **Status: DONE (2026-07-02, verified file-level).** `HistoryEntryCard.tsx`/`HistoryRail.tsx` render the INF badge, status (incl. partial), relative time, restore/delete icons, "100 MAX", and a confirming Clear action.
 
 ### T44 · Unit + Target-A UI tests (deterministic, CI-safe)
 - **Scope:** For every fix add/extend tests. Jest/RTL (`ts-tester`): sidebar collapse-hides; stack icon renders glyph; pane icon buttons; VerificationPanel reset on switch; ModelPicker sync on switch; settings left-tabs; RunBar states. Go (`go-tester`): `TestInference` draft-config table tests (empty-model validation, busy gate, auth/unreachable). Playwright Target A (`frontend/e2e/verify-ui.spec.ts`, bridge-mock): responsive (narrow/tablet/wide × light/dark) — no horizontal overflow, no console errors; presence of each fixed element. Keep green: `go build ./...`, `wails generate module && git diff --exit-code frontend/wailsjs/`, `! grep -rq "@mui\|@emotion" frontend/src`, `go test -race ./...`.
 - **Acceptance:** all unit + Target-A UI tests pass; CI gates green.
+- **Status: OPEN (partial — 2026-07-02, verified file-level).** Most fixes from T32–T43 have RTL/Playwright coverage (`ActionsSidebar.test.tsx`, `StackGlyph.test.tsx`, `InputPane`/`OutputPane.test.tsx`, `VerificationPanel.test.tsx`, `ModelPicker.test.tsx`, `SettingsTabs.test.tsx`, `RunBar.test.tsx`, `frontend/e2e/verify-ui.spec.ts`). Two specific assertions named in this task's own Scope are still missing: no test asserts "collapsed sidebar renders nothing," and `VerificationPanel.test.tsx` does not directly exercise the provider-switch reset `useEffect` added in T40.
 
 ### T45 · Real-provider E2E (Target B: `wails dev` + real backend + LM Studio & Ollama)
 - **Isolation (blocking):** destructive specs (delete provider, factory reset, clear history) mutate the real DB/settings — run against a **throwaway config/data dir** (env override or backup/restore `GoTextApp` config+db around the suite). **Local-only / not in CI.** First do one smoke navigation confirming Playwright reaches the Wails bridge at `http://localhost:34115`. Smallest models: Ollama `qwen3:0.6b-q4_K_M`, LM Studio smallest loaded.
 - **Scenarios (both providers):** 1) provider CRUD + Test connection/models/inference(pre-save) + Save/Set current + headers add/edit/remove + auth switch; 2) model settings (temp/context/token-limit); 3) generation (timeout/retries/markdown); 4) logging + factory reset (isolated); 5) appearance Light/Dark/Auto; 6) editor proofread + switch provider/model/language + Format/View/Layout + History open/manage + sidebar toggle; 7) build/run/manage stacks.
 - **Acceptance:** all journeys pass on both providers; each failure produces a code fix + regression test; loop until green.
+- **Status: DONE (2026-07-02, verified via T78's later run).** `frontend/e2e/live-llm.spec.ts` (261 lines) implements the real-provider journeys and is confirmed passing against real Ollama/LM Studio per T78's "Status: DONE" marker elsewhere in this document; `verify:live` is correctly excluded from `.github/workflows/main.yml`. Minor caveat: the destructive-test isolation requirement is implemented as an operator instruction/comment (back up `GoTextApp` manually) rather than automated backup/restore code.
 
 ### T46 · Starter-stack action-ID remediation  *(critical — "stacks not working")*
 - **Bug (verified):** the seeder `internal/db/db.go` `seedStarterStacks` wrote **camelCase** action IDs (`basicProofreading`, `conciseRewrite`, …) that don't exist in the runtime **v3 dotted** catalog (`internal/prompts/v3/catalog.go`, e.g. `rewrite.proofread.basic`). `StackHandler.filterUnknownSteps` dropped every step, so all 17 starter stacks showed **0 steps / 0 inferences** in the sidebar and Manage grid, and ran as no-ops. Live backend logged ~40× `"dropping unknown action ID from saved stack"`.
@@ -562,6 +608,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Frontend (`ts-engineer`/`ts-tester`):** add a discovery thunk (reuse `ActionHandlerAdapter.getModels(currentProviderId)`) storing `discoveredModels` in the settings slice (reset on provider change); update the selector to list discovered ∪ current (deduped, current always present); wire the ⟳ refresh button + auto-discover on provider switch/mount; persist via `updateModelConfig`. If the Settings → Model tab has the same single-item limit, reuse the same source there.
 - **Tests:** reducer (discovery populates / provider-change resets), selector (discovered ∪ current), ModelPicker RTL (multiple options; select dispatches `updateModelConfig`; ⟳ dispatches discovery).
 - **Acceptance:** after switching the AppBar provider the MODEL dropdown lists the new provider's models and switching one persists + drives the next run.
+- **Status: DONE (2026-07-02, verified file-level).** A `discoverCurrentProviderModels` thunk populates `discoveredModels` (reset on provider switch); `ModelPicker.tsx` consumes it with auto-discover on provider change plus a ⟳ refresh button.
 
 ### T48 · Real-LLM model choice note
 - The live E2E (T45) must use a **reliable small** model — Ollama `gemma3:1b-it-q4_K_M` or `qwen3:1.7b`, LM Studio's smallest loaded — **not** `qwen3:0.6b`, which emits the documented `[NO_TEXT_PROVIDED]` empty-input sentinel (a model artifact, not a composition bug — LM Studio proofreads correctly on the same v3 path; `{{user_text}}` injection verified in `v3/catalog.go`).
@@ -589,6 +636,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 > editor body (`.editor`) is `--surface-2` bordered card (a card-treatment fix, not a swap to white);
 > clicking a saved stack **arms** it (mutually exclusive with an armed action) and Run executes the
 > chain. **Sequence:** T49 → T50 → parallel { T51 · T52/T53 · T54 · T55/T56 } → T57.
+- **Status: DONE (2026-07-02, verified file-level; documentation note, no code deliverable expected).** `frontend/e2e/live-llm.spec.ts` names the required reliable small models and explicitly warns against `qwen3:0.6b`'s empty-input artifact.
 
 ### T49 · Remove the double loading overlay  *(issue: double loading views)*
 - **Root cause:** `frontend/src/ui/AppLayout.tsx:30` mounts `<GlobalLoadingOverlay/>` (driven by
@@ -598,6 +646,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
   Keep `inferenceRunning` button-disable gating intact.
 - **Tests (`ts-tester`):** OutputPane shows `StepProgress`+Cancel while running; no full-pane overlay node.
 - **Acceptance:** single output-only loader; no app-wide "Processing…" overlay.
+- **Status: DONE (2026-07-02, verified file-level).** `GlobalLoadingOverlay` no longer exists anywhere in `frontend/src`; loading renders only via per-pane `StepProgress` in `OutputPane.tsx`.
 
 ### T50 · Input/Output pane card treatment  *(issue: IO widgets/background not light)*
 - **Root cause:** panes read flat grey `--surface-2`; mockup renders header label on `--bg` above a
@@ -607,6 +656,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
   transparent. Verify vs `21.20.42` (light) / `21.21.05` (dark).
 - **Tests (`ts-tester`):** panes use token-driven classes (no hardcoded colors / undefined tokens).
 - **Acceptance:** panes match mockup card treatment in both themes.
+- **Status: DONE (2026-07-02, verified file-level).** `InputPane`/`OutputPane`/`EditorArea` `.module.css` `.body` classes use a bordered `var(--surface-2)` card treatment with headers on `var(--bg)` above, matching the mockup in both themes.
 
 ### T51 · Saved stacks armable + runnable from sidebar  *(issue: custom stacks not selectable)*
 - **Root cause:** `ActionsSidebar.tsx:89-95` stack rows are non-interactive `<div>`s; `ui` slice's
@@ -616,6 +666,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
   "N steps · M inferences" and Run executes via `processPromptChain` (reuse Manage/⌘K path).
 - **Tests (`ts-tester`):** click arms stack (clears action); RunBar runs the chain; mutual exclusivity.
 - **Acceptance:** clicking a saved stack arms it and Run executes the whole chain.
+- **Status: DONE (2026-07-02, verified file-level).** `ActionsSidebar.tsx` stack rows are `<button>`s dispatching `armStack(id)`; `RunBar.tsx` reads `selectArmedStackId` and runs the chain via `processPromptChain`, with mutual exclusivity against `armedActionId`.
 
 ### T52 · AppBar chrome fidelity  *(issues: inconsistent icon sizes, dot placement)*
 - **Root cause:** AppBar uses five ad-hoc icon-button classes; stray dots between brand/provider/model;
@@ -627,6 +678,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Tests (`ts-tester`):** no readiness-dot nodes; provider pill accent when current; single lang pill;
   icon buttons share one size class.
 - **Acceptance:** top bar matches mockup in both themes.
+- **Status: DONE, with one scoped exception (2026-07-02, verified file-level).** Top-bar icon buttons route through the shared `IconButton`; no readiness-dot markup remains in `ProviderPicker`/`ModelPicker`; the active provider uses teal `.accent`; `LanguagePicker.tsx` renders one combined `Lang EN → UK ▾` pill. Exception: the sidebar-collapse and back-to-editor buttons still use bespoke CSS classes rather than literally sharing the `IconButton` component, though their sizing/focus-ring visually matches it.
 
 ### T53 · Provider/Model single-source sync correctness  *(issue: appbar/settings not synced)*
 - **Root cause:** provider already shares Redux state; the real defect is model staleness — on provider
@@ -638,6 +690,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Tests (`ts-tester`):** reducer reset/repoint on switch; selector discovered ∪ current; ModelPicker
   multi-option + persists.
 - **Acceptance:** changing provider/model in Settings reflects in AppBar; next run uses it.
+- **Status: DONE (2026-07-02, verified file-level).** `settings/slice.ts` syncs `modelConfig.name` and resets `discoveredModels` on provider switch; `ModelPicker.tsx` and `ModelConfigTab.tsx` consume the same `selectCurrentProviderModelItems`/`selectDiscoveredModels` selectors (single source), covered by `settings/settings.test.ts`.
 
 ### T54 · History rail overflow + card fidelity  *(issue: history renders outside screen)*
 - **Root cause:** `HistoryEntryCard.module.css` `.preview` uses `white-space:nowrap` and flex children
@@ -647,6 +700,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
   active card teal border + `--teal-50`; rail clips horizontally, no run-bar overlap.
 - **Tests (`ts-tester`):** entry renders badge/status/time/actions; long preview wraps to 2 lines, no overflow.
 - **Acceptance:** history rail matches mockup and never overflows the screen.
+- **Status: DONE (2026-07-02, verified file-level).** `HistoryEntryCard.module.css` uses a 2-line `-webkit-line-clamp` preview with `min-width: 0`, an "N INF" badge, and teal active-card styling; the rail clips with no run-bar overlap.
 
 ### T55 · Settings shell + Providers tab parity  *(issue: settings don't reflect mockups)*
 - **Scope (`ts-engineer`):** Providers glyph 🔌; provider-list "PROVIDERS" header; move "+ New provider"
@@ -654,6 +708,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
   confirm surfaces use `--surface`/`--bg` in both themes.
 - **Tests (`ts-tester`):** "+ New provider" is last child; header present; endpoint fields side-by-side.
 - **Acceptance:** Providers settings match mockup layout/colors.
+- **Status: DONE (2026-07-02, verified file-level).** `SettingsTabs.tsx` has the 🔌 glyph; `ProviderList.tsx` has a "PROVIDERS" header with "+ New provider" as the last child; `ProviderForm.tsx` uses a two-column grid for endpoint/api-version rows.
 
 ### T56 · Remaining settings tabs + Manage grid spot-fixes
 - **Scope (`ts-engineer`):** audit Model/Generation/Languages/Logging/About/Appearance vs mockup screens
@@ -661,6 +716,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
   responsive breakpoint; replace any undefined-token usages.
 - **Tests (`ts-tester`):** RTL per touched tab asserting key elements + token-driven classes.
 - **Acceptance:** each tab matches its mockup screen.
+- **Status: DONE (2026-07-02, verified file-level).** No undefined `var(--…)` tokens remain across the Appearance/Logging/Model/Generation/Languages/About tab CSS; `StacksManageView.module.css` has responsive breakpoints; all seven tabs have RTL coverage.
 
 ### T57 · Tests green + real-inference live testing
 - **Deterministic gates:** `go build ./...`; bindings in sync (if signatures changed — none expected);
@@ -678,6 +734,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 > **Discovery:** live-testing session 2026-06-30 (Phases 1–10 via Playwright + real Ollama inference)
 > uncovered the three defects below. Each task includes root-cause analysis, scope, required tests,
 > and acceptance criteria.
+- **Status: DONE (2026-07-02, verified this session plus prior evidence).** Deterministic gates re-confirmed now (`npm run test` 726/726 passing, `go build ./...` clean, `@mui`/`@emotion` guard clean); live `wails dev` + Ollama testing is documented in `docs/V3_Temp_Docs/2026-06-30-comprehensive-live-testing.md` (commit `1f3d31d`), which directly motivated Phase 10 (T58–T60) and was re-confirmed by later phases (T63/T67/T68). Live LLM inference was not personally re-run in this pass.
 
 ### T58 — History rail stale after run completion
 
@@ -705,6 +762,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
     triggers a new `fetchHistory` dispatch (or sets a flag that causes the next render to fetch).
 - **Acceptance:** New history entries appear in the rail immediately after run completion with no
   user interaction required.
+- **Status: DONE (2026-07-02, verified file-level).** `history/slice.ts` sets a `staleAfterRun` flag in `extraReducers` for `processPromptChain.fulfilled`/`.rejected`; `HistoryRail.tsx`'s `useEffect` re-dispatches `listHistory` on that flag — functionally matches the spec's Option A/B intent.
 
 ### T59 — `selectRunProgress` selector not memoized
 
@@ -739,6 +797,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
     warning is emitted during repeated state updates with identical progress values.
 - **Acceptance:** No `react-redux` "different result" warnings appear in the console during
   inference; `OutputPane` does not re-render when progress values are unchanged.
+- **Status: DONE (2026-07-02, verified via commit).** Commit `deed22b` converts `selectRunProgress` to `createSelector` in `logic/store/run/selectors.ts`; covered by `run/__tests__/selectors.test.ts`.
 
 ### T60 — Stack builder UX: inference cap not surfaced, no action deselect
 
@@ -799,6 +858,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 > and should land before or alongside T67 (token estimate) for conceptual clarity, though T67 is not
 > hard-blocked on it. T63 (Ollama `num_ctx` investigation) is independent. T68 is the closing gate and
 > must run last, after all of T61–T67.
+- **Status: DONE (2026-07-02, verified via commit).** Commit `58e668b`: `StackBuilderBar.tsx` adds an `inferenceCapReached` amber CSS class at count ≥ 3; `ActionsSidebar.tsx` reuses the pre-existing `armAction(null)` (functionally equivalent to a dedicated `clearArmedAction`) to deselect on re-click; `RunBar.tsx` shows a placeholder and disables Run when nothing is armed.
 
 ### T61 — Context-window Settings UI/backend range mismatch + misclassified validation error
 
@@ -848,6 +908,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Acceptance:** the UI can only ever submit 1024–200000; any out-of-range submission from any client
   surfaces a clear "contextWindow must be 1024–200000" style message, not "An unexpected error
   occurred."
+- **Status: DONE (2026-07-02, verified file-level).** `ModelConfigTab.tsx`'s slider bounds (`min={1024} max={200000}`) now match `internal/settings/service.go`'s validation exactly; the validation error uses `apperr.Validation(...)`, not a plain `fmt.Errorf`.
 
 ### T62 — Decouple `ContextWindow` from the output-token cap (`max_tokens`/`max_completion_tokens`)
 
@@ -916,6 +977,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
   behavior doesn't silently change for users who never touch the new control.
 - **Acceptance:** setting a large context window no longer affects how many tokens the model is asked
   to generate; the two concepts are fully independent in settings, storage, and the outgoing request.
+- **Status: DONE (2026-07-02, verified file-level).** `internal/settings/settings.go` has independent `UseMaxOutputTokens`/`MaxOutputTokens` fields with migration `0004_add_max_output_tokens.sql`; `internal/actions/service.go` derives `MaxTokens`/`MaxCompletionTokens` from `MaxOutputTokens`, never from `ContextWindow`.
 
 ### T63 — Ollama ignores `options.num_ctx` sent via the OpenAI-compatible endpoint
 
@@ -963,6 +1025,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
   Ollama's actual loaded context (checked via `ollama ps`/`server.log` exactly as this bug was found),
   or (b) the limitation is explicitly documented in-app and logged, with no code claiming a capability
   that doesn't work.
+- **Status: DONE (2026-07-02, verified file-level).** `internal/llms/ollama_native.go` implements the native `/api/chat` path (`chatNative`); `profile.go` sets `NativeChatPath: "api/chat"` for Ollama; `openai_provider.go` branches to it — the preferred fix, not just a documented limitation.
 
 ### T64 — Wire real HTTP-400 "context exceeded" classification (unreachable `apperr.ContextWindow`)
 
@@ -1004,6 +1067,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
     ~8.4K-token input) and confirm the friendly "Input too long..." toast now appears.
 - **Acceptance:** a genuine context-overflow 400 from either provider surfaces the friendly,
   already-designed toast instead of a generic server-error message.
+- **Status: DONE (2026-07-02, verified file-level).** `internal/llms/http_errors.go`'s `mapHTTPStatus` detects context-exceeded phrasing in HTTP-400 bodies (`isContextExceededBody`) and returns `apperr.ContextWindow(...)`, falling back to `apperr.Upstream` only for unrelated 400s.
 
 ### T65 — "Test inference" verification button ignores Model Config entirely
 
@@ -1033,6 +1097,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
   - **Live regression:** repeat this session's capture (LM Studio `server-logs`) with context window
     and temperature ON, confirm the Test Inference request body now includes those fields.
 - **Acceptance:** "Test inference" exercises the same parameters a real run would use.
+- **Status: DONE (2026-07-02, verified file-level).** `internal/verification/service.go`'s `TestInference` now calls `GetModelConfig()` and applies temperature/max-output-tokens/context-window exactly as a real run would, with the stale doc comment corrected.
 
 ### T66 — Prompt Inspector never surfaces the context-window value or on/off state
 
@@ -1060,6 +1125,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
     enabled, omits it when disabled.
 - **Acceptance:** a user can see, from the Prompt Inspector alone, both the token-limit field name and
   the actual context-window value/on-off state that will be used for a real run.
+- **Status: DONE (2026-07-02, verified file-level).** `apperr.PreviewParams.ContextWindow *int` is populated in `buildPreviewParams` from the active `ModelConfig`; `PromptInspector.tsx` renders a `context` badge only when the value is defined.
 
 ### T67 — Live input token estimate + context-window highlight (new feature)
 
@@ -1148,6 +1214,7 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
 - **Acceptance:** typing or pasting text shows a live, debounced "~N tokens" estimate based on the real
   composed prompt for the first step; it is neutral when no budget is configured, and clearly
   warns/errors as the estimate approaches/exceeds the configured context window; works fully offline.
+- **Status: DONE (2026-07-02, verified file-level).** `internal/prompts`'s `EstimateTokenCount` (with offline-embedded tokenizer data and tests) backs `PreviewPrompt`'s `EstimatedTokens`; `InputPane.tsx` renders the debounced "~N tokens" estimate with neutral/warn/err styling.
 
 ### T68 — Tests green + full-stack live re-test (closing gate)
 
