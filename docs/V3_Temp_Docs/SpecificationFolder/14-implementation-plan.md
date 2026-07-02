@@ -1252,6 +1252,27 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
   title, step-prefixed; unclassified/generic errors are unaffected; nothing beyond a classification
   enum value and an already-public title string is added to the wire (still allowlist-safe per
   `ErrorEnvelopeRules.md`).
+- **Status: DONE (2026-07-02).** `apperr.StepFailed` now sets `Details["innerCode"]`/`["innerTitle"]`
+  from the wrapped inner error (`internal/apperr/apperr.go`); `buildNotification`'s `CodeStepFailed`
+  case in `frontend/src/logic/store/notifications/slice.ts` renders `` `Step N: ${innerTitle}` `` when
+  present, else falls back unchanged to the generic `"Step N failed"` title. `go test -race ./...`
+  (810 tests, including new `TestStepFailed_PreservesInnerClassification` covering `ContextWindow`,
+  `Auth`, and the parameterized-title `Validation` case) and `npm run test` (675 tests, including
+  three new `CodeStepFailed` cases) both green; `go build ./...`, `wails generate module` (no diff —
+  `Details` is a plain map, not a bound-signature change), and the `@mui`/`@emotion` guard all clean.
+  **Live regression (Target B, `wails dev` + real LM Studio):** capped `google/gemma-3-1b`'s context
+  window to the UI minimum (1,024 tokens) and ran a ~4,000-word input through the "Concise" action.
+  The provider round-trip surfaced as a `CodeTimeout` inner error rather than `CodeContextWindow`
+  (`LM Studio did not respond within 0s` — an unrelated pre-existing local timeout-config quirk in
+  this environment, not a T69 regression); this still exercises the exact `StepFailed`-wraps-a-
+  classified-inner-error path T69 fixes, since `Timeout` is explicitly one of the covered classified
+  types. The toast title read **"Step 1: Request timed out"** (was "Step 1 failed"), message body
+  unchanged (`"Step 1 (rewrite) failed: LM Studio did not respond within 0s.. Earlier steps
+  completed."`) — captured via a `MutationObserver` since the toast auto-dismisses after 5s. A true
+  `CodeContextWindow`-specific repro (matching finding #4's original LM Studio overflow) was not
+  additionally forced in this pass since the generic mechanism is what T69 changes and it was proven
+  live end-to-end with a different classified code; `TestStepFailed_PreservesInnerClassification`
+  covers `ContextWindow` specifically at the unit level.
 
 ### T70 — Empirically verify Test inference fires the `CodeContextWindow` toast on a forced overflow
 

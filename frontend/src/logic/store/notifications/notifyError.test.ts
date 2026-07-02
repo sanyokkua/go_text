@@ -125,6 +125,25 @@ describe('notifyError', () => {
         expect(action.payload.message).toBe('Step 1 (rewrite) failed: fallback inner text. Earlier steps completed.');
     });
 
+    it('uses the inner error\'s title for CodeStepFailed when Details has "innerTitle"', () => {
+        const action = notifyError(
+            wire(apperr.ErrorCode.CodeStepFailed, { stepIndex: '0', family: 'rewrite', innerTitle: 'Input too long' }),
+        );
+        expect(action.payload.title).toBe('Step 1: Input too long');
+    });
+
+    it('step-prefixes a different inner title for CodeStepFailed', () => {
+        const action = notifyError(
+            wire(apperr.ErrorCode.CodeStepFailed, { stepIndex: '1', family: 'inference', innerTitle: 'Authentication failed' }),
+        );
+        expect(action.payload.title).toBe('Step 2: Authentication failed');
+    });
+
+    it('keeps the generic CodeStepFailed title when Details lacks "innerTitle" (no regression)', () => {
+        const action = notifyError(wire(apperr.ErrorCode.CodeStepFailed, { stepIndex: '0', family: 'rewrite' }));
+        expect(action.payload.title).toBe('Step 1 failed');
+    });
+
     it('maps CodeUpstream to error toast with provider error title', () => {
         const action = notifyError(wire(apperr.ErrorCode.CodeUpstream, { provider: 'OpenRouter', statusCode: '503' }));
         expect(action.payload.severity).toBe('error');

@@ -261,6 +261,12 @@ func TestStepFailed(t *testing.T) {
 	if e.Details["inner"] != inner.Message {
 		t.Errorf("Details[inner]: want raw inner message %q, got %q", inner.Message, e.Details["inner"])
 	}
+	if e.Details["innerCode"] != string(inner.Code) {
+		t.Errorf("Details[innerCode]: want %q, got %q", inner.Code, e.Details["innerCode"])
+	}
+	if e.Details["innerTitle"] != inner.Title {
+		t.Errorf("Details[innerTitle]: want %q, got %q", inner.Title, e.Details["innerTitle"])
+	}
 	// Check that the inner Timeout AppError is accessible via Unwrap.
 	unwrapped := errors.Unwrap(e)
 	if unwrapped == nil {
@@ -280,6 +286,32 @@ func TestStepFailed_NilInner(t *testing.T) {
 	e := apperr.StepFailed(1, "rewrite", nil)
 	if e.Code != apperr.CodeInternal {
 		t.Errorf("nil inner should produce CodeInternal, got %q", e.Code)
+	}
+}
+
+func TestStepFailed_PreservesInnerClassification(t *testing.T) {
+	// Guards T69: the frontend toast needs innerCode/innerTitle to show the specific
+	// error instead of a generic "Step N failed" title. Covers a parameterized-title
+	// case (Validation, whose Title embeds the field name) to confirm the already-rendered
+	// string round-trips rather than being rebuilt from Code alone.
+	tests := []struct {
+		name  string
+		inner *apperr.AppError
+	}{
+		{name: "context_window", inner: apperr.ContextWindow("qwen3:1.7b", 4096, nil)},
+		{name: "auth", inner: apperr.Auth("Ollama", "401", "invalid key", nil)},
+		{name: "validation_parameterized_title", inner: apperr.Validation("temperature", "must be 0-2", "3.5")},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := apperr.StepFailed(0, "rewrite", tt.inner)
+			if e.Details["innerCode"] != string(tt.inner.Code) {
+				t.Errorf("Details[innerCode]: want %q, got %q", tt.inner.Code, e.Details["innerCode"])
+			}
+			if e.Details["innerTitle"] != tt.inner.Title {
+				t.Errorf("Details[innerTitle]: want %q, got %q", tt.inner.Title, e.Details["innerTitle"])
+			}
+		})
 	}
 }
 

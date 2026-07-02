@@ -28,6 +28,7 @@ function buildNotification(wire: apperr.WireError): Omit<Notification, 'id'> {
     const expected = d['expected'] ?? 'valid value';
     const got = d['got'] ?? 'given value';
     const innerMsg = d['inner'] ?? wire.message;
+    const innerTitle = d['innerTitle'];
 
     switch (wire.code) {
         case apperr.ErrorCode.CodeAuth: {
@@ -133,7 +134,7 @@ function buildNotification(wire: apperr.WireError): Omit<Notification, 'id'> {
             return {
                 severity: 'error',
                 surface: 'toast',
-                title: `Step ${stepNumber} failed`,
+                title: innerTitle ? `Step ${stepNumber}: ${innerTitle}` : `Step ${stepNumber} failed`,
                 message: `Step ${stepNumber} (${family}) failed: ${innerMsg}. Earlier steps completed.`,
                 ...withDetails(wire),
             };
