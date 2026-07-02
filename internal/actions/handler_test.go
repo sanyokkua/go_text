@@ -8,7 +8,6 @@ import (
 	"go_text/internal/apperr"
 	"go_text/internal/gate"
 	"go_text/internal/llms"
-	"go_text/internal/prompts"
 	"go_text/internal/settings"
 
 	"github.com/rs/zerolog"
@@ -214,10 +213,6 @@ func (m *mockActionService) GetModelsInfo(_ string) ([]apperr.ModelInfo, error) 
 	return m.models, m.err
 }
 func (m *mockActionService) GetCompletionResponseForProvider(_ *settings.ProviderConfig, _ *llms.ChatCompletionRequest) (string, error) {
-	return "", nil
-}
-func (m *mockActionService) GetPromptGroups() (*prompts.Prompts, error) { return nil, nil }
-func (m *mockActionService) ProcessPromptActionRequest(_ *prompts.PromptActionRequest) (string, error) {
 	return "", nil
 }
 func (m *mockActionService) GetActionCatalog() []apperr.ActionMeta { return m.catalog }
@@ -671,12 +666,6 @@ func (p *panicActionService) GetModelsInfo(_ string) ([]apperr.ModelInfo, error)
 }
 func (p *panicActionService) GetCompletionResponseForProvider(_ *settings.ProviderConfig, _ *llms.ChatCompletionRequest) (string, error) {
 	panic("panic GetCompletionResponseForProvider")
-}
-func (p *panicActionService) GetPromptGroups() (*prompts.Prompts, error) {
-	panic("panic GetPromptGroups")
-}
-func (p *panicActionService) ProcessPromptActionRequest(_ *prompts.PromptActionRequest) (string, error) {
-	panic("panic ProcessPromptActionRequest")
 }
 func (p *panicActionService) GetActionCatalog() []apperr.ActionMeta {
 	panic("panic GetActionCatalog")

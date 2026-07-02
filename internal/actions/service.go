@@ -8,10 +8,8 @@ import (
 	"go_text/internal/llms"
 	"go_text/internal/logging"
 	"go_text/internal/prompts"
-	"go_text/internal/prompts/categories"
 	"go_text/internal/settings"
 	"go_text/internal/tasklog"
-	"slices"
 	"strings"
 	"time"
 )
@@ -75,8 +73,6 @@ type ActionServiceAPI interface {
 	GetModelsListForProvider(provider *settings.ProviderConfig) ([]string, error)
 	GetModelsInfo(providerID string) ([]apperr.ModelInfo, error)
 	GetCompletionResponseForProvider(provider *settings.ProviderConfig, request *llms.ChatCompletionRequest) (string, error)
-	GetPromptGroups() (*prompts.Prompts, error)
-	ProcessPromptActionRequest(actionReq *prompts.PromptActionRequest) (string, error)
 	GetActionCatalog() []apperr.ActionMeta
 	BuildPlanAndPrompts(req apperr.PromptPreviewRequest) (*apperr.PromptPreview, error)
 	RunChain(ctx context.Context, req apperr.ChainRequest, emitProgress func(apperr.StepProgress)) (*apperr.ChainResult, error)
@@ -191,177 +187,6 @@ func (a *ActionService) GetActionCatalog() []apperr.ActionMeta {
 	const op = "ActionService.GetActionCatalog"
 	a.logger.Debug(fmt.Sprintf("[%s] Retrieving action catalog", op))
 	return a.promptService.Catalog()
-}
-
-func (a *ActionService) GetPromptGroups() (*prompts.Prompts, error) {
-	const op = "ActionService.GetPromptGroups"
-	a.logger.Debug(fmt.Sprintf("[%s] Retrieving prompt groups", op))
-
-	appPrompts := a.promptService.GetAppPrompts()
-	if appPrompts == nil {
-		err := fmt.Errorf("no app prompts returned")
-		a.logger.Error(fmt.Sprintf("[%s] %v", op, err))
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-
-	a.logger.Trace(fmt.Sprintf("[%s] Successfully retrieved %d prompt groups", op, len(appPrompts.PromptGroups)))
-	return appPrompts, nil
-}
-
-func (a *ActionService) ProcessPromptActionRequest(actionReq *prompts.PromptActionRequest) (string, error) {
-	const op = "ActionService.ProcessPromptActionRequest"
-	startTime := time.Now()
-
-	if actionReq == nil {
-		err := fmt.Errorf("action request cannot be nil")
-		a.logger.Error(fmt.Sprintf("[%s] %v", op, err))
-		return "", fmt.Errorf("%s: %w", op, err)
-	}
-
-	a.logger.Info(fmt.Sprintf("[%s] Starting action processing - ActionID: %s", op, actionReq.ID))
-
-	result, err := a.processAction(actionReq)
-	if err != nil {
-		a.logger.Error(fmt.Sprintf("[%s] Failed to process action '%s': %v", op, actionReq.ID, err))
-		return "", fmt.Errorf("%s: action processing failed: %w", op, err)
-	}
-
-	duration := time.Since(startTime)
-	a.logger.Info(fmt.Sprintf("[%s] Successfully processed action '%s' in %v, result_length=%d",
-		op, actionReq.ID, duration, len(result)))
-
-	return result, nil
-}
-
-func (a *ActionService) processAction(action *prompts.PromptActionRequest) (string, error) {
-	const op = "ActionService.processAction"
-	startTime := time.Now()
-
-	if action == nil {
-		err := fmt.Errorf("action request cannot be nil")
-		a.logger.Error(fmt.Sprintf("[%s] %v", op, err))
-		return "", fmt.Errorf("%s: %w", op, err)
-	}
-
-	actionID := strings.TrimSpace(action.ID)
-	if actionID == "" {
-		err := fmt.Errorf("action ID cannot be empty")
-		a.logger.Error(fmt.Sprintf("[%s] %v", op, err))
-		return "", fmt.Errorf("%s: %w", op, err)
-	}
-
-	a.logger.Info(fmt.Sprintf("[%s] Starting action processing - action_id=%s", op, actionID))
-
-	// 1. Fetch prompt definitions
-	promptDef, err := a.promptService.GetPrompt(actionID)
-	if err != nil {
-		a.logger.Error(fmt.Sprintf("[%s] Failed to get prompt definition - action_id=%s, error=%v", op, actionID, err))
-		return "", fmt.Errorf("%s: failed to get prompt definition for action '%s': %w", op, actionID, err)
-	}
-
-	a.logger.Trace(fmt.Sprintf("[%s] Retrieved prompt definition - action_id=%s, category=%s, prompt_id=%s",
-		op, actionID, promptDef.Category, promptDef.ID))
-
-	// 2. Fetch system instructions
-	sysPromptStart := time.Now()
-	sysPrompt, err := a.promptService.GetSystemPrompt(promptDef.Category)
-	if err != nil {
-		a.logger.Error(fmt.Sprintf("[%s] Failed to get system prompt - category=%s, error=%v", op, promptDef.Category, err))
-		return "", fmt.Errorf("%s: failed to get system prompt for category '%s': %w", op, promptDef.Category, err)
-	}
-
-	if strings.TrimSpace(sysPrompt) == "" {
-		a.logger.Warning(fmt.Sprintf("[%s] System prompt is empty for category %s", op, promptDef.Category))
-	}
-
-	sysPromptDuration := time.Since(sysPromptStart)
-	a.logger.Trace(fmt.Sprintf("[%s] Retrieved system prompt - category=%s, duration_ms=%d",
-		op, promptDef.Category, sysPromptDuration.Milliseconds()))
-
-	// 3. Load all user-configured settings at once
-	cfg, err := a.settingsService.GetSettings()
-	if err != nil {
-		a.logger.Error(fmt.Sprintf("[%s] Failed to load settings - error=%v", op, err))
-		return "", fmt.Errorf("%s: failed to load application settings: %w", op, err)
-	}
-
-	if cfg == nil {
-		err := fmt.Errorf("settings configuration is nil")
-		a.logger.Error(fmt.Sprintf("[%s] %v", op, err))
-		return "", fmt.Errorf("%s: %w", op, err)
-	}
-
-	a.logger.Info(fmt.Sprintf("[%s] Loaded current settings - provider=%s, model=%s, category=%s",
-		op, cfg.CurrentProviderConfig.Name, cfg.ModelConfig.Name, promptDef.Category))
-
-	// Validate configuration
-	if err := a.validateProviderConfiguration(&cfg.CurrentProviderConfig); err != nil {
-		a.logger.Error(fmt.Sprintf("[%s] Provider configuration validation failed - provider=%s, error=%v",
-			op, cfg.CurrentProviderConfig.Name, err))
-		return "", fmt.Errorf("%s: %w", op, err)
-	}
-
-	// 4. Validate model availability
-	modelsList, err := a.llmService.GetModelsList()
-	providerName := cfg.CurrentProviderConfig.Name
-	if err != nil {
-		a.logger.Error(fmt.Sprintf("[%s] Failed to get models list - provider=%s, error=%v", op, providerName, err))
-		return "", fmt.Errorf("%s: failed to load models for provider '%s': %w", op, providerName, err)
-	}
-
-	if len(modelsList) == 0 {
-		a.logger.Warning(fmt.Sprintf("[%s] No models available from provider - provider=%s", op, providerName))
-	}
-
-	if !slices.Contains(modelsList, cfg.ModelConfig.Name) {
-		a.logger.Warning(fmt.Sprintf("[%s] Configured model not found - model=%s, provider=%s, available_models_count=%d",
-			op, cfg.ModelConfig.Name, providerName, len(modelsList)))
-	}
-
-	// 5. Build the user prompt string
-	userPrompt, err := a.promptService.BuildPrompt(promptDef.Value, promptDef.Category, action, cfg.InferenceBaseConfig.UseMarkdownForOutput)
-	if err != nil {
-		a.logger.Error(fmt.Sprintf("[%s] Failed to build user prompt - action_id=%s, category=%s, error=%v",
-			op, actionID, promptDef.Category, err))
-		return "", fmt.Errorf("%s: failed to build user prompt: %w", op, err)
-	}
-
-	if strings.TrimSpace(userPrompt) == "" {
-		a.logger.Warning(fmt.Sprintf("[%s] Built user prompt is empty - action_id=%s, category=%s",
-			op, actionID, promptDef.Category))
-	}
-
-	a.logger.Trace(fmt.Sprintf("[%s] Built user prompt - action_id=%s, prompt_length=%d", op, actionID, len(userPrompt)))
-
-	// 6. Check for same-language translation optimization
-	if promptDef.Category == categories.PromptGroupTranslation &&
-		strings.EqualFold(action.InputLanguageID, action.OutputLanguageID) {
-		a.logger.Info(fmt.Sprintf("[%s] Skipping translation - same language (%s) - action_id=%s",
-			op, action.InputLanguageID, actionID))
-		return action.InputText, nil
-	}
-
-	// 7. Send to LLM via the shared runStep primitive
-	stepReq := ChatStepRequest{
-		System:      sysPrompt,
-		User:        userPrompt,
-		GroupFamily: promptDef.Category,
-		ActionIDs:   []string{promptDef.ID},
-		InputText:   action.InputText,
-		InputLang:   action.InputLanguageID,
-		OutputLang:  action.OutputLanguageID,
-	}
-	result, err := a.runStep(context.Background(), cfg, stepReq)
-	if err != nil {
-		a.logger.Error(fmt.Sprintf("[%s] runStep failed action_id=%s: %v", op, actionID, err))
-		return "", fmt.Errorf("%s: %w", op, err)
-	}
-
-	totalDuration := time.Since(startTime)
-	a.logger.Info(fmt.Sprintf("[%s] Action completed successfully - action_id=%s, category=%s, total_duration_ms=%d, result_length=%d",
-		op, actionID, promptDef.Category, totalDuration.Milliseconds(), len(result)))
-
-	return result, nil
 }
 
 // runStep executes one LLM inference: builds the chat-completion request,

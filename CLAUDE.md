@@ -96,7 +96,7 @@ Repositories  (settings/repository_sqlite.go, history/repository_sqlite.go, etc.
 - `internal/stacks/` — Saved stack CRUD: model, SQLite repository, service, bound handler.
 - `internal/settings/` — Provider/model/inference/language/app-behavior config; SQLite-backed repository.
 - `internal/llms/` — `Provider` interface, `OpenAICompatibleProvider`, `ProviderProfile`, `ProviderFactory`, model discovery, provider verification.
-- `internal/prompts/` — Two-tier system: family system prompts + atomic directive fragments; `ActionMeta` catalog; `BuildPlanAndPrompts`; `PreviewPrompt`. Categories in `internal/prompts/categories/`.
+- `internal/prompts/` — `PromptService` wraps the v3 catalog; `SanitizeReasoningBlock`. `BuildPlanAndPrompts`/`PreviewPrompt` live in `internal/actions/`. Catalog: `internal/prompts/v3/` — `catalog.go` (`ActionMeta` entries), `families.go`/`system.go` (family system prompts).
 - `internal/verification/` — Provider diagnostic tests (`TestConnection`, `TestModels`, `TestInference`). Diagnostic only; never recorded to history.
 - `internal/application/` — DI root `ApplicationContextHolder`; wires all services/handlers; holds app `ctx`.
 - `internal/logging/` — Configured zerolog instance + console/lumberjack file multi-writer; implements Wails `logger.Logger`.
@@ -176,15 +176,16 @@ that the adapter subscribes to and dispatches into the `run` slice.
 
 ### Adding a Prompt
 
-1. Add constants to the relevant `internal/prompts/categories/<category>.go`
-   (template placeholders: `{{user_text}}`, `{{user_format}}`, `{{input_language}}`, `{{output_language}}`)
-2. Register the prompt as an `ActionMeta` entry in `internal/prompts/constants.go`
+1. Add an `apperr.ActionMeta` entry (ID, Category, Family, Directive, OrderRank, ExclusivityGroup,
+   Mergeable, Terminal, Requires) to `buildCatalog()` in `internal/prompts/v3/catalog.go`
+2. If the action needs a new family or category, add its system prompt constant in
+   `internal/prompts/v3/system.go` and register the family in `internal/prompts/v3/families.go`
 3. Restart `wails dev` — prompts are compiled into the binary
 
 ### Adding a New Prompt Group (Family)
 
-1. Create `internal/prompts/categories/my_category.go` with system prompt + group name constants
-2. Add a new `PromptGroup` entry in `internal/prompts/constants.go` with a unique `GroupID`
+1. Add the family's system prompt constant to `internal/prompts/v3/system.go`
+2. Register the family name in `internal/prompts/v3/families.go`
 
 ### Adding a New Service
 
