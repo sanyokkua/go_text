@@ -676,3 +676,50 @@ func (p *panicActionService) BuildPlanAndPrompts(_ apperr.PromptPreviewRequest) 
 func (p *panicActionService) RunChain(_ context.Context, _ apperr.ChainRequest, _ func(apperr.StepProgress)) (*apperr.ChainResult, error) {
 	panic("panic RunChain")
 }
+
+// ─── CancelAllRuns ───────────────────────────────────────────────────────────
+
+func TestActionHandler_CancelAllRuns_CancelsAndClearsRegistry(t *testing.T) {
+	t.Parallel()
+
+	var run1Cancelled, run2Cancelled bool
+	h := &ActionHandler{
+		zlog: zerolog.Nop(),
+		runs: map[string]context.CancelFunc{
+			"run-1": func() { run1Cancelled = true },
+			"run-2": func() { run2Cancelled = true },
+		},
+	}
+
+	h.CancelAllRuns()
+
+	if !run1Cancelled || !run2Cancelled {
+		t.Errorf("expected every registered run to be cancelled: run1=%v run2=%v", run1Cancelled, run2Cancelled)
+	}
+	if len(h.runs) != 0 {
+		t.Errorf("expected the run registry to be cleared, got %d entries", len(h.runs))
+	}
+}
+
+func TestActionHandler_CancelAllRuns_EmptyRegistryIsNoOp(t *testing.T) {
+	t.Parallel()
+
+	h := &ActionHandler{zlog: zerolog.Nop()}
+
+	h.CancelAllRuns()
+}
+
+// ─── SetContext ──────────────────────────────────────────────────────────────
+
+func TestActionHandler_SetContext_StoresContext(t *testing.T) {
+	t.Parallel()
+
+	h := &ActionHandler{zlog: zerolog.Nop()}
+	ctx := context.Background()
+
+	h.SetContext(ctx)
+
+	if h.appCtx != ctx {
+		t.Errorf("appCtx not stored: want %v, got %v", ctx, h.appCtx)
+	}
+}

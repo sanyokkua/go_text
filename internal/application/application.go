@@ -194,7 +194,7 @@ func (a *ApplicationContextHolder) restoreWindowSize(ctx context.Context) error 
 	if err != nil {
 		return fmt.Errorf("get window size: %w", err)
 	}
-	runtime.WindowSetSize(ctx, cfg.Width, cfg.Height)
+	windowSetSize(ctx, cfg.Width, cfg.Height)
 	return nil
 }
 
@@ -230,7 +230,7 @@ func (a *ApplicationContextHolder) ClipboardGetText() (res apperr.StringResult) 
 			res = apperr.StringResult{Error: &wire}
 		}
 	}()
-	text, err := runtime.ClipboardGetText(a.ctx)
+	text, err := clipboardGetText(a.ctx)
 	if err != nil {
 		ae := apperr.Internal(fmt.Errorf("clipboard get: %w", err))
 		wire := apperr.ToWire(zlog.Logger, ae)
@@ -247,7 +247,7 @@ func (a *ApplicationContextHolder) ClipboardSetText(text string) (res apperr.Voi
 			res = apperr.VoidResult{Error: &wire}
 		}
 	}()
-	if err := runtime.ClipboardSetText(a.ctx, text); err != nil {
+	if err := clipboardSetText(a.ctx, text); err != nil {
 		ae := apperr.Internal(fmt.Errorf("clipboard set: %w", err))
 		wire := apperr.ToWire(zlog.Logger, ae)
 		return apperr.VoidResult{Error: &wire}
@@ -268,7 +268,7 @@ func (a *ApplicationContextHolder) BrowserOpenURL(url string) (res apperr.VoidRe
 		wire := apperr.ToWire(zlog.Logger, ae)
 		return apperr.VoidResult{Error: &wire}
 	}
-	runtime.BrowserOpenURL(a.ctx, url)
+	browserOpenURL(a.ctx, url)
 	return apperr.VoidResult{}
 }
 
@@ -294,6 +294,20 @@ func (a *ApplicationContextHolder) SaveWindowSize(width, height int) (res apperr
 var runOpenCommand = func(name string, args ...string) error {
 	return exec.Command(name, args...).Run()
 }
+
+// Wails-runtime execution seams. runtime.ClipboardGetText/ClipboardSetText/
+// BrowserOpenURL/WindowSetSize all call into Wails' getFrontend(ctx), which
+// calls log.Fatalf (os.Exit) when ctx carries no real frontend — unrecoverable
+// via defer/recover and unfakeable from outside the wails module (its internal
+// Frontend interface references unexported-package types). Tests swap these
+// vars to exercise ClipboardGetText/ClipboardSetText/BrowserOpenURL/
+// restoreWindowSize without a live Wails runtime.
+var (
+	clipboardGetText = runtime.ClipboardGetText
+	clipboardSetText = runtime.ClipboardSetText
+	browserOpenURL   = runtime.BrowserOpenURL
+	windowSetSize    = runtime.WindowSetSize
+)
 
 // openPathArgs returns the OS file-manager command and arguments for goos.
 // It is a pure function (no side effects) so tests can assert the argv per
