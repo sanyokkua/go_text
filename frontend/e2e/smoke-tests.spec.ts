@@ -127,6 +127,15 @@ test.describe('E5: Prompt Inspector opens in Info view', () => {
         const inspector = page.locator('[class*="inspector"], [class*="prompt"]').first();
         await expect(inspector).toBeVisible({ timeout: 8_000 });
 
+        // 4 — family chip is visible with the mock's title-cased family value
+        const familyChip = page.locator('[class*="familyChip"]').first();
+        await expect(familyChip).toBeVisible();
+        await expect(familyChip).toHaveText('Single');
+
+        // 5 — "Copy all" composes the full prompt and confirms via a success toast
+        await page.getByRole('button', { name: 'Copy all' }).click();
+        await expect(page.getByText('Copied full prompt to clipboard').first()).toBeVisible({ timeout: 5_000 });
+
         await page.screenshot({ path: screenshotPath('e5-prompt-inspector') });
         expect(errors).toHaveLength(0);
     });

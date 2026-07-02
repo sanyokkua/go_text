@@ -1791,7 +1791,8 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
   `ClipboardServiceAdapter: { setText: jest.fn() }`; add tests asserting the family chip renders per
   group, clicking "Copy all" calls `setText` with the expected composed text and dispatches a success
   notification, and a failed/rejected `setText` shows the error path. `cd frontend && npm run test`;
-  Playwright `verify-ui.spec.ts` (About/Info route).
+  Playwright `smoke-tests.spec.ts` (`E5: Prompt Inspector opens in Info view`) asserts the family chip
+  text and clicks "Copy all" with a success-toast assertion.
 - **Acceptance:** every inference group shows a distinct family chip; a visible "Copy all" button
   copies the full composed system+user prompt text for every group and shows a toast on
   success/failure; T42's `Status: OPEN` marker above is updated to point here.
@@ -1803,4 +1804,8 @@ P7 Cross-cutting:     T27 (after BE+FE APIs) → T28 → T29 → T30
   Copy-all calls `setText` with the exact expected composed string; success and failure paths both
   dispatch the correct notification against a real `notifications` reducer, not a mock). Full Jest
   suite green (74 suites/724 tests); `npx tsc --noEmit` and `eslint` clean; `npm run verify:ui`
-  (Playwright, bridge-mock dev server) green across all 12 checks.
+  (Playwright, bridge-mock dev server) green across all 12 checks. Note: `verify:ui` only exercises
+  `verify-ui.spec.ts`, which never navigates off `/` — it does not cover the Info route. Real
+  browser-level coverage of the chip/button was added afterward to `smoke-tests.spec.ts`'s existing
+  `E5` test (family chip text assertion + "Copy all" click + success-toast assertion), closing the
+  gap between this Status line's original `verify:ui` claim and actual E2E coverage.
