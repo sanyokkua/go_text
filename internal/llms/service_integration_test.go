@@ -1,6 +1,7 @@
 package llms
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -340,7 +341,7 @@ func TestLLMServiceAPI_GetCompletionResponse(t *testing.T) {
 			Stream: false,
 		}
 
-		response, err := llmService.GetCompletionResponse(request)
+		response, err := llmService.GetCompletionResponse(context.Background(), request)
 		require.NoError(t, err, "GetCompletionResponse should succeed")
 		assert.NotEmpty(t, response, "Response should not be empty")
 		assert.Contains(t, response, "test completion response", "Response should contain expected content")
@@ -348,7 +349,7 @@ func TestLLMServiceAPI_GetCompletionResponse(t *testing.T) {
 
 	// Test with nil request
 	t.Run("NilRequest", func(t *testing.T) {
-		_, err := llmService.GetCompletionResponse(nil)
+		_, err := llmService.GetCompletionResponse(context.Background(), nil)
 		assert.Error(t, err, "GetCompletionResponse should fail with nil request")
 		assert.Contains(t, err.Error(), "completion request cannot be nil", "Error should mention nil request")
 	})
@@ -406,7 +407,7 @@ func TestLLMServiceAPI_GetCompletionResponse_ContextWindowDecoupledFromMaxTokens
 		MaxCompletionTokens: &maxTokens,
 	}
 
-	_, err := llmService.GetCompletionResponse(request)
+	_, err := llmService.GetCompletionResponse(context.Background(), request)
 	require.NoError(t, err)
 
 	assert.Equal(t, "/api/chat", capturedPath, "ollama requests must hit the native chat endpoint")
@@ -564,7 +565,7 @@ func TestLLMServiceAPI_GetCompletionResponseForProvider(t *testing.T) {
 			Stream: false,
 		}
 
-		response, err := llmService.GetCompletionResponseForProvider(provider, request)
+		response, err := llmService.GetCompletionResponseForProvider(context.Background(), provider, request)
 		require.NoError(t, err, "GetCompletionResponseForProvider should succeed")
 		assert.NotEmpty(t, response, "Response should not be empty")
 		assert.Contains(t, response, "test completion response", "Response should contain expected content")
@@ -572,7 +573,7 @@ func TestLLMServiceAPI_GetCompletionResponseForProvider(t *testing.T) {
 
 	// Test with nil provider
 	t.Run("NilProvider", func(t *testing.T) {
-		_, err := llmService.GetCompletionResponseForProvider(nil, &ChatCompletionRequest{})
+		_, err := llmService.GetCompletionResponseForProvider(context.Background(), nil, &ChatCompletionRequest{})
 		assert.Error(t, err, "GetCompletionResponseForProvider should fail with nil provider")
 		assert.Contains(t, err.Error(), "provider configuration cannot be nil", "Error should mention nil provider")
 	})
@@ -589,7 +590,7 @@ func TestLLMServiceAPI_GetCompletionResponseForProvider(t *testing.T) {
 			UseCustomModels: false,
 		}
 
-		_, err := llmService.GetCompletionResponseForProvider(provider, nil)
+		_, err := llmService.GetCompletionResponseForProvider(context.Background(), provider, nil)
 		assert.Error(t, err, "GetCompletionResponseForProvider should fail with nil request")
 		assert.Contains(t, err.Error(), "completion request cannot be nil", "Error should mention nil request")
 	})
@@ -629,7 +630,7 @@ func TestLLMServiceAPI_GetCompletionResponseForProvider(t *testing.T) {
 			Stream: false,
 		}
 
-		_, err := llmService.GetCompletionResponseForProvider(provider, request)
+		_, err := llmService.GetCompletionResponseForProvider(context.Background(), provider, request)
 		require.Error(t, err, "GetCompletionResponseForProvider should fail with empty choices")
 		var ae *apperr.AppError
 		require.True(t, errors.As(err, &ae), "Error should be an *apperr.AppError")
@@ -681,7 +682,7 @@ func TestLLMServiceAPI_GetCompletionResponseForProvider(t *testing.T) {
 		}
 
 		// Empty content is now an error — the provider returns apperr.EmptyCompletion.
-		_, err := llmService.GetCompletionResponseForProvider(provider, request)
+		_, err := llmService.GetCompletionResponseForProvider(context.Background(), provider, request)
 		require.Error(t, err, "GetCompletionResponseForProvider should fail with empty content")
 		var ae *apperr.AppError
 		require.True(t, errors.As(err, &ae), "Error should be an *apperr.AppError")
@@ -938,7 +939,7 @@ func TestLLMService_GetCompletionResponseForProvider_TimeoutMessageReflectsConfi
 		Stream: false,
 	}
 
-	_, err := llmService.GetCompletionResponseForProvider(slowProvider, request)
+	_, err := llmService.GetCompletionResponseForProvider(context.Background(), slowProvider, request)
 	require.Error(t, err, "GetCompletionResponseForProvider should fail when the server exceeds the configured 1s timeout")
 
 	var ae *apperr.AppError
@@ -946,6 +947,117 @@ func TestLLMService_GetCompletionResponseForProvider_TimeoutMessageReflectsConfi
 	assert.Equal(t, apperr.CodeTimeout, ae.Code, "Error code should be CodeTimeout")
 	assert.Equal(t, "1", ae.Details["timeout"], "Details[timeout] should reflect the real configured seconds")
 	assert.Contains(t, ae.Message, "1s", "Message should reflect the real configured seconds, not the old 0s placeholder")
+}
+
+// TestLLMServiceAPI_GetCompletionResponseForProvider_ParentContextCancelled_AbortsRequest
+// proves T90: cancelling the caller's context (mirroring ActionHandler.CancelChain /
+// OnShutdown's CancelAllRuns) aborts an in-flight completion request instead of letting
+// it run to the provider's full response delay.
+func TestLLMServiceAPI_GetCompletionResponseForProvider_ParentContextCancelled_AbortsRequest(t *testing.T) {
+	log := &TestLogger{}
+	settingsService := &MockSettingsService{}
+	restyClient := resty.New()
+	llmService := newTestService(log, restyClient, settingsService)
+
+	slowBehavior := &MockServerBehavior{
+		StatusCode:    http.StatusOK,
+		DelayDuration: 5 * time.Second,
+		CompletionResponse: &ChatCompletionResponse{
+			ID:    "test-completion-slow",
+			Model: "model-1",
+			Choices: []Choice{
+				{Index: 0, Message: CompletionRequestMessage{Role: "assistant", Content: "too slow"}, FinishReason: "stop"},
+			},
+		},
+	}
+	slowServer := createMockServer(slowBehavior)
+	defer slowServer.Close()
+
+	provider := &settings.ProviderConfig{
+		Name:            "Slow Provider",
+		Kind:            "openai",
+		BaseURL:         slowServer.URL + "/",
+		ModelsPath:      "api/tags",
+		CompletionPath:  "api/chat",
+		AuthScheme:      "none",
+		UseCustomModels: false,
+	}
+	request := &ChatCompletionRequest{
+		Model:    "model-1",
+		Messages: []CompletionRequestMessage{{Role: "user", Content: "Test completion request."}},
+		Stream:   false,
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		cancel()
+	}()
+
+	start := time.Now()
+	_, err := llmService.GetCompletionResponseForProvider(ctx, provider, request)
+	elapsed := time.Since(start)
+
+	require.Error(t, err, "GetCompletionResponseForProvider should fail when the parent context is cancelled")
+	assert.Less(t, elapsed, 2*time.Second, "request must abort promptly on cancellation, not wait for the server's 5s delay")
+
+	var ae *apperr.AppError
+	require.True(t, errors.As(err, &ae), "error should be an *apperr.AppError")
+	assert.Equal(t, apperr.CodeCancelled, ae.Code, "cancelling the parent context must surface CodeCancelled, not CodeTimeout")
+}
+
+// TestLLMServiceAPI_GetCompletionResponseForProvider_ParentContextCancelled_OllamaNativePath_AbortsRequest
+// mirrors the test above but for Kind:"ollama", which routes through chatNative (T63's native
+// /api/chat path) instead of Chat's OpenAI-compatible branch — a distinct code path that must
+// classify a cancelled parent context as CodeCancelled too, since Ollama is GoText's default
+// provider.
+func TestLLMServiceAPI_GetCompletionResponseForProvider_ParentContextCancelled_OllamaNativePath_AbortsRequest(t *testing.T) {
+	log := &TestLogger{}
+	settingsService := &MockSettingsService{}
+	restyClient := resty.New()
+	llmService := newTestService(log, restyClient, settingsService)
+
+	slowServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(5 * time.Second)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(&OllamaNativeChatResponse{
+			Message:    CompletionRequestMessage{Role: "assistant", Content: "too slow"},
+			DoneReason: "stop",
+		})
+	}))
+	defer slowServer.Close()
+
+	provider := &settings.ProviderConfig{
+		Name:            "Slow Ollama Provider",
+		Kind:            "ollama",
+		BaseURL:         slowServer.URL + "/",
+		ModelsPath:      "v1/models",
+		CompletionPath:  "v1/chat/completions",
+		AuthScheme:      "none",
+		UseCustomModels: false,
+	}
+	request := &ChatCompletionRequest{
+		Model:    "model-1",
+		Messages: []CompletionRequestMessage{{Role: "user", Content: "Test completion request."}},
+		Stream:   false,
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		cancel()
+	}()
+
+	start := time.Now()
+	_, err := llmService.GetCompletionResponseForProvider(ctx, provider, request)
+	elapsed := time.Since(start)
+
+	require.Error(t, err, "GetCompletionResponseForProvider should fail when the parent context is cancelled")
+	assert.Less(t, elapsed, 2*time.Second, "request must abort promptly on cancellation, not wait for the server's 5s delay")
+
+	var ae *apperr.AppError
+	require.True(t, errors.As(err, &ae), "error should be an *apperr.AppError")
+	assert.Equal(t, apperr.CodeCancelled, ae.Code, "cancelling the parent context must surface CodeCancelled on the native Ollama path too")
 }
 
 // TestLLMServiceAPI_GetCompletionResponseForProvider_MissingCredential verifies that
@@ -972,7 +1084,7 @@ func TestLLMServiceAPI_GetCompletionResponseForProvider_MissingCredential(t *tes
 		},
 	}
 
-	_, err := llmService.GetCompletionResponseForProvider(provider, request)
+	_, err := llmService.GetCompletionResponseForProvider(context.Background(), provider, request)
 
 	require.Error(t, err, "GetCompletionResponseForProvider should fail when APIKeyEnvVar is empty")
 	var ae *apperr.AppError
@@ -1004,7 +1116,7 @@ func TestLLMServiceAPI_GetCompletionResponseForProvider_MissingCredential_Whites
 		},
 	}
 
-	_, err := llmService.GetCompletionResponseForProvider(provider, request)
+	_, err := llmService.GetCompletionResponseForProvider(context.Background(), provider, request)
 
 	require.Error(t, err, "GetCompletionResponseForProvider should fail when APIKeyEnvVar is whitespace-only")
 	var ae *apperr.AppError
@@ -1039,7 +1151,7 @@ func TestLLMServiceAPI_GetCompletionResponseForProvider_EnvVarUnset(t *testing.T
 		},
 	}
 
-	_, err := llmService.GetCompletionResponseForProvider(provider, request)
+	_, err := llmService.GetCompletionResponseForProvider(context.Background(), provider, request)
 
 	require.Error(t, err, "GetCompletionResponseForProvider should fail when env var is unset")
 	var ae *apperr.AppError

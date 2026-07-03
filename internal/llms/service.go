@@ -18,10 +18,10 @@ var errNilProvider = errors.New("provider configuration cannot be nil")
 
 type LLMServiceAPI interface {
 	GetModelsList() ([]string, error)
-	GetCompletionResponse(request *ChatCompletionRequest) (string, error)
+	GetCompletionResponse(ctx context.Context, request *ChatCompletionRequest) (string, error)
 	GetModelsListForProvider(provider *settings.ProviderConfig) ([]string, error)
 	GetModelsInfoForProvider(provider *settings.ProviderConfig) ([]apperr.ModelInfo, error)
-	GetCompletionResponseForProvider(provider *settings.ProviderConfig, request *ChatCompletionRequest) (string, error)
+	GetCompletionResponseForProvider(ctx context.Context, provider *settings.ProviderConfig, request *ChatCompletionRequest) (string, error)
 }
 
 type LLMService struct {
@@ -57,7 +57,7 @@ func (l *LLMService) GetModelsList() ([]string, error) {
 	return l.GetModelsListForProvider(provider)
 }
 
-func (l *LLMService) GetCompletionResponse(request *ChatCompletionRequest) (string, error) {
+func (l *LLMService) GetCompletionResponse(ctx context.Context, request *ChatCompletionRequest) (string, error) {
 	const op = "LLMService.GetCompletionResponse"
 	if request == nil {
 		return "", fmt.Errorf("%s: completion request cannot be nil", op)
@@ -69,7 +69,7 @@ func (l *LLMService) GetCompletionResponse(request *ChatCompletionRequest) (stri
 	if provider == nil {
 		return "", fmt.Errorf("%s: current provider configuration is nil", op)
 	}
-	return l.GetCompletionResponseForProvider(provider, request)
+	return l.GetCompletionResponseForProvider(ctx, provider, request)
 }
 
 // GetModelsListForProvider returns the model list for a given provider config.
@@ -169,7 +169,7 @@ func (l *LLMService) GetModelsInfoForProvider(provider *settings.ProviderConfig)
 	return models, nil
 }
 
-func (l *LLMService) GetCompletionResponseForProvider(provider *settings.ProviderConfig, request *ChatCompletionRequest) (string, error) {
+func (l *LLMService) GetCompletionResponseForProvider(ctx context.Context, provider *settings.ProviderConfig, request *ChatCompletionRequest) (string, error) {
 	const op = "LLMService.GetCompletionResponseForProvider"
 	if provider == nil {
 		return "", fmt.Errorf("%s: %s", op, errNilProvider)
@@ -198,11 +198,11 @@ func (l *LLMService) GetCompletionResponseForProvider(provider *settings.Provide
 	}
 
 	timeout := ValidateTimeout(baseConfig.Timeout)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
+	reqCtx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Second)
 	defer cancel()
 
 	chatReq := chatRequestFrom(request, modelConfig)
-	resp, err := p.Chat(ctx, chatReq)
+	resp, err := p.Chat(reqCtx, chatReq)
 	if err != nil {
 		return "", apperr.RewriteTimeoutSeconds(err, timeout)
 	}
