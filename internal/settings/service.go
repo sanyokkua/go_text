@@ -234,9 +234,8 @@ func (s *SettingsService) GetCurrentProviderConfig() (*ProviderConfig, error) {
 }
 
 func (s *SettingsService) GetProviderConfig(providerId string) (*ProviderConfig, error) {
-	const op = "SettingsService.GetProviderConfig"
 	if providerId == "" {
-		return nil, fmt.Errorf("%s: provider ID cannot be empty", op)
+		return nil, apperr.Validation("providerId", "non-empty UUID", "empty string")
 	}
 	return s.settingsRepo.GetProvider(providerId)
 }
@@ -266,7 +265,7 @@ func (s *SettingsService) DeleteProviderConfig(providerId string) error {
 	const op = "SettingsService.DeleteProviderConfig"
 	s.logger.Info(fmt.Sprintf("%s: deleting provider %s", op, providerId))
 	if providerId == "" {
-		return fmt.Errorf("%s: provider ID cannot be empty", op)
+		return apperr.Validation("providerId", "non-empty UUID", "empty string")
 	}
 	return s.settingsRepo.DeleteProvider(providerId)
 }
@@ -274,7 +273,7 @@ func (s *SettingsService) DeleteProviderConfig(providerId string) error {
 func (s *SettingsService) SetAsCurrentProviderConfig(providerId string) (*ProviderConfig, error) {
 	const op = "SettingsService.SetAsCurrentProviderConfig"
 	if providerId == "" {
-		return nil, fmt.Errorf("%s: provider ID cannot be empty", op)
+		return nil, apperr.Validation("providerId", "non-empty UUID", "empty string")
 	}
 	p, err := s.settingsRepo.GetProvider(providerId)
 	if err != nil {
@@ -302,10 +301,10 @@ func (s *SettingsService) GetInferenceBaseConfig() (*InferenceBaseConfig, error)
 func (s *SettingsService) UpdateInferenceBaseConfig(cfg *InferenceBaseConfig) (*InferenceBaseConfig, error) {
 	const op = "SettingsService.UpdateInferenceBaseConfig"
 	if cfg.Timeout < 1 || cfg.Timeout > 600 {
-		return nil, fmt.Errorf("%s: timeout must be 1–600 seconds", op)
+		return nil, apperr.Validation("timeout", "1–600 seconds", fmt.Sprintf("%d", cfg.Timeout))
 	}
 	if cfg.MaxRetries < 0 || cfg.MaxRetries > 10 {
-		return nil, fmt.Errorf("%s: maxRetries must be 0–10", op)
+		return nil, apperr.Validation("maxRetries", "0–10", fmt.Sprintf("%d", cfg.MaxRetries))
 	}
 	if err := s.settingsRepo.UpdateInferenceConfig(cfg); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -349,14 +348,14 @@ func (s *SettingsService) SetDefaultInputLanguage(language string) error {
 	const op = "SettingsService.SetDefaultInputLanguage"
 	language = strings.TrimSpace(language)
 	if language == "" {
-		return fmt.Errorf("%s: language cannot be empty", op)
+		return apperr.Validation("language", "non-empty string", "empty string")
 	}
 	langCfg, err := s.settingsRepo.GetLanguageConfig()
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	if !containsIgnoreCase(langCfg.Languages, language) {
-		return fmt.Errorf("%s: language %q not in supported languages", op, language)
+		return apperr.Validation("language", "one of the configured supported languages", language)
 	}
 	return s.settingsRepo.SetDefaultInputLanguage(language)
 }
@@ -365,14 +364,14 @@ func (s *SettingsService) SetDefaultOutputLanguage(language string) error {
 	const op = "SettingsService.SetDefaultOutputLanguage"
 	language = strings.TrimSpace(language)
 	if language == "" {
-		return fmt.Errorf("%s: language cannot be empty", op)
+		return apperr.Validation("language", "non-empty string", "empty string")
 	}
 	langCfg, err := s.settingsRepo.GetLanguageConfig()
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	if !containsIgnoreCase(langCfg.Languages, language) {
-		return fmt.Errorf("%s: language %q not in supported languages", op, language)
+		return apperr.Validation("language", "one of the configured supported languages", language)
 	}
 	return s.settingsRepo.SetDefaultOutputLanguage(language)
 }
@@ -391,7 +390,7 @@ func (s *SettingsService) AddLanguage(language string) ([]string, error) {
 	const op = "SettingsService.AddLanguage"
 	language = strings.TrimSpace(language)
 	if language == "" {
-		return nil, fmt.Errorf("%s: language cannot be empty", op)
+		return nil, apperr.Validation("language", "non-empty string", "empty string")
 	}
 	if err := s.settingsRepo.AddLanguage(language); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -407,17 +406,17 @@ func (s *SettingsService) RemoveLanguage(language string) ([]string, error) {
 	const op = "SettingsService.RemoveLanguage"
 	language = strings.TrimSpace(language)
 	if language == "" {
-		return nil, fmt.Errorf("%s: language cannot be empty", op)
+		return nil, apperr.Validation("language", "non-empty string", "empty string")
 	}
 	langCfg, err := s.settingsRepo.GetLanguageConfig()
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	if strings.ToLower(language) == strings.ToLower(langCfg.DefaultInputLanguage) {
-		return nil, fmt.Errorf("%s: cannot remove default input language %q", op, language)
+		return nil, apperr.Validation("language", "not the current default input language", language)
 	}
 	if strings.ToLower(language) == strings.ToLower(langCfg.DefaultOutputLanguage) {
-		return nil, fmt.Errorf("%s: cannot remove default output language %q", op, language)
+		return nil, apperr.Validation("language", "not the current default output language", language)
 	}
 	if err := s.settingsRepo.RemoveLanguage(language); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -435,9 +434,6 @@ func (s *SettingsService) GetAppBehaviorConfig() (*AppBehaviorConfig, error) {
 
 func (s *SettingsService) UpdateAppBehaviorConfig(cfg *AppBehaviorConfig) (*AppBehaviorConfig, error) {
 	const op = "SettingsService.UpdateAppBehaviorConfig"
-	if cfg == nil {
-		return nil, fmt.Errorf("%s: config cannot be nil", op)
-	}
 	if cfg.HistoryMaxEntries < 10 {
 		cfg.HistoryMaxEntries = 10
 	}
@@ -456,9 +452,6 @@ func (s *SettingsService) GetUIPreferencesConfig() (*UIPreferencesConfig, error)
 
 func (s *SettingsService) UpdateUIPreferencesConfig(cfg *UIPreferencesConfig) (*UIPreferencesConfig, error) {
 	const op = "SettingsService.UpdateUIPreferencesConfig"
-	if cfg == nil {
-		return nil, fmt.Errorf("%s: config cannot be nil", op)
-	}
 	switch cfg.Theme {
 	case "auto", "light", "dark":
 		// valid
@@ -489,9 +482,6 @@ func (s *SettingsService) GetLoggingConfig() (*LoggingConfig, error) {
 
 func (s *SettingsService) UpdateLoggingConfig(cfg *LoggingConfig) (*LoggingConfig, error) {
 	const op = "SettingsService.UpdateLoggingConfig"
-	if cfg == nil {
-		return nil, fmt.Errorf("%s: config cannot be nil", op)
-	}
 	if err := s.settingsRepo.UpdateLoggingConfig(cfg); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}

@@ -349,3 +349,376 @@ func TestSettingsService_SaveWindowSize_AcceptsValidSize(t *testing.T) {
 		})
 	}
 }
+
+// T84 regression: an empty providerId must surface as apperr.CodeValidation,
+// not a raw fmt.Errorf that apperr.ToWire logs as unclassified.
+func TestSettingsService_GetProviderConfig_RejectsEmptyProviderId(t *testing.T) {
+	repo := newRepo(t)
+	svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+
+	_, err := svc.GetProviderConfig("")
+
+	if err == nil {
+		t.Fatal("GetProviderConfig(\"\") = nil, want validation error")
+	}
+	var ae *apperr.AppError
+	if !errors.As(err, &ae) {
+		t.Fatalf("want *apperr.AppError, got %T: %v", err, err)
+	}
+	if ae.Code != apperr.CodeValidation {
+		t.Errorf("expected CodeValidation, got %q", ae.Code)
+	}
+}
+
+// T84 regression: an empty providerId must surface as apperr.CodeValidation.
+func TestSettingsService_DeleteProviderConfig_RejectsEmptyProviderId(t *testing.T) {
+	repo := newRepo(t)
+	svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+
+	err := svc.DeleteProviderConfig("")
+
+	if err == nil {
+		t.Fatal("DeleteProviderConfig(\"\") = nil, want validation error")
+	}
+	var ae *apperr.AppError
+	if !errors.As(err, &ae) {
+		t.Fatalf("want *apperr.AppError, got %T: %v", err, err)
+	}
+	if ae.Code != apperr.CodeValidation {
+		t.Errorf("expected CodeValidation, got %q", ae.Code)
+	}
+}
+
+// T84 regression: an empty providerId must surface as apperr.CodeValidation.
+func TestSettingsService_SetAsCurrentProviderConfig_RejectsEmptyProviderId(t *testing.T) {
+	repo := newRepo(t)
+	svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+
+	_, err := svc.SetAsCurrentProviderConfig("")
+
+	if err == nil {
+		t.Fatal("SetAsCurrentProviderConfig(\"\") = nil, want validation error")
+	}
+	var ae *apperr.AppError
+	if !errors.As(err, &ae) {
+		t.Fatalf("want *apperr.AppError, got %T: %v", err, err)
+	}
+	if ae.Code != apperr.CodeValidation {
+		t.Errorf("expected CodeValidation, got %q", ae.Code)
+	}
+}
+
+// T84 regression: an out-of-range Timeout must surface as apperr.CodeValidation.
+func TestSettingsService_UpdateInferenceBaseConfig_TimeoutBoundaries(t *testing.T) {
+	tests := []struct {
+		name    string
+		timeout int
+		wantErr bool
+	}{
+		{name: "negative is rejected", timeout: -5, wantErr: true},
+		{name: "zero is rejected", timeout: 0, wantErr: true},
+		{name: "exact min is accepted", timeout: 1, wantErr: false},
+		{name: "exact max is accepted", timeout: 600, wantErr: false},
+		{name: "just above max is rejected", timeout: 601, wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := newRepo(t)
+			svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+
+			_, err := svc.UpdateInferenceBaseConfig(&settings.InferenceBaseConfig{
+				Timeout:    tt.timeout,
+				MaxRetries: 0,
+			})
+
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("UpdateInferenceBaseConfig() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !tt.wantErr {
+				return
+			}
+			var ae *apperr.AppError
+			if !errors.As(err, &ae) {
+				t.Fatalf("want *apperr.AppError, got %T: %v", err, err)
+			}
+			if ae.Code != apperr.CodeValidation {
+				t.Errorf("expected CodeValidation, got %q", ae.Code)
+			}
+		})
+	}
+}
+
+// T84 regression: an out-of-range MaxRetries must surface as
+// apperr.CodeValidation (live repro used maxRetries: 15).
+func TestSettingsService_UpdateInferenceBaseConfig_MaxRetriesBoundaries(t *testing.T) {
+	tests := []struct {
+		name       string
+		maxRetries int
+		wantErr    bool
+	}{
+		{name: "negative is rejected", maxRetries: -1, wantErr: true},
+		{name: "exact min is accepted", maxRetries: 0, wantErr: false},
+		{name: "exact max is accepted", maxRetries: 10, wantErr: false},
+		{name: "just above max is rejected", maxRetries: 11, wantErr: true},
+		{name: "live bug repro value is rejected", maxRetries: 15, wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := newRepo(t)
+			svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+
+			_, err := svc.UpdateInferenceBaseConfig(&settings.InferenceBaseConfig{
+				Timeout:    60,
+				MaxRetries: tt.maxRetries,
+			})
+
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("UpdateInferenceBaseConfig() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !tt.wantErr {
+				return
+			}
+			var ae *apperr.AppError
+			if !errors.As(err, &ae) {
+				t.Fatalf("want *apperr.AppError, got %T: %v", err, err)
+			}
+			if ae.Code != apperr.CodeValidation {
+				t.Errorf("expected CodeValidation, got %q", ae.Code)
+			}
+		})
+	}
+}
+
+// T84 regression: an empty (or whitespace-only, after TrimSpace) language must
+// surface as apperr.CodeValidation.
+func TestSettingsService_SetDefaultInputLanguage_RejectsEmptyLanguage(t *testing.T) {
+	tests := []struct {
+		name     string
+		language string
+	}{
+		{name: "empty string", language: ""},
+		{name: "whitespace only", language: "   "},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := newRepo(t)
+			svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+
+			err := svc.SetDefaultInputLanguage(tt.language)
+
+			if err == nil {
+				t.Fatalf("SetDefaultInputLanguage(%q) = nil, want validation error", tt.language)
+			}
+			var ae *apperr.AppError
+			if !errors.As(err, &ae) {
+				t.Fatalf("want *apperr.AppError, got %T: %v", err, err)
+			}
+			if ae.Code != apperr.CodeValidation {
+				t.Errorf("expected CodeValidation, got %q", ae.Code)
+			}
+		})
+	}
+}
+
+// T84 regression: a language absent from the configured supported list must
+// surface as apperr.CodeValidation; a seeded default language must succeed.
+func TestSettingsService_SetDefaultInputLanguage_RejectsUnsupportedLanguage(t *testing.T) {
+	tests := []struct {
+		name     string
+		language string
+		wantErr  bool
+	}{
+		{name: "unsupported language is rejected", language: "Klingon", wantErr: true},
+		{name: "seeded default language is accepted", language: "English", wantErr: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := newRepo(t)
+			svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+
+			err := svc.SetDefaultInputLanguage(tt.language)
+
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("SetDefaultInputLanguage(%q) error = %v, wantErr %v", tt.language, err, tt.wantErr)
+			}
+			if !tt.wantErr {
+				return
+			}
+			var ae *apperr.AppError
+			if !errors.As(err, &ae) {
+				t.Fatalf("want *apperr.AppError, got %T: %v", err, err)
+			}
+			if ae.Code != apperr.CodeValidation {
+				t.Errorf("expected CodeValidation, got %q", ae.Code)
+			}
+		})
+	}
+}
+
+// T84 regression: an empty (or whitespace-only) language must surface as
+// apperr.CodeValidation.
+func TestSettingsService_SetDefaultOutputLanguage_RejectsEmptyLanguage(t *testing.T) {
+	tests := []struct {
+		name     string
+		language string
+	}{
+		{name: "empty string", language: ""},
+		{name: "whitespace only", language: "   "},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := newRepo(t)
+			svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+
+			err := svc.SetDefaultOutputLanguage(tt.language)
+
+			if err == nil {
+				t.Fatalf("SetDefaultOutputLanguage(%q) = nil, want validation error", tt.language)
+			}
+			var ae *apperr.AppError
+			if !errors.As(err, &ae) {
+				t.Fatalf("want *apperr.AppError, got %T: %v", err, err)
+			}
+			if ae.Code != apperr.CodeValidation {
+				t.Errorf("expected CodeValidation, got %q", ae.Code)
+			}
+		})
+	}
+}
+
+// T84 regression: a language absent from the configured supported list must
+// surface as apperr.CodeValidation; a seeded default language must succeed.
+func TestSettingsService_SetDefaultOutputLanguage_RejectsUnsupportedLanguage(t *testing.T) {
+	tests := []struct {
+		name     string
+		language string
+		wantErr  bool
+	}{
+		{name: "unsupported language is rejected", language: "Klingon", wantErr: true},
+		{name: "seeded default language is accepted", language: "Ukrainian", wantErr: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := newRepo(t)
+			svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+
+			err := svc.SetDefaultOutputLanguage(tt.language)
+
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("SetDefaultOutputLanguage(%q) error = %v, wantErr %v", tt.language, err, tt.wantErr)
+			}
+			if !tt.wantErr {
+				return
+			}
+			var ae *apperr.AppError
+			if !errors.As(err, &ae) {
+				t.Fatalf("want *apperr.AppError, got %T: %v", err, err)
+			}
+			if ae.Code != apperr.CodeValidation {
+				t.Errorf("expected CodeValidation, got %q", ae.Code)
+			}
+		})
+	}
+}
+
+// T84 regression: an empty language must surface as apperr.CodeValidation.
+func TestSettingsService_AddLanguage_RejectsEmptyLanguage(t *testing.T) {
+	repo := newRepo(t)
+	svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+
+	_, err := svc.AddLanguage("")
+
+	if err == nil {
+		t.Fatal("AddLanguage(\"\") = nil, want validation error")
+	}
+	var ae *apperr.AppError
+	if !errors.As(err, &ae) {
+		t.Fatalf("want *apperr.AppError, got %T: %v", err, err)
+	}
+	if ae.Code != apperr.CodeValidation {
+		t.Errorf("expected CodeValidation, got %q", ae.Code)
+	}
+}
+
+// T84 regression: an empty language must surface as apperr.CodeValidation.
+func TestSettingsService_RemoveLanguage_RejectsEmptyLanguage(t *testing.T) {
+	repo := newRepo(t)
+	svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+
+	_, err := svc.RemoveLanguage("")
+
+	if err == nil {
+		t.Fatal("RemoveLanguage(\"\") = nil, want validation error")
+	}
+	var ae *apperr.AppError
+	if !errors.As(err, &ae) {
+		t.Fatalf("want *apperr.AppError, got %T: %v", err, err)
+	}
+	if ae.Code != apperr.CodeValidation {
+		t.Errorf("expected CodeValidation, got %q", ae.Code)
+	}
+}
+
+// T84 regression: removing the current default input language must surface as
+// apperr.CodeValidation, read live from the repo so the test tracks the seed.
+func TestSettingsService_RemoveLanguage_RejectsRemovingDefaultInputLanguage(t *testing.T) {
+	repo := newRepo(t)
+	svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+
+	langCfg, err := repo.GetLanguageConfig()
+	if err != nil {
+		t.Fatalf("GetLanguageConfig: %v", err)
+	}
+
+	_, err = svc.RemoveLanguage(langCfg.DefaultInputLanguage)
+
+	if err == nil {
+		t.Fatalf("RemoveLanguage(%q) = nil, want validation error", langCfg.DefaultInputLanguage)
+	}
+	var ae *apperr.AppError
+	if !errors.As(err, &ae) {
+		t.Fatalf("want *apperr.AppError, got %T: %v", err, err)
+	}
+	if ae.Code != apperr.CodeValidation {
+		t.Errorf("expected CodeValidation, got %q", ae.Code)
+	}
+}
+
+// T84 regression (P4-T3 live repro): removing the current default output
+// language must surface as apperr.CodeValidation. A genuinely non-default
+// language must still be addable and removable without error.
+func TestSettingsService_RemoveLanguage_RejectsRemovingDefaultOutputLanguage(t *testing.T) {
+	repo := newRepo(t)
+	svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+
+	langCfg, err := repo.GetLanguageConfig()
+	if err != nil {
+		t.Fatalf("GetLanguageConfig: %v", err)
+	}
+
+	_, err = svc.RemoveLanguage(langCfg.DefaultOutputLanguage)
+
+	if err == nil {
+		t.Fatalf("RemoveLanguage(%q) = nil, want validation error", langCfg.DefaultOutputLanguage)
+	}
+	var ae *apperr.AppError
+	if !errors.As(err, &ae) {
+		t.Fatalf("want *apperr.AppError, got %T: %v", err, err)
+	}
+	if ae.Code != apperr.CodeValidation {
+		t.Errorf("expected CodeValidation, got %q", ae.Code)
+	}
+
+	if _, err := svc.AddLanguage("Klingon"); err != nil {
+		t.Fatalf("AddLanguage(\"Klingon\"): %v", err)
+	}
+	if _, err := svc.RemoveLanguage("Klingon"); err != nil {
+		t.Fatalf("RemoveLanguage(\"Klingon\"): %v", err)
+	}
+}
