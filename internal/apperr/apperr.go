@@ -1,6 +1,7 @@
 package apperr
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 )
@@ -141,6 +142,18 @@ func Timeout(provider string, seconds int, cause error) *AppError {
 		Retryable: true,
 		cause:     cause,
 	}
+}
+
+// RewriteTimeoutSeconds rebuilds a CodeTimeout error with the caller's actual configured
+// timeout. mapTransportError (internal/llms) has no access to the configured duration — only
+// the transport error — so it emits a 0 placeholder; callers that own the timeout value fix it
+// up here before the error is surfaced. Non-timeout errors pass through unchanged.
+func RewriteTimeoutSeconds(err error, seconds int) error {
+	var ae *AppError
+	if errors.As(err, &ae) && ae.Code == CodeTimeout {
+		return Timeout(ae.Details["provider"], seconds, ae.Unwrap())
+	}
+	return err
 }
 
 func RateLimited(provider string, retryAfter int, cause error) *AppError {

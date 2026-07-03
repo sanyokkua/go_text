@@ -16,8 +16,6 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/logger"
 )
 
-const verifyTimeout = 30 * time.Second
-
 // ServiceAPI is the verification service interface consumed by ActionHandler.
 //
 // All three checks take the in-flight draft ProviderConfig (not a saved
@@ -88,10 +86,15 @@ func (s *Service) TestConnection(cfg settings.ProviderConfig) (*apperr.VerifyOut
 		return outcome, err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), verifyTimeout)
+	timeoutSeconds := 30 // llms.ValidateTimeout's own out-of-range fallback value
+	if bc, bcErr := s.settingsService.GetInferenceBaseConfig(); bcErr == nil && bc != nil {
+		timeoutSeconds = llms.ValidateTimeout(bc.Timeout)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSeconds)*time.Second)
 	defer cancel()
 
 	_, listErr := p.ListModels(ctx)
+	listErr = apperr.RewriteTimeoutSeconds(listErr, timeoutSeconds)
 	outcome.DurationMs = time.Since(start).Milliseconds()
 
 	if listErr != nil {
@@ -134,10 +137,15 @@ func (s *Service) TestModels(cfg settings.ProviderConfig) (*apperr.VerifyOutcome
 		return outcome, err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), verifyTimeout)
+	timeoutSeconds := 30 // llms.ValidateTimeout's own out-of-range fallback value
+	if bc, bcErr := s.settingsService.GetInferenceBaseConfig(); bcErr == nil && bc != nil {
+		timeoutSeconds = llms.ValidateTimeout(bc.Timeout)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSeconds)*time.Second)
 	defer cancel()
 
 	models, listErr := p.ListModels(ctx)
+	listErr = apperr.RewriteTimeoutSeconds(listErr, timeoutSeconds)
 	outcome.DurationMs = time.Since(start).Milliseconds()
 
 	if listErr != nil {
@@ -202,7 +210,11 @@ func (s *Service) TestInference(cfg settings.ProviderConfig) (*apperr.VerifyOutc
 		return outcome, apperr.Internal(fmt.Errorf("get model config: %w", err))
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), verifyTimeout)
+	timeoutSeconds := 30 // llms.ValidateTimeout's own out-of-range fallback value
+	if bc, bcErr := s.settingsService.GetInferenceBaseConfig(); bcErr == nil && bc != nil {
+		timeoutSeconds = llms.ValidateTimeout(bc.Timeout)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSeconds)*time.Second)
 	defer cancel()
 
 	req := llms.ChatRequest{
@@ -223,6 +235,7 @@ func (s *Service) TestInference(cfg settings.ProviderConfig) (*apperr.VerifyOutc
 	}
 
 	resp, chatErr := p.Chat(ctx, req)
+	chatErr = apperr.RewriteTimeoutSeconds(chatErr, timeoutSeconds)
 	outcome.DurationMs = time.Since(start).Milliseconds()
 
 	if chatErr != nil {

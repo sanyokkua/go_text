@@ -5,7 +5,9 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
 
 	"go_text/internal/apperr"
 	"go_text/internal/gate"
@@ -34,6 +36,8 @@ func (l *testLogger) Fatal(msg string)   {}
 type stubSettingsService struct {
 	modelCfg *settings.ModelConfig
 	modelErr error
+	inferCfg *settings.InferenceBaseConfig
+	inferErr error
 }
 
 func (s *stubSettingsService) GetModelConfig() (*settings.ModelConfig, error) {
@@ -70,6 +74,12 @@ func (s *stubSettingsService) SetAsCurrentProviderConfig(_ string) (*settings.Pr
 	return nil, nil
 }
 func (s *stubSettingsService) GetInferenceBaseConfig() (*settings.InferenceBaseConfig, error) {
+	if s.inferErr != nil {
+		return nil, s.inferErr
+	}
+	if s.inferCfg != nil {
+		return s.inferCfg, nil
+	}
 	return nil, nil
 }
 func (s *stubSettingsService) UpdateInferenceBaseConfig(_ *settings.InferenceBaseConfig) (*settings.InferenceBaseConfig, error) {
@@ -217,9 +227,10 @@ func TestService_TestConnection_Unreachable(t *testing.T) {
 	cfg.BaseURL = "http://127.0.0.1:19999"
 	cfg.Kind = string(llms.KindOpenAI)
 	svc := &Service{
-		wlog:    &testLogger{},
-		factory: llms.NewProviderFactory(resty.New()),
-		gate:    gate.New(),
+		wlog:            &testLogger{},
+		factory:         llms.NewProviderFactory(resty.New()),
+		settingsService: &stubSettingsService{},
+		gate:            gate.New(),
 	}
 
 	outcome, err := svc.TestConnection(cfg)
@@ -367,9 +378,10 @@ func TestService_TestModels_Unreachable(t *testing.T) {
 	cfg.BaseURL = "http://127.0.0.1:19999"
 	cfg.Kind = string(llms.KindOpenAI)
 	svc := &Service{
-		wlog:    &testLogger{},
-		factory: llms.NewProviderFactory(resty.New()),
-		gate:    gate.New(),
+		wlog:            &testLogger{},
+		factory:         llms.NewProviderFactory(resty.New()),
+		settingsService: &stubSettingsService{},
+		gate:            gate.New(),
 	}
 
 	outcome, err := svc.TestModels(cfg)
@@ -749,4 +761,137 @@ func successNativeChatBody(content string) []byte {
 	}
 	b, _ := json.Marshal(body)
 	return b
+}
+
+// ─── T85: configured timeout must be respected, not the hardcoded 30s default ──
+//
+// Each test below configures a 1-second timeout via stubSettingsService and
+// points at a server that sleeps 3 seconds before responding. 3s sits strictly
+// between the configured 1s and the old hardcoded 30s default: pre-fix code
+// would let the 3s delay complete and report success (3s < 30s), while
+// fixed code fires the 1s deadline first and returns a timeout error. This
+// proves the real configured value is wired in without asserting on
+// wall-clock duration.
+
+func TestService_TestConnection_RespectsConfiguredTimeout(t *testing.T) {
+	t.Parallel()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(3 * time.Second)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"data":[]}`))
+	}))
+	defer srv.Close()
+
+	cfg := baseProviderCfg("SlowProv")
+	cfg.BaseURL = srv.URL
+	cfg.Kind = string(llms.KindOpenAI)
+	svc := &Service{
+		wlog:            &testLogger{},
+		factory:         llms.NewProviderFactory(resty.New()),
+		settingsService: &stubSettingsService{inferCfg: &settings.InferenceBaseConfig{Timeout: 1}},
+		gate:            gate.New(),
+	}
+
+	outcome, err := svc.TestConnection(cfg)
+	if err == nil {
+		t.Fatal("expected error when the server exceeds the configured 1s timeout")
+	}
+	if outcome.OK {
+		t.Error("expected OK=false")
+	}
+	var ae *apperr.AppError
+	if !errors.As(err, &ae) {
+		t.Fatalf("expected *apperr.AppError, got %T", err)
+	}
+	// TestConnection reclassifies a timeout into provider_unreachable (existing,
+	// unrelated behavior) — the corrected seconds value is not visible here, so
+	// only the classification is asserted.
+	if ae.Code != apperr.CodeProviderUnreachable {
+		t.Errorf("expected code=provider_unreachable, got %q", ae.Code)
+	}
+}
+
+func TestService_TestModels_RespectsConfiguredTimeout(t *testing.T) {
+	t.Parallel()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(3 * time.Second)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(successModelsBody())
+	}))
+	defer srv.Close()
+
+	cfg := baseProviderCfg("SlowProv")
+	cfg.BaseURL = srv.URL
+	cfg.Kind = string(llms.KindOpenAI)
+	svc := &Service{
+		wlog:            &testLogger{},
+		factory:         llms.NewProviderFactory(resty.New()),
+		settingsService: &stubSettingsService{inferCfg: &settings.InferenceBaseConfig{Timeout: 1}},
+		gate:            gate.New(),
+	}
+
+	outcome, err := svc.TestModels(cfg)
+	if err == nil {
+		t.Fatal("expected error when the server exceeds the configured 1s timeout")
+	}
+	if outcome.OK {
+		t.Error("expected OK=false")
+	}
+	var ae *apperr.AppError
+	if !errors.As(err, &ae) {
+		t.Fatalf("expected *apperr.AppError, got %T", err)
+	}
+	if ae.Code != apperr.CodeTimeout {
+		t.Errorf("expected code=timeout, got %q", ae.Code)
+	}
+	if ae.Details["timeout"] != "1" {
+		t.Errorf("expected Details[timeout]=1, got %q", ae.Details["timeout"])
+	}
+	if !strings.Contains(ae.Message, "1s") {
+		t.Errorf("expected message to contain the real configured seconds (1s), got %q", ae.Message)
+	}
+}
+
+func TestService_TestInference_RespectsConfiguredTimeout(t *testing.T) {
+	t.Parallel()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(3 * time.Second)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(successChatBody("ok"))
+	}))
+	defer srv.Close()
+
+	cfg := baseProviderCfg("SlowProv")
+	cfg.SelectedModel = "gpt-4o"
+	cfg.BaseURL = srv.URL
+	cfg.Kind = string(llms.KindOpenAI)
+	svc := &Service{
+		wlog:    &testLogger{},
+		factory: llms.NewProviderFactory(resty.New()),
+		settingsService: &stubSettingsService{
+			inferCfg: &settings.InferenceBaseConfig{Timeout: 1},
+		},
+		gate: gate.New(),
+	}
+
+	outcome, err := svc.TestInference(cfg)
+	if err == nil {
+		t.Fatal("expected error when the server exceeds the configured 1s timeout")
+	}
+	if outcome.OK {
+		t.Error("expected OK=false")
+	}
+	var ae *apperr.AppError
+	if !errors.As(err, &ae) {
+		t.Fatalf("expected *apperr.AppError, got %T", err)
+	}
+	if ae.Code != apperr.CodeTimeout {
+		t.Errorf("expected code=timeout, got %q", ae.Code)
+	}
+	if ae.Details["timeout"] != "1" {
+		t.Errorf("expected Details[timeout]=1, got %q", ae.Details["timeout"])
+	}
+	if !strings.Contains(ae.Message, "1s") {
+		t.Errorf("expected message to contain the real configured seconds (1s), got %q", ae.Message)
+	}
 }

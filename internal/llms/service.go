@@ -101,13 +101,13 @@ func (l *LLMService) GetModelsListForProvider(provider *settings.ProviderConfig)
 		return l.customModelsFallback(provider, op, err)
 	}
 
-	timeout := l.validateTimeout(baseConfig.Timeout)
+	timeout := ValidateTimeout(baseConfig.Timeout)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 	defer cancel()
 
 	models, err := p.ListModels(ctx)
 	if err != nil {
-		return l.customModelsFallback(provider, op, err)
+		return l.customModelsFallback(provider, op, apperr.RewriteTimeoutSeconds(err, timeout))
 	}
 
 	ids := make([]string, 0, len(models))
@@ -149,12 +149,13 @@ func (l *LLMService) GetModelsInfoForProvider(provider *settings.ProviderConfig)
 		return l.customModelsInfoFallback(provider, op, err)
 	}
 
-	timeout := l.validateTimeout(baseConfig.Timeout)
+	timeout := ValidateTimeout(baseConfig.Timeout)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 	defer cancel()
 
 	models, err := p.ListModels(ctx)
 	if err != nil {
+		err = apperr.RewriteTimeoutSeconds(err, timeout)
 		if p.Capabilities().SupportsDiscovery && !provider.UseCustomModels {
 			return nil, err
 		}
@@ -196,14 +197,14 @@ func (l *LLMService) GetCompletionResponseForProvider(provider *settings.Provide
 		return "", fmt.Errorf("%s: get model config: %w", op, err)
 	}
 
-	timeout := l.validateTimeout(baseConfig.Timeout)
+	timeout := ValidateTimeout(baseConfig.Timeout)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 	defer cancel()
 
 	chatReq := chatRequestFrom(request, modelConfig)
 	resp, err := p.Chat(ctx, chatReq)
 	if err != nil {
-		return "", err
+		return "", apperr.RewriteTimeoutSeconds(err, timeout)
 	}
 	return resp.Content, nil
 }
@@ -304,7 +305,10 @@ func chatRequestFrom(req *ChatCompletionRequest, modelCfg *settings.ModelConfig)
 	return chatReq
 }
 
-func (l *LLMService) validateTimeout(timeout int) int {
+// ValidateTimeout clamps a configured timeout to the valid 1-600s range, falling back to 30s
+// if out of range. Shared by LLMService and verification.Service so both paths apply the
+// identical policy.
+func ValidateTimeout(timeout int) int {
 	const defaultTimeout = 30
 	if timeout < 1 || timeout > 600 {
 		return defaultTimeout

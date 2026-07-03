@@ -888,6 +888,66 @@ func TestLLMServiceAPI_Timeout(t *testing.T) {
 	assert.Empty(t, models, "Fallback with no CustomModels should return empty list")
 }
 
+// TestLLMService_GetCompletionResponseForProvider_TimeoutMessageReflectsConfiguredSeconds
+// verifies the real chain-execution completion path (T85, finding #5/#12): with a
+// configured 1-second timeout and a server that sleeps 3 seconds (strictly between the
+// configured 1s and the old hardcoded "0s" placeholder bug), the returned error must be
+// CodeTimeout carrying the real configured seconds — not "0s" — proving
+// mapTransportError's timeout-seconds bug is fixed on the chain path too, not just in
+// the verification diagnostics.
+func TestLLMService_GetCompletionResponseForProvider_TimeoutMessageReflectsConfiguredSeconds(t *testing.T) {
+	log := &TestLogger{}
+	settingsService := &MockSettingsService{
+		baseConfig: &settings.InferenceBaseConfig{Timeout: 1, MaxRetries: 0},
+	}
+	restyClient := resty.New()
+	llmService := newTestService(log, restyClient, settingsService)
+
+	slowBehavior := &MockServerBehavior{
+		StatusCode:    http.StatusOK,
+		DelayDuration: 3 * time.Second,
+		CompletionResponse: &ChatCompletionResponse{
+			ID:    "test-completion-slow",
+			Model: "model-1",
+			Choices: []Choice{
+				{
+					Index:        0,
+					Message:      CompletionRequestMessage{Role: "assistant", Content: "too slow"},
+					FinishReason: "stop",
+				},
+			},
+		},
+	}
+	slowServer := createMockServer(slowBehavior)
+	defer slowServer.Close()
+
+	slowProvider := &settings.ProviderConfig{
+		Name:            "Slow Provider",
+		Kind:            "openai",
+		BaseURL:         slowServer.URL + "/",
+		ModelsPath:      "api/tags",
+		CompletionPath:  "api/chat",
+		AuthScheme:      "none",
+		UseCustomModels: false,
+	}
+	request := &ChatCompletionRequest{
+		Model: "model-1",
+		Messages: []CompletionRequestMessage{
+			{Role: "user", Content: "Test completion request."},
+		},
+		Stream: false,
+	}
+
+	_, err := llmService.GetCompletionResponseForProvider(slowProvider, request)
+	require.Error(t, err, "GetCompletionResponseForProvider should fail when the server exceeds the configured 1s timeout")
+
+	var ae *apperr.AppError
+	require.True(t, errors.As(err, &ae), "Error should be an *apperr.AppError")
+	assert.Equal(t, apperr.CodeTimeout, ae.Code, "Error code should be CodeTimeout")
+	assert.Equal(t, "1", ae.Details["timeout"], "Details[timeout] should reflect the real configured seconds")
+	assert.Contains(t, ae.Message, "1s", "Message should reflect the real configured seconds, not the old 0s placeholder")
+}
+
 // TestLLMServiceAPI_GetCompletionResponseForProvider_MissingCredential verifies that
 // GetCompletionResponseForProvider returns apperr.CodeMissingCredential when the
 // provider requires auth (AuthScheme="bearer") but APIKeyEnvVar is empty.

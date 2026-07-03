@@ -15,6 +15,11 @@ import (
 
 // mapTransportError converts a resty transport-level error (no HTTP response) to an apperr.
 // Call only when resty.Execute returns a non-nil error.
+//
+// The "0" passed to apperr.Timeout below is a documented placeholder, not a bug: this function
+// has no access to the caller's configured timeout duration, only the transport error. Callers
+// that own the configured timeout value fix it up via apperr.RewriteTimeoutSeconds before the
+// error is surfaced to the user.
 func mapTransportError(provider, baseURL string, err error) *apperr.AppError {
 	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
 		return apperr.Timeout(provider, 0, err)
