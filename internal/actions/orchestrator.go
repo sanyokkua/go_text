@@ -144,7 +144,11 @@ func (a *ActionService) RunChain(
 
 			// A cancelled in-flight HTTP call surfaces the same way a between-groups
 			// cancellation already does: normalize both to the identical partial-result/
-			// history/logging shape instead of wrapping it as a step failure.
+			// history/logging shape instead of wrapping it as a step failure. Safe to treat
+			// any CodeCancelled step error as this run's own cancellation: mapTransportError
+			// is the sole producer of CodeCancelled below runStep, and it only fires on
+			// context.Canceled — which this run's ctx (context.WithCancel per-run, see
+			// ActionHandler.ProcessPromptChain) is the only source of.
 			if isAppErr && ae.Code == apperr.CodeCancelled {
 				cancelErr := apperr.Cancelled(completed)
 				partialResult := &apperr.ChainResult{
