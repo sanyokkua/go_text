@@ -139,11 +139,27 @@ func (a *ActionService) RunChain(
 			RunID:       req.RunID,
 		})
 		if stepErr != nil {
+			var ae *apperr.AppError
+			isAppErr := errors.As(stepErr, &ae)
+
+			// A cancelled in-flight HTTP call surfaces the same way a between-groups
+			// cancellation already does: normalize both to the identical partial-result/
+			// history/logging shape instead of wrapping it as a step failure.
+			if isAppErr && ae.Code == apperr.CodeCancelled {
+				cancelErr := apperr.Cancelled(completed)
+				partialResult := &apperr.ChainResult{
+					FinalText: input,
+					Completed: completed,
+					Error:     cancelErr.Message,
+				}
+				a.recordChainHistory(req, plan, cfg, partialResult, cancelErr, completed, time.Since(startTime))
+				logFinished(chainStatusCancelled, cancelErr)
+				return partialResult, cancelErr
+			}
+
 			emit(i, total, group.Family, "failed")
 			idx := i
-
-			var ae *apperr.AppError
-			if !errors.As(stepErr, &ae) {
+			if !isAppErr {
 				ae = apperr.Internal(stepErr)
 			}
 			wrapped := apperr.StepFailed(i, group.Family, ae)

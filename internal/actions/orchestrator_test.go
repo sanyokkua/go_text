@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -351,6 +352,69 @@ func TestRunChain_Cancel_KeepsPartialOutput(t *testing.T) {
 	assert.Equal(t, apperr.CodeCancelled, ae.Code)
 	assert.Equal(t, 1, result.Completed)
 	assert.Equal(t, "group0 result", result.FinalText)
+	assert.Nil(t, result.FailedIndex, "cancel is not a step failure")
+}
+
+// TestRunChain_CancelDuringInFlightHTTPCall_AbortsRequest is the T90 repro from the
+// 2026-07-03 live-testing report (Finding #9 / P11-T5): cancelling while a group's LLM
+// call is already in flight must abort that HTTP request, not let it run to completion.
+// The mock server observes r.Context().Done() directly, proving the abort reached the
+// transport layer — not just that RunChain returned an error.
+func TestRunChain_CancelDuringInFlightHTTPCall_AbortsRequest(t *testing.T) {
+	t.Parallel()
+
+	tmpSvc := newTestChainService(t, "http://placeholder")
+	actionID := oneFamilyStep(t, tmpSvc)
+
+	serverSawCancellation := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Drain the request body before waiting on r.Context().Done(). Go's net/http
+		// server only runs the background read that detects a client disconnect (and
+		// thus cancels r.Context()) when it is not blocked waiting on an unread request
+		// body. Since the completion request is a POST with a JSON body, an undrained
+		// body would suppress close-detection and make this assertion flaky/impossible,
+		// independent of whether the app actually aborts the request.
+		_, _ = io.Copy(io.Discard, r.Body)
+		select {
+		case <-r.Context().Done():
+			close(serverSawCancellation)
+		case <-time.After(5 * time.Second):
+			// Only reached if cancellation failed to propagate to the transport.
+		}
+	}))
+	defer server.Close()
+
+	svc := newTestChainService(t, server.URL)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	req := apperr.ChainRequest{
+		RunID:     "run-cancel-inflight",
+		InputText: "start",
+		Steps:     []apperr.ChainStep{{ActionID: actionID}},
+	}
+
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		cancel()
+	}()
+
+	result, err := svc.RunChain(ctx, req, nil)
+
+	select {
+	case <-serverSawCancellation:
+		// The in-flight request was genuinely aborted — the fix works.
+	case <-time.After(2 * time.Second):
+		t.Fatal("mock server never observed request-context cancellation — the HTTP call was not aborted")
+	}
+
+	require.NotNil(t, result)
+	var ae *apperr.AppError
+	require.True(t, errors.As(err, &ae))
+	assert.Equal(t, apperr.CodeCancelled, ae.Code)
+	assert.Equal(t, 0, result.Completed, "the in-flight step never completed")
+	assert.Equal(t, "start", result.FinalText, "partial result must keep the pre-step input, not a partial/garbled response")
 	assert.Nil(t, result.FailedIndex, "cancel is not a step failure")
 }
 
