@@ -1,6 +1,7 @@
 package actions
 
 import (
+	"errors"
 	"testing"
 
 	"go_text/internal/apperr"
@@ -31,6 +32,21 @@ func testCatalog() []apperr.ActionMeta {
 }
 
 func step(id string) apperr.ChainStep { return apperr.ChainStep{ActionID: id} }
+
+// requiresCatalog mirrors the real catalog.go entries for the six actions that
+// declare non-empty Requires — kept separate from testCatalog() because that
+// shared fixture's translate.text/prompteng.text.improve entries deliberately
+// have no Requires set, and other tests depend on that shape.
+func requiresCatalog() []apperr.ActionMeta {
+	return []apperr.ActionMeta{
+		{ID: "translate.text", Family: v3.FamilyTranslate, OrderRank: 90, ExclusivityGroup: "translate", Mergeable: false, Terminal: true, Requires: []string{v3.ReqInputLang, v3.ReqOutputLang}},
+		{ID: "translate.localize", Family: v3.FamilyTranslate, OrderRank: 90, ExclusivityGroup: "translate", Mergeable: false, Terminal: true, Requires: []string{v3.ReqInputLang, v3.ReqOutputLang}},
+		{ID: "translate.dictionary", Family: v3.FamilyTranslate, OrderRank: 90, ExclusivityGroup: "translate", Mergeable: false, Terminal: true, Requires: []string{v3.ReqInputLang, v3.ReqOutputLang}},
+		{ID: "translate.examples", Family: v3.FamilyTranslate, OrderRank: 90, ExclusivityGroup: "translate", Mergeable: false, Terminal: true, Requires: []string{v3.ReqOutputLang}},
+		{ID: "prompteng.image", Family: v3.FamilyPromptEng, OrderRank: 100, ExclusivityGroup: "prompteng", Mergeable: false, Terminal: true, Requires: []string{v3.ReqTargetModel, v3.ReqGoal}},
+		{ID: "prompteng.video", Family: v3.FamilyPromptEng, OrderRank: 100, ExclusivityGroup: "prompteng", Mergeable: false, Terminal: true, Requires: []string{v3.ReqTargetModel}},
+	}
+}
 
 func TestPlanner_Plan_CanonicalOrdering(t *testing.T) {
 	p := NewPlanner(testCatalog())
@@ -245,5 +261,50 @@ func TestPlanner_Plan_UnknownActionID(t *testing.T) {
 	_, err := p.Plan(apperr.ChainRequest{Steps: []apperr.ChainStep{{ActionID: "does.not.exist"}}})
 	if err == nil {
 		t.Fatal("expected error for unknown action ID, got nil")
+	}
+}
+
+func TestPlanner_Plan_Requirements(t *testing.T) {
+	p := NewPlanner(requiresCatalog())
+
+	tests := []struct {
+		name    string
+		req     apperr.ChainRequest
+		wantErr bool
+	}{
+		{name: "translate.text present → ok", req: apperr.ChainRequest{Steps: []apperr.ChainStep{step("translate.text")}, InputLanguageID: "en", OutputLanguageID: "es"}, wantErr: false},
+		{name: "translate.text missing both → error", req: apperr.ChainRequest{Steps: []apperr.ChainStep{step("translate.text")}}, wantErr: true},
+		{name: "translate.text missing input only → error", req: apperr.ChainRequest{Steps: []apperr.ChainStep{step("translate.text")}, OutputLanguageID: "es"}, wantErr: true},
+		{name: "translate.localize present → ok", req: apperr.ChainRequest{Steps: []apperr.ChainStep{step("translate.localize")}, InputLanguageID: "en", OutputLanguageID: "es"}, wantErr: false},
+		{name: "translate.localize missing → error", req: apperr.ChainRequest{Steps: []apperr.ChainStep{step("translate.localize")}}, wantErr: true},
+		{name: "translate.dictionary present → ok", req: apperr.ChainRequest{Steps: []apperr.ChainStep{step("translate.dictionary")}, InputLanguageID: "en", OutputLanguageID: "es"}, wantErr: false},
+		{name: "translate.dictionary missing → error", req: apperr.ChainRequest{Steps: []apperr.ChainStep{step("translate.dictionary")}}, wantErr: true},
+		{name: "translate.examples present (output only) → ok", req: apperr.ChainRequest{Steps: []apperr.ChainStep{step("translate.examples")}, OutputLanguageID: "es"}, wantErr: false},
+		{name: "translate.examples missing output → error", req: apperr.ChainRequest{Steps: []apperr.ChainStep{step("translate.examples")}}, wantErr: true},
+		{name: "prompteng.image present → ok", req: apperr.ChainRequest{Steps: []apperr.ChainStep{{ActionID: "prompteng.image", TargetModel: "sdxl", Goal: "restore"}}}, wantErr: false},
+		{name: "prompteng.image missing both → error", req: apperr.ChainRequest{Steps: []apperr.ChainStep{{ActionID: "prompteng.image"}}}, wantErr: true},
+		{name: "prompteng.image missing goal only → error", req: apperr.ChainRequest{Steps: []apperr.ChainStep{{ActionID: "prompteng.image", TargetModel: "sdxl"}}}, wantErr: true},
+		{name: "prompteng.video present → ok", req: apperr.ChainRequest{Steps: []apperr.ChainStep{{ActionID: "prompteng.video", TargetModel: "sora"}}}, wantErr: false},
+		{name: "prompteng.video missing target model → error", req: apperr.ChainRequest{Steps: []apperr.ChainStep{{ActionID: "prompteng.video"}}}, wantErr: true},
+		{name: "whitespace-only language id treated as missing → error", req: apperr.ChainRequest{Steps: []apperr.ChainStep{step("translate.text")}, InputLanguageID: "  ", OutputLanguageID: "es"}, wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := p.Plan(tt.req)
+			if tt.wantErr {
+				var ae *apperr.AppError
+				if !errors.As(err, &ae) {
+					t.Fatalf("expected *apperr.AppError, got %v (%T)", err, err)
+				}
+				if ae.Code != apperr.CodeInvalidPlan {
+					t.Fatalf("expected CodeInvalidPlan, got %v", ae.Code)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("expected no error, got %v", err)
+			}
+		})
 	}
 }

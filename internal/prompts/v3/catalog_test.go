@@ -62,6 +62,27 @@ func TestCatalog_AllActionsHaveNonEmptyNameAndID(t *testing.T) {
 	}
 }
 
+// TestCatalog_RequiresTokensAreKnown guards internal/actions.Planner.checkRequirements,
+// which fails closed on any Requires token it doesn't recognize: if a future catalog
+// entry declares a new requirement constant without wiring it into that switch, every
+// chain using it would hard-fail at runtime while this test — not that switch — is the
+// first place to catch the mismatch.
+func TestCatalog_RequiresTokensAreKnown(t *testing.T) {
+	known := map[string]bool{
+		v3.ReqInputLang:   true,
+		v3.ReqOutputLang:  true,
+		v3.ReqTargetModel: true,
+		v3.ReqGoal:        true,
+	}
+	for _, a := range v3.Catalog() {
+		for _, r := range a.Requires {
+			if !known[r] {
+				t.Errorf("action %q declares unrecognized Requires token %q", a.ID, r)
+			}
+		}
+	}
+}
+
 func TestCatalog_DefensiveCopy(t *testing.T) {
 	c1 := v3.Catalog()
 	c2 := v3.Catalog()

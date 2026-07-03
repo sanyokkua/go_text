@@ -3,8 +3,10 @@ package actions
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"go_text/internal/apperr"
+	v3 "go_text/internal/prompts/v3"
 )
 
 const (
@@ -36,6 +38,10 @@ func (p *Planner) Plan(req apperr.ChainRequest) (ChainPlan, error) {
 		if _, ok := p.catalog[s.ActionID]; !ok {
 			return ChainPlan{}, apperr.Validation("actionId", "a known action ID", s.ActionID)
 		}
+	}
+
+	if err := p.checkRequirements(req); err != nil {
+		return ChainPlan{}, err
 	}
 
 	ordered := p.sortCanonical(req.Steps)
@@ -88,6 +94,40 @@ func (p *Planner) sortCanonical(steps []apperr.ChainStep) []apperr.ChainStep {
 		out[i] = s.step
 	}
 	return out
+}
+
+// checkRequirements returns an InvalidPlan error if any step's action is missing a
+// runtime parameter listed in its ActionMeta.Requires. Existence of the ActionID in
+// p.catalog is already guaranteed by the caller's preceding loop.
+func (p *Planner) checkRequirements(req apperr.ChainRequest) error {
+	for _, s := range req.Steps {
+		meta := p.catalog[s.ActionID]
+		for _, r := range meta.Requires {
+			var missing bool
+			switch r {
+			case v3.ReqInputLang:
+				missing = strings.TrimSpace(req.InputLanguageID) == ""
+			case v3.ReqOutputLang:
+				missing = strings.TrimSpace(req.OutputLanguageID) == ""
+			case v3.ReqTargetModel:
+				missing = strings.TrimSpace(s.TargetModel) == ""
+			case v3.ReqGoal:
+				missing = strings.TrimSpace(s.Goal) == ""
+			default:
+				// Catalog authoring bug (unwired requirement token) — fail closed
+				// and say so distinctly, rather than silently letting it through.
+				return apperr.InvalidPlan(
+					fmt.Sprintf("action %q declares unknown requirement %q", s.ActionID, r),
+					len(req.Steps), 0)
+			}
+			if missing {
+				return apperr.InvalidPlan(
+					fmt.Sprintf("action %q is missing required parameter %q", s.ActionID, r),
+					len(req.Steps), 0)
+			}
+		}
+	}
+	return nil
 }
 
 // checkExclusivity returns an InvalidPlan error if any non-empty ExclusivityGroup appears twice.

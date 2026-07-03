@@ -18,6 +18,8 @@ functional surface changes — new settings, new action families, new error path
 | Version | Date | Change |
 |---|---|---|
 | v1.0 | 2026-07-03 | Initial version. Supersedes `docs/V3_Temp_Docs/2026-06-30-comprehensive-live-testing.md` (broad smoke pass) and `docs/V3_Temp_Docs/2026-07-01-context-window-live-testing.md` (context-window deep dive) as the canonical live-testing reference. Both are kept as historical prior art. |
+| v1.1 | 2026-07-03 | §2 baseline corrected: `useTemperature` defaults **on** (`temperature=0.5`), not off — verified against `internal/db/db.go` seeder and `internal/settings/repository_sqlite.go` read-fallback, which agree with each other. Found live during a full P0-P15 execution (2026-07-03 report). |
+| v1.2 | 2026-07-03 | §2 baseline corrected: inference defaults are `timeout=60`, `useMarkdownForOutput=false` (off), not `timeout=30`/"markdown on" — verified against `internal/db/db.go` seeder. Found live during the same P0-P15 run. |
 
 When you add a phase or test case for new functionality, add a row here describing what
 changed and bump the version. See [How to Extend This Plan](#9-how-to-extend-this-plan).
@@ -87,9 +89,12 @@ providers, stacks, or history behind will silently corrupt the next phase's assu
 - Exactly the two auto-seeded providers exist: **Ollama** and **LM Studio** (default presets,
   no edits). No custom/OpenAI/Azure/Llama.cpp providers configured.
 - Current provider = Ollama, current model = `phi4-mini:3.8b-q4_K_M`.
-- Model config: all optional toggles (`useTemperature`, `useContextWindow`,
-  `useMaxOutputTokens`, `useLegacyMaxTokens`) off, at their defaults.
-- Inference config at defaults (`timeout=30`, `maxRetries=3`, markdown output on).
+- Model config: `useTemperature` **on** by default (`temperature=0.5`); `useContextWindow`,
+  `useMaxOutputTokens`, `useLegacyMaxTokens` off — per the seeder (`internal/db/db.go`) and the
+  read-fallback defaults (`internal/settings/repository_sqlite.go`), which agree with each other.
+- Inference config at defaults (`timeout=60`, `maxRetries=3`, `useMarkdownForOutput=false`) — per
+  the seeder (`internal/db/db.go`), not the `timeout=30`/"markdown on" figures previously stated
+  here.
 - No custom languages beyond the shipped defaults.
 - `historyEnabled=true`, history empty (cleared).
 - `enableTaskLogging=false`.

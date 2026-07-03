@@ -370,6 +370,30 @@ func TestRunChain_EmptyInput_ReturnsValidationError(t *testing.T) {
 	assert.Equal(t, apperr.CodeValidation, ae.Code)
 }
 
+// TestRunChain_MissingRequirement_ReturnsInvalidPlanError uses the real production
+// catalog (via newTestChainService) so translate.text's real Requires values are
+// exercised. The "http://unused" server URL means any accidental LLM call would
+// fail with a network error instead of the expected code, proving zero LLM calls
+// were made without needing an explicit call counter.
+func TestRunChain_MissingRequirement_ReturnsInvalidPlanError(t *testing.T) {
+	t.Parallel()
+	svc := newTestChainService(t, "http://unused")
+
+	req := apperr.ChainRequest{
+		RunID:     "run-missing-req",
+		InputText: "hello world",
+		Steps:     []apperr.ChainStep{{ActionID: "translate.text"}},
+		// InputLanguageID / OutputLanguageID deliberately left empty.
+	}
+
+	result, err := svc.RunChain(context.Background(), req, nil)
+
+	assert.Nil(t, result)
+	var ae *apperr.AppError
+	require.True(t, errors.As(err, &ae))
+	assert.Equal(t, apperr.CodeInvalidPlan, ae.Code)
+}
+
 // TestRunChain_RunID_FlowsIntoTaskLogEntry verifies that apperr.ChainRequest.RunID
 // is threaded into ChatStepRequest.RunID for every step runStep executes. The
 // LLM completion request itself carries no RunID field, so the tasklog entry
@@ -542,6 +566,31 @@ func TestActionHandler_ProcessPromptChain_BusyWhenGateHeld(t *testing.T) {
 	assert.Nil(t, res.Data, "Data must be nil on busy")
 	require.NotNil(t, res.Error)
 	assert.Equal(t, string(apperr.CodeBusy), string(res.Error.Code))
+}
+
+// TestActionHandler_ProcessPromptChain_MissingRequirement_ReturnsInvalidPlanError
+// exercises ProcessPromptChain — the actual Wails-bound method the frontend calls —
+// directly, satisfying T88's acceptance criterion.
+func TestActionHandler_ProcessPromptChain_MissingRequirement_ReturnsInvalidPlanError(t *testing.T) {
+	t.Parallel()
+	svc := newTestChainService(t, "http://unused")
+	h := NewActionHandler(
+		logger.NewDefaultLogger(),
+		zerolog.Nop(),
+		svc,
+		&mockVerificationService{},
+		gate.New(),
+	)
+
+	res := h.ProcessPromptChain(apperr.ChainRequest{
+		RunID:     "h-missing-req",
+		InputText: "hello world",
+		Steps:     []apperr.ChainStep{{ActionID: "translate.text"}},
+	})
+
+	assert.Nil(t, res.Data, "Data must be nil when planning rejects the request")
+	require.NotNil(t, res.Error)
+	assert.Equal(t, string(apperr.CodeInvalidPlan), string(res.Error.Code))
 }
 
 func TestActionHandler_ProcessPromptChain_GateReleasedAfterCompletion(t *testing.T) {
