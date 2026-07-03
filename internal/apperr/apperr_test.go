@@ -1,6 +1,7 @@
 package apperr_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"testing"
@@ -325,6 +326,21 @@ func TestCancelled(t *testing.T) {
 	}
 	if e.Details["stepIndex"] != "2" {
 		t.Errorf("Details[stepIndex]: got %q", e.Details["stepIndex"])
+	}
+}
+
+func TestCancelledRequest(t *testing.T) {
+	cause := context.Canceled
+	e := apperr.CancelledRequest(cause)
+
+	if e.Code != apperr.CodeCancelled {
+		t.Errorf("want CodeCancelled, got %q", e.Code)
+	}
+	if e.Retryable {
+		t.Error("want Retryable=false")
+	}
+	if !errors.Is(e, context.Canceled) {
+		t.Error("want errors.Is(e, context.Canceled) to hold through Unwrap()")
 	}
 }
 

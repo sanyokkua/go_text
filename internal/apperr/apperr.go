@@ -266,6 +266,20 @@ func Cancelled(stepIndex int) *AppError {
 	}
 }
 
+// CancelledRequest signals that a single in-flight LLM HTTP request was aborted because its
+// context was cancelled (CancelChain or app shutdown) — distinct from Timeout, which fires when
+// the provider simply exceeds the configured time budget. Callers that track a chain's step
+// index (RunChain) normalize this into Cancelled(stepIndex) instead of surfacing it directly.
+func CancelledRequest(cause error) *AppError {
+	return &AppError{
+		Code:      CodeCancelled,
+		Title:     "Cancelled",
+		Message:   "Request was cancelled.",
+		Retryable: false,
+		cause:     cause,
+	}
+}
+
 // Internal is the catch-all / panic fallback. Details are always empty to
 // avoid leaking internal state.
 func Internal(cause error) *AppError {
