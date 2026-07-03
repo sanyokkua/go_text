@@ -11,6 +11,28 @@ import (
 	"github.com/rs/zerolog"
 )
 
+func TestResolveLevel(t *testing.T) {
+	tests := []struct {
+		name  string
+		level string
+		dev   bool
+		want  string
+	}{
+		{name: "empty level in production defaults to warn", level: "", dev: false, want: "warn"},
+		{name: "empty level in development defaults to debug", level: "", dev: true, want: "debug"},
+		{name: "explicit level in production is unchanged", level: "error", dev: false, want: "error"},
+		{name: "explicit level in development is unchanged", level: "error", dev: true, want: "error"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := logging.ResolveLevel(tt.level, tt.dev)
+			if got != tt.want {
+				t.Errorf("ResolveLevel(%q, %v) = %q; want %q", tt.level, tt.dev, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestRedact_masksTokens(t *testing.T) {
 	cases := []struct {
 		key     string

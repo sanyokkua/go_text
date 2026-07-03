@@ -19,7 +19,7 @@ import (
 func newUIPreferencesHandler(t *testing.T) *settings.SettingsHandler {
 	t.Helper()
 	repo := newRepo(t)
-	svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+	svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
 	return settings.NewSettingsHandler(svc, nil)
 }
 
@@ -28,7 +28,7 @@ func newUIPreferencesHandler(t *testing.T) *settings.SettingsHandler {
 func newLoggingHandler(t *testing.T) (*settings.SettingsHandler, *logging.Logger) {
 	t.Helper()
 	repo := newRepo(t)
-	svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+	svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
 	h := settings.NewSettingsHandler(svc, nil)
 	l, err := logging.New(logging.DefaultConfig(), false)
 	if err != nil {
@@ -41,7 +41,7 @@ func newLoggingHandler(t *testing.T) (*settings.SettingsHandler, *logging.Logger
 func TestSettingsHandler_GetLoggingConfig_ReturnsDefaults(t *testing.T) {
 	// Arrange: freshly-seeded DB, no updates applied.
 	repo := newRepo(t)
-	svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+	svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
 	handler := settings.NewSettingsHandler(svc, nil)
 
 	// Act
@@ -57,8 +57,8 @@ func TestSettingsHandler_GetLoggingConfig_ReturnsDefaults(t *testing.T) {
 	if res.Data.LogFileEnabled {
 		t.Error("default LogFileEnabled: want false")
 	}
-	if res.Data.LogLevel != "info" {
-		t.Errorf("default LogLevel: want %q, got %q", "info", res.Data.LogLevel)
+	if res.Data.LogLevel != "" {
+		t.Errorf("default LogLevel: want empty (unset sentinel), got %q", res.Data.LogLevel)
 	}
 	if res.Data.LogMaxSizeMB != 10 {
 		t.Errorf("default LogMaxSizeMB: want 10, got %d", res.Data.LogMaxSizeMB)
@@ -151,8 +151,8 @@ func TestSettingsHandler_FileLogging_HandlerVsAppLoggerRouting(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 
 	repo := newRepo(t)
-	realFileUtils := file.NewFileUtilsService(noopLogger{})
-	svc := settings.NewSettingsService(noopLogger{}, repo, realFileUtils)
+	realFileUtils := file.NewFileUtilsService(newTestLogger(t))
+	svc := settings.NewSettingsService(newTestLogger(t), repo, realFileUtils)
 	handler := settings.NewSettingsHandler(svc, nil)
 	l, err := logging.New(logging.DefaultConfig(), false)
 	if err != nil {

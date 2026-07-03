@@ -212,7 +212,7 @@ const AppBehaviorTab: React.FC<Props> = ({ settings, metadata }) => {
                     value={localMaxEntries}
                     onChange={setLocalMaxEntries}
                     min={10}
-                    max={10000}
+                    max={1000}
                     step={10}
                     disabled={!historyEnabled}
                     aria-label="Maximum number of history entries"

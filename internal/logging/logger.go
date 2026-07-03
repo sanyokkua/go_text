@@ -34,6 +34,19 @@ func DefaultConfig() Config {
 	}
 }
 
+// ResolveLevel returns level unchanged if it is non-empty. An empty level
+// means no explicit choice has been persisted yet, so it resolves to the
+// environment-appropriate default: debug in development, warn in production.
+func ResolveLevel(level string, dev bool) string {
+	if level != "" {
+		return level
+	}
+	if dev {
+		return "debug"
+	}
+	return "warn"
+}
+
 // Logger is a zerolog-backed structured logger that also satisfies the
 // Wails logger.Logger interface. It supports in-place reconfiguration.
 type Logger struct {

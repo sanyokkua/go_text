@@ -188,6 +188,7 @@ func (a *ApplicationContextHolder) Init(ctx context.Context) error {
 	} else {
 		lc.Directory = logCfg.LogDirectory
 	}
+	lc.Level = logging.ResolveLevel(lc.Level, isDev)
 
 	if err := a.appLogger.Reconfigure(lc, isDev); err != nil {
 		a.appLogger.Warning(fmt.Sprintf("reconfigure logger: %v", err))

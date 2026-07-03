@@ -8,9 +8,12 @@ import (
 
 	"go_text/internal/apperr"
 	"go_text/internal/file"
+	"go_text/internal/logging"
 
-	"github.com/wailsapp/wails/v2/pkg/logger"
+	"github.com/rs/zerolog"
 )
+
+const settingsComponent = "settings"
 
 // minWindowWidth/minWindowHeight are the app's minimum native window
 // dimensions. They must stay in sync with MinimalWidth/MinimalHeight in main.go.
@@ -99,14 +102,14 @@ type SettingsServiceAPI interface {
 // ── Service implementation ─────────────────────────────────────────────────
 
 type SettingsService struct {
-	logger       logger.Logger
+	logger       *logging.Logger
 	settingsRepo SettingsRepositoryAPI
 	fileUtils    file.FileUtilsServiceAPI
 }
 
 // NewSettingsService constructs the settings service.
 // settingsRepo may be nil at construction time (DI is completed in Init).
-func NewSettingsService(log logger.Logger, settingsRepo SettingsRepositoryAPI, fileUtils file.FileUtilsServiceAPI) *SettingsService {
+func NewSettingsService(log *logging.Logger, settingsRepo SettingsRepositoryAPI, fileUtils file.FileUtilsServiceAPI) *SettingsService {
 	if log == nil {
 		panic("SettingsService: logger cannot be nil")
 	}
@@ -120,6 +123,12 @@ func NewSettingsService(log logger.Logger, settingsRepo SettingsRepositoryAPI, f
 	}
 }
 
+// log returns a sub-logger stamped with the calling method's op and the
+// package component, matching the structured pattern used in internal/actions.
+func (s *SettingsService) log(op string) zerolog.Logger {
+	return s.logger.WithOp(op).With().Str("component", settingsComponent).Logger()
+}
+
 // SetRepository replaces the repository. Called from application.Init() after DB open.
 func (s *SettingsService) SetRepository(repo SettingsRepositoryAPI) {
 	s.settingsRepo = repo
@@ -127,7 +136,8 @@ func (s *SettingsService) SetRepository(repo SettingsRepositoryAPI) {
 
 func (s *SettingsService) GetAppSettingsMetadata() (*AppSettingsMetadata, error) {
 	const op = "SettingsService.GetAppSettingsMetadata"
-	s.logger.Info(fmt.Sprintf("%s: retrieving application settings metadata", op))
+	lg := s.log(op)
+	lg.Info().Msg("retrieving application settings metadata")
 
 	folderPath, err := s.fileUtils.GetAppSettingsFolderPath()
 	if err != nil {
@@ -147,7 +157,7 @@ func (s *SettingsService) GetAppSettingsMetadata() (*AppSettingsMetadata, error)
 	// check when file logging is disabled and startup never created it.
 	logsFolder, err := s.fileUtils.EnsureAppLogsFolderExists(logDir)
 	if err != nil {
-		s.logger.Warning(fmt.Sprintf("%s: could not ensure logs folder: %v", op, err))
+		lg.Warn().Err(err).Msg("could not ensure logs folder")
 		// Fall back to the resolved (possibly non-existent) path so it still displays.
 		if resolved, rErr := s.fileUtils.ResolveAppLogsFolderPath(logDir); rErr == nil {
 			logsFolder = resolved
@@ -210,7 +220,8 @@ func (s *SettingsService) GetSettings() (*Settings, error) {
 
 func (s *SettingsService) ResetSettingsToDefault() (*Settings, error) {
 	const op = "SettingsService.ResetSettingsToDefault"
-	s.logger.Info(fmt.Sprintf("%s: resetting settings to default", op))
+	lg := s.log(op)
+	lg.Info().Msg("resetting settings to default")
 	if err := s.settingsRepo.ResetToDefaults(); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -242,7 +253,8 @@ func (s *SettingsService) GetProviderConfig(providerId string) (*ProviderConfig,
 
 func (s *SettingsService) CreateProviderConfig(cfg *ProviderConfig) (*ProviderConfig, error) {
 	const op = "SettingsService.CreateProviderConfig"
-	s.logger.Info(fmt.Sprintf("%s: creating provider %q", op, cfg.Name))
+	lg := s.log(op)
+	lg.Info().Str("provider", cfg.Name).Msg("creating provider")
 	if err := ValidateProviderConfig(cfg); err != nil {
 		return nil, apperr.Validation("provider config", "valid fields", err.Error())
 	}
@@ -251,7 +263,8 @@ func (s *SettingsService) CreateProviderConfig(cfg *ProviderConfig) (*ProviderCo
 
 func (s *SettingsService) UpdateProviderConfig(cfg *ProviderConfig) (*ProviderConfig, error) {
 	const op = "SettingsService.UpdateProviderConfig"
-	s.logger.Info(fmt.Sprintf("%s: updating provider %s", op, cfg.ID))
+	lg := s.log(op)
+	lg.Info().Str("providerId", cfg.ID).Msg("updating provider")
 	if cfg.ID == "" {
 		return nil, apperr.Validation("providerId", "non-empty UUID", "empty string")
 	}
@@ -263,7 +276,8 @@ func (s *SettingsService) UpdateProviderConfig(cfg *ProviderConfig) (*ProviderCo
 
 func (s *SettingsService) DeleteProviderConfig(providerId string) error {
 	const op = "SettingsService.DeleteProviderConfig"
-	s.logger.Info(fmt.Sprintf("%s: deleting provider %s", op, providerId))
+	lg := s.log(op)
+	lg.Info().Str("providerId", providerId).Msg("deleting provider")
 	if providerId == "" {
 		return apperr.Validation("providerId", "non-empty UUID", "empty string")
 	}
@@ -434,11 +448,8 @@ func (s *SettingsService) GetAppBehaviorConfig() (*AppBehaviorConfig, error) {
 
 func (s *SettingsService) UpdateAppBehaviorConfig(cfg *AppBehaviorConfig) (*AppBehaviorConfig, error) {
 	const op = "SettingsService.UpdateAppBehaviorConfig"
-	if cfg.HistoryMaxEntries < 10 {
-		cfg.HistoryMaxEntries = 10
-	}
-	if cfg.HistoryMaxEntries > 1000 {
-		cfg.HistoryMaxEntries = 1000
+	if cfg.HistoryMaxEntries < 10 || cfg.HistoryMaxEntries > 1000 {
+		return nil, apperr.Validation("historyMaxEntries", "10–1000", fmt.Sprintf("%d", cfg.HistoryMaxEntries))
 	}
 	if err := s.settingsRepo.UpdateAppBehaviorConfig(cfg); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)

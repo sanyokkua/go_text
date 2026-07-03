@@ -347,7 +347,7 @@ func seedSettings(ctx context.Context, q *store.Queries) error {
 		{Key: "ui.historyOpen", Value: "false", Type: "bool"},
 		{Key: "ui.viewMode", Value: "", Type: "string"},
 		{Key: "log.fileEnabled", Value: "false", Type: "bool"},
-		{Key: "log.level", Value: "info", Type: "string"},
+		{Key: "log.level", Value: "", Type: "string"},
 		{Key: "log.directory", Value: "", Type: "string"},
 		{Key: "log.maxSizeMB", Value: "10", Type: "int"},
 		{Key: "log.maxBackups", Value: "5", Type: "int"},

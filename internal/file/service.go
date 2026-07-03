@@ -6,8 +6,12 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/wailsapp/wails/v2/pkg/logger"
+	"go_text/internal/logging"
+
+	"github.com/rs/zerolog"
 )
+
+const fileComponent = "file"
 
 type FileUtilsServiceAPI interface {
 	GetAppSettingsFolderPath() (string, error)
@@ -18,10 +22,10 @@ type FileUtilsServiceAPI interface {
 }
 
 type FileUtilsService struct {
-	logger logger.Logger
+	logger *logging.Logger
 }
 
-func NewFileUtilsService(logger logger.Logger) FileUtilsServiceAPI {
+func NewFileUtilsService(logger *logging.Logger) FileUtilsServiceAPI {
 	if logger == nil {
 		panic("logger cannot be nil")
 	}
@@ -31,75 +35,85 @@ func NewFileUtilsService(logger logger.Logger) FileUtilsServiceAPI {
 	}
 }
 
+// log returns a sub-logger stamped with the calling method's op and the
+// package component, matching the structured pattern used in internal/actions.
+func (s *FileUtilsService) log(op string) zerolog.Logger {
+	return s.logger.WithOp(op).With().Str("component", fileComponent).Logger()
+}
+
 func (s *FileUtilsService) ensureAppSettingsFolderExists() (string, error) {
 	const op = "FileUtilsService.ensureAppSettingsFolderExists"
 	startTime := time.Now()
-	s.logger.Info(fmt.Sprintf("%s: ensuring application settings folder exists", op))
+	lg := s.log(op)
+	lg.Info().Msg("ensuring application settings folder exists")
 
 	configDir, err := os.UserConfigDir()
 	if err != nil {
-		s.logger.Trace(fmt.Sprintf("%s: failed to get user config directory: %v, falling back to home directory", op, err))
+		lg.Trace().Err(err).Msg("failed to get user config directory, falling back to home directory")
 
 		configDir, err = os.UserHomeDir()
 		if err != nil {
-			s.logger.Error(fmt.Sprintf("%s: failed to get user home directory: %v", op, err))
+			lg.Error().Err(err).Msg("failed to get user home directory")
 			return "", fmt.Errorf("%s: failed to determine application directory: %w", op, err)
 		}
 	}
 
 	appConfigDir := filepath.Join(configDir, AppName)
-	s.logger.Trace(fmt.Sprintf("%s: application config directory path: %s", op, appConfigDir))
+	lg.Trace().Str("path", appConfigDir).Msg("application config directory path")
 
 	err = os.MkdirAll(appConfigDir, 0700)
 	if err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to create directory '%s': %v", op, appConfigDir, err))
+		lg.Error().Err(err).Str("path", appConfigDir).Msg("failed to create directory")
 		return "", fmt.Errorf("%s: failed to create application directory: %w", op, err)
 	}
 
 	duration := time.Since(startTime)
-	s.logger.Info(fmt.Sprintf("%s: successfully ensured settings folder exists in %v", op, duration))
+	lg.Info().Int64("duration_ms", duration.Milliseconds()).Msg("successfully ensured settings folder exists")
 
 	return appConfigDir, nil
 }
 
 func (s *FileUtilsService) GetAppSettingsFolderPath() (string, error) {
 	const op = "FileUtilsService.GetAppSettingsFolderPath"
-	s.logger.Debug(fmt.Sprintf("%s: retrieving application settings folder path", op))
+	lg := s.log(op)
+	lg.Debug().Msg("retrieving application settings folder path")
 	return s.ensureAppSettingsFolderExists()
 }
 
 func (s *FileUtilsService) GetAppSettingsFilePath() (string, error) {
 	const op = "FileUtilsService.GetAppSettingsFilePath"
 	startTime := time.Now()
-	s.logger.Debug(fmt.Sprintf("%s: retrieving application settings file path", op))
+	lg := s.log(op)
+	lg.Debug().Msg("retrieving application settings file path")
 
 	appConfigDir, err := s.GetAppSettingsFolderPath()
 	if err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to get application config directory: %v", op, err))
+		lg.Error().Err(err).Msg("failed to get application config directory")
 		return "", fmt.Errorf("%s: failed to get settings folder path: %w", op, err)
 	}
 
 	settingsPath := filepath.Join(appConfigDir, SettingsFileName)
-	s.logger.Trace(fmt.Sprintf("%s: settings file path: %s", op, settingsPath))
+	lg.Trace().Str("path", settingsPath).Msg("settings file path")
 
 	duration := time.Since(startTime)
-	s.logger.Debug(fmt.Sprintf("%s: successfully retrieved settings file path in %v", op, duration))
+	lg.Debug().Int64("duration_ms", duration.Milliseconds()).Msg("successfully retrieved settings file path")
 
 	return settingsPath, nil
 }
 
 func (s *FileUtilsService) GetAppDatabaseFilePath() (string, error) {
 	const op = "FileUtilsService.GetAppDatabaseFilePath"
-	s.logger.Debug(fmt.Sprintf("%s: retrieving application database file path", op))
+	lg := s.log(op)
+	lg.Debug().Msg("retrieving application database file path")
 
 	appConfigDir, err := s.GetAppSettingsFolderPath()
 	if err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to get application config directory: %v", op, err))
+		lg.Error().Err(err).Msg("failed to get application config directory")
 		return "", fmt.Errorf("%s: failed to get config folder path: %w", op, err)
 	}
 
 	dbPath := filepath.Join(appConfigDir, DatabaseFileName)
-	s.logger.Trace(fmt.Sprintf("%s: database file path: %s", op, dbPath))
+	lg.Trace().Str("path", dbPath).Msg("database file path")
 
 	return dbPath, nil
 }
@@ -108,26 +122,27 @@ func (s *FileUtilsService) GetAppDatabaseFilePath() (string, error) {
 // If customDir is non-empty it is returned as-is; otherwise the OS default is used.
 func (s *FileUtilsService) ResolveAppLogsFolderPath(customDir string) (string, error) {
 	const op = "FileUtilsService.ResolveAppLogsFolderPath"
-	s.logger.Debug(fmt.Sprintf("%s: resolving application logs folder path", op))
+	lg := s.log(op)
+	lg.Debug().Msg("resolving application logs folder path")
 
 	if customDir != "" {
-		s.logger.Trace(fmt.Sprintf("%s: using custom log directory: %s", op, customDir))
+		lg.Trace().Str("customDir", customDir).Msg("using custom log directory")
 		return customDir, nil
 	}
 
 	configDir, err := os.UserConfigDir()
 	if err != nil {
-		s.logger.Trace(fmt.Sprintf("%s: failed to get user config directory: %v, falling back to home directory", op, err))
+		lg.Trace().Err(err).Msg("failed to get user config directory, falling back to home directory")
 
 		configDir, err = os.UserHomeDir()
 		if err != nil {
-			s.logger.Error(fmt.Sprintf("%s: failed to get user home directory: %v", op, err))
+			lg.Error().Err(err).Msg("failed to get user home directory")
 			return "", fmt.Errorf("%s: failed to determine logs directory: %w", op, err)
 		}
 	}
 
 	logsPath := filepath.Join(configDir, AppName, LogsDirName)
-	s.logger.Trace(fmt.Sprintf("%s: resolved logs folder path: %s", op, logsPath))
+	lg.Trace().Str("path", logsPath).Msg("resolved logs folder path")
 	return logsPath, nil
 }
 
@@ -135,20 +150,21 @@ func (s *FileUtilsService) ResolveAppLogsFolderPath(customDir string) (string, e
 func (s *FileUtilsService) EnsureAppLogsFolderExists(customDir string) (string, error) {
 	const op = "FileUtilsService.EnsureAppLogsFolderExists"
 	startTime := time.Now()
-	s.logger.Debug(fmt.Sprintf("%s: ensuring application logs folder exists", op))
+	lg := s.log(op)
+	lg.Debug().Msg("ensuring application logs folder exists")
 
 	logsPath, err := s.ResolveAppLogsFolderPath(customDir)
 	if err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to resolve logs folder path: %v", op, err))
+		lg.Error().Err(err).Msg("failed to resolve logs folder path")
 		return "", fmt.Errorf("%s: failed to resolve logs folder path: %w", op, err)
 	}
 
 	if err := os.MkdirAll(logsPath, 0700); err != nil {
-		s.logger.Error(fmt.Sprintf("%s: failed to create logs directory '%s': %v", op, logsPath, err))
+		lg.Error().Err(err).Str("path", logsPath).Msg("failed to create logs directory")
 		return "", fmt.Errorf("%s: failed to create logs directory: %w", op, err)
 	}
 
 	duration := time.Since(startTime)
-	s.logger.Debug(fmt.Sprintf("%s: successfully ensured logs folder exists in %v", op, duration))
+	lg.Debug().Int64("duration_ms", duration.Milliseconds()).Msg("successfully ensured logs folder exists")
 	return logsPath, nil
 }

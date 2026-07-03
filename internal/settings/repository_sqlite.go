@@ -431,7 +431,7 @@ func (r *SqliteSettingsRepository) UpdateWindowSizeConfig(cfg *WindowSizeConfig)
 func (r *SqliteSettingsRepository) GetLoggingConfig() (*LoggingConfig, error) {
 	return &LoggingConfig{
 		LogFileEnabled: r.getBool("log.fileEnabled", false),
-		LogLevel:       r.getString("log.level", "info"),
+		LogLevel:       r.getString("log.level", ""),
 		LogDirectory:   r.getString("log.directory", ""),
 		LogMaxSizeMB:   r.getInt("log.maxSizeMB", 10),
 		LogMaxBackups:  r.getInt("log.maxBackups", 5),

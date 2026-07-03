@@ -607,6 +607,7 @@ func (h *SettingsHandler) reconfigureLogger(cfg *LoggingConfig) {
 	} else {
 		lc.Directory = cfg.LogDirectory
 	}
+	lc.Level = logging.ResolveLevel(lc.Level, h.isDev)
 	if rcErr := h.appLogger.Reconfigure(lc, h.isDev); rcErr != nil {
 		zl.Debug().Str("component", "settings").Str("op", "UpdateLoggingConfig").Err(rcErr).Msg("logger reconfigure failed")
 	} else {

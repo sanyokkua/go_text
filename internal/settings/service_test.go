@@ -7,19 +7,23 @@ import (
 	"testing"
 
 	"go_text/internal/apperr"
+	"go_text/internal/logging"
 	"go_text/internal/settings"
+
+	"github.com/stretchr/testify/require"
 )
 
-// noopLogger satisfies logger.Logger for service construction.
-type noopLogger struct{}
-
-func (noopLogger) Print(string)   {}
-func (noopLogger) Trace(string)   {}
-func (noopLogger) Debug(string)   {}
-func (noopLogger) Info(string)    {}
-func (noopLogger) Warning(string) {}
-func (noopLogger) Error(string)   {}
-func (noopLogger) Fatal(string)   {}
+// newTestLogger builds a real *logging.Logger for service construction in
+// tests. Level is set to error to minimize noise; it writes to io.Discard
+// (dev=false, no file sink configured) so it has no side effects.
+func newTestLogger(t *testing.T) *logging.Logger {
+	t.Helper()
+	cfg := logging.DefaultConfig()
+	cfg.Level = "error"
+	l, err := logging.New(cfg, false)
+	require.NoError(t, err)
+	return l
+}
 
 // stubFileUtils satisfies file.FileUtilsServiceAPI; the model-sync path never
 // calls it, so every method returns zero values.
@@ -36,7 +40,7 @@ func (stubFileUtils) EnsureAppLogsFolderExists(string) (string, error) { return 
 // stale model from the previous provider (caught by live run against Ollama).
 func TestSettingsService_SetAsCurrentProviderConfig_SyncsModel(t *testing.T) {
 	repo := newRepo(t)
-	svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+	svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
 
 	target, err := repo.CreateProvider(&settings.ProviderConfig{
 		Name:          "Ollama Local",
@@ -87,7 +91,7 @@ func TestSettingsService_UpdateModelConfig_ContextWindowBoundaries(t *testing.T)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := newRepo(t)
-			svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+			svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
 
 			_, err := svc.UpdateModelConfig(&settings.ModelConfig{
 				Name:             "gpt-4o",
@@ -129,7 +133,7 @@ func TestSettingsService_UpdateModelConfig_MaxOutputTokensBoundaries(t *testing.
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := newRepo(t)
-			svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+			svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
 
 			_, err := svc.UpdateModelConfig(&settings.ModelConfig{
 				Name:               "gpt-4o",
@@ -204,7 +208,7 @@ func TestSettingsService_UpdateModelConfig_MaxOutputTokensVsContextWindow(t *tes
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := newRepo(t)
-			svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+			svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
 
 			_, err := svc.UpdateModelConfig(&settings.ModelConfig{
 				Name:               "gpt-4o",
@@ -263,7 +267,7 @@ func TestSettingsService_GetAppSettingsMetadata_LogsFolderExists(t *testing.T) {
 		ensuredDir:     ensured,
 		nonExistentDir: filepath.Join(t.TempDir(), "does-not-exist"),
 	}
-	svc := settings.NewSettingsService(noopLogger{}, newRepo(t), fileUtils)
+	svc := settings.NewSettingsService(newTestLogger(t), newRepo(t), fileUtils)
 
 	// Act
 	meta, err := svc.GetAppSettingsMetadata()
@@ -297,7 +301,7 @@ func TestSettingsService_SaveWindowSize_RejectsBelowMinimum(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := newRepo(t)
-			svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+			svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
 
 			err := svc.SaveWindowSize(tt.width, tt.height)
 
@@ -330,7 +334,7 @@ func TestSettingsService_SaveWindowSize_AcceptsValidSize(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := newRepo(t)
-			svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+			svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
 
 			if err := svc.SaveWindowSize(tt.width, tt.height); err != nil {
 				t.Fatalf("SaveWindowSize(%d, %d): %v", tt.width, tt.height, err)
@@ -354,7 +358,7 @@ func TestSettingsService_SaveWindowSize_AcceptsValidSize(t *testing.T) {
 // not a raw fmt.Errorf that apperr.ToWire logs as unclassified.
 func TestSettingsService_GetProviderConfig_RejectsEmptyProviderId(t *testing.T) {
 	repo := newRepo(t)
-	svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+	svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
 
 	_, err := svc.GetProviderConfig("")
 
@@ -373,7 +377,7 @@ func TestSettingsService_GetProviderConfig_RejectsEmptyProviderId(t *testing.T) 
 // T84 regression: an empty providerId must surface as apperr.CodeValidation.
 func TestSettingsService_DeleteProviderConfig_RejectsEmptyProviderId(t *testing.T) {
 	repo := newRepo(t)
-	svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+	svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
 
 	err := svc.DeleteProviderConfig("")
 
@@ -392,7 +396,7 @@ func TestSettingsService_DeleteProviderConfig_RejectsEmptyProviderId(t *testing.
 // T84 regression: an empty providerId must surface as apperr.CodeValidation.
 func TestSettingsService_SetAsCurrentProviderConfig_RejectsEmptyProviderId(t *testing.T) {
 	repo := newRepo(t)
-	svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+	svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
 
 	_, err := svc.SetAsCurrentProviderConfig("")
 
@@ -425,7 +429,7 @@ func TestSettingsService_UpdateInferenceBaseConfig_TimeoutBoundaries(t *testing.
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := newRepo(t)
-			svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+			svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
 
 			_, err := svc.UpdateInferenceBaseConfig(&settings.InferenceBaseConfig{
 				Timeout:    tt.timeout,
@@ -467,7 +471,7 @@ func TestSettingsService_UpdateInferenceBaseConfig_MaxRetriesBoundaries(t *testi
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := newRepo(t)
-			svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+			svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
 
 			_, err := svc.UpdateInferenceBaseConfig(&settings.InferenceBaseConfig{
 				Timeout:    60,
@@ -478,6 +482,54 @@ func TestSettingsService_UpdateInferenceBaseConfig_MaxRetriesBoundaries(t *testi
 				t.Fatalf("UpdateInferenceBaseConfig() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if !tt.wantErr {
+				return
+			}
+			var ae *apperr.AppError
+			if !errors.As(err, &ae) {
+				t.Fatalf("want *apperr.AppError, got %T: %v", err, err)
+			}
+			if ae.Code != apperr.CodeValidation {
+				t.Errorf("expected CodeValidation, got %q", ae.Code)
+			}
+		})
+	}
+}
+
+// T91 regression: an out-of-range HistoryMaxEntries must be rejected with
+// apperr.CodeValidation instead of being silently clamped into range.
+func TestSettingsService_UpdateAppBehaviorConfig_HistoryMaxEntriesBoundaries(t *testing.T) {
+	tests := []struct {
+		name              string
+		historyMaxEntries int
+		wantErr           bool
+	}{
+		{name: "just below min is rejected", historyMaxEntries: 9, wantErr: true},
+		{name: "exact min is accepted", historyMaxEntries: 10, wantErr: false},
+		{name: "exact max is accepted", historyMaxEntries: 1000, wantErr: false},
+		{name: "just above max is rejected", historyMaxEntries: 1001, wantErr: true},
+		{name: "zero is rejected", historyMaxEntries: 0, wantErr: true},
+		{name: "negative is rejected", historyMaxEntries: -5, wantErr: true},
+		{name: "typical mid-range value is accepted", historyMaxEntries: 100, wantErr: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := newRepo(t)
+			svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
+
+			got, err := svc.UpdateAppBehaviorConfig(&settings.AppBehaviorConfig{
+				EnableTaskLogging: false,
+				HistoryEnabled:    true,
+				HistoryMaxEntries: tt.historyMaxEntries,
+			})
+
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("UpdateAppBehaviorConfig() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !tt.wantErr {
+				if got.HistoryMaxEntries != tt.historyMaxEntries {
+					t.Errorf("HistoryMaxEntries = %d, want %d (must not be silently substituted)", got.HistoryMaxEntries, tt.historyMaxEntries)
+				}
 				return
 			}
 			var ae *apperr.AppError
@@ -505,7 +557,7 @@ func TestSettingsService_SetDefaultInputLanguage_RejectsEmptyLanguage(t *testing
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := newRepo(t)
-			svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+			svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
 
 			err := svc.SetDefaultInputLanguage(tt.language)
 
@@ -538,7 +590,7 @@ func TestSettingsService_SetDefaultInputLanguage_RejectsUnsupportedLanguage(t *t
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := newRepo(t)
-			svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+			svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
 
 			err := svc.SetDefaultInputLanguage(tt.language)
 
@@ -573,7 +625,7 @@ func TestSettingsService_SetDefaultOutputLanguage_RejectsEmptyLanguage(t *testin
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := newRepo(t)
-			svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+			svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
 
 			err := svc.SetDefaultOutputLanguage(tt.language)
 
@@ -606,7 +658,7 @@ func TestSettingsService_SetDefaultOutputLanguage_RejectsUnsupportedLanguage(t *
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := newRepo(t)
-			svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+			svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
 
 			err := svc.SetDefaultOutputLanguage(tt.language)
 
@@ -630,7 +682,7 @@ func TestSettingsService_SetDefaultOutputLanguage_RejectsUnsupportedLanguage(t *
 // T84 regression: an empty language must surface as apperr.CodeValidation.
 func TestSettingsService_AddLanguage_RejectsEmptyLanguage(t *testing.T) {
 	repo := newRepo(t)
-	svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+	svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
 
 	_, err := svc.AddLanguage("")
 
@@ -649,7 +701,7 @@ func TestSettingsService_AddLanguage_RejectsEmptyLanguage(t *testing.T) {
 // T84 regression: an empty language must surface as apperr.CodeValidation.
 func TestSettingsService_RemoveLanguage_RejectsEmptyLanguage(t *testing.T) {
 	repo := newRepo(t)
-	svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+	svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
 
 	_, err := svc.RemoveLanguage("")
 
@@ -669,7 +721,7 @@ func TestSettingsService_RemoveLanguage_RejectsEmptyLanguage(t *testing.T) {
 // apperr.CodeValidation, read live from the repo so the test tracks the seed.
 func TestSettingsService_RemoveLanguage_RejectsRemovingDefaultInputLanguage(t *testing.T) {
 	repo := newRepo(t)
-	svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+	svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
 
 	langCfg, err := repo.GetLanguageConfig()
 	if err != nil {
@@ -695,7 +747,7 @@ func TestSettingsService_RemoveLanguage_RejectsRemovingDefaultInputLanguage(t *t
 // language must still be addable and removable without error.
 func TestSettingsService_RemoveLanguage_RejectsRemovingDefaultOutputLanguage(t *testing.T) {
 	repo := newRepo(t)
-	svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
+	svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
 
 	langCfg, err := repo.GetLanguageConfig()
 	if err != nil {

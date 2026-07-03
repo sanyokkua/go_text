@@ -7,20 +7,23 @@ import (
 	"strings"
 	"testing"
 
+	"go_text/internal/logging"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// TestLogger is a simple logger for testing that implements the logger.Logger interface
-type TestLogger struct{}
-
-func (l *TestLogger) Print(message string)   {}
-func (l *TestLogger) Trace(message string)   {}
-func (l *TestLogger) Debug(message string)   {}
-func (l *TestLogger) Info(message string)    {}
-func (l *TestLogger) Warning(message string) {}
-func (l *TestLogger) Error(message string)   {}
-func (l *TestLogger) Fatal(message string)   {}
+// newTestLogger builds a real *logging.Logger for service construction in
+// tests. Level is set to error to minimize noise; it writes to io.Discard
+// (dev=false, no file sink configured) so it has no side effects.
+func newTestLogger(t *testing.T) *logging.Logger {
+	t.Helper()
+	cfg := logging.DefaultConfig()
+	cfg.Level = "error"
+	l, err := logging.New(cfg, false)
+	require.NoError(t, err)
+	return l
+}
 
 // setupTestEnv sets up a temporary environment for testing
 // Returns cleanup function to restore original environment
@@ -66,7 +69,7 @@ func getAppConfigDir(tmpDir string) string {
 
 func TestNewFileUtilsService(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		logger := &TestLogger{}
+		logger := newTestLogger(t)
 		service := NewFileUtilsService(logger)
 		assert.NotNil(t, service)
 	})
@@ -176,7 +179,7 @@ func TestEnsureAppSettingsFolderExists(t *testing.T) {
 			}
 
 			// Create service
-			logger := &TestLogger{}
+			logger := newTestLogger(t)
 			service := NewFileUtilsService(logger)
 
 			// Call the private method using reflection or test the public methods that use it
@@ -269,7 +272,7 @@ func TestGetAppSettingsFolderPath(t *testing.T) {
 			}
 
 			// Create service
-			logger := &TestLogger{}
+			logger := newTestLogger(t)
 			service := NewFileUtilsService(logger)
 
 			// Call the method
@@ -383,7 +386,7 @@ func TestGetAppSettingsFilePath(t *testing.T) {
 			}
 
 			// Create service
-			logger := &TestLogger{}
+			logger := newTestLogger(t)
 			service := NewFileUtilsService(logger)
 
 			// Call the method
@@ -469,7 +472,7 @@ func TestFileUtilsService_ResolveAppLogsFolderPath(t *testing.T) {
 				customDir = filepath.Join(tmpDir, "nonexistent-99999")
 			}
 
-			logger := &TestLogger{}
+			logger := newTestLogger(t)
 			service := NewFileUtilsService(logger)
 
 			result, err := service.ResolveAppLogsFolderPath(customDir)
@@ -526,7 +529,7 @@ func TestFileUtilsService_EnsureAppLogsFolderExists(t *testing.T) {
 				assert.NoError(t, err)
 
 				// Call again; must also succeed
-				logger := &TestLogger{}
+				logger := newTestLogger(t)
 				service := NewFileUtilsService(logger)
 				result2, err2 := service.EnsureAppLogsFolderExists(filepath.Join(tmpDir, "logs2"))
 				assert.NoError(t, err2)
@@ -576,7 +579,7 @@ func TestFileUtilsService_EnsureAppLogsFolderExists(t *testing.T) {
 				customDir = tt.setupEnv(t, tmpDir)
 			}
 
-			logger := &TestLogger{}
+			logger := newTestLogger(t)
 			service := NewFileUtilsService(logger)
 
 			result, err := service.EnsureAppLogsFolderExists(customDir)
@@ -594,7 +597,7 @@ func TestFileUtilsService_GetAppDatabaseFilePath(t *testing.T) {
 		defer cleanup()
 
 		_ = tmpDir
-		svc := NewFileUtilsService(&TestLogger{})
+		svc := NewFileUtilsService(newTestLogger(t))
 
 		path, err := svc.GetAppDatabaseFilePath()
 
