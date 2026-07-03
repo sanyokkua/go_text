@@ -21,7 +21,10 @@ import (
 // that own the configured timeout value fix it up via apperr.RewriteTimeoutSeconds before the
 // error is surfaced to the user.
 func mapTransportError(provider, baseURL string, err error) *apperr.AppError {
-	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+	if errors.Is(err, context.Canceled) {
+		return apperr.CancelledRequest(err)
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
 		return apperr.Timeout(provider, 0, err)
 	}
 	var netErr net.Error

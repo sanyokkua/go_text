@@ -26,6 +26,14 @@ func TestMapTransportError_ContextDeadline(t *testing.T) {
 	}
 }
 
+func TestMapTransportError_ContextCanceled(t *testing.T) {
+	t.Parallel()
+	ae := mapTransportError("my-provider", "http://localhost:11434/", context.Canceled)
+	if ae.Code != apperr.CodeCancelled {
+		t.Errorf("want CodeCancelled, got %q", ae.Code)
+	}
+}
+
 func TestMapTransportError_NetTimeout(t *testing.T) {
 	t.Parallel()
 	err := &fakeNetError{timeout: true}
