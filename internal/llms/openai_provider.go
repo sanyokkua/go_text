@@ -126,7 +126,9 @@ func (p *OpenAICompatibleProvider) Chat(ctx context.Context, req ChatRequest) (C
 		SetHeaders(headers).
 		SetBody(wireReq).
 		SetResult(&wireResp).
-		SetRetryCount(0). // T12 owns the retry loop
+		// Retries are owned by LLMService.GetCompletionResponseForProvider so each
+		// attempt is individually observable and counted; resty's own retry stays off.
+		SetRetryCount(0).
 		Post(url)
 
 	if err != nil {

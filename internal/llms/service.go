@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -198,15 +199,120 @@ func (l *LLMService) GetCompletionResponseForProvider(ctx context.Context, provi
 	}
 
 	timeout := ValidateTimeout(baseConfig.Timeout)
-	reqCtx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Second)
+	maxRetries := l.validateMaxRetries(baseConfig.MaxRetries)
+	attempt := chatAttempt{provider: p, request: chatRequestFrom(request, modelConfig), timeout: timeout}
+
+	return l.chatWithRetry(ctx, attempt, maxRetries)
+}
+
+// chatAttempt groups the per-call inputs needed to run one HTTP attempt, keeping
+// chatWithRetry and chatOnce within the project's max-3-args function limit.
+type chatAttempt struct {
+	provider Provider
+	request  ChatRequest
+	timeout  int
+}
+
+const (
+	retryBackoffBase = 500 * time.Millisecond
+	retryBackoffCap  = 8 * time.Second
+)
+
+// chatWithRetry runs up to maxRetries+1 attempts against a.provider, retrying only on
+// apperr.AppError.Retryable errors. Each attempt gets a fresh timeout-second budget
+// derived from the caller's ctx, so a slow first attempt cannot starve later retries.
+func (l *LLMService) chatWithRetry(ctx context.Context, a chatAttempt, maxRetries int) (string, error) {
+	const op = "LLMService.chatWithRetry"
+	var lastErr error
+	for attemptNum := 0; attemptNum <= maxRetries; attemptNum++ {
+		content, err := l.chatOnce(ctx, a)
+		if err == nil {
+			return content, nil
+		}
+		lastErr = err
+
+		ae, retryable := asRetryableAppError(err)
+		if !retryable || attemptNum == maxRetries {
+			return "", err
+		}
+
+		l.logger.Warning(fmt.Sprintf("[%s] Attempt %d/%d failed for provider %s, retrying: %v",
+			op, attemptNum+1, maxRetries+1, a.provider.Kind(), err))
+		if waitErr := l.waitBeforeRetry(ctx, attemptNum, ae); waitErr != nil {
+			return "", waitErr
+		}
+	}
+	return "", lastErr
+}
+
+// chatOnce performs a single HTTP attempt bounded by its own timeout-second budget
+// derived from ctx. Scoping the context to this function (rather than the caller's loop)
+// ensures cancel() runs on every path, satisfying go vet's lostcancel check.
+func (l *LLMService) chatOnce(ctx context.Context, a chatAttempt) (string, error) {
+	reqCtx, cancel := context.WithTimeout(ctx, time.Duration(a.timeout)*time.Second)
 	defer cancel()
 
-	chatReq := chatRequestFrom(request, modelConfig)
-	resp, err := p.Chat(reqCtx, chatReq)
+	resp, err := a.provider.Chat(reqCtx, a.request)
 	if err != nil {
-		return "", apperr.RewriteTimeoutSeconds(err, timeout)
+		return "", apperr.RewriteTimeoutSeconds(err, a.timeout)
 	}
 	return resp.Content, nil
+}
+
+// waitBeforeRetry blocks for the backoff delay, aborting immediately if ctx is cancelled
+// (e.g. CancelChain or app shutdown) rather than sleeping out the full backoff.
+func (l *LLMService) waitBeforeRetry(ctx context.Context, attempt int, ae *apperr.AppError) error {
+	select {
+	case <-ctx.Done():
+		return apperr.CancelledRequest(ctx.Err())
+	case <-time.After(retryBackoffDelay(attempt, ae)):
+		return nil
+	}
+}
+
+// asRetryableAppError narrows err to *apperr.AppError and reports whether it is retryable.
+// Provider.Chat only ever returns errors built via mapTransportError, mapHTTPStatus, or
+// apperr.EmptyCompletion, so this check alone is sufficient to gate retries here.
+func asRetryableAppError(err error) (*apperr.AppError, bool) {
+	var ae *apperr.AppError
+	if errors.As(err, &ae) && ae.Retryable {
+		return ae, true
+	}
+	return nil, false
+}
+
+// retryBackoffDelay computes the wait before the next retry attempt. It is a package-level
+// var (not a plain function) so tests can override it to avoid real sleeps — see
+// GoUnitTestsRules.md §3.2 (the `var now = time.Now` pattern).
+var retryBackoffDelay = defaultRetryBackoffDelay
+
+// defaultRetryBackoffDelay honors the provider's Retry-After hint when present, otherwise
+// falls back to exponential backoff (500ms, 1s, 2s, ...) capped at retryBackoffCap.
+func defaultRetryBackoffDelay(attempt int, ae *apperr.AppError) time.Duration {
+	if ae != nil {
+		if retryAfter, ok := retryAfterSeconds(ae); ok {
+			return retryAfter
+		}
+	}
+	delay := retryBackoffBase << attempt
+	if delay > retryBackoffCap {
+		return retryBackoffCap
+	}
+	return delay
+}
+
+// retryAfterSeconds extracts a positive Retry-After duration from an AppError's Details,
+// as populated by apperr.RateLimited. Returns ok=false if absent, unparsable, or <= 0.
+func retryAfterSeconds(ae *apperr.AppError) (time.Duration, bool) {
+	raw, present := ae.Details["retryAfter"]
+	if !present {
+		return 0, false
+	}
+	seconds, err := strconv.Atoi(raw)
+	if err != nil || seconds <= 0 {
+		return 0, false
+	}
+	return time.Duration(seconds) * time.Second, true
 }
 
 // resolveConfig reads the secret from the environment.
