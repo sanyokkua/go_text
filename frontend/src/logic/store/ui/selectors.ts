@@ -1,3 +1,5 @@
+import { createSelector } from '@reduxjs/toolkit';
+
 import { RootState } from '../index';
 import { CurrentView, ThemeEffective, ThemeMode } from './types';
 
@@ -16,11 +18,14 @@ export const selectActiveActionsTab = (state: RootState): string | null => state
 /** The single armed run-target: a stack, an action, or nothing. Action and stack are mutually exclusive. */
 export type ArmedTarget = { kind: 'stack'; id: string } | { kind: 'action'; id: string } | { kind: 'none' };
 
-export const selectArmedTarget = (state: RootState): ArmedTarget => {
-    if (state.ui.armedStackId !== null) return { kind: 'stack', id: state.ui.armedStackId };
-    if (state.ui.armedActionId !== null) return { kind: 'action', id: state.ui.armedActionId };
-    return { kind: 'none' };
-};
+export const selectArmedTarget = createSelector(
+    [selectArmedStackId, selectArmedActionId],
+    (armedStackId, armedActionId): ArmedTarget => {
+        if (armedStackId !== null) return { kind: 'stack', id: armedStackId };
+        if (armedActionId !== null) return { kind: 'action', id: armedActionId };
+        return { kind: 'none' };
+    },
+);
 
 export const selectBuildMode = (state: RootState): boolean => state.ui.buildMode;
 export const selectEditingStackId = (state: RootState): string | null => state.ui.editingStackId;

@@ -306,6 +306,17 @@ describe('ui selectors', () => {
         expect(selectArmedTarget(armedState)).toEqual({ kind: 'action', id: 'action-7' });
     });
 
+    it('selectArmedTarget returns the same memoized reference across two separate state snapshots with unchanged armed ids', () => {
+        // Two distinct RootState objects (as across re-renders after an unrelated slice
+        // updates), both with nothing armed. Before the fix, selectArmedTarget built a
+        // fresh { kind: 'none' } object literal on every call, so InputPane.tsx's
+        // useAppSelector re-rendered on every unrelated store update.
+        const first = selectArmedTarget(mockRootState);
+        const second = selectArmedTarget({ ...mockRootState, ui: { ...initialState } } as unknown as RootState);
+
+        expect(first).toBe(second);
+    });
+
     it('selectActiveActionsTab returns the activeActionsTab from state', () => {
         expect(selectActiveActionsTab(mockRootState)).toBeNull();
     });
