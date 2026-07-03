@@ -25,7 +25,7 @@ describe('KvEditor initial rendering', () => {
 
 describe('KvEditor row management', () => {
     it('adds a new empty row when the add-header button is clicked', async () => {
-        const user = userEvent.setup();
+        const user = userEvent.setup({ delay: null });
         render(<KvEditor value={{}} onChange={jest.fn()} />);
 
         await user.click(screen.getByRole('button', { name: '+ Add header' }));
@@ -35,7 +35,7 @@ describe('KvEditor row management', () => {
     });
 
     it('removes the row and calls onChange without it when its remove button is clicked', async () => {
-        const user = userEvent.setup();
+        const user = userEvent.setup({ delay: null });
         const onChange = jest.fn();
         render(<KvEditor value={{ a: '1', b: '2' }} onChange={onChange} />);
 
@@ -46,7 +46,7 @@ describe('KvEditor row management', () => {
     });
 
     it('appends a new row when Enter is pressed in a value input', async () => {
-        const user = userEvent.setup();
+        const user = userEvent.setup({ delay: null });
         render(<KvEditor value={{ a: '1' }} onChange={jest.fn()} />);
 
         await user.type(screen.getByLabelText('Header value 1'), '{Enter}');
@@ -58,7 +58,7 @@ describe('KvEditor row management', () => {
 
 describe('KvEditor emitted record', () => {
     it('calls onChange with the updated key when a key input is edited', async () => {
-        const user = userEvent.setup();
+        const user = userEvent.setup({ delay: null });
         const onChange = jest.fn();
         render(<KvEditor value={{ host: 'localhost' }} onChange={onChange} />);
 
@@ -70,7 +70,7 @@ describe('KvEditor emitted record', () => {
     });
 
     it('calls onChange with the updated value when a value input is edited', async () => {
-        const user = userEvent.setup();
+        const user = userEvent.setup({ delay: null });
         const onChange = jest.fn();
         render(<KvEditor value={{ host: 'localhost' }} onChange={onChange} />);
 
@@ -82,7 +82,7 @@ describe('KvEditor emitted record', () => {
     });
 
     it('excludes a row with an empty key from the emitted record', async () => {
-        const user = userEvent.setup();
+        const user = userEvent.setup({ delay: null });
         const onChange = jest.fn();
         render(<KvEditor value={{}} onChange={onChange} />);
 

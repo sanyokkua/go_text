@@ -4,7 +4,7 @@ async function openSettings(page: Page): Promise<void> {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     await page.getByRole('button', { name: /open settings/i }).click();
-    await page.waitForSelector('[role="tablist"][aria-label="Settings sections"]', { timeout: 8000 });
+    await page.waitForSelector('[role="tablist"][aria-label="Navigation tabs"]', { timeout: 8000 });
 }
 
 async function openLoggingTab(page: Page): Promise<void> {

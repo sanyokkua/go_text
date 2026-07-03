@@ -61,12 +61,38 @@ const defaultSettings = {
 // static default rather than persisting the caller's payload.
 const smallContextWindowSettings = { ...defaultSettings, modelConfig: { ...defaultModel, useContextWindow: true, contextWindow: 1024 } };
 
+// Second provider for the T87 delete/resync scenario. Name shares no substring with
+// 'Mock Provider' so Playwright's toContainText substring matching can assert on
+// either provider's name without a false-positive collision.
+const secondMockProvider = { ...defaultProvider, id: 'mock-provider-2', name: 'Backup LLM' };
+
+// Module-scoped mutable "current provider" pointer for the multi-provider-test scenario
+// only. Safe as module-level state — Playwright gives each test a fresh page/module load.
+let statefulCurrentProviderId = defaultProvider.id;
+
+function isMultiProviderTest(): boolean {
+    return mockParam('multi-provider-test');
+}
+
+function currentMultiProvider(): typeof defaultProvider {
+    return statefulCurrentProviderId === defaultProvider.id ? defaultProvider : secondMockProvider;
+}
+
 export function GetSettings(): Promise<AnyResult> {
     // Simulates real backend being slower for GetSettings than GetLoggingConfig.
     // GetLoggingConfig (7 DB reads) always returns before GetSettings in the real app.
     // This delay ensures bridge-mock tests exercise the same async ordering so the
     // sequential dispatch fix is actually tested.
-    const settings = mockParam('context-window-test') ? smallContextWindowSettings : defaultSettings;
+    let settings = defaultSettings;
+    if (mockParam('context-window-test')) {
+        settings = smallContextWindowSettings;
+    } else if (isMultiProviderTest()) {
+        settings = {
+            ...defaultSettings,
+            availableProviderConfigs: [defaultProvider, secondMockProvider],
+            currentProviderConfig: currentMultiProvider(),
+        };
+    }
     return new Promise((resolve) => setTimeout(() => resolve(ok(settings)), 0));
 }
 export function ResetSettingsToDefault(): Promise<AnyResult> {
@@ -76,13 +102,13 @@ export function GetAppSettingsMetadata(): Promise<AnyResult> {
     return Promise.resolve(ok(defaultMetadata));
 }
 export function GetAllProviderConfigs(): Promise<AnyResult> {
-    return Promise.resolve(ok([defaultProvider]));
+    return Promise.resolve(ok(isMultiProviderTest() ? [defaultProvider, secondMockProvider] : [defaultProvider]));
 }
 export function GetProviderConfig(_id: string): Promise<AnyResult> {
     return Promise.resolve(ok(defaultProvider));
 }
 export function GetCurrentProviderConfig(): Promise<AnyResult> {
-    return Promise.resolve(ok(defaultProvider));
+    return Promise.resolve(ok(isMultiProviderTest() ? currentMultiProvider() : defaultProvider));
 }
 export function CreateProviderConfig(_cfg: unknown): Promise<AnyResult> {
     return Promise.resolve(ok({ ...defaultProvider, id: 'mock-new' }));
@@ -91,6 +117,10 @@ export function UpdateProviderConfig(_cfg: unknown): Promise<AnyResult> {
     return Promise.resolve(ok(defaultProvider));
 }
 export function DeleteProviderConfig(_id: string): Promise<VoidResult> {
+    if (isMultiProviderTest() && _id === statefulCurrentProviderId) {
+        // Mirrors the real backend's "pick the first remaining provider" reassignment.
+        statefulCurrentProviderId = _id === defaultProvider.id ? secondMockProvider.id : defaultProvider.id;
+    }
     return Promise.resolve(voidOk());
 }
 export function SetAsCurrentProviderConfig(_id: string): Promise<AnyResult> {

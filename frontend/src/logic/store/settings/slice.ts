@@ -21,6 +21,7 @@ import {
     fetchProviderPresets,
     getAppBehaviorConfig,
     getAppSettingsMetadata,
+    getCurrentProviderConfig,
     getLoggingConfig,
     getSettings,
     removeLanguage,
@@ -106,6 +107,17 @@ const settingsSlice = createSlice({
                 }
                 // Drop the previous provider's discovered models; the picker will
                 // re-discover the new provider's list on its next refresh/mount.
+                state.discoveredModels = [];
+            })
+            .addCase(getCurrentProviderConfig.fulfilled, (state, action) => {
+                // Intentionally does NOT sync modelConfig.name here (unlike
+                // setAsCurrentProviderConfig.fulfilled above). This action also fires
+                // during app init, racing getSettings.fulfilled — modelConfig.name and
+                // currentProviderConfig.selectedModel are independently-persisted
+                // values that would be silently conflated by that sync (T87 plan).
+                if (state.allSettings) {
+                    state.allSettings.currentProviderConfig = action.payload;
+                }
                 state.discoveredModels = [];
             })
             .addCase(discoverCurrentProviderModels.fulfilled, (state, action) => {

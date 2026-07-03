@@ -60,9 +60,13 @@ export const createProviderConfig = createAsyncThunk<Settings, ProviderConfig, {
 
 export const deleteProviderConfig = createAsyncThunk<void, string, { rejectValue: string }>(
     'settings/deleteProviderConfig',
-    async (providerId, { rejectWithValue }) => {
+    async (providerId, { dispatch, rejectWithValue }) => {
         try {
             unwrap(await SettingsHandlerAdapter.deleteProviderConfig(providerId));
+            // The backend may have reassigned app_state.current_provider_id if the
+            // deleted provider was current — resync so the AppBar doesn't go blank
+            // until a manual reload (T87, live-testing report finding #3).
+            await dispatch(getCurrentProviderConfig());
         } catch (error: unknown) {
             const err = parseError(error);
             logger.logError(`deleteProviderConfig failed: ${err.message}`);

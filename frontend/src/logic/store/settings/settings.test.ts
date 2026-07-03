@@ -23,9 +23,13 @@ jest.mock('../../adapter', () => ({
     fromWireLogging: jest.fn((v: unknown) => v),
     // Passthrough — wire and frontend UIPreferencesConfig shapes are identical
     fromWireUIPreferences: jest.fn((v: unknown) => v),
+    // Passthrough — overridden per-test with mockReturnValue where the mapped shape matters (T87)
+    fromWireProvider: jest.fn((v: unknown) => v),
     SettingsHandlerAdapter: {
         getAppBehaviorConfig: jest.fn().mockResolvedValue({ data: { enableTaskLogging: false } }),
         updateAppBehaviorConfig: jest.fn().mockResolvedValue({ data: { enableTaskLogging: true } }),
+        deleteProviderConfig: jest.fn().mockResolvedValue({ data: undefined }),
+        getCurrentProviderConfig: jest.fn().mockResolvedValue({ data: undefined }),
         getLoggingConfig: jest
             .fn()
             .mockResolvedValue({
@@ -60,16 +64,28 @@ jest.mock('../../adapter', () => ({
     ActionHandlerAdapter: { getModels: jest.fn().mockResolvedValue({ data: [], error: null }) },
 }));
 
+import { configureStore } from '@reduxjs/toolkit';
+
 import { apperr } from '../../../../wailsjs/go/models';
 import { SelectItem } from '../../../ui/primitives/Select';
-import { ActionHandlerAdapter, AppBehaviorConfig, fromWireUIPreferences, LoggingConfig, Settings, SettingsHandlerAdapter } from '../../adapter';
+import {
+    ActionHandlerAdapter,
+    AppBehaviorConfig,
+    fromWireProvider,
+    fromWireUIPreferences,
+    LoggingConfig,
+    Settings,
+    SettingsHandlerAdapter,
+} from '../../adapter';
 import { RootState } from '../index';
 import { selectAppBehaviorConfig, selectCurrentModelCaps, selectCurrentProviderModelItems, selectLoggingConfig } from './selectors';
 import settingsReducer from './slice';
 import {
     createProviderConfig,
+    deleteProviderConfig,
     discoverCurrentProviderModels,
     getAppBehaviorConfig,
+    getCurrentProviderConfig,
     getLoggingConfig,
     getSettings,
     getUIPreferences,
@@ -313,6 +329,40 @@ describe('settingsReducer — setAsCurrentProviderConfig.fulfilled', () => {
 
         expect(state.allSettings?.currentProviderConfig.providerId).toBe('ollama');
         expect(state.allSettings?.modelConfig.name).toBe('qwen3:0.6b');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Part C.1: currentProviderConfig resync after provider deletion (T87)
+// ---------------------------------------------------------------------------
+
+describe('settingsReducer — getCurrentProviderConfig.fulfilled', () => {
+    it('resyncs currentProviderConfig, clears discoveredModels, and leaves modelConfig.name untouched', () => {
+        // Arrange — distinctive, divergent values for modelConfig.name and the new
+        // provider's selectedModel, so an accidental cross-sync would be caught.
+        const initialState: SettingsState = {
+            allSettings: { ...fullSettings, modelConfig: { ...fullSettings.modelConfig, name: 'pre-existing-model' } },
+            metadata: null,
+            discoveredModels: [{ id: 'stale-1', label: 'stale-1' } as apperr.ModelInfo],
+        };
+        const newProvider = {
+            ...fullSettings.currentProviderConfig,
+            providerId: 'b',
+            providerName: 'Backup LLM',
+            selectedModel: 'new-provider-model',
+        };
+        const action = getCurrentProviderConfig.fulfilled(newProvider, 'req', undefined);
+
+        // Act
+        const state = settingsReducer(initialState, action);
+
+        // Assert — currentProviderConfig resynced to the new provider
+        expect(state.allSettings?.currentProviderConfig).toEqual(newProvider);
+        // Regression guard (T87 "Rejected variant"): unlike setAsCurrentProviderConfig.fulfilled,
+        // this handler must NOT sync modelConfig.name from the new provider's selectedModel.
+        expect(state.allSettings?.modelConfig.name).toBe('pre-existing-model');
+        // The previous provider's discovered models are now stale and must be cleared.
+        expect(state.discoveredModels).toEqual([]);
     });
 });
 
@@ -793,5 +843,45 @@ describe('persistUIPreferences thunk', () => {
         expect(action.type).toBe('settings/persistUIPreferences/rejected');
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         expect((action as any).payload).toBe('save failed');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Part G: deleteProviderConfig resyncs currentProviderConfig (T87)
+// ---------------------------------------------------------------------------
+
+describe('deleteProviderConfig thunk — resyncs currentProviderConfig (T87)', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it('updates currentProviderConfig after deleting the current provider', async () => {
+        // Arrange — a real store so the nested dispatch(getCurrentProviderConfig())
+        // actually executes; a bare jest.fn() dispatch (used elsewhere in this file)
+        // can't run a nested thunk.
+        const providerA = { ...fullSettings.currentProviderConfig, providerId: 'a', providerName: 'A' };
+        const providerB = { ...fullSettings.currentProviderConfig, providerId: 'b', providerName: 'B', selectedModel: 'model-b' };
+        const store = configureStore({
+            reducer: { settings: settingsReducer },
+            preloadedState: {
+                settings: {
+                    allSettings: { ...fullSettings, availableProviderConfigs: [providerA, providerB], currentProviderConfig: providerA },
+                    metadata: null,
+                    discoveredModels: [],
+                    providerPresets: [],
+                },
+            },
+        });
+        (SettingsHandlerAdapter.deleteProviderConfig as jest.Mock).mockResolvedValue({ data: undefined });
+        (SettingsHandlerAdapter.getCurrentProviderConfig as jest.Mock).mockResolvedValue({ data: providerB });
+        (fromWireProvider as jest.Mock).mockReturnValue(providerB);
+
+        // Act
+        await store.dispatch(deleteProviderConfig('a'));
+
+        // Assert
+        const state = store.getState().settings;
+        expect(state.allSettings?.currentProviderConfig.providerId).toBe('b');
+        expect(state.allSettings?.availableProviderConfigs.map((p) => p.providerId)).toEqual(['b']);
     });
 });
