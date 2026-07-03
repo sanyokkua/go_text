@@ -69,10 +69,10 @@ func newChatCompletionRequest(cfg *settings.Settings, userPrompt, systemPrompt s
 
 type ActionServiceAPI interface {
 	GetModelsList() ([]string, error)
-	GetCompletionResponse(request *llms.ChatCompletionRequest) (string, error)
+	GetCompletionResponse(ctx context.Context, request *llms.ChatCompletionRequest) (string, error)
 	GetModelsListForProvider(provider *settings.ProviderConfig) ([]string, error)
 	GetModelsInfo(providerID string) ([]apperr.ModelInfo, error)
-	GetCompletionResponseForProvider(provider *settings.ProviderConfig, request *llms.ChatCompletionRequest) (string, error)
+	GetCompletionResponseForProvider(ctx context.Context, provider *settings.ProviderConfig, request *llms.ChatCompletionRequest) (string, error)
 	GetActionCatalog() []apperr.ActionMeta
 	BuildPlanAndPrompts(req apperr.PromptPreviewRequest) (*apperr.PromptPreview, error)
 	RunChain(ctx context.Context, req apperr.ChainRequest, emitProgress func(apperr.StepProgress)) (*apperr.ChainResult, error)
@@ -140,10 +140,10 @@ func (a *ActionService) GetModelsList() ([]string, error) {
 	return a.llmService.GetModelsList()
 }
 
-func (a *ActionService) GetCompletionResponse(request *llms.ChatCompletionRequest) (string, error) {
+func (a *ActionService) GetCompletionResponse(ctx context.Context, request *llms.ChatCompletionRequest) (string, error) {
 	const op = "ActionService.GetCompletionResponse"
 	a.logger.Debug(fmt.Sprintf("[%s] Sending completion request", op))
-	return a.llmService.GetCompletionResponse(request)
+	return a.llmService.GetCompletionResponse(ctx, request)
 }
 
 func (a *ActionService) GetModelsListForProvider(provider *settings.ProviderConfig) ([]string, error) {
@@ -177,10 +177,10 @@ func (a *ActionService) GetModelsInfo(providerID string) ([]apperr.ModelInfo, er
 	return a.llmService.GetModelsInfoForProvider(provider)
 }
 
-func (a *ActionService) GetCompletionResponseForProvider(provider *settings.ProviderConfig, request *llms.ChatCompletionRequest) (string, error) {
+func (a *ActionService) GetCompletionResponseForProvider(ctx context.Context, provider *settings.ProviderConfig, request *llms.ChatCompletionRequest) (string, error) {
 	const op = "ActionService.GetCompletionResponseForProvider"
 	a.logger.Debug(fmt.Sprintf("[%s] Sending completion request for provider", op))
-	return a.llmService.GetCompletionResponseForProvider(provider, request)
+	return a.llmService.GetCompletionResponseForProvider(ctx, provider, request)
 }
 
 func (a *ActionService) GetActionCatalog() []apperr.ActionMeta {
@@ -195,7 +195,6 @@ func (a *ActionService) GetActionCatalog() []apperr.ActionMeta {
 func (a *ActionService) runStep(ctx context.Context, cfg *settings.Settings, req ChatStepRequest) (string, error) {
 	const op = "ActionService.runStep"
 	startTime := time.Now()
-	_ = ctx // accepted for T13 cancellation; propagation added when LLMService gains context support
 
 	lg := a.logger.WithOp(op).With().
 		Str("component", "actions").
@@ -207,7 +206,7 @@ func (a *ActionService) runStep(ctx context.Context, cfg *settings.Settings, req
 	lg.Debug().Strs("actions", req.ActionIDs).Msg("starting LLM inference")
 
 	llmReq := newChatCompletionRequest(cfg, req.User, req.System)
-	rawResp, err := a.llmService.GetCompletionResponse(&llmReq)
+	rawResp, err := a.llmService.GetCompletionResponse(ctx, &llmReq)
 	if err != nil {
 		lg.Error().Err(err).Msg("LLM call failed")
 		return "", fmt.Errorf("%s: LLM call failed: %w", op, err)

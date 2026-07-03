@@ -1,6 +1,7 @@
 package actions
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -111,13 +112,13 @@ func (s *stubLLMService) GetModelsInfoForProvider(p *settings.ProviderConfig) ([
 // ── no-op interface completions for LLMServiceAPI ──────────────────────────
 
 func (s *stubLLMService) GetModelsList() ([]string, error) { return nil, nil }
-func (s *stubLLMService) GetCompletionResponse(_ *llms.ChatCompletionRequest) (string, error) {
+func (s *stubLLMService) GetCompletionResponse(_ context.Context, _ *llms.ChatCompletionRequest) (string, error) {
 	return "", nil
 }
 func (s *stubLLMService) GetModelsListForProvider(_ *settings.ProviderConfig) ([]string, error) {
 	return nil, nil
 }
-func (s *stubLLMService) GetCompletionResponseForProvider(_ *settings.ProviderConfig, _ *llms.ChatCompletionRequest) (string, error) {
+func (s *stubLLMService) GetCompletionResponseForProvider(_ context.Context, _ *settings.ProviderConfig, _ *llms.ChatCompletionRequest) (string, error) {
 	return "", nil
 }
 

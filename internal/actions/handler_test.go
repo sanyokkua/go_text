@@ -199,7 +199,7 @@ type mockActionService struct {
 }
 
 func (m *mockActionService) GetModelsList() ([]string, error) { return nil, nil }
-func (m *mockActionService) GetCompletionResponse(_ *llms.ChatCompletionRequest) (string, error) {
+func (m *mockActionService) GetCompletionResponse(_ context.Context, _ *llms.ChatCompletionRequest) (string, error) {
 	return "", nil
 }
 func (m *mockActionService) GetModelsListForProvider(_ *settings.ProviderConfig) ([]string, error) {
@@ -208,7 +208,7 @@ func (m *mockActionService) GetModelsListForProvider(_ *settings.ProviderConfig)
 func (m *mockActionService) GetModelsInfo(_ string) ([]apperr.ModelInfo, error) {
 	return m.models, m.err
 }
-func (m *mockActionService) GetCompletionResponseForProvider(_ *settings.ProviderConfig, _ *llms.ChatCompletionRequest) (string, error) {
+func (m *mockActionService) GetCompletionResponseForProvider(_ context.Context, _ *settings.ProviderConfig, _ *llms.ChatCompletionRequest) (string, error) {
 	return "", nil
 }
 func (m *mockActionService) GetActionCatalog() []apperr.ActionMeta { return m.catalog }
@@ -643,7 +643,7 @@ func TestActionHandler_PreviewPrompt_PanicRecovery(t *testing.T) {
 type panicActionService struct{}
 
 func (p *panicActionService) GetModelsList() ([]string, error) { panic("panic GetModelsList") }
-func (p *panicActionService) GetCompletionResponse(_ *llms.ChatCompletionRequest) (string, error) {
+func (p *panicActionService) GetCompletionResponse(_ context.Context, _ *llms.ChatCompletionRequest) (string, error) {
 	panic("panic GetCompletionResponse")
 }
 func (p *panicActionService) GetModelsListForProvider(_ *settings.ProviderConfig) ([]string, error) {
@@ -652,7 +652,7 @@ func (p *panicActionService) GetModelsListForProvider(_ *settings.ProviderConfig
 func (p *panicActionService) GetModelsInfo(_ string) ([]apperr.ModelInfo, error) {
 	panic("panic GetModelsInfo")
 }
-func (p *panicActionService) GetCompletionResponseForProvider(_ *settings.ProviderConfig, _ *llms.ChatCompletionRequest) (string, error) {
+func (p *panicActionService) GetCompletionResponseForProvider(_ context.Context, _ *settings.ProviderConfig, _ *llms.ChatCompletionRequest) (string, error) {
 	panic("panic GetCompletionResponseForProvider")
 }
 func (p *panicActionService) GetActionCatalog() []apperr.ActionMeta {
