@@ -19,10 +19,8 @@ import (
 	"go_text/internal/settings"
 	"go_text/internal/tasklog"
 
-	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/wailsapp/wails/v2/pkg/logger"
 	"resty.dev/v3"
 )
 
@@ -521,8 +519,7 @@ func TestActionHandler_ProcessPromptChain_Success(t *testing.T) {
 
 	svc := newTestChainService(t, server.URL)
 	h := NewActionHandler(
-		logger.NewDefaultLogger(),
-		zerolog.Nop(),
+		nil,
 		svc,
 		&mockVerificationService{},
 		gate.New(),
@@ -545,8 +542,7 @@ func TestActionHandler_ProcessPromptChain_BusyWhenGateHeld(t *testing.T) {
 	svc := newTestChainService(t, "http://unused")
 	g := gate.New()
 	h := NewActionHandler(
-		logger.NewDefaultLogger(),
-		zerolog.Nop(),
+		nil,
 		svc,
 		&mockVerificationService{},
 		g,
@@ -575,8 +571,7 @@ func TestActionHandler_ProcessPromptChain_MissingRequirement_ReturnsInvalidPlanE
 	t.Parallel()
 	svc := newTestChainService(t, "http://unused")
 	h := NewActionHandler(
-		logger.NewDefaultLogger(),
-		zerolog.Nop(),
+		nil,
 		svc,
 		&mockVerificationService{},
 		gate.New(),
@@ -600,7 +595,7 @@ func TestActionHandler_ProcessPromptChain_GateReleasedAfterCompletion(t *testing
 
 	svc := newTestChainService(t, server.URL)
 	g := gate.New()
-	h := NewActionHandler(logger.NewDefaultLogger(), zerolog.Nop(), svc, &mockVerificationService{}, g)
+	h := NewActionHandler(nil, svc, &mockVerificationService{}, g)
 
 	actionID := oneFamilyStep(t, svc)
 	req := apperr.ChainRequest{RunID: "h-gate-release", InputText: "hello", Steps: []apperr.ChainStep{{ActionID: actionID}}}
@@ -611,7 +606,7 @@ func TestActionHandler_ProcessPromptChain_GateReleasedAfterCompletion(t *testing
 	server2 := completionServerFor(t, []string{"ok2"})
 	defer server2.Close()
 	svc2 := newTestChainService(t, server2.URL)
-	h2 := NewActionHandler(logger.NewDefaultLogger(), zerolog.Nop(), svc2, &mockVerificationService{}, g)
+	h2 := NewActionHandler(nil, svc2, &mockVerificationService{}, g)
 
 	res2 := h2.ProcessPromptChain(req)
 	assert.Nil(t, res2.Error, "gate must be released so second run can proceed")
@@ -639,7 +634,7 @@ func TestActionHandler_ProcessPromptChain_GateReleasedAfterStepFailure(t *testin
 
 	svc := newTestChainService(t, server.URL)
 	g := gate.New()
-	h := NewActionHandler(logger.NewDefaultLogger(), zerolog.Nop(), svc, &mockVerificationService{}, g)
+	h := NewActionHandler(nil, svc, &mockVerificationService{}, g)
 
 	res := h.ProcessPromptChain(apperr.ChainRequest{
 		RunID:     "h-fail",
@@ -679,7 +674,7 @@ func TestActionHandler_CancelChain_StopsAfterCurrentGroup(t *testing.T) {
 
 	g := gate.New()
 	svc2 := newTestChainService(t, slowServer.URL)
-	h2 := NewActionHandler(logger.NewDefaultLogger(), zerolog.Nop(), svc2, &mockVerificationService{}, g)
+	h2 := NewActionHandler(nil, svc2, &mockVerificationService{}, g)
 
 	runID := "h-cancel"
 	resultCh := make(chan apperr.ChainResultEnv, 1)
@@ -713,7 +708,7 @@ func TestActionHandler_CancelChain_StopsAfterCurrentGroup(t *testing.T) {
 func TestActionHandler_CancelChain_UnknownIDIsNoOp(t *testing.T) {
 	t.Parallel()
 	svc := newTestChainService(t, "http://unused")
-	h := NewActionHandler(logger.NewDefaultLogger(), zerolog.Nop(), svc, &mockVerificationService{}, gate.New())
+	h := NewActionHandler(nil, svc, &mockVerificationService{}, gate.New())
 
 	res := h.CancelChain("non-existent-run-id")
 	assert.Nil(t, res.Error)
@@ -727,7 +722,7 @@ func TestActionHandler_RunAndTestInference_MutuallyExclusive(t *testing.T) {
 	require.True(t, acquired)
 	defer g.Release()
 
-	h := NewActionHandler(logger.NewDefaultLogger(), zerolog.Nop(), svc, &mockVerificationService{}, g)
+	h := NewActionHandler(nil, svc, &mockVerificationService{}, g)
 
 	actionID := oneFamilyStep(t, svc)
 	res := h.ProcessPromptChain(apperr.ChainRequest{

@@ -22,7 +22,7 @@ import (
 	"go_text/internal/tasklog"
 	"go_text/internal/verification"
 
-	zlog "github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"resty.dev/v3"
 )
@@ -51,7 +51,7 @@ func NewApplicationContextHolder(appLogger *logging.Logger, restyClient *resty.C
 	fileUtilsService := file.NewFileUtilsService(appLogger)
 	// settingsRepo is nil until Init() opens the DB and wires SqliteSettingsRepository.
 	settingsService := settings.NewSettingsService(appLogger, nil, fileUtilsService)
-	settingsHandler := settings.NewSettingsHandler(appLogger, zlog.Logger, settingsService, providerPresets())
+	settingsHandler := settings.NewSettingsHandler(settingsService, providerPresets())
 
 	taskLogService := tasklog.NewTaskLogService(appLogger, settingsService, fileUtilsService)
 	historyService := history.NewHistoryService(appLogger, settingsService)
@@ -62,11 +62,11 @@ func NewApplicationContextHolder(appLogger *logging.Logger, restyClient *resty.C
 
 	inferenceGate := gate.New()
 	verificationService := verification.NewService(appLogger, providerFactory, settingsService, inferenceGate)
-	actionHandler := actions.NewActionHandler(appLogger, zlog.Logger, actionService, verificationService, inferenceGate)
+	actionHandler := actions.NewActionHandler(appLogger, actionService, verificationService, inferenceGate)
 
 	catalog := actionService.GetActionCatalog()
-	stackHandler := stacks.NewStackHandler(appLogger, zlog.Logger, nil, catalog, suggestedStackRecipes())
-	historyHandler := history.NewHistoryHandler(appLogger, zlog.Logger, historyService)
+	stackHandler := stacks.NewStackHandler(appLogger, nil, catalog, suggestedStackRecipes())
+	historyHandler := history.NewHistoryHandler(appLogger, historyService)
 
 	return &ApplicationContextHolder{
 		SettingsHandler: settingsHandler,
@@ -122,6 +122,16 @@ func (a *ApplicationContextHolder) SetContext(ctx context.Context) {
 	a.ActionHandler.SetContext(ctx)
 }
 
+// liveZlog returns a live snapshot of the app logger's current writer, or a
+// no-op logger if appLogger has not been wired (e.g. bare struct-literal
+// tests exercising panic recovery or Wails-runtime-free code paths).
+func (a *ApplicationContextHolder) liveZlog() zerolog.Logger {
+	if a.appLogger != nil {
+		return a.appLogger.ZeroLogger()
+	}
+	return zerolog.Nop()
+}
+
 // Init opens the database, wires the SQLite settings repository, and
 // reconfigures the logger from the seeded log.* settings.
 // Called from OnStartup after SetContext.
@@ -143,7 +153,7 @@ func (a *ApplicationContextHolder) Init(ctx context.Context) error {
 	if err := a.restoreWindowSize(ctx); err != nil {
 		a.appLogger.Warning(fmt.Sprintf("restore window size: %v", err))
 	}
-	a.SettingsHandler.Configure(a.appLogger, zlog.Logger, a.SettingsService)
+	a.SettingsHandler.Configure(a.SettingsService)
 
 	historyRepo := history.NewSqliteHistoryRepository(database)
 	a.historyService.SetRepository(historyRepo)
@@ -214,7 +224,7 @@ func (a *ApplicationContextHolder) LogError(message string) (res apperr.VoidResu
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
-			wire := apperr.ToWire(zlog.Logger, ae)
+			wire := apperr.ToWire(a.liveZlog(), ae)
 			res = apperr.VoidResult{Error: &wire}
 		}
 	}()
@@ -226,14 +236,14 @@ func (a *ApplicationContextHolder) ClipboardGetText() (res apperr.StringResult) 
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
-			wire := apperr.ToWire(zlog.Logger, ae)
+			wire := apperr.ToWire(a.liveZlog(), ae)
 			res = apperr.StringResult{Error: &wire}
 		}
 	}()
 	text, err := clipboardGetText(a.ctx)
 	if err != nil {
 		ae := apperr.Internal(fmt.Errorf("clipboard get: %w", err))
-		wire := apperr.ToWire(zlog.Logger, ae)
+		wire := apperr.ToWire(a.liveZlog(), ae)
 		return apperr.StringResult{Error: &wire}
 	}
 	return apperr.StringResult{Data: text}
@@ -243,13 +253,13 @@ func (a *ApplicationContextHolder) ClipboardSetText(text string) (res apperr.Voi
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
-			wire := apperr.ToWire(zlog.Logger, ae)
+			wire := apperr.ToWire(a.liveZlog(), ae)
 			res = apperr.VoidResult{Error: &wire}
 		}
 	}()
 	if err := clipboardSetText(a.ctx, text); err != nil {
 		ae := apperr.Internal(fmt.Errorf("clipboard set: %w", err))
-		wire := apperr.ToWire(zlog.Logger, ae)
+		wire := apperr.ToWire(a.liveZlog(), ae)
 		return apperr.VoidResult{Error: &wire}
 	}
 	return apperr.VoidResult{}
@@ -259,13 +269,13 @@ func (a *ApplicationContextHolder) BrowserOpenURL(url string) (res apperr.VoidRe
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
-			wire := apperr.ToWire(zlog.Logger, ae)
+			wire := apperr.ToWire(a.liveZlog(), ae)
 			res = apperr.VoidResult{Error: &wire}
 		}
 	}()
 	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
 		ae := apperr.Validation("url", "http or https URL", url)
-		wire := apperr.ToWire(zlog.Logger, ae)
+		wire := apperr.ToWire(a.liveZlog(), ae)
 		return apperr.VoidResult{Error: &wire}
 	}
 	browserOpenURL(a.ctx, url)
@@ -278,12 +288,12 @@ func (a *ApplicationContextHolder) SaveWindowSize(width, height int) (res apperr
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
-			wire := apperr.ToWire(zlog.Logger, ae)
+			wire := apperr.ToWire(a.liveZlog(), ae)
 			res = apperr.VoidResult{Error: &wire}
 		}
 	}()
 	if err := a.SettingsService.SaveWindowSize(width, height); err != nil {
-		wire := apperr.ToWire(zlog.Logger, err)
+		wire := apperr.ToWire(a.liveZlog(), err)
 		return apperr.VoidResult{Error: &wire}
 	}
 	return apperr.VoidResult{}
@@ -333,28 +343,28 @@ func (a *ApplicationContextHolder) OpenPath(path string) (res apperr.VoidResult)
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
-			wire := apperr.ToWire(zlog.Logger, ae)
+			wire := apperr.ToWire(a.liveZlog(), ae)
 			res = apperr.VoidResult{Error: &wire}
 		}
 	}()
 	if strings.TrimSpace(path) == "" {
 		ae := apperr.Validation("path", "be non-empty", "empty string")
-		wire := apperr.ToWire(zlog.Logger, ae)
+		wire := apperr.ToWire(a.liveZlog(), ae)
 		return apperr.VoidResult{Error: &wire}
 	}
 	if _, err := os.Stat(path); err != nil {
 		ae := apperr.Validation("path", "point to an existing path", "not found")
-		wire := apperr.ToWire(zlog.Logger, ae)
+		wire := apperr.ToWire(a.liveZlog(), ae)
 		return apperr.VoidResult{Error: &wire}
 	}
 	name, args, err := openPathArgs(stdruntime.GOOS, path)
 	if err != nil {
-		wire := apperr.ToWire(zlog.Logger, err)
+		wire := apperr.ToWire(a.liveZlog(), err)
 		return apperr.VoidResult{Error: &wire}
 	}
 	if err := runOpenCommand(name, args...); err != nil && stdruntime.GOOS != "windows" {
 		ae := apperr.Internal(fmt.Errorf("open path: %w", err))
-		wire := apperr.ToWire(zlog.Logger, ae)
+		wire := apperr.ToWire(a.liveZlog(), ae)
 		return apperr.VoidResult{Error: &wire}
 	}
 	return apperr.VoidResult{}

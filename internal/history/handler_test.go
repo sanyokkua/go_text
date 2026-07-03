@@ -5,8 +5,6 @@ import (
 	"testing"
 
 	"go_text/internal/apperr"
-
-	zlog "github.com/rs/zerolog/log"
 )
 
 // mockHistoryService satisfies HistoryServiceAPI.
@@ -29,7 +27,7 @@ func (m *mockHistoryService) Clear() error                                { retu
 func (m *mockHistoryService) Count() (int64, error)                       { return 0, nil }
 
 func newTestHandler(svc HistoryServiceAPI) *HistoryHandler {
-	return NewHistoryHandler(&fakeLogger{}, zlog.Logger, svc)
+	return NewHistoryHandler(nil, svc)
 }
 
 func TestHistoryHandler_ListHistory_Success(t *testing.T) {
@@ -105,7 +103,7 @@ func TestHistoryHandler_ClearHistory_Error(t *testing.T) {
 }
 
 func TestHistoryHandler_PanicRecovery_ListHistory(t *testing.T) {
-	h := &HistoryHandler{logger: &fakeLogger{}, zlog: zlog.Logger, service: nil}
+	h := &HistoryHandler{service: nil}
 	res := h.ListHistory(10, 0)
 	if res.Error == nil {
 		t.Fatal("expected internal error after nil-service panic")

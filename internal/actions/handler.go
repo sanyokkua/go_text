@@ -7,11 +7,11 @@ import (
 
 	"go_text/internal/apperr"
 	"go_text/internal/gate"
+	"go_text/internal/logging"
 	"go_text/internal/settings"
 	"go_text/internal/verification"
 
 	"github.com/rs/zerolog"
-	"github.com/wailsapp/wails/v2/pkg/logger"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -28,8 +28,7 @@ type StackLookupAPI interface {
 // All bound methods must follow the envelope pattern: return apperr.*Result,
 // no error return, and include defer/recover for panic safety.
 type ActionHandler struct {
-	logger              logger.Logger
-	zlog                zerolog.Logger
+	appLogger           *logging.Logger
 	actionService       ActionServiceAPI
 	verificationService verification.ServiceAPI
 	gate                *gate.InferenceGate
@@ -47,20 +46,28 @@ type ActionHandler struct {
 
 // NewActionHandler constructs an ActionHandler.
 func NewActionHandler(
-	wailsLogger logger.Logger,
-	zlog zerolog.Logger,
+	appLogger *logging.Logger,
 	actionService ActionServiceAPI,
 	verificationService verification.ServiceAPI,
 	g *gate.InferenceGate,
 ) *ActionHandler {
 	return &ActionHandler{
-		logger:              wailsLogger,
-		zlog:                zlog,
+		appLogger:           appLogger,
 		actionService:       actionService,
 		verificationService: verificationService,
 		gate:                g,
 		runs:                make(map[string]context.CancelFunc),
 	}
+}
+
+// liveZlog returns a live snapshot of the app logger's current writer, or a
+// no-op logger if appLogger has not been wired (e.g. bare struct-literal
+// tests exercising panic recovery).
+func (h *ActionHandler) liveZlog() zerolog.Logger {
+	if h.appLogger != nil {
+		return h.appLogger.ZeroLogger()
+	}
+	return zerolog.Nop()
 }
 
 // SetContext stores the Wails runtime context so that ProcessPromptChain can
@@ -85,7 +92,7 @@ func (h *ActionHandler) PreviewPrompt(req apperr.PromptPreviewRequest) (res appe
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicMsgFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.PromptPreviewResult{Error: &wire}
 		}
 	}()
@@ -95,7 +102,7 @@ func (h *ActionHandler) PreviewPrompt(req apperr.PromptPreviewRequest) (res appe
 		ae := apperr.Validation("request",
 			"exactly one of actionId, steps, stackId",
 			fmt.Sprintf("%d specifier(s) set", specifiers))
-		wire := apperr.ToWire(h.zlog, ae)
+		wire := apperr.ToWire(h.liveZlog(), ae)
 		return apperr.PromptPreviewResult{Error: &wire}
 	}
 
@@ -107,7 +114,7 @@ func (h *ActionHandler) PreviewPrompt(req apperr.PromptPreviewRequest) (res appe
 
 	preview, err := h.actionService.BuildPlanAndPrompts(req)
 	if err != nil {
-		wire := apperr.ToWire(h.zlog, err)
+		wire := apperr.ToWire(h.liveZlog(), err)
 		return apperr.PromptPreviewResult{Error: &wire}
 	}
 	return apperr.PromptPreviewResult{Data: preview}
@@ -133,7 +140,7 @@ func countPreviewSpecifiers(req apperr.PromptPreviewRequest) int {
 func (h *ActionHandler) resolveStackID(req *apperr.PromptPreviewRequest) *apperr.PromptPreviewResult {
 	if h.stackLookup == nil {
 		ae := apperr.Internal(fmt.Errorf("stack lookup not configured"))
-		wire := apperr.ToWire(h.zlog, ae)
+		wire := apperr.ToWire(h.liveZlog(), ae)
 		res := apperr.PromptPreviewResult{Error: &wire}
 		return &res
 	}
@@ -144,7 +151,7 @@ func (h *ActionHandler) resolveStackID(req *apperr.PromptPreviewRequest) *apperr
 	}
 	if stackResult.Data == nil {
 		ae := apperr.Validation("stackId", "a known stack ID", req.StackID)
-		wire := apperr.ToWire(h.zlog, ae)
+		wire := apperr.ToWire(h.liveZlog(), ae)
 		res := apperr.PromptPreviewResult{Error: &wire}
 		return &res
 	}
@@ -184,13 +191,13 @@ func (h *ActionHandler) TestConnection(cfg settings.ProviderConfig) (res apperr.
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicMsgFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.VerifyResult{Error: &wire}
 		}
 	}()
 	outcome, err := h.verificationService.TestConnection(cfg)
 	if err != nil {
-		wire := apperr.ToWire(h.zlog, err)
+		wire := apperr.ToWire(h.liveZlog(), err)
 		return apperr.VerifyResult{Data: outcome, Error: &wire}
 	}
 	return apperr.VerifyResult{Data: outcome}
@@ -202,13 +209,13 @@ func (h *ActionHandler) TestModels(cfg settings.ProviderConfig) (res apperr.Veri
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicMsgFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.VerifyResult{Error: &wire}
 		}
 	}()
 	outcome, err := h.verificationService.TestModels(cfg)
 	if err != nil {
-		wire := apperr.ToWire(h.zlog, err)
+		wire := apperr.ToWire(h.liveZlog(), err)
 		return apperr.VerifyResult{Data: outcome, Error: &wire}
 	}
 	return apperr.VerifyResult{Data: outcome}
@@ -221,13 +228,13 @@ func (h *ActionHandler) TestInference(cfg settings.ProviderConfig) (res apperr.V
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicMsgFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.VerifyResult{Error: &wire}
 		}
 	}()
 	outcome, err := h.verificationService.TestInference(cfg)
 	if err != nil {
-		wire := apperr.ToWire(h.zlog, err)
+		wire := apperr.ToWire(h.liveZlog(), err)
 		return apperr.VerifyResult{Data: outcome, Error: &wire}
 	}
 	return apperr.VerifyResult{Data: outcome}
@@ -238,7 +245,7 @@ func (h *ActionHandler) GetActionCatalog() (res apperr.CatalogResult) {
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicMsgFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.CatalogResult{Error: &wire}
 		}
 	}()
@@ -256,13 +263,13 @@ func (h *ActionHandler) GetModels(providerID string) (res apperr.ModelsResult) {
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicMsgFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.ModelsResult{Error: &wire}
 		}
 	}()
 	models, err := h.actionService.GetModelsInfo(providerID)
 	if err != nil {
-		wire := apperr.ToWire(h.zlog, err)
+		wire := apperr.ToWire(h.liveZlog(), err)
 		return apperr.ModelsResult{Error: &wire}
 	}
 	if models == nil {
@@ -287,14 +294,14 @@ func (h *ActionHandler) ProcessPromptChain(req apperr.ChainRequest) (res apperr.
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicMsgFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.ChainResultEnv{Error: &wire}
 		}
 	}()
 
 	if !h.gate.TryAcquire() {
 		ae := apperr.Busy()
-		wire := apperr.ToWire(h.zlog, ae)
+		wire := apperr.ToWire(h.liveZlog(), ae)
 		return apperr.ChainResultEnv{Error: &wire}
 	}
 	defer h.gate.Release()
@@ -321,7 +328,7 @@ func (h *ActionHandler) ProcessPromptChain(req apperr.ChainRequest) (res apperr.
 
 	result, err := h.actionService.RunChain(ctx, req, emitProgress)
 	if err != nil {
-		wire := apperr.ToWire(h.zlog, err)
+		wire := apperr.ToWire(h.liveZlog(), err)
 		h.emit("chain:error", wire)
 		if result != nil {
 			return apperr.ChainResultEnv{Data: result, Error: &wire}
@@ -338,7 +345,7 @@ func (h *ActionHandler) CancelChain(runID string) (res apperr.VoidResult) {
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicMsgFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.VoidResult{Error: &wire}
 		}
 	}()

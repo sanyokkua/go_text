@@ -6,8 +6,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/rs/zerolog"
-
 	"go_text/internal/apperr"
 )
 
@@ -58,11 +56,11 @@ func (m *mockRepo) Duplicate(_ string) (*apperr.SavedStack, error) {
 }
 
 func newTestHandler(repo StackRepositoryAPI) *StackHandler {
-	return NewStackHandler(nil, zerolog.Nop(), repo, testCatalog, nil)
+	return NewStackHandler(nil, repo, testCatalog, nil)
 }
 
 func newSuggestionsHandler(recipes []SuggestedStackRecipe) *StackHandler {
-	return NewStackHandler(nil, zerolog.Nop(), &mockRepo{}, testCatalog, recipes)
+	return NewStackHandler(nil, &mockRepo{}, testCatalog, recipes)
 }
 
 // ─── ListStacks ──────────────────────────────────────────────────────────────
@@ -143,7 +141,7 @@ var suggestCatalog = []apperr.ActionMeta{
 }
 
 func newSuggestCatalogHandler(recipes []SuggestedStackRecipe) *StackHandler {
-	return NewStackHandler(nil, zerolog.Nop(), &mockRepo{}, suggestCatalog, recipes)
+	return NewStackHandler(nil, &mockRepo{}, suggestCatalog, recipes)
 }
 
 func TestStackHandler_SuggestedStacks_ResolvesNames(t *testing.T) {
@@ -554,7 +552,7 @@ func TestStackHandler_DuplicateStack_NewNameConflict(t *testing.T) {
 func TestStackHandler_ListStacks_PanicRecovery(t *testing.T) {
 	t.Parallel()
 	// nil repo will panic on method call; defer/recover must catch it
-	h := &StackHandler{zlog: zerolog.Nop()}
+	h := &StackHandler{}
 
 	res := h.ListStacks()
 
@@ -567,7 +565,7 @@ func TestStackHandler_CreateStack_PanicRecovery(t *testing.T) {
 	t.Parallel()
 	// catalogIDs is nil → accessing it will not panic (nil map read is safe in Go)
 	// but planner being nil will panic
-	h := &StackHandler{zlog: zerolog.Nop()}
+	h := &StackHandler{}
 
 	res := h.CreateStack(apperr.SavedStack{Name: "X", Steps: []string{"formal"}})
 

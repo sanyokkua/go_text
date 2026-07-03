@@ -8,7 +8,6 @@ import (
 	"go_text/internal/logging"
 
 	"github.com/rs/zerolog"
-	"github.com/wailsapp/wails/v2/pkg/logger"
 )
 
 // SettingsHandlerAPI defines the Wails-bound settings method contract.
@@ -45,8 +44,6 @@ type SettingsHandlerAPI interface {
 // It is created before the database is open; Configure() must be called from
 // application.Init() before any bound method is dispatched.
 type SettingsHandler struct {
-	logger          logger.Logger
-	zlog            zerolog.Logger
 	settingsService SettingsServiceAPI
 	presets         []apperr.ProviderPreset
 	appLogger       *logging.Logger
@@ -56,10 +53,8 @@ type SettingsHandler struct {
 
 // NewSettingsHandler constructs a SettingsHandler shell. presets are the
 // New-Provider form's one-click provider presets.
-func NewSettingsHandler(wailsLogger logger.Logger, zlog zerolog.Logger, settingsService SettingsServiceAPI, presets []apperr.ProviderPreset) *SettingsHandler {
+func NewSettingsHandler(settingsService SettingsServiceAPI, presets []apperr.ProviderPreset) *SettingsHandler {
 	return &SettingsHandler{
-		logger:          wailsLogger,
-		zlog:            zlog,
 		settingsService: settingsService,
 		presets:         presets,
 	}
@@ -67,9 +62,7 @@ func NewSettingsHandler(wailsLogger logger.Logger, zlog zerolog.Logger, settings
 
 // Configure wires the fully-initialised service into the already-bound handler.
 // Called from application.Init() after the database is open.
-func (h *SettingsHandler) Configure(wailsLogger logger.Logger, zlog zerolog.Logger, service SettingsServiceAPI) {
-	h.logger = wailsLogger
-	h.zlog = zlog
+func (h *SettingsHandler) Configure(service SettingsServiceAPI) {
 	h.settingsService = service
 }
 
@@ -81,6 +74,16 @@ func (h *SettingsHandler) SetAppLogger(l *logging.Logger, fu file.FileUtilsServi
 	h.appLogger = l
 	h.fileUtils = fu
 	h.isDev = isDev
+}
+
+// liveZlog returns a live snapshot of the app logger's current writer, or a
+// no-op logger if appLogger has not been wired yet (e.g. before SetAppLogger
+// runs, or in unit tests that construct a bare handler).
+func (h *SettingsHandler) liveZlog() zerolog.Logger {
+	if h.appLogger != nil {
+		return h.appLogger.ZeroLogger()
+	}
+	return zerolog.Nop()
 }
 
 // ── Type adapters ──────────────────────────────────────────────────────────
@@ -139,13 +142,13 @@ func (h *SettingsHandler) GetAppSettingsMetadata() (res apperr.MetadataResult) {
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.MetadataResult{Error: &wire}
 		}
 	}()
 	meta, err := h.settingsService.GetAppSettingsMetadata()
 	if err != nil {
-		wire := apperr.ToWire(h.zlog, err)
+		wire := apperr.ToWire(h.liveZlog(), err)
 		return apperr.MetadataResult{Error: &wire}
 	}
 	m := toWireMetadata(*meta)
@@ -156,13 +159,13 @@ func (h *SettingsHandler) GetSettings() (res apperr.SettingsResult) {
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.SettingsResult{Error: &wire}
 		}
 	}()
 	s, err := h.settingsService.GetSettings()
 	if err != nil {
-		wire := apperr.ToWire(h.zlog, err)
+		wire := apperr.ToWire(h.liveZlog(), err)
 		return apperr.SettingsResult{Error: &wire}
 	}
 	ws := toWireSettings(*s)
@@ -173,13 +176,13 @@ func (h *SettingsHandler) ResetSettingsToDefault() (res apperr.SettingsResult) {
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.SettingsResult{Error: &wire}
 		}
 	}()
 	s, err := h.settingsService.ResetSettingsToDefault()
 	if err != nil {
-		wire := apperr.ToWire(h.zlog, err)
+		wire := apperr.ToWire(h.liveZlog(), err)
 		return apperr.SettingsResult{Error: &wire}
 	}
 	ws := toWireSettings(*s)
@@ -190,13 +193,13 @@ func (h *SettingsHandler) GetAllProviderConfigs() (res apperr.ProvidersResult) {
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.ProvidersResult{Error: &wire}
 		}
 	}()
 	cfgs, err := h.settingsService.GetAllProviderConfigs()
 	if err != nil {
-		wire := apperr.ToWire(h.zlog, err)
+		wire := apperr.ToWire(h.liveZlog(), err)
 		return apperr.ProvidersResult{Error: &wire}
 	}
 	out := make([]apperr.ProviderConfig, len(cfgs))
@@ -210,13 +213,13 @@ func (h *SettingsHandler) GetCurrentProviderConfig() (res apperr.ProviderResult)
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.ProviderResult{Error: &wire}
 		}
 	}()
 	cfg, err := h.settingsService.GetCurrentProviderConfig()
 	if err != nil {
-		wire := apperr.ToWire(h.zlog, err)
+		wire := apperr.ToWire(h.liveZlog(), err)
 		return apperr.ProviderResult{Error: &wire}
 	}
 	p := toWireProvider(*cfg)
@@ -227,13 +230,13 @@ func (h *SettingsHandler) GetProviderConfig(providerId string) (res apperr.Provi
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.ProviderResult{Error: &wire}
 		}
 	}()
 	cfg, err := h.settingsService.GetProviderConfig(providerId)
 	if err != nil {
-		wire := apperr.ToWire(h.zlog, err)
+		wire := apperr.ToWire(h.liveZlog(), err)
 		return apperr.ProviderResult{Error: &wire}
 	}
 	p := toWireProvider(*cfg)
@@ -244,14 +247,14 @@ func (h *SettingsHandler) CreateProviderConfig(cfg apperr.ProviderConfig) (res a
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.ProviderResult{Error: &wire}
 		}
 	}()
 	v := fromWireProvider(cfg)
 	created, err := h.settingsService.CreateProviderConfig(&v)
 	if err != nil {
-		wire := apperr.ToWire(h.zlog, err)
+		wire := apperr.ToWire(h.liveZlog(), err)
 		return apperr.ProviderResult{Error: &wire}
 	}
 	p := toWireProvider(*created)
@@ -262,14 +265,14 @@ func (h *SettingsHandler) UpdateProviderConfig(cfg apperr.ProviderConfig) (res a
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.ProviderResult{Error: &wire}
 		}
 	}()
 	v := fromWireProvider(cfg)
 	updated, err := h.settingsService.UpdateProviderConfig(&v)
 	if err != nil {
-		wire := apperr.ToWire(h.zlog, err)
+		wire := apperr.ToWire(h.liveZlog(), err)
 		return apperr.ProviderResult{Error: &wire}
 	}
 	p := toWireProvider(*updated)
@@ -280,12 +283,12 @@ func (h *SettingsHandler) DeleteProviderConfig(providerId string) (res apperr.Vo
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.VoidResult{Error: &wire}
 		}
 	}()
 	if err := h.settingsService.DeleteProviderConfig(providerId); err != nil {
-		wire := apperr.ToWire(h.zlog, err)
+		wire := apperr.ToWire(h.liveZlog(), err)
 		return apperr.VoidResult{Error: &wire}
 	}
 	return apperr.VoidResult{}
@@ -295,13 +298,13 @@ func (h *SettingsHandler) SetAsCurrentProviderConfig(providerId string) (res app
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.ProviderResult{Error: &wire}
 		}
 	}()
 	cfg, err := h.settingsService.SetAsCurrentProviderConfig(providerId)
 	if err != nil {
-		wire := apperr.ToWire(h.zlog, err)
+		wire := apperr.ToWire(h.liveZlog(), err)
 		return apperr.ProviderResult{Error: &wire}
 	}
 	p := toWireProvider(*cfg)
@@ -312,13 +315,13 @@ func (h *SettingsHandler) GetInferenceBaseConfig() (res apperr.InferenceResult) 
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.InferenceResult{Error: &wire}
 		}
 	}()
 	cfg, err := h.settingsService.GetInferenceBaseConfig()
 	if err != nil {
-		wire := apperr.ToWire(h.zlog, err)
+		wire := apperr.ToWire(h.liveZlog(), err)
 		return apperr.InferenceResult{Error: &wire}
 	}
 	ic := toWireInference(*cfg)
@@ -329,14 +332,14 @@ func (h *SettingsHandler) UpdateInferenceBaseConfig(cfg apperr.InferenceBaseConf
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.InferenceResult{Error: &wire}
 		}
 	}()
 	v := fromWireInference(cfg)
 	updated, err := h.settingsService.UpdateInferenceBaseConfig(&v)
 	if err != nil {
-		wire := apperr.ToWire(h.zlog, err)
+		wire := apperr.ToWire(h.liveZlog(), err)
 		return apperr.InferenceResult{Error: &wire}
 	}
 	ic := toWireInference(*updated)
@@ -347,13 +350,13 @@ func (h *SettingsHandler) GetModelConfig() (res apperr.ModelConfigResult) {
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.ModelConfigResult{Error: &wire}
 		}
 	}()
 	cfg, err := h.settingsService.GetModelConfig()
 	if err != nil {
-		wire := apperr.ToWire(h.zlog, err)
+		wire := apperr.ToWire(h.liveZlog(), err)
 		return apperr.ModelConfigResult{Error: &wire}
 	}
 	mc := toWireModel(*cfg)
@@ -364,14 +367,14 @@ func (h *SettingsHandler) UpdateModelConfig(cfg apperr.ModelConfig) (res apperr.
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.ModelConfigResult{Error: &wire}
 		}
 	}()
 	v := fromWireModel(cfg)
 	updated, err := h.settingsService.UpdateModelConfig(&v)
 	if err != nil {
-		wire := apperr.ToWire(h.zlog, err)
+		wire := apperr.ToWire(h.liveZlog(), err)
 		return apperr.ModelConfigResult{Error: &wire}
 	}
 	mc := toWireModel(*updated)
@@ -382,13 +385,13 @@ func (h *SettingsHandler) GetLanguageConfig() (res apperr.LanguageResult) {
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.LanguageResult{Error: &wire}
 		}
 	}()
 	cfg, err := h.settingsService.GetLanguageConfig()
 	if err != nil {
-		wire := apperr.ToWire(h.zlog, err)
+		wire := apperr.ToWire(h.liveZlog(), err)
 		return apperr.LanguageResult{Error: &wire}
 	}
 	lc := toWireLanguage(*cfg)
@@ -399,12 +402,12 @@ func (h *SettingsHandler) SetDefaultInputLanguage(language string) (res apperr.V
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.VoidResult{Error: &wire}
 		}
 	}()
 	if err := h.settingsService.SetDefaultInputLanguage(language); err != nil {
-		wire := apperr.ToWire(h.zlog, err)
+		wire := apperr.ToWire(h.liveZlog(), err)
 		return apperr.VoidResult{Error: &wire}
 	}
 	return apperr.VoidResult{}
@@ -414,12 +417,12 @@ func (h *SettingsHandler) SetDefaultOutputLanguage(language string) (res apperr.
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.VoidResult{Error: &wire}
 		}
 	}()
 	if err := h.settingsService.SetDefaultOutputLanguage(language); err != nil {
-		wire := apperr.ToWire(h.zlog, err)
+		wire := apperr.ToWire(h.liveZlog(), err)
 		return apperr.VoidResult{Error: &wire}
 	}
 	return apperr.VoidResult{}
@@ -429,13 +432,13 @@ func (h *SettingsHandler) AddLanguage(language string) (res apperr.LanguagesResu
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.LanguagesResult{Error: &wire}
 		}
 	}()
 	langs, err := h.settingsService.AddLanguage(language)
 	if err != nil {
-		wire := apperr.ToWire(h.zlog, err)
+		wire := apperr.ToWire(h.liveZlog(), err)
 		return apperr.LanguagesResult{Error: &wire}
 	}
 	return apperr.LanguagesResult{Data: langs}
@@ -445,13 +448,13 @@ func (h *SettingsHandler) RemoveLanguage(language string) (res apperr.LanguagesR
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.LanguagesResult{Error: &wire}
 		}
 	}()
 	langs, err := h.settingsService.RemoveLanguage(language)
 	if err != nil {
-		wire := apperr.ToWire(h.zlog, err)
+		wire := apperr.ToWire(h.liveZlog(), err)
 		return apperr.LanguagesResult{Error: &wire}
 	}
 	return apperr.LanguagesResult{Data: langs}
@@ -461,13 +464,13 @@ func (h *SettingsHandler) GetAppBehaviorConfig() (res apperr.AppBehaviorResult) 
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.AppBehaviorResult{Error: &wire}
 		}
 	}()
 	cfg, err := h.settingsService.GetAppBehaviorConfig()
 	if err != nil {
-		wire := apperr.ToWire(h.zlog, err)
+		wire := apperr.ToWire(h.liveZlog(), err)
 		return apperr.AppBehaviorResult{Error: &wire}
 	}
 	ab := toWireAppBehavior(*cfg)
@@ -478,14 +481,14 @@ func (h *SettingsHandler) UpdateAppBehaviorConfig(cfg apperr.AppBehaviorConfig) 
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.AppBehaviorResult{Error: &wire}
 		}
 	}()
 	v := fromWireAppBehavior(cfg)
 	updated, err := h.settingsService.UpdateAppBehaviorConfig(&v)
 	if err != nil {
-		wire := apperr.ToWire(h.zlog, err)
+		wire := apperr.ToWire(h.liveZlog(), err)
 		return apperr.AppBehaviorResult{Error: &wire}
 	}
 	ab := toWireAppBehavior(*updated)
@@ -496,13 +499,13 @@ func (h *SettingsHandler) GetUIPreferencesConfig() (res apperr.UIPreferencesResu
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.UIPreferencesResult{Error: &wire}
 		}
 	}()
 	cfg, err := h.settingsService.GetUIPreferencesConfig()
 	if err != nil {
-		wire := apperr.ToWire(h.zlog, err)
+		wire := apperr.ToWire(h.liveZlog(), err)
 		return apperr.UIPreferencesResult{Error: &wire}
 	}
 	ui := toWireUIPreferences(*cfg)
@@ -513,14 +516,14 @@ func (h *SettingsHandler) UpdateUIPreferencesConfig(cfg apperr.UIPreferencesConf
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.UIPreferencesResult{Error: &wire}
 		}
 	}()
 	v := fromWireUIPreferences(cfg)
 	updated, err := h.settingsService.UpdateUIPreferencesConfig(&v)
 	if err != nil {
-		wire := apperr.ToWire(h.zlog, err)
+		wire := apperr.ToWire(h.liveZlog(), err)
 		return apperr.UIPreferencesResult{Error: &wire}
 	}
 	ui := toWireUIPreferences(*updated)
@@ -534,7 +537,7 @@ func (h *SettingsHandler) ProviderPresets() (res apperr.ProviderPresetsResult) {
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.ProviderPresetsResult{Error: &wire}
 		}
 	}()
@@ -547,13 +550,13 @@ func (h *SettingsHandler) GetLoggingConfig() (res apperr.LoggingResult) {
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.LoggingResult{Error: &wire}
 		}
 	}()
 	cfg, err := h.settingsService.GetLoggingConfig()
 	if err != nil {
-		wire := apperr.ToWire(h.zlog, err)
+		wire := apperr.ToWire(h.liveZlog(), err)
 		return apperr.LoggingResult{Error: &wire}
 	}
 	lc := toWireLogging(*cfg)
@@ -564,14 +567,14 @@ func (h *SettingsHandler) UpdateLoggingConfig(cfg apperr.LoggingConfig) (res app
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.LoggingResult{Error: &wire}
 		}
 	}()
 	v := fromWireLogging(cfg)
 	updated, err := h.settingsService.UpdateLoggingConfig(&v)
 	if err != nil {
-		wire := apperr.ToWire(h.zlog, err)
+		wire := apperr.ToWire(h.liveZlog(), err)
 		return apperr.LoggingResult{Error: &wire}
 	}
 	h.reconfigureLogger(updated)
@@ -593,16 +596,20 @@ func (h *SettingsHandler) reconfigureLogger(cfg *LoggingConfig) {
 		MaxAgeDays:  cfg.LogMaxAgeDays,
 		Compress:    cfg.LogCompress,
 	}
+	zl := h.liveZlog()
 	if cfg.LogFileEnabled && cfg.LogDirectory == "" && h.fileUtils != nil {
 		if dir, dirErr := h.fileUtils.EnsureAppLogsFolderExists(""); dirErr == nil {
 			lc.Directory = dir
+		} else {
+			zl.Warn().Str("component", "settings").Str("op", "reconfigureLogger").
+				Err(dirErr).Msg("failed to resolve logs folder; file logging will stay disabled")
 		}
 	} else {
 		lc.Directory = cfg.LogDirectory
 	}
 	if rcErr := h.appLogger.Reconfigure(lc, h.isDev); rcErr != nil {
-		h.zlog.Debug().Str("component", "settings").Str("op", "UpdateLoggingConfig").Err(rcErr).Msg("logger reconfigure failed")
+		zl.Debug().Str("component", "settings").Str("op", "UpdateLoggingConfig").Err(rcErr).Msg("logger reconfigure failed")
 	} else {
-		h.zlog.Debug().Str("component", "settings").Str("op", "UpdateLoggingConfig").Msg("logger reconfigured")
+		zl.Debug().Str("component", "settings").Str("op", "UpdateLoggingConfig").Msg("logger reconfigured")
 	}
 }

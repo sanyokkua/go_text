@@ -9,8 +9,6 @@ import (
 	"go_text/internal/gate"
 	"go_text/internal/llms"
 	"go_text/internal/settings"
-
-	"github.com/rs/zerolog"
 )
 
 // mockVerificationService is a stub for verification.ServiceAPI.
@@ -35,8 +33,6 @@ func (m *mockVerificationService) TestInference(_ settings.ProviderConfig) (*app
 
 func newTestActionHandler(mock *mockVerificationService) *ActionHandler {
 	return &ActionHandler{
-		logger:              nil,
-		zlog:                zerolog.Nop(),
 		actionService:       nil,
 		verificationService: mock,
 		gate:                gate.New(),
@@ -232,8 +228,6 @@ func (m *mockActionService) withCatalog(catalog []apperr.ActionMeta) *mockAction
 
 func newModelsActionHandler(svc *mockActionService) *ActionHandler {
 	return &ActionHandler{
-		logger:              nil,
-		zlog:                zerolog.Nop(),
 		actionService:       svc,
 		verificationService: &mockVerificationService{},
 		gate:                gate.New(),
@@ -381,8 +375,6 @@ func TestActionHandler_GetActionCatalog_NilBecomesEmptySlice(t *testing.T) {
 func TestActionHandler_GetActionCatalog_PanicRecovery(t *testing.T) {
 	t.Parallel()
 	h := &ActionHandler{
-		logger:              nil,
-		zlog:                zerolog.Nop(),
 		actionService:       &panicActionService{},
 		verificationService: &mockVerificationService{},
 		gate:                gate.New(),
@@ -402,8 +394,6 @@ func TestActionHandler_GetModels_PanicRecovery(t *testing.T) {
 	t.Parallel()
 	panicSvc := &panicActionService{}
 	h := &ActionHandler{
-		logger:              nil,
-		zlog:                zerolog.Nop(),
 		actionService:       panicSvc,
 		verificationService: &mockVerificationService{},
 		gate:                gate.New(),
@@ -430,7 +420,6 @@ func (m *mockStackLookup) GetStack(_ string) apperr.StackResult {
 
 func newPreviewHandler(svc *mockActionService, lookup *mockStackLookup) *ActionHandler {
 	h := &ActionHandler{
-		zlog:                zerolog.Nop(),
 		actionService:       svc,
 		verificationService: &mockVerificationService{},
 		gate:                gate.New(),
@@ -638,7 +627,6 @@ func TestActionHandler_PreviewPrompt_ServiceError_ReturnsError(t *testing.T) {
 func TestActionHandler_PreviewPrompt_PanicRecovery(t *testing.T) {
 	t.Parallel()
 	h := &ActionHandler{
-		zlog:                zerolog.Nop(),
 		actionService:       &panicActionService{},
 		verificationService: &mockVerificationService{},
 		gate:                gate.New(),
@@ -684,7 +672,6 @@ func TestActionHandler_CancelAllRuns_CancelsAndClearsRegistry(t *testing.T) {
 
 	var run1Cancelled, run2Cancelled bool
 	h := &ActionHandler{
-		zlog: zerolog.Nop(),
 		runs: map[string]context.CancelFunc{
 			"run-1": func() { run1Cancelled = true },
 			"run-2": func() { run2Cancelled = true },
@@ -704,7 +691,7 @@ func TestActionHandler_CancelAllRuns_CancelsAndClearsRegistry(t *testing.T) {
 func TestActionHandler_CancelAllRuns_EmptyRegistryIsNoOp(t *testing.T) {
 	t.Parallel()
 
-	h := &ActionHandler{zlog: zerolog.Nop()}
+	h := &ActionHandler{}
 
 	h.CancelAllRuns()
 }
@@ -714,7 +701,7 @@ func TestActionHandler_CancelAllRuns_EmptyRegistryIsNoOp(t *testing.T) {
 func TestActionHandler_SetContext_StoresContext(t *testing.T) {
 	t.Parallel()
 
-	h := &ActionHandler{zlog: zerolog.Nop()}
+	h := &ActionHandler{}
 	ctx := context.Background()
 
 	h.SetContext(ctx)

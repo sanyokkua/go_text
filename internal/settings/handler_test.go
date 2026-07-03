@@ -1,11 +1,15 @@
 package settings_test
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/rs/zerolog"
 
 	"go_text/internal/apperr"
+	"go_text/internal/file"
 	"go_text/internal/logging"
 	"go_text/internal/settings"
 )
@@ -16,7 +20,7 @@ func newUIPreferencesHandler(t *testing.T) *settings.SettingsHandler {
 	t.Helper()
 	repo := newRepo(t)
 	svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
-	return settings.NewSettingsHandler(noopLogger{}, zerolog.Nop(), svc, nil)
+	return settings.NewSettingsHandler(svc, nil)
 }
 
 // newLoggingHandler creates a handler wired with a real *logging.Logger so
@@ -25,7 +29,7 @@ func newLoggingHandler(t *testing.T) (*settings.SettingsHandler, *logging.Logger
 	t.Helper()
 	repo := newRepo(t)
 	svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
-	h := settings.NewSettingsHandler(noopLogger{}, zerolog.Nop(), svc, nil)
+	h := settings.NewSettingsHandler(svc, nil)
 	l, err := logging.New(logging.DefaultConfig(), false)
 	if err != nil {
 		t.Fatalf("logging.New: %v", err)
@@ -38,7 +42,7 @@ func TestSettingsHandler_GetLoggingConfig_ReturnsDefaults(t *testing.T) {
 	// Arrange: freshly-seeded DB, no updates applied.
 	repo := newRepo(t)
 	svc := settings.NewSettingsService(noopLogger{}, repo, stubFileUtils{})
-	handler := settings.NewSettingsHandler(noopLogger{}, zerolog.Nop(), svc, nil)
+	handler := settings.NewSettingsHandler(svc, nil)
 
 	// Act
 	res := handler.GetLoggingConfig()
@@ -124,6 +128,80 @@ func TestSettingsHandler_UpdateLoggingConfig_DisablesFile(t *testing.T) {
 	}
 	if res.Data.LogFileEnabled {
 		t.Error("expected LogFileEnabled to be false after disable")
+	}
+}
+
+// TestSettingsHandler_FileLogging_HandlerVsAppLoggerRouting is the T89
+// discriminator (docs/testing/reports/2026-07-03-live-testing-report.md).
+// It wires a *real* file.FileUtilsService (not stubFileUtils, which returns
+// ("", nil) and never exercises real directory resolution) and separately
+// checks two independent write paths after enabling file logging live:
+//
+//   - the control: a direct write via the live *logging.Logger obtained from
+//     SetAppLogger. This must reach app.log both before and after any T89
+//     fix — if it doesn't, the bug is in directory attachment itself, a
+//     second issue independent of the handler-boundary logger below.
+//   - the case under test: a handler-boundary error, which currently routes
+//     through h.zlog, a one-time snapshot of the unconfigured zerolog
+//     package-level default logger, frozen at construction and never
+//     reconfigured. It is expected to be absent from app.log until that
+//     handler-boundary logger is replaced with a live-fetched one.
+func TestSettingsHandler_FileLogging_HandlerVsAppLoggerRouting(t *testing.T) {
+	// Redirect os.UserConfigDir() into a throwaway temp dir.
+	t.Setenv("HOME", t.TempDir())
+
+	repo := newRepo(t)
+	realFileUtils := file.NewFileUtilsService(noopLogger{})
+	svc := settings.NewSettingsService(noopLogger{}, repo, realFileUtils)
+	handler := settings.NewSettingsHandler(svc, nil)
+	l, err := logging.New(logging.DefaultConfig(), false)
+	if err != nil {
+		t.Fatalf("logging.New: %v", err)
+	}
+	handler.SetAppLogger(l, realFileUtils, false)
+
+	if res := handler.UpdateLoggingConfig(apperr.LoggingConfig{
+		LogFileEnabled: true,
+		LogLevel:       "debug",
+		LogDirectory:   "",
+		LogMaxSizeMB:   10,
+		LogMaxBackups:  5,
+		LogMaxAgeDays:  30,
+		LogCompress:    false,
+	}); res.Error != nil {
+		t.Fatalf("enable file logging: %+v", res.Error)
+	}
+
+	// Case under test: providerId="" deterministically triggers a Validation
+	// error at the handler boundary (apperr.ToWire), independent of seed data.
+	if getRes := handler.GetProviderConfig(""); getRes.Error == nil {
+		t.Fatal("expected a validation error for empty providerId")
+	}
+
+	// Control: a direct write via the live *logging.Logger, bypassing the
+	// handler entirely.
+	const probeMarker = "appLogger-direct-probe-t89"
+	zl := l.ZeroLogger()
+	zl.Info().Msg(probeMarker)
+
+	logDir, err := realFileUtils.ResolveAppLogsFolderPath("")
+	if err != nil {
+		t.Fatalf("ResolveAppLogsFolderPath: %v", err)
+	}
+	contents, err := os.ReadFile(filepath.Join(logDir, "app.log"))
+	if err != nil {
+		t.Fatalf("reading app.log: %v", err)
+	}
+	logText := string(contents)
+
+	if !strings.Contains(logText, probeMarker) {
+		t.Fatal("control failed: a direct write via the live *logging.Logger did not " +
+			"reach app.log — this points to a second, independent bug in log-directory " +
+			"attachment; the handler-boundary fix alone would not fully resolve T89")
+	}
+	if !strings.Contains(logText, "providerId") {
+		t.Error("handler-boundary validation error did not reach app.log — h.zlog is " +
+			"routing through the frozen zerolog global instead of the live app logger")
 	}
 }
 

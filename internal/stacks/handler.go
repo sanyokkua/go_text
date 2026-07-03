@@ -5,10 +5,10 @@ import (
 	"strings"
 
 	"github.com/rs/zerolog"
-	"github.com/wailsapp/wails/v2/pkg/logger"
 
 	"go_text/internal/actions"
 	"go_text/internal/apperr"
+	"go_text/internal/logging"
 )
 
 const panicMsgFmt = "panic: %v"
@@ -26,8 +26,7 @@ type SuggestedStackRecipe struct {
 }
 
 type StackHandler struct {
-	logger       logger.Logger
-	zlog         zerolog.Logger
+	appLogger    *logging.Logger
 	repo         StackRepositoryAPI
 	planner      *actions.Planner
 	catalogIDs   map[string]bool
@@ -40,8 +39,7 @@ type StackHandler struct {
 // before the first Wails invocation (Init does this). recipes are the
 // suggested-stack recipes exposed via SuggestedStacks.
 func NewStackHandler(
-	wailsLogger logger.Logger,
-	zlog zerolog.Logger,
+	appLogger *logging.Logger,
 	repo StackRepositoryAPI,
 	catalog []apperr.ActionMeta,
 	recipes []SuggestedStackRecipe,
@@ -53,8 +51,7 @@ func NewStackHandler(
 		names[a.ID] = a.Name
 	}
 	return &StackHandler{
-		logger:       wailsLogger,
-		zlog:         zlog,
+		appLogger:    appLogger,
 		repo:         repo,
 		planner:      actions.NewPlanner(catalog),
 		catalogIDs:   ids,
@@ -69,6 +66,16 @@ func (h *StackHandler) SetRepository(repo StackRepositoryAPI) {
 	h.repo = repo
 }
 
+// liveZlog returns a live snapshot of the app logger's current writer, or a
+// no-op logger if appLogger has not been wired (e.g. bare struct-literal
+// tests exercising panic recovery).
+func (h *StackHandler) liveZlog() zerolog.Logger {
+	if h.appLogger != nil {
+		return h.appLogger.ZeroLogger()
+	}
+	return zerolog.Nop()
+}
+
 // filterUnknownSteps removes action IDs not present in the catalog,
 // logging a warning for each removal. Called on every read (List/Get).
 func (h *StackHandler) filterUnknownSteps(stack *apperr.SavedStack) {
@@ -77,7 +84,8 @@ func (h *StackHandler) filterUnknownSteps(stack *apperr.SavedStack) {
 		if h.catalogIDs[id] {
 			out = append(out, id)
 		} else {
-			h.zlog.Warn().
+			zl := h.liveZlog()
+			zl.Warn().
 				Str("stackId", stack.ID).
 				Str("actionId", id).
 				Msg("dropping unknown action ID from saved stack")
@@ -115,13 +123,13 @@ func (h *StackHandler) ListStacks() (res apperr.StacksResult) {
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicMsgFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.StacksResult{Error: &wire}
 		}
 	}()
 	list, err := h.repo.List()
 	if err != nil {
-		wire := apperr.ToWire(h.zlog, apperr.Internal(err))
+		wire := apperr.ToWire(h.liveZlog(), apperr.Internal(err))
 		return apperr.StacksResult{Error: &wire}
 	}
 	for i := range list {
@@ -141,7 +149,7 @@ func (h *StackHandler) SuggestedStacks() (res apperr.SuggestedStacksResult) {
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicMsgFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.SuggestedStacksResult{Error: &wire}
 		}
 	}()
@@ -160,7 +168,8 @@ func (h *StackHandler) resolveSuggestedStack(recipe SuggestedStackRecipe) apperr
 	for _, id := range recipe.Actions {
 		name, ok := h.catalogNames[id]
 		if !ok {
-			h.zlog.Warn().
+			zl := h.liveZlog()
+			zl.Warn().
 				Str("stackName", recipe.Name).
 				Str("actionId", id).
 				Msg("dropping unknown action ID from suggested stack")
@@ -182,14 +191,14 @@ func (h *StackHandler) GetStack(id string) (res apperr.StackResult) {
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicMsgFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.StackResult{Error: &wire}
 		}
 	}()
 	stack, err := h.repo.Get(id)
 	if err != nil {
 		ae := mapRepoError(err, "")
-		wire := apperr.ToWire(h.zlog, ae)
+		wire := apperr.ToWire(h.liveZlog(), ae)
 		return apperr.StackResult{Error: &wire}
 	}
 	h.filterUnknownSteps(stack)
@@ -202,23 +211,23 @@ func (h *StackHandler) CreateStack(s apperr.SavedStack) (res apperr.StackResult)
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicMsgFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.StackResult{Error: &wire}
 		}
 	}()
 	if strings.TrimSpace(s.Name) == "" {
 		ae := apperr.Validation("name", "be non-empty", "empty string")
-		wire := apperr.ToWire(h.zlog, ae)
+		wire := apperr.ToWire(h.liveZlog(), ae)
 		return apperr.StackResult{Error: &wire}
 	}
 	if err := h.validatePlan(s.Steps); err != nil {
-		wire := apperr.ToWire(h.zlog, err)
+		wire := apperr.ToWire(h.liveZlog(), err)
 		return apperr.StackResult{Error: &wire}
 	}
 	created, err := h.repo.Create(s)
 	if err != nil {
 		ae := mapRepoError(err, s.Name)
-		wire := apperr.ToWire(h.zlog, ae)
+		wire := apperr.ToWire(h.liveZlog(), ae)
 		return apperr.StackResult{Error: &wire}
 	}
 	return apperr.StackResult{Data: created}
@@ -230,23 +239,23 @@ func (h *StackHandler) UpdateStack(s apperr.SavedStack) (res apperr.StackResult)
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicMsgFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.StackResult{Error: &wire}
 		}
 	}()
 	if strings.TrimSpace(s.Name) == "" {
 		ae := apperr.Validation("name", "be non-empty", "empty string")
-		wire := apperr.ToWire(h.zlog, ae)
+		wire := apperr.ToWire(h.liveZlog(), ae)
 		return apperr.StackResult{Error: &wire}
 	}
 	if err := h.validatePlan(s.Steps); err != nil {
-		wire := apperr.ToWire(h.zlog, err)
+		wire := apperr.ToWire(h.liveZlog(), err)
 		return apperr.StackResult{Error: &wire}
 	}
 	updated, err := h.repo.Update(s)
 	if err != nil {
 		ae := mapRepoError(err, s.Name)
-		wire := apperr.ToWire(h.zlog, ae)
+		wire := apperr.ToWire(h.liveZlog(), ae)
 		return apperr.StackResult{Error: &wire}
 	}
 	return apperr.StackResult{Data: updated}
@@ -257,13 +266,13 @@ func (h *StackHandler) DeleteStack(id string) (res apperr.VoidResult) {
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicMsgFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.VoidResult{Error: &wire}
 		}
 	}()
 	if err := h.repo.Delete(id); err != nil {
 		ae := apperr.Internal(err)
-		wire := apperr.ToWire(h.zlog, ae)
+		wire := apperr.ToWire(h.liveZlog(), ae)
 		return apperr.VoidResult{Error: &wire}
 	}
 	return apperr.VoidResult{}
@@ -276,19 +285,19 @@ func (h *StackHandler) DuplicateStack(id string, newName string) (res apperr.Sta
 	defer func() {
 		if r := recover(); r != nil {
 			ae := apperr.Internal(fmt.Errorf(panicMsgFmt, r))
-			wire := apperr.ToWire(h.zlog, ae)
+			wire := apperr.ToWire(h.liveZlog(), ae)
 			res = apperr.StackResult{Error: &wire}
 		}
 	}()
 	if strings.TrimSpace(newName) == "" {
 		ae := apperr.Validation("newName", "be non-empty", "empty string")
-		wire := apperr.ToWire(h.zlog, ae)
+		wire := apperr.ToWire(h.liveZlog(), ae)
 		return apperr.StackResult{Error: &wire}
 	}
 	original, err := h.repo.Get(id)
 	if err != nil {
 		ae := mapRepoError(err, "")
-		wire := apperr.ToWire(h.zlog, ae)
+		wire := apperr.ToWire(h.liveZlog(), ae)
 		return apperr.StackResult{Error: &wire}
 	}
 	dupe := apperr.SavedStack{
@@ -302,7 +311,7 @@ func (h *StackHandler) DuplicateStack(id string, newName string) (res apperr.Sta
 	created, err := h.repo.Create(dupe)
 	if err != nil {
 		ae := mapRepoError(err, newName)
-		wire := apperr.ToWire(h.zlog, ae)
+		wire := apperr.ToWire(h.liveZlog(), ae)
 		return apperr.StackResult{Error: &wire}
 	}
 	return apperr.StackResult{Data: created}
