@@ -55,6 +55,19 @@ const MOCK_SETTINGS: Settings = {
     appBehaviorConfig: { enableTaskLogging: false, logDirectory: '/tmp/logs', historyEnabled: true, historyMaxEntries: 500 },
 };
 
+// Ollama's native chat path always sets its own output-length option, so the
+// token-limit-parameter radio group must be disabled (not hidden) for this provider.
+const OLLAMA_PROVIDER = {
+    ...MOCK_PROVIDER,
+    providerType: 'ollama',
+};
+
+const OLLAMA_SETTINGS: Settings = {
+    ...MOCK_SETTINGS,
+    availableProviderConfigs: [OLLAMA_PROVIDER],
+    currentProviderConfig: OLLAMA_PROVIDER,
+};
+
 // useTemperature is off here so only the context-window slider renders —
 // both sliders share the same accessible name ("Value"), which would make
 // getByRole('slider') ambiguous if both were shown at once.
@@ -250,5 +263,49 @@ describe('ModelConfigTab', () => {
 
         expect(screen.getByRole('button', { name: /^save$/i })).not.toBeDisabled();
         expect(screen.getByRole('switch', { name: /use context window/i })).not.toBeChecked();
+    });
+});
+
+describe('ModelConfigTab — token-limit parameter with Ollama provider', () => {
+    it('disables both token-limit-parameter radio items when the current provider is Ollama', () => {
+        render(
+            <Provider store={makeStore(OLLAMA_SETTINGS)}>
+                <ModelConfigTab settings={OLLAMA_SETTINGS} />
+            </Provider>,
+        );
+
+        expect(screen.getByRole('radio', { name: /max_completion_tokens/i })).toBeDisabled();
+        expect(screen.getByRole('radio', { name: /max_tokens \(legacy\)/i })).toBeDisabled();
+    });
+
+    it('keeps both token-limit-parameter radio items enabled for a non-Ollama provider', () => {
+        render(
+            <Provider store={makeStore(MOCK_SETTINGS)}>
+                <ModelConfigTab settings={MOCK_SETTINGS} />
+            </Provider>,
+        );
+
+        expect(screen.getByRole('radio', { name: /max_completion_tokens/i })).not.toBeDisabled();
+        expect(screen.getByRole('radio', { name: /max_tokens \(legacy\)/i })).not.toBeDisabled();
+    });
+
+    it('shows the Ollama-specific explanation when the current provider is Ollama', () => {
+        render(
+            <Provider store={makeStore(OLLAMA_SETTINGS)}>
+                <ModelConfigTab settings={OLLAMA_SETTINGS} />
+            </Provider>,
+        );
+
+        expect(screen.getByText(/built-in chat protocol/i)).toBeInTheDocument();
+    });
+
+    it('hides the Ollama-specific explanation for a non-Ollama provider', () => {
+        render(
+            <Provider store={makeStore(MOCK_SETTINGS)}>
+                <ModelConfigTab settings={MOCK_SETTINGS} />
+            </Provider>,
+        );
+
+        expect(screen.queryByText(/built-in chat protocol/i)).not.toBeInTheDocument();
     });
 });

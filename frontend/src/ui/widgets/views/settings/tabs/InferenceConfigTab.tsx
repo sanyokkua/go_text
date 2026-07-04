@@ -64,6 +64,9 @@ const InferenceConfigTab: React.FC<Props> = ({ settings }) => {
                         step={1}
                         aria-label="Request timeout in seconds"
                     />
+                    <p className={styles.caption}>
+                        How long to wait for a response before giving up. Raise this if you use large models or slow local hardware.
+                    </p>
                 </div>
             </div>
 
@@ -78,6 +81,9 @@ const InferenceConfigTab: React.FC<Props> = ({ settings }) => {
                         step={1}
                         aria-label="Maximum number of retries"
                     />
+                    <p className={styles.caption}>
+                        How many times to automatically retry a failed request before giving up and showing an error.
+                    </p>
                 </div>
             </div>
 
@@ -89,6 +95,9 @@ const InferenceConfigTab: React.FC<Props> = ({ settings }) => {
                         onCheckedChange={(checked) => setForm((prev) => ({ ...prev, useMarkdownForOutput: checked }))}
                         aria-label="Request Markdown output"
                     />
+                    <p className={styles.caption}>
+                        Ask the model to format its response using Markdown (headings, lists, code blocks) instead of plain prose.
+                    </p>
                 </div>
             </div>
 

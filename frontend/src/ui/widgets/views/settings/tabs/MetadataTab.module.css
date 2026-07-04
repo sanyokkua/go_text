@@ -77,6 +77,15 @@
     min-width: 0;
 }
 
+.caption {
+    margin: 0;
+    flex: 1 1 100%;
+    min-width: 0;
+    font-size: 0.8125rem;
+    color: var(--ink-3);
+    line-height: 1.45;
+}
+
 .dangerZone {
     display: flex;
     align-items: center;

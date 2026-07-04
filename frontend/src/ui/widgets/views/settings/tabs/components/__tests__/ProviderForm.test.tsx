@@ -4,6 +4,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
 
+import { ProviderPresets as fetchBridgeMockPresets } from '../../../../../../../dev/bridge-mock/go/main/SettingsHandler';
 import { ProviderConfig } from '../../../../../../../logic/adapter/models';
 import uiReducer from '../../../../../../../logic/store/ui/slice';
 import ProviderForm, { BLANK_PROVIDER } from '../ProviderForm';
@@ -51,17 +52,40 @@ const AZURE_PROVIDER: ProviderConfig = {
     customModels: [],
 };
 
+const OLLAMA_PROVIDER: ProviderConfig = {
+    providerId: 'p-ollama',
+    providerName: 'Local Ollama',
+    providerType: 'ollama',
+    baseUrl: 'http://localhost:11434/',
+    modelsEndpoint: '/v1/models',
+    completionEndpoint: '/v1/chat/completions',
+    authType: 'none',
+    authToken: '',
+    useAuthTokenFromEnv: false,
+    envVarTokenName: '',
+    apiVersion: '',
+    selectedModel: 'gemma3:1b',
+    useCustomHeaders: false,
+    headers: {},
+    useCustomModels: false,
+    customModels: [],
+};
+
 function renderForm() {
+    return renderFormWithProvider(AZURE_PROVIDER);
+}
+
+function renderFormWithProvider(providerConfig: ProviderConfig) {
     // VerificationPanel inside the form reads ui.inferenceRunning from the store.
     const store = configureStore({ reducer: { ui: uiReducer } });
     return render(
         <Provider store={store}>
             <ProviderForm
-                provider={AZURE_PROVIDER}
+                provider={providerConfig}
                 isNew={false}
                 presets={[]}
                 authTypes={['none', 'bearer', 'api-key']}
-                providerTypes={['openai', 'azure', 'anthropic']}
+                providerTypes={['openai', 'azure', 'anthropic', 'ollama']}
                 existingNames={[]}
                 isCurrent={false}
                 onSave={jest.fn()}
@@ -102,6 +126,38 @@ describe('ProviderForm two-column layout', () => {
         const grid = apiVersionInput.closest('div')?.parentElement ?? null;
         expect(grid).toContainElement(modelTrigger);
         expect(grid).not.toContainElement(baseUrlInput);
+    });
+});
+
+describe('ProviderForm completion endpoint — Ollama no-op guard', () => {
+    // Finding #3: Ollama's native chat path never reads the completion-endpoint
+    // override, so the field is disabled (not hidden) with an explanation for
+    // that provider kind only.
+    it('disables the completion endpoint input for an Ollama provider', async () => {
+        renderFormWithProvider(OLLAMA_PROVIDER);
+
+        const completionInput = await screen.findByLabelText(/completion endpoint/i);
+        expect(completionInput).toBeDisabled();
+    });
+
+    it('leaves the completion endpoint input enabled for a non-Ollama provider', async () => {
+        renderFormWithProvider(AZURE_PROVIDER);
+
+        const completionInput = await screen.findByLabelText(/completion endpoint/i);
+        expect(completionInput).not.toBeDisabled();
+    });
+
+    it('shows the Ollama-specific explanation when the provider kind is Ollama', async () => {
+        renderFormWithProvider(OLLAMA_PROVIDER);
+
+        expect(await screen.findByText(/built-in chat protocol/i)).toBeInTheDocument();
+    });
+
+    it('does not show the Ollama-specific explanation for a non-Ollama provider', async () => {
+        renderFormWithProvider(AZURE_PROVIDER);
+
+        await screen.findByLabelText(/completion endpoint/i);
+        expect(screen.queryByText(/built-in chat protocol/i)).not.toBeInTheDocument();
     });
 });
 
@@ -186,6 +242,22 @@ describe('ProviderForm preset quick-fill', () => {
         expect(screen.getByRole('button', { name: 'Bearer' })).toHaveAttribute('aria-pressed', 'true');
         expect(screen.getByLabelText(/api key environment variable/i)).toHaveValue('OPENAI_API_KEY');
         expect(screen.getByLabelText(/base url/i)).toHaveValue('https://api.openai.com/');
+    });
+
+    // Regression test: hand-built fixtures above (ALL_PRESETS) passed even when
+    // the bridge-mock's real preset data used the wrong field casing (`baseURL`
+    // instead of `baseUrl`), because a plain object literal in this file can't
+    // catch a typo in a completely different file. This test sources presets
+    // from the actual bridge-mock function so a field-name regression there
+    // fails here too.
+    it('applies every real bridge-mock preset without crashing and populates Base URL correctly', async () => {
+        const { data: realPresets } = await fetchBridgeMockPresets();
+        renderNewForm(realPresets as typeof ALL_PRESETS);
+
+        for (const preset of realPresets as typeof ALL_PRESETS) {
+            await userEvent.click(screen.getByRole('button', { name: preset.name }));
+            expect(screen.getByLabelText(/base url/i)).toHaveValue(preset.baseUrl);
+        }
     });
 
     it('does not render preset buttons when editing an existing provider (isNew false)', () => {

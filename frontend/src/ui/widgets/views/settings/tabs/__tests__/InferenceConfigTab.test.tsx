@@ -111,6 +111,24 @@ describe('InferenceConfigTab', () => {
         expect(screen.getByRole('switch', { name: /request markdown output/i })).toBeChecked();
     });
 
+    it('renders a plain-language description for the request timeout control', () => {
+        render(
+            <Provider store={makeStore()}>
+                <InferenceConfigTab settings={MOCK_SETTINGS} />
+            </Provider>,
+        );
+        expect(screen.getByText(/how long to wait for a response before giving up/i)).toBeInTheDocument();
+    });
+
+    it('renders a plain-language description for the markdown output switch', () => {
+        render(
+            <Provider store={makeStore()}>
+                <InferenceConfigTab settings={MOCK_SETTINGS} />
+            </Provider>,
+        );
+        expect(screen.getByText(/ask the model to format its response using markdown/i)).toBeInTheDocument();
+    });
+
     it('Save button is initially disabled when form is not dirty', () => {
         render(
             <Provider store={makeStore()}>

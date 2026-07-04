@@ -58,12 +58,12 @@ function presetToForm(preset: apperr.ProviderPreset, base: ProviderConfig): Prov
     return {
         ...base,
         providerId: '',
-        providerName: preset.name,
-        providerType: preset.kind,
-        baseUrl: preset.baseUrl,
-        modelsEndpoint: preset.modelsPath,
-        completionEndpoint: preset.completionPath,
-        authType: preset.authScheme,
+        providerName: preset.name ?? '',
+        providerType: preset.kind ?? '',
+        baseUrl: preset.baseUrl ?? '',
+        modelsEndpoint: preset.modelsPath ?? '',
+        completionEndpoint: preset.completionPath ?? '',
+        authType: preset.authScheme ?? '',
         useAuthTokenFromEnv: !!preset.apiKeyEnvVar,
         envVarTokenName: preset.apiKeyEnvVar ?? '',
         useCustomHeaders: headerKeys.length > 0,
@@ -215,6 +215,7 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
 
     const errors = validateForm(form, existingNames);
     const valid = isFormValid(errors, form);
+    const isOllama = form.providerType === 'ollama';
 
     // Build model select items, prepending the current selectedModel if it's not in the discovered list.
     const modelItems: SelectItem[] = useMemo(() => {
@@ -254,6 +255,7 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                             </button>
                         ))}
                     </div>
+                    <p className={styles.helper}>Pre-fills the fields below for a common provider — you can still edit anything afterward.</p>
                 </div>
             )}
 
@@ -277,6 +279,7 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                         {errors.nameError}
                     </span>
                 )}
+                <p className={styles.helper}>A label to help you tell this provider apart from others — doesn&apos;t affect requests.</p>
             </div>
 
             {/* Kind */}
@@ -292,6 +295,7 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                     keyLabel="Kind"
                     aria-labelledby="pf-kind-label"
                 />
+                <p className={styles.helper}>Which LLM backend this provider connects to. Changing it may reset kind-specific fields below.</p>
             </div>
 
             {/* Auth segment */}
@@ -313,6 +317,9 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                         );
                     })}
                 </div>
+                <p className={styles.helper}>
+                    How requests authenticate with this server. Choose &quot;None&quot; for local servers that don&apos;t require a key.
+                </p>
             </fieldset>
 
             {/* API key env var — shown when auth ≠ none */}
@@ -336,6 +343,7 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                             {errors.envVarError}
                         </span>
                     )}
+                    <p className={styles.helper}>The name of an environment variable already set on this machine — not the key itself.</p>
                     <p className={styles.envVarBanner}>
                         🔑 <strong>API key — environment variable</strong>{' '}
                         <code className={styles.envVarCode}>{form.envVarTokenName.trim() || 'YOUR_API_KEY'}</code> — the app reads the key from this
@@ -364,6 +372,7 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                         {errors.baseUrlError}
                     </span>
                 )}
+                <p className={styles.helper}>The server&apos;s root address. Include the protocol (http/https) and port if needed.</p>
             </div>
 
             {/* Endpoint pair — two columns on wide widths, collapsing to one when narrow */}
@@ -381,6 +390,7 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                         placeholder="/v1/models"
                         className={styles.textInput}
                     />
+                    <p className={styles.helper}>Change the URL path used to list available models, if your server doesn&apos;t use the standard one.</p>
                 </div>
 
                 {/* Completion endpoint */}
@@ -395,7 +405,14 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                         onChange={(e) => patch('completionEndpoint', e.target.value)}
                         placeholder="/v1/chat/completions"
                         className={styles.textInput}
+                        disabled={isOllama}
                     />
+                    <p className={styles.helper}>Change the URL path used for chat requests, if your server doesn&apos;t use the standard one.</p>
+                    {isOllama && (
+                        <p className={styles.helper}>
+                            Disabled for Ollama — Ollama uses its own built-in chat protocol instead of this path, so overriding it has no effect.
+                        </p>
+                    )}
                 </div>
             </div>
 
@@ -415,6 +432,7 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                             placeholder="2024-02-01"
                             className={styles.textInput}
                         />
+                        <p className={styles.helper}>The Azure OpenAI API version string required by your deployment.</p>
                     </div>
                 )}
 
@@ -446,6 +464,7 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                             ⟳
                         </button>
                     </div>
+                    <p className={styles.helper}>Which model this provider will use for requests, unless overridden per-run.</p>
                 </div>
             </div>
 
@@ -462,6 +481,9 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                         Use custom headers
                     </label>
                 </div>
+                <p className={styles.helper}>
+                    Send extra HTTP headers with every request to this provider — useful for gateways or proxies that need custom auth.
+                </p>
                 {form.useCustomHeaders && <KvEditor value={form.headers} onChange={(v) => patch('headers', v)} />}
             </div>
 
@@ -478,6 +500,7 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                         Use custom models
                     </label>
                 </div>
+                <p className={styles.helper}>Type in model names manually instead of relying on this provider&apos;s model list.</p>
                 {form.useCustomModels && <TagInput value={form.customModels} onChange={(v) => patch('customModels', v)} />}
             </div>
 

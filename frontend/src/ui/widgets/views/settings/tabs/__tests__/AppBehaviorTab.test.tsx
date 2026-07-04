@@ -272,6 +272,42 @@ describe('AppBehaviorTab', () => {
         expect(logDirInput!.compareDocumentPosition(taskSwitch!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     });
 
+    it('renders a description explaining log file rotation for the max file size setting', () => {
+        render(
+            <Provider store={makeStore()}>
+                <AppBehaviorTab settings={MOCK_SETTINGS} metadata={MOCK_METADATA} />
+            </Provider>,
+        );
+        expect(screen.getByText(/rotates/i)).toBeInTheDocument();
+    });
+
+    it('renders a description explaining the log level setting', () => {
+        render(
+            <Provider store={makeStore()}>
+                <AppBehaviorTab settings={MOCK_SETTINGS} metadata={MOCK_METADATA} />
+            </Provider>,
+        );
+        expect(screen.getByText(/how much detail gets written to the log file/i)).toBeInTheDocument();
+    });
+
+    it('renders a description explaining the history max entries limit', () => {
+        render(
+            <Provider store={makeStore()}>
+                <AppBehaviorTab settings={MOCK_SETTINGS} metadata={MOCK_METADATA} />
+            </Provider>,
+        );
+        expect(screen.getByText(/keeps at most this many past runs/i)).toBeInTheDocument();
+    });
+
+    it('renders a warning that clearing history cannot be undone', () => {
+        render(
+            <Provider store={makeStore()}>
+                <AppBehaviorTab settings={MOCK_SETTINGS} metadata={MOCK_METADATA} />
+            </Provider>,
+        );
+        expect(screen.getByText(/permanently deletes all recorded runs and cannot be undone/i)).toBeInTheDocument();
+    });
+
     it('App File Logging section appears before Task logging switch in the DOM', () => {
         const { container } = render(
             <Provider store={makeStore()}>

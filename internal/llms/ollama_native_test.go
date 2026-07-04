@@ -106,6 +106,48 @@ func TestOllamaChat_SendsNumCtxAndNumPredictInOptions(t *testing.T) {
 	}
 }
 
+// --- Chat: UseLegacyMaxTokens has no effect on the native endpoint; num_predict is always used ---
+
+func TestOllamaChat_IgnoresUseLegacyMaxTokensToggle(t *testing.T) {
+	t.Parallel()
+	var capturedBody map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&capturedBody); err != nil {
+			t.Fatalf("decode request body: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(successNativeChatBody("ok"))
+	}))
+	defer srv.Close()
+
+	maxTokens := 512
+	p := newTestProvider(t, srv.URL+"/", KindOllama, "")
+	_, err := p.Chat(context.Background(), ChatRequest{
+		Model:              "llama3",
+		Messages:           []Message{{Role: "user", Content: "hi"}},
+		MaxTokens:          &maxTokens,
+		UseLegacyMaxTokens: true,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if _, ok := capturedBody["max_tokens"]; ok {
+		t.Error("max_tokens must not be sent as a top-level field, even with UseLegacyMaxTokens=true")
+	}
+	if _, ok := capturedBody["max_completion_tokens"]; ok {
+		t.Error("max_completion_tokens must not be sent as a top-level field, even with UseLegacyMaxTokens=true")
+	}
+
+	options, ok := capturedBody["options"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected options object, got body: %v", capturedBody)
+	}
+	if options["num_predict"] != float64(maxTokens) {
+		t.Errorf("want num_predict=%d, got %v", maxTokens, options["num_predict"])
+	}
+}
+
 // --- Chat: options omitted entirely when temperature/num_ctx/max_tokens are all unset ---
 
 func TestOllamaChat_OmitsOptionsWhenNothingSet(t *testing.T) {

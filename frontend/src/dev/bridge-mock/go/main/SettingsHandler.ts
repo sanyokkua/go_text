@@ -193,7 +193,7 @@ const mockProviderPresets = [
     {
         name: 'LM Studio',
         kind: 'lmstudio',
-        baseURL: 'http://127.0.0.1:1234/',
+        baseUrl: 'http://127.0.0.1:1234/',
         authScheme: 'none',
         completionPath: 'v1/chat/completions',
         modelsPath: 'v1/models',
@@ -203,7 +203,7 @@ const mockProviderPresets = [
     {
         name: 'Llama.cpp',
         kind: 'llamacpp',
-        baseURL: 'http://127.0.0.1:8080/',
+        baseUrl: 'http://127.0.0.1:8080/',
         authScheme: 'none',
         completionPath: 'v1/chat/completions',
         modelsPath: 'v1/models',
@@ -213,7 +213,7 @@ const mockProviderPresets = [
     {
         name: 'Ollama',
         kind: 'ollama',
-        baseURL: 'http://127.0.0.1:11434/',
+        baseUrl: 'http://127.0.0.1:11434/',
         authScheme: 'none',
         completionPath: 'v1/chat/completions',
         modelsPath: 'v1/models',
@@ -223,7 +223,7 @@ const mockProviderPresets = [
     {
         name: 'OpenAI',
         kind: 'openai',
-        baseURL: 'https://api.openai.com/',
+        baseUrl: 'https://api.openai.com/',
         authScheme: 'bearer',
         completionPath: 'v1/chat/completions',
         modelsPath: 'v1/models',
@@ -233,7 +233,7 @@ const mockProviderPresets = [
     {
         name: 'OpenRouter',
         kind: 'openai',
-        baseURL: 'https://openrouter.ai/api/',
+        baseUrl: 'https://openrouter.ai/api/',
         authScheme: 'bearer',
         completionPath: 'v1/chat/completions',
         modelsPath: 'v1/models',

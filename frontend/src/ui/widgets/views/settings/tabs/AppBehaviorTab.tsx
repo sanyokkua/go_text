@@ -167,6 +167,10 @@ const AppBehaviorTab: React.FC<Props> = ({ settings, metadata }) => {
                     disabled={!loggingCfg.logFileEnabled}
                 />
             </div>
+            <p className={styles.caption}>
+                How much detail gets written to the log file. &ldquo;Debug&rdquo;/&ldquo;Trace&rdquo; are the most detailed and useful for
+                troubleshooting; &ldquo;Warn&rdquo;/&ldquo;Error&rdquo; keep the file smaller for everyday use.
+            </p>
 
             <div className={styles.entriesRow}>
                 <span className={styles.entriesLabel}>Max file size (MB)</span>
@@ -180,6 +184,9 @@ const AppBehaviorTab: React.FC<Props> = ({ settings, metadata }) => {
                     aria-label="Max log file size MB"
                 />
             </div>
+            <p className={styles.caption}>
+                The log file rotates (starts a new file) once it reaches this size, so logs don&apos;t grow without bound.
+            </p>
 
             <hr className={styles.divider} />
 
@@ -231,6 +238,10 @@ const AppBehaviorTab: React.FC<Props> = ({ settings, metadata }) => {
                     Clear history…
                 </Button>
             </div>
+            <p className={styles.caption}>
+                The history rail keeps at most this many past runs; older ones are automatically removed once the limit is reached. Clearing history
+                permanently deletes all recorded runs and cannot be undone.
+            </p>
 
             <AlertDialog
                 open={clearDialogOpen}

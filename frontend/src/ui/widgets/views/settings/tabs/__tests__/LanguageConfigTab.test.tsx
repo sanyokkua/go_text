@@ -142,4 +142,22 @@ describe('LanguageConfigTab', () => {
         );
         expect(screen.getByText(/set as default input · set as default output · remove/i)).toBeInTheDocument();
     });
+
+    it('renders a plain-language description for the add-language input', () => {
+        render(
+            <Provider store={makeStore()}>
+                <LanguageConfigTab settings={MOCK_SETTINGS} />
+            </Provider>,
+        );
+        expect(screen.getByText(/add a language you want available as an input or output option/i)).toBeInTheDocument();
+    });
+
+    it('renders a plain-language description of what default input/output languages do', () => {
+        render(
+            <Provider store={makeStore()}>
+                <LanguageConfigTab settings={MOCK_SETTINGS} />
+            </Provider>,
+        );
+        expect(screen.getByText(/pre-selected automatically whenever an action needs a source or target language/i)).toBeInTheDocument();
+    });
 });

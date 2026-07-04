@@ -82,6 +82,7 @@ const MetadataTab: React.FC = () => {
                 <Button variant="ghost" size="sm" aria-label="Open app folder" disabled={!metadata} onClick={handleOpenFolder}>
                     📁
                 </Button>
+                <p className={styles.caption}>Where GoText stores its settings and database on this machine.</p>
             </div>
 
             <div className={styles.fieldRow}>
@@ -100,6 +101,7 @@ const MetadataTab: React.FC = () => {
                 <Button variant="ghost" size="sm" aria-label="Open logs folder" disabled={!metadata} onClick={handleOpenLogs}>
                     📁
                 </Button>
+                <p className={styles.caption}>Where GoText writes its log files — check here if you&apos;re troubleshooting an issue.</p>
             </div>
 
             <div className={`${styles.fieldRow} ${styles.fieldRowLast}`}>
@@ -115,6 +117,7 @@ const MetadataTab: React.FC = () => {
                 >
                     ⧉
                 </Button>
+                <p className={styles.caption}>The SQLite database file containing your settings, providers, stacks, and history.</p>
             </div>
 
             <p className={styles.sectionHeader}>Danger zone</p>

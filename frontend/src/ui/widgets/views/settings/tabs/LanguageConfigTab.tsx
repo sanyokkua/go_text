@@ -45,6 +45,7 @@ const LanguageConfigTab: React.FC<Props> = ({ settings }) => {
                 <Button variant="primary" size="sm" onClick={handleAdd} disabled={!newLanguage.trim()}>
                     + Add
                 </Button>
+                <p className={styles.helper}>Add a language you want available as an input or output option elsewhere in the app.</p>
             </div>
 
             <div className={styles.langList}>
@@ -90,6 +91,9 @@ const LanguageConfigTab: React.FC<Props> = ({ settings }) => {
             </div>
 
             <p className={styles.helper}>Row menu (⋮): set as default input · set as default output · remove. Defaults shown as badges.</p>
+            <p className={styles.helper}>
+                The default input/output languages are pre-selected automatically whenever an action needs a source or target language.
+            </p>
         </section>
     );
 };

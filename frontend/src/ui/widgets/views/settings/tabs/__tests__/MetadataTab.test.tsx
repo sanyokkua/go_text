@@ -195,6 +195,33 @@ describe('MetadataTab', () => {
         expect(screen.getByText('/Users/test/.config/GoText')).toBeInTheDocument();
     });
 
+    it('shows a plain-language description for the app folder path', () => {
+        render(
+            <Provider store={makeStore()}>
+                <MetadataTab />
+            </Provider>,
+        );
+        expect(screen.getByText(/where gotext stores its settings and database on this machine/i)).toBeInTheDocument();
+    });
+
+    it('shows a plain-language description for the logs folder path', () => {
+        render(
+            <Provider store={makeStore()}>
+                <MetadataTab />
+            </Provider>,
+        );
+        expect(screen.getByText(/where gotext writes its log files/i)).toBeInTheDocument();
+    });
+
+    it('shows a plain-language description for the database path', () => {
+        render(
+            <Provider store={makeStore()}>
+                <MetadataTab />
+            </Provider>,
+        );
+        expect(screen.getByText(/sqlite database file containing your settings, providers, stacks, and history/i)).toBeInTheDocument();
+    });
+
     it('renders a copy button for the app folder path', () => {
         render(
             <Provider store={makeStore()}>

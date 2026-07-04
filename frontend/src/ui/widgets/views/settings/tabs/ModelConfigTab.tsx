@@ -67,6 +67,9 @@ const ModelConfigTab: React.FC<Props> = ({ settings }) => {
     const dispatch = useAppDispatch();
     const runWithToast = useSettingsToast();
     const currentProvider = useAppSelector(selectCurrentProvider);
+    // Ollama's native chat path always uses its own `num_predict` option, so the
+    // legacy/standard token-limit-parameter choice has no effect for this provider.
+    const isOllama = currentProvider?.providerType === 'ollama';
     // Shared discovery source — same selector the AppBar ModelPicker consumes, so
     // the two views never disagree about which models exist.
     const modelSelectItems = useAppSelector(selectCurrentProviderModelItems);
@@ -139,6 +142,7 @@ const ModelConfigTab: React.FC<Props> = ({ settings }) => {
                     ⟳ Refresh
                 </Button>
             </div>
+            <p className={styles.caption}>Which model this tab&apos;s settings apply to. Use Refresh if you don&apos;t see a model you expect.</p>
 
             <div className={styles.toggleBlock}>
                 <div className={styles.toggleHead}>
@@ -150,6 +154,10 @@ const ModelConfigTab: React.FC<Props> = ({ settings }) => {
                     <span className={styles.toggleLabel}>Use temperature</span>
                     {form.useTemperature && <span className={styles.numericDisplay}>{form.temperature.toFixed(2)}</span>}
                 </div>
+                <p className={styles.caption}>
+                    Controls how random or focused the output is. Higher values are more creative but less predictable; lower values are more
+                    consistent.
+                </p>
                 {form.useTemperature && (
                     <Slider
                         value={[form.temperature]}
@@ -171,6 +179,9 @@ const ModelConfigTab: React.FC<Props> = ({ settings }) => {
                     <span className={styles.toggleLabel}>Use context window</span>
                     {form.useContextWindow && <span className={styles.numericDisplay}>{form.contextWindow.toLocaleString()}</span>}
                 </div>
+                <p className={styles.caption}>
+                    Sets how much conversation/history the model can consider at once. Larger values use more memory and may be slower.
+                </p>
                 {form.useContextWindow && (
                     <Slider
                         value={[form.contextWindow]}
@@ -192,6 +203,9 @@ const ModelConfigTab: React.FC<Props> = ({ settings }) => {
                     <span className={styles.toggleLabel}>Use max output tokens</span>
                     {form.useMaxOutputTokens && <span className={styles.numericDisplay}>{form.maxOutputTokens.toLocaleString()}</span>}
                 </div>
+                <p className={styles.caption}>
+                    Caps how long a single response can be. Lower this to save time/cost on shorter answers, or raise it for longer outputs.
+                </p>
                 {form.useMaxOutputTokens && (
                     <Slider
                         value={[form.maxOutputTokens]}
@@ -209,7 +223,17 @@ const ModelConfigTab: React.FC<Props> = ({ settings }) => {
                     value={form.useLegacyMaxTokens ? 'true' : 'false'}
                     onValueChange={(val) => setForm((prev) => ({ ...prev, useLegacyMaxTokens: val === 'true' }))}
                     items={TOKEN_PARAM_OPTIONS}
+                    disabled={isOllama}
                 />
+                <p className={styles.caption}>
+                    Controls which request field carries the output-token limit. Use the standard option unless your server needs the legacy name.
+                </p>
+                {isOllama && (
+                    <p className={styles.caption}>
+                        Disabled for Ollama — Ollama uses its own built-in chat protocol and always sets its own output-length option, so this choice
+                        has no effect.
+                    </p>
+                )}
             </div>
 
             <p className={styles.caption}>
