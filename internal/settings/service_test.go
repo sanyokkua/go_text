@@ -774,3 +774,214 @@ func TestSettingsService_RemoveLanguage_RejectsRemovingDefaultOutputLanguage(t *
 		t.Fatalf("RemoveLanguage(\"Klingon\"): %v", err)
 	}
 }
+
+// deleteAllProviders removes every provider currently in the repo, so tests
+// that need deterministic provider-reassignment behavior are not affected by
+// the two seeded default providers ("Ollama" and "LM Studio").
+func deleteAllProviders(t *testing.T, repo *settings.SqliteSettingsRepository) {
+	t.Helper()
+	providers, err := repo.ListProviders()
+	if err != nil {
+		t.Fatalf("ListProviders: %v", err)
+	}
+	for _, p := range providers {
+		if err := repo.DeleteProvider(p.ID); err != nil {
+			t.Fatalf("DeleteProvider(%q): %v", p.ID, err)
+		}
+	}
+}
+
+// Finding #1 regression: a live model pick made via UpdateModelConfig while a
+// provider is current must survive a round trip through switching to another
+// provider and back. Before the fix, UpdateModelConfig never persists the
+// pick onto the current provider's SelectedModel column, so switching away
+// and back re-syncs the active model from the provider's stale
+// (pre-live-pick) SelectedModel value, silently discarding the user's choice.
+func TestSettingsService_ProviderSwitchRoundTrip_PreservesLiveSelectedModel(t *testing.T) {
+	repo := newRepo(t)
+	deleteAllProviders(t, repo)
+	svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
+
+	providerA, err := repo.CreateProvider(&settings.ProviderConfig{
+		Name:          "Provider A",
+		Kind:          "ollama",
+		BaseURL:       "http://127.0.0.1:11434/",
+		AuthScheme:    "none",
+		SelectedModel: "",
+		CustomModels:  []string{},
+	})
+	if err != nil {
+		t.Fatalf("CreateProvider(A): %v", err)
+	}
+	providerB, err := repo.CreateProvider(&settings.ProviderConfig{
+		Name:          "Provider B",
+		Kind:          "lmstudio",
+		BaseURL:       "http://127.0.0.1:1234/",
+		AuthScheme:    "none",
+		SelectedModel: "model-b",
+		CustomModels:  []string{},
+	})
+	if err != nil {
+		t.Fatalf("CreateProvider(B): %v", err)
+	}
+
+	if _, err := svc.SetAsCurrentProviderConfig(providerA.ID); err != nil {
+		t.Fatalf("SetAsCurrentProviderConfig(A): %v", err)
+	}
+
+	// Simulate a live AppBar model pick for provider A.
+	if _, err := svc.UpdateModelConfig(&settings.ModelConfig{Name: "model-a-live"}); err != nil {
+		t.Fatalf("UpdateModelConfig(model-a-live): %v", err)
+	}
+
+	// Switch away to B and back to A.
+	if _, err := svc.SetAsCurrentProviderConfig(providerB.ID); err != nil {
+		t.Fatalf("SetAsCurrentProviderConfig(B): %v", err)
+	}
+	if _, err := svc.SetAsCurrentProviderConfig(providerA.ID); err != nil {
+		t.Fatalf("SetAsCurrentProviderConfig(A) again: %v", err)
+	}
+
+	got, err := repo.GetModelConfig()
+	if err != nil {
+		t.Fatalf("GetModelConfig: %v", err)
+	}
+	if got.Name != "model-a-live" {
+		t.Errorf("expected live model pick to survive provider switch round trip, want %q, got %q", "model-a-live", got.Name)
+	}
+}
+
+// Finding #1 regression (narrow unit check): UpdateModelConfig must persist
+// the picked model onto the current provider's SelectedModel column, not just
+// the global model.name KV setting. Before the fix, UpdateModelConfig never
+// touches providers.selected_model at all.
+func TestSettingsService_UpdateModelConfig_SyncsSelectedModelToCurrentProvider(t *testing.T) {
+	repo := newRepo(t)
+	deleteAllProviders(t, repo)
+	svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
+
+	providerA, err := repo.CreateProvider(&settings.ProviderConfig{
+		Name:          "Provider A",
+		Kind:          "ollama",
+		BaseURL:       "http://127.0.0.1:11434/",
+		AuthScheme:    "none",
+		SelectedModel: "",
+		CustomModels:  []string{},
+	})
+	if err != nil {
+		t.Fatalf("CreateProvider(A): %v", err)
+	}
+	if _, err := svc.SetAsCurrentProviderConfig(providerA.ID); err != nil {
+		t.Fatalf("SetAsCurrentProviderConfig(A): %v", err)
+	}
+
+	if _, err := svc.UpdateModelConfig(&settings.ModelConfig{Name: "picked-model"}); err != nil {
+		t.Fatalf("UpdateModelConfig(picked-model): %v", err)
+	}
+
+	got, err := repo.GetProvider(providerA.ID)
+	if err != nil {
+		t.Fatalf("GetProvider(A): %v", err)
+	}
+	if got.SelectedModel != "picked-model" {
+		t.Errorf("expected current provider's SelectedModel synced to %q, got %q", "picked-model", got.SelectedModel)
+	}
+}
+
+// Finding #2 regression: deleting the current provider must reassign both
+// app_state.current_provider_id AND the global active model to the newly
+// current provider's SelectedModel. Before the fix, DeleteProviderConfig only
+// calls repository.DeleteProvider (which repoints current_provider_id) and
+// never resyncs model.name, leaving a stale model name that does not exist on
+// the new current provider — the exact model_not_found failure mode from the
+// live testing report.
+func TestSettingsService_DeleteProviderConfig_ReassignsAndSyncsModel(t *testing.T) {
+	repo := newRepo(t)
+	deleteAllProviders(t, repo)
+	svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
+
+	providerA, err := repo.CreateProvider(&settings.ProviderConfig{
+		Name:          "Provider A",
+		Kind:          "ollama",
+		BaseURL:       "http://127.0.0.1:11434/",
+		AuthScheme:    "none",
+		SelectedModel: "model-a",
+		CustomModels:  []string{},
+	})
+	if err != nil {
+		t.Fatalf("CreateProvider(A): %v", err)
+	}
+	providerB, err := repo.CreateProvider(&settings.ProviderConfig{
+		Name:          "Provider B",
+		Kind:          "lmstudio",
+		BaseURL:       "http://127.0.0.1:1234/",
+		AuthScheme:    "none",
+		SelectedModel: "model-b",
+		CustomModels:  []string{},
+	})
+	if err != nil {
+		t.Fatalf("CreateProvider(B): %v", err)
+	}
+
+	// Make B current; this also syncs the active model to "model-b".
+	if _, err := svc.SetAsCurrentProviderConfig(providerB.ID); err != nil {
+		t.Fatalf("SetAsCurrentProviderConfig(B): %v", err)
+	}
+
+	if err := svc.DeleteProviderConfig(providerB.ID); err != nil {
+		t.Fatalf("DeleteProviderConfig(B): %v", err)
+	}
+
+	current, err := repo.GetCurrentProvider()
+	if err != nil {
+		t.Fatalf("GetCurrentProvider: %v", err)
+	}
+	if current == nil || current.ID != providerA.ID {
+		t.Fatalf("expected current provider to be reassigned to A (%q), got %+v", providerA.ID, current)
+	}
+
+	got, err := repo.GetModelConfig()
+	if err != nil {
+		t.Fatalf("GetModelConfig: %v", err)
+	}
+	if got.Name != "model-a" {
+		t.Errorf("expected active model resynced to new current provider's SelectedModel %q, got %q", "model-a", got.Name)
+	}
+}
+
+// Edge case: deleting every provider (including the current one) must leave
+// the active model cleared, not stuck on a name from a provider that no
+// longer exists.
+func TestSettingsService_DeleteProviderConfig_LastProvider_ClearsModel(t *testing.T) {
+	repo := newRepo(t)
+	deleteAllProviders(t, repo)
+	svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
+
+	providerA, err := repo.CreateProvider(&settings.ProviderConfig{
+		Name:          "Provider A",
+		Kind:          "ollama",
+		BaseURL:       "http://127.0.0.1:11434/",
+		AuthScheme:    "none",
+		SelectedModel: "model-a",
+		CustomModels:  []string{},
+	})
+	if err != nil {
+		t.Fatalf("CreateProvider(A): %v", err)
+	}
+
+	if _, err := svc.SetAsCurrentProviderConfig(providerA.ID); err != nil {
+		t.Fatalf("SetAsCurrentProviderConfig(A): %v", err)
+	}
+
+	if err := svc.DeleteProviderConfig(providerA.ID); err != nil {
+		t.Fatalf("DeleteProviderConfig(A): %v", err)
+	}
+
+	got, err := repo.GetModelConfig()
+	if err != nil {
+		t.Fatalf("GetModelConfig: %v", err)
+	}
+	if got.Name != "" {
+		t.Errorf("expected active model cleared after deleting last provider, got %q", got.Name)
+	}
+}

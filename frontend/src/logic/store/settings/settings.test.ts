@@ -30,6 +30,18 @@ jest.mock('../../adapter', () => ({
         updateAppBehaviorConfig: jest.fn().mockResolvedValue({ data: { enableTaskLogging: true } }),
         deleteProviderConfig: jest.fn().mockResolvedValue({ data: undefined }),
         getCurrentProviderConfig: jest.fn().mockResolvedValue({ data: undefined }),
+        getModelConfig: jest.fn().mockResolvedValue({
+            data: {
+                name: '',
+                useTemperature: false,
+                temperature: 0,
+                useContextWindow: false,
+                contextWindow: 0,
+                useLegacyMaxTokens: false,
+                useMaxOutputTokens: false,
+                maxOutputTokens: 2048,
+            },
+        }),
         getLoggingConfig: jest
             .fn()
             .mockResolvedValue({
@@ -87,6 +99,7 @@ import {
     getAppBehaviorConfig,
     getCurrentProviderConfig,
     getLoggingConfig,
+    getModelConfig,
     getSettings,
     getUIPreferences,
     persistUIPreferences,
@@ -883,5 +896,44 @@ describe('deleteProviderConfig thunk — resyncs currentProviderConfig (T87)', (
         const state = store.getState().settings;
         expect(state.allSettings?.currentProviderConfig.providerId).toBe('b');
         expect(state.allSettings?.availableProviderConfigs.map((p) => p.providerId)).toEqual(['b']);
+    });
+
+    it('resyncs modelConfig after deleting the current provider', async () => {
+        // Arrange — same two-provider store shape as the previous test, but this
+        // time we preload a distinctive stale modelConfig.name so we can detect
+        // whether the thunk re-fetches the model config for the newly-current
+        // provider (Finding #2, live-testing report 2026-07-04).
+        const providerA = { ...fullSettings.currentProviderConfig, providerId: 'a', providerName: 'A' };
+        const providerB = { ...fullSettings.currentProviderConfig, providerId: 'b', providerName: 'B', selectedModel: 'model-b' };
+        const store = configureStore({
+            reducer: { settings: settingsReducer },
+            preloadedState: {
+                settings: {
+                    allSettings: {
+                        ...fullSettings,
+                        availableProviderConfigs: [providerA, providerB],
+                        currentProviderConfig: providerA,
+                        modelConfig: { ...fullSettings.modelConfig, name: 'stale-model-a' },
+                    },
+                    metadata: null,
+                    discoveredModels: [],
+                    providerPresets: [],
+                },
+            },
+        });
+        (SettingsHandlerAdapter.deleteProviderConfig as jest.Mock).mockResolvedValue({ data: undefined });
+        (SettingsHandlerAdapter.getCurrentProviderConfig as jest.Mock).mockResolvedValue({ data: providerB });
+        (fromWireProvider as jest.Mock).mockReturnValue(providerB);
+        (SettingsHandlerAdapter.getModelConfig as jest.Mock).mockResolvedValue({
+            data: { ...fullSettings.modelConfig, name: 'model-b' },
+        });
+
+        // Act
+        await store.dispatch(deleteProviderConfig('a'));
+
+        // Assert — modelConfig.name should reflect the newly-current provider's
+        // model, not the stale value left over from the deleted provider.
+        const state = store.getState().settings;
+        expect(state.allSettings?.modelConfig.name).toBe('model-b');
     });
 });

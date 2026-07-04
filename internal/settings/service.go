@@ -281,7 +281,19 @@ func (s *SettingsService) DeleteProviderConfig(providerId string) error {
 	if providerId == "" {
 		return apperr.Validation("providerId", "non-empty UUID", "empty string")
 	}
-	return s.settingsRepo.DeleteProvider(providerId)
+	if err := s.settingsRepo.DeleteProvider(providerId); err != nil {
+		return err
+	}
+	// The repository already reassigned app_state.current_provider_id (or
+	// cleared it, if no provider remains); resync the active model to match.
+	current, err := s.settingsRepo.GetCurrentProvider()
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	if err := s.syncModelToProvider(current); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	return nil
 }
 
 func (s *SettingsService) SetAsCurrentProviderConfig(providerId string) (*ProviderConfig, error) {
@@ -298,14 +310,46 @@ func (s *SettingsService) SetAsCurrentProviderConfig(providerId string) (*Provid
 	}
 	// Sync the active model to the newly-current provider's selected model so a
 	// run never uses a stale model carried over from the previous provider.
-	modelCfg, mErr := s.settingsRepo.GetModelConfig()
-	if mErr == nil && modelCfg != nil && modelCfg.Name != p.SelectedModel {
-		modelCfg.Name = p.SelectedModel
-		if uErr := s.settingsRepo.UpdateModelConfig(modelCfg); uErr != nil {
-			return nil, fmt.Errorf("%s: sync model to provider: %w", op, uErr)
-		}
+	if err := s.syncModelToProvider(p); err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	return p, nil
+}
+
+// syncModelToProvider pulls p's stored SelectedModel into the global active
+// model, so a run never inherits a model left over from a previously-current
+// provider. p may be nil (no provider left), which clears the active model.
+// Shared by every path that changes which provider is current.
+func (s *SettingsService) syncModelToProvider(p *ProviderConfig) error {
+	modelCfg, err := s.settingsRepo.GetModelConfig()
+	if err != nil {
+		return err
+	}
+	target := ""
+	if p != nil {
+		target = p.SelectedModel
+	}
+	if modelCfg.Name == target {
+		return nil
+	}
+	modelCfg.Name = target
+	return s.settingsRepo.UpdateModelConfig(modelCfg)
+}
+
+// syncModelToCurrentProvider pushes a newly-active model name onto the
+// current provider's SelectedModel, so it is remembered per-provider and
+// survives a switch away and back. No-op if there is no current provider.
+func (s *SettingsService) syncModelToCurrentProvider(modelName string) error {
+	current, err := s.settingsRepo.GetCurrentProvider()
+	if err != nil {
+		return err
+	}
+	if current == nil || current.SelectedModel == modelName {
+		return nil
+	}
+	current.SelectedModel = modelName
+	_, err = s.settingsRepo.UpdateProvider(current)
+	return err
 }
 
 func (s *SettingsService) GetInferenceBaseConfig() (*InferenceBaseConfig, error) {
@@ -350,6 +394,9 @@ func (s *SettingsService) UpdateModelConfig(cfg *ModelConfig) (*ModelConfig, err
 	}
 	if err := s.settingsRepo.UpdateModelConfig(cfg); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	if err := s.syncModelToCurrentProvider(cfg.Name); err != nil {
+		return nil, fmt.Errorf("%s: sync model to current provider: %w", op, err)
 	}
 	return cfg, nil
 }

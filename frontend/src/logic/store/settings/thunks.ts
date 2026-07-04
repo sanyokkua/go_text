@@ -63,10 +63,11 @@ export const deleteProviderConfig = createAsyncThunk<void, string, { rejectValue
     async (providerId, { dispatch, rejectWithValue }) => {
         try {
             unwrap(await SettingsHandlerAdapter.deleteProviderConfig(providerId));
-            // The backend may have reassigned app_state.current_provider_id if the
-            // deleted provider was current — resync so the AppBar doesn't go blank
-            // until a manual reload (T87, live-testing report finding #3).
-            await dispatch(getCurrentProviderConfig());
+            // The backend may have reassigned app_state.current_provider_id — and,
+            // per Finding #2, the active model — if the deleted provider was
+            // current. Resync both so the AppBar never shows a stale
+            // provider/model combination after a deletion (T87 + Finding #2 fix).
+            await Promise.all([dispatch(getCurrentProviderConfig()).unwrap(), dispatch(getModelConfig()).unwrap()]);
         } catch (error: unknown) {
             const err = parseError(error);
             logger.logError(`deleteProviderConfig failed: ${err.message}`);

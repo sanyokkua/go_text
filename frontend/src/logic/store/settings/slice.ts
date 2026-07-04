@@ -23,6 +23,7 @@ import {
     getAppSettingsMetadata,
     getCurrentProviderConfig,
     getLoggingConfig,
+    getModelConfig,
     getSettings,
     removeLanguage,
     resetSettingsToDefault,
@@ -72,6 +73,11 @@ const settingsSlice = createSlice({
             })
 
             // Partial updates for specific configurations
+            .addCase(getModelConfig.fulfilled, (state, action) => {
+                if (state.allSettings) {
+                    state.allSettings.modelConfig = action.payload;
+                }
+            })
             .addCase(updateModelConfig.fulfilled, (state, action) => {
                 if (state.allSettings) {
                     state.allSettings.modelConfig = action.payload;
