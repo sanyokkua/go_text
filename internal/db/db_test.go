@@ -212,3 +212,27 @@ func TestSeed_Idempotent_WhenCalledTwice(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, int64(2), count, "Seed idempotency: still 2 providers after second Seed")
 }
+
+func TestOpen_SecondInstance_RejectedWhileLockHeld(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "test.db")
+
+	db1, err := Open(dbPath)
+	require.NoError(t, err)
+	defer db1.Close()
+
+	db2, err := Open(dbPath)
+	assert.Nil(t, db2)
+	assert.ErrorIs(t, err, ErrInstanceLocked)
+}
+
+func TestOpen_LockReleased_AfterClose_AllowsReopen(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "test.db")
+
+	db1, err := Open(dbPath)
+	require.NoError(t, err)
+	require.NoError(t, db1.Close())
+
+	db2, err := Open(dbPath)
+	require.NoError(t, err)
+	defer db2.Close()
+}

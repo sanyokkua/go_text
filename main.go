@@ -3,13 +3,15 @@ package main
 import (
 	"context"
 	"embed"
+	"errors"
 	"fmt"
 	"os"
 	"time"
 
 	"go_text/internal/apperr"
 	"go_text/internal/application"
-	"go_text/internal/logging"
+	"go_text/internal/bootstrap"
+	"go_text/internal/db"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -53,7 +55,7 @@ func NewRestyClient() *resty.Client {
 }
 
 func main() {
-	appLogger, err := logging.New(logging.DefaultConfig(), true)
+	appLogger, err := bootstrap.NewLogger()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to create logger: %v\n", err)
 		os.Exit(1)
@@ -77,10 +79,14 @@ func main() {
 			app.SetContext(ctx)
 			if err := app.Init(ctx); err != nil {
 				appLogger.Error(fmt.Sprintf("startup failed: %v", err))
+				title, message := "Startup error", "The application could not start (database unavailable). See logs for details."
+				if errors.Is(err, db.ErrInstanceLocked) {
+					title, message = "Already running", "GoText is already running. Please close the other instance before starting a new one."
+				}
 				runtime.MessageDialog(ctx, runtime.MessageDialogOptions{
 					Type:    runtime.ErrorDialog,
-					Title:   "Startup error",
-					Message: "The application could not start (database unavailable). See logs for details.",
+					Title:   title,
+					Message: message,
 				})
 				os.Exit(1)
 			}

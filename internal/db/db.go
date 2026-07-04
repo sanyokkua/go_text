@@ -4,10 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"embed"
+	"errors"
 	"fmt"
 	"io/fs"
 	"time"
 
+	"github.com/gofrs/flock"
 	"github.com/google/uuid"
 	"github.com/pressly/goose/v3"
 	_ "modernc.org/sqlite"
@@ -23,6 +25,10 @@ const (
 	defaultModelsPath     = "v1/models"
 )
 
+// ErrInstanceLocked is returned by Open when another process already holds
+// the instance lock for this database file.
+var ErrInstanceLocked = errors.New("database is locked by another running instance")
+
 // Database holds the open connection and the sqlc query interface.
 // Both fields are exported so repositories can begin transactions
 // (DB.BeginTx) and use the generated query layer (Queries.WithTx).
@@ -30,41 +36,64 @@ type Database struct {
 	DB       *sql.DB
 	Queries  *store.Queries
 	provider *goose.Provider
+	lock     *flock.Flock
 }
 
 // Open opens gotext.db at dbPath, applies all pending migrations, and
 // seeds default data when the database is new (providers table empty).
-// Returns an error if open, migrate, or seed fails — the caller should
+// It first acquires an OS-level advisory lock on dbPath+".lock" to prevent
+// two processes from opening the same database concurrently; if another
+// instance already holds the lock, it returns ErrInstanceLocked.
+// Returns an error if lock, open, migrate, or seed fails — the caller should
 // treat any error as fatal (never run half-initialized).
 func Open(dbPath string) (*Database, error) {
 	const op = "db.Open"
 
+	fileLock := flock.New(dbPath + ".lock")
+	locked, err := fileLock.TryLock()
+	if err != nil {
+		return nil, fmt.Errorf("%s: acquire instance lock: %w", op, err)
+	}
+	if !locked {
+		return nil, fmt.Errorf("%s: %w", op, ErrInstanceLocked)
+	}
+
 	sqlDB, err := openWithPragmas(dbPath)
 	if err != nil {
+		_ = fileLock.Unlock()
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	d := &Database{
 		DB:      sqlDB,
 		Queries: store.New(sqlDB),
+		lock:    fileLock,
 	}
 
 	if err := d.migrate(); err != nil {
 		_ = sqlDB.Close()
+		_ = fileLock.Unlock()
 		return nil, fmt.Errorf("%s: migrate: %w", op, err)
 	}
 
 	if err := d.seedIfEmpty(); err != nil {
 		_ = sqlDB.Close()
+		_ = fileLock.Unlock()
 		return nil, fmt.Errorf("%s: seed: %w", op, err)
 	}
 
 	return d, nil
 }
 
-// Close releases the underlying database connection.
+// Close releases the underlying database connection and the instance lock.
 func (d *Database) Close() error {
-	return d.DB.Close()
+	closeErr := d.DB.Close()
+	if d.lock != nil {
+		if unlockErr := d.lock.Unlock(); unlockErr != nil && closeErr == nil {
+			closeErr = unlockErr
+		}
+	}
+	return closeErr
 }
 
 // openWithPragmas opens the SQLite file at path with the required WAL
@@ -81,6 +110,8 @@ func openWithPragmas(path string) (*sql.DB, error) {
 	}
 
 	// Single writer: avoids "database is locked" for single-user desktop use.
+	// Cross-process protection against multiple instances is handled by the
+	// instance lock acquired in Open, before this function is called.
 	db.SetMaxOpenConns(1)
 	db.SetConnMaxIdleTime(5 * time.Minute)
 

@@ -226,6 +226,11 @@ go test -race ./...                                   # race-free
 - **Wails bindings missing**: run `wails generate module`
 - **Context missing error**: verify `app.SetContext(ctx)` in `OnStartup` in `main.go`
 - **History not recording**: check history service wiring in `internal/application/application.go`
+- **Single-instance lock**: a `gotext.db.lock` file sits next to `gotext.db` (same config folder).
+  It is an OS-level advisory lock (`github.com/gofrs/flock`), acquired in `internal/db.Open` and
+  released in `Database.Close`. It requires no manual cleanup after a crash — the OS releases the
+  lock automatically when the holding process's file descriptors are torn down, even on `kill -9`.
+  A second launch while the lock is held shows an "Already running" dialog and exits.
 - - **For each found bug or reported issue**: create new test case or adopt existing to cover the issue and write tests for this found bug or reported issue
 
 ## Temporary Files

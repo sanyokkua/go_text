@@ -5,4 +5,6 @@ module.exports = {
     ClipboardGetText: jest.fn().mockResolvedValue({ data: '' }),
     ClipboardSetText: jest.fn().mockResolvedValue({}),
     BrowserOpenURL: jest.fn().mockResolvedValue({}),
+    OpenPath: jest.fn().mockResolvedValue({}),
+    SaveWindowSize: jest.fn().mockResolvedValue({}),
 };

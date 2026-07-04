@@ -1,3 +1,29 @@
 // Mock for Wails SettingsHandler to avoid ES module issues in tests
 // eslint-disable-next-line no-undef
-module.exports = {};
+module.exports = {
+    AddLanguage: jest.fn(),
+    CreateProviderConfig: jest.fn(),
+    DeleteProviderConfig: jest.fn(),
+    GetAllProviderConfigs: jest.fn(),
+    GetAppBehaviorConfig: jest.fn(),
+    GetAppSettingsMetadata: jest.fn(),
+    GetCurrentProviderConfig: jest.fn(),
+    GetInferenceBaseConfig: jest.fn(),
+    GetLanguageConfig: jest.fn(),
+    GetLoggingConfig: jest.fn(),
+    GetModelConfig: jest.fn(),
+    GetSettings: jest.fn(),
+    GetUIPreferencesConfig: jest.fn(),
+    ProviderPresets: jest.fn(),
+    RemoveLanguage: jest.fn(),
+    ResetSettingsToDefault: jest.fn(),
+    SetAsCurrentProviderConfig: jest.fn(),
+    SetDefaultInputLanguage: jest.fn(),
+    SetDefaultOutputLanguage: jest.fn(),
+    UpdateAppBehaviorConfig: jest.fn(),
+    UpdateInferenceBaseConfig: jest.fn(),
+    UpdateLoggingConfig: jest.fn(),
+    UpdateModelConfig: jest.fn(),
+    UpdateProviderConfig: jest.fn(),
+    UpdateUIPreferencesConfig: jest.fn(),
+};
