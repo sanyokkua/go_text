@@ -76,7 +76,10 @@ const uiSlice = createSlice({
             state.buildMode = false;
             state.editingStackId = null;
         },
-        setEditingStackId: (state, action: PayloadAction<string | null>) => {
+        // Enters build mode with a specific stack id in a single atomic action so that
+        // no intermediate state exists where editingStackId is null while buildMode is true.
+        enterEditMode: (state, action: PayloadAction<string>) => {
+            state.buildMode = true;
             state.editingStackId = action.payload;
         },
     },
@@ -127,7 +130,7 @@ export const {
     setActiveSettingsTab,
     enterBuildMode,
     exitBuildMode,
-    setEditingStackId,
+    enterEditMode,
 } = uiSlice.actions;
 
 // Navigation helpers — each navigates to the named view

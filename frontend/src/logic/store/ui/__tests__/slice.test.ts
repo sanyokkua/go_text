@@ -27,6 +27,9 @@ import { selectActiveActionsTab, selectArmedActionId, selectArmedStackId, select
 import uiReducer, {
     armAction,
     armStack,
+    enterBuildMode,
+    enterEditMode,
+    exitBuildMode,
     setActiveActionsTab,
     setCurrentView,
     setHistoryOpen,
@@ -254,6 +257,39 @@ describe('ui slice reducer', () => {
         const state = uiReducer(tabState, setActiveActionsTab(null));
 
         expect(state.activeActionsTab).toBeNull();
+    });
+
+    it('enterEditMode("stack-1") sets buildMode to true and editingStackId to stack-1 in one action', () => {
+        const state = uiReducer(initialState, enterEditMode('stack-1'));
+
+        expect(state.buildMode).toBe(true);
+        expect(state.editingStackId).toBe('stack-1');
+    });
+
+    it('enterEditMode replaces a previously-set editingStackId with the new one', () => {
+        const editingOtherStackState: UIState = { ...initialState, buildMode: true, editingStackId: 'stack-old' };
+
+        const state = uiReducer(editingOtherStackState, enterEditMode('stack-new'));
+
+        expect(state.editingStackId).toBe('stack-new');
+    });
+
+    it('enterBuildMode clears a stale editingStackId left in state back to null', () => {
+        const staleEditingState: UIState = { ...initialState, editingStackId: 'stack-1' };
+
+        const state = uiReducer(staleEditingState, enterBuildMode());
+
+        expect(state.buildMode).toBe(true);
+        expect(state.editingStackId).toBeNull();
+    });
+
+    it('exitBuildMode clears editingStackId to null', () => {
+        const editingState: UIState = { ...initialState, buildMode: true, editingStackId: 'stack-1' };
+
+        const state = uiReducer(editingState, exitBuildMode());
+
+        expect(state.buildMode).toBe(false);
+        expect(state.editingStackId).toBeNull();
     });
 });
 

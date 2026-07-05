@@ -171,6 +171,24 @@ describe('SaveStackDialog', () => {
         expect(screen.getByRole('button', { name: /^save$/i })).toBeEnabled();
     });
 
+    it('editing an existing stack calls updateStack, not createStack, on Save', async () => {
+        // Arrange
+        const { StackHandlerAdapter } = jest.requireMock('../../../../../logic/adapter');
+        const store = makeStore({ editingStackId: 'existing', savedStacks: [EXISTING_STACK], steps: ['proofread'] });
+        render(
+            <Provider store={store}>
+                <SaveStackDialog open onOpenChange={jest.fn()} />
+            </Provider>,
+        );
+
+        // Act
+        await userEvent.click(screen.getByRole('button', { name: /^save$/i }));
+
+        // Assert
+        expect(StackHandlerAdapter.updateStack).toHaveBeenCalledWith(expect.objectContaining({ id: 'existing' }));
+        expect(StackHandlerAdapter.createStack).not.toHaveBeenCalled();
+    });
+
     it('Cancel button calls onOpenChange(false)', async () => {
         const onOpenChange = jest.fn();
         render(

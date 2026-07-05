@@ -14,7 +14,7 @@ import { enqueueNotification } from '../../../../logic/store/notifications/slice
 import { processPromptChain } from '../../../../logic/store/run';
 import { addStep, clearBuilder, setBuilderIcon, setBuilderName } from '../../../../logic/store/stacks/builder/slice';
 import { deleteStack, duplicateStack } from '../../../../logic/store/stacks/saved/thunks';
-import { enterBuildMode, exitBuildMode, setCurrentView, setEditingStackId } from '../../../../logic/store/ui';
+import { enterBuildMode, enterEditMode, exitBuildMode, setCurrentView } from '../../../../logic/store/ui';
 import { parseError } from '../../../../logic/utils/error_utils';
 import { computeInferences } from '../../../../logic/utils/stack_utils';
 import { AlertDialog } from '../../../../ui/primitives/AlertDialog';
@@ -71,8 +71,7 @@ const StacksManageView: React.FC = () => {
         stack.steps.forEach((id) => dispatch(addStep(id)));
         dispatch(setBuilderName(stack.name));
         dispatch(setBuilderIcon(stack.icon));
-        dispatch(setEditingStackId(stack.id));
-        dispatch(enterBuildMode());
+        dispatch(enterEditMode(stack.id));
         dispatch(setCurrentView('main'));
     };
 

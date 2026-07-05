@@ -207,6 +207,7 @@ describe('StacksManageView', () => {
         expect(store.getState().ui.buildMode).toBe(true);
         expect(store.getState().ui.currentView).toBe('main');
         expect(store.getState().stacksBuilder.steps).toEqual(['proofread', 'tone-formal']);
+        expect(store.getState().ui.editingStackId).toBe('stack-1');
     });
 
     it('clicking New stack button enters build mode and navigates to main', async () => {
