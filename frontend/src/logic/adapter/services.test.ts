@@ -1,6 +1,6 @@
+import { DuplicateStack } from '../../../wailsjs/go/stacks/StackHandler';
 import { guardArity } from './bridgeGuard';
 import { LoggerService, StackHandler } from './services';
-import { DuplicateStack } from '../../../wailsjs/go/stacks/StackHandler';
 
 // Regression test for the live-testing bug report: calling a Wails-bound
 // method with the wrong argument count used to hang the returned Promise

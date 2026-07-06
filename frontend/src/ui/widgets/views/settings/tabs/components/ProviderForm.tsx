@@ -390,7 +390,9 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                         placeholder="/v1/models"
                         className={styles.textInput}
                     />
-                    <p className={styles.helper}>Change the URL path used to list available models, if your server doesn&apos;t use the standard one.</p>
+                    <p className={styles.helper}>
+                        Change the URL path used to list available models, if your server doesn&apos;t use the standard one.
+                    </p>
                 </div>
 
                 {/* Completion endpoint */}

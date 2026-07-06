@@ -57,16 +57,9 @@ const MOCK_SETTINGS: Settings = {
 
 // Ollama's native chat path always sets its own output-length option, so the
 // token-limit-parameter radio group must be disabled (not hidden) for this provider.
-const OLLAMA_PROVIDER = {
-    ...MOCK_PROVIDER,
-    providerType: 'ollama',
-};
+const OLLAMA_PROVIDER = { ...MOCK_PROVIDER, providerType: 'ollama' };
 
-const OLLAMA_SETTINGS: Settings = {
-    ...MOCK_SETTINGS,
-    availableProviderConfigs: [OLLAMA_PROVIDER],
-    currentProviderConfig: OLLAMA_PROVIDER,
-};
+const OLLAMA_SETTINGS: Settings = { ...MOCK_SETTINGS, availableProviderConfigs: [OLLAMA_PROVIDER], currentProviderConfig: OLLAMA_PROVIDER };
 
 // useTemperature is off here so only the context-window slider renders —
 // both sliders share the same accessible name ("Value"), which would make

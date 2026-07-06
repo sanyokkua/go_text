@@ -3,7 +3,7 @@ import React from 'react';
 import { selectActiveSettingsTab, useAppDispatch, useAppSelector } from '../../../../logic/store';
 import { selectAllSettings, selectSettingsMetadata } from '../../../../logic/store/settings/selectors';
 import { setActiveSettingsTab } from '../../../../logic/store/ui';
-import { Tabs, TabDef } from '../../../primitives/Tabs';
+import { TabDef, Tabs } from '../../../primitives/Tabs';
 import styles from './SettingsView.module.css';
 import AppBehaviorTab from './tabs/AppBehaviorTab';
 import AppearanceTab from './tabs/AppearanceTab';
@@ -101,12 +101,7 @@ const SettingsView: React.FC = () => {
 
     return (
         <div className={styles.root}>
-            <Tabs
-                value={String(activeTab)}
-                onValueChange={(v) => dispatch(setActiveSettingsTab(Number(v)))}
-                orientation="vertical"
-                tabs={tabs}
-            />
+            <Tabs value={String(activeTab)} onValueChange={(v) => dispatch(setActiveSettingsTab(Number(v)))} orientation="vertical" tabs={tabs} />
         </div>
     );
 };

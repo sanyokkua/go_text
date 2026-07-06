@@ -30,18 +30,20 @@ jest.mock('../../adapter', () => ({
         updateAppBehaviorConfig: jest.fn().mockResolvedValue({ data: { enableTaskLogging: true } }),
         deleteProviderConfig: jest.fn().mockResolvedValue({ data: undefined }),
         getCurrentProviderConfig: jest.fn().mockResolvedValue({ data: undefined }),
-        getModelConfig: jest.fn().mockResolvedValue({
-            data: {
-                name: '',
-                useTemperature: false,
-                temperature: 0,
-                useContextWindow: false,
-                contextWindow: 0,
-                useLegacyMaxTokens: false,
-                useMaxOutputTokens: false,
-                maxOutputTokens: 2048,
-            },
-        }),
+        getModelConfig: jest
+            .fn()
+            .mockResolvedValue({
+                data: {
+                    name: '',
+                    useTemperature: false,
+                    temperature: 0,
+                    useContextWindow: false,
+                    contextWindow: 0,
+                    useLegacyMaxTokens: false,
+                    useMaxOutputTokens: false,
+                    maxOutputTokens: 2048,
+                },
+            }),
         getLoggingConfig: jest
             .fn()
             .mockResolvedValue({
@@ -99,7 +101,6 @@ import {
     getAppBehaviorConfig,
     getCurrentProviderConfig,
     getLoggingConfig,
-    getModelConfig,
     getSettings,
     getUIPreferences,
     persistUIPreferences,
@@ -924,9 +925,7 @@ describe('deleteProviderConfig thunk — resyncs currentProviderConfig (T87)', (
         (SettingsHandlerAdapter.deleteProviderConfig as jest.Mock).mockResolvedValue({ data: undefined });
         (SettingsHandlerAdapter.getCurrentProviderConfig as jest.Mock).mockResolvedValue({ data: providerB });
         (fromWireProvider as jest.Mock).mockReturnValue(providerB);
-        (SettingsHandlerAdapter.getModelConfig as jest.Mock).mockResolvedValue({
-            data: { ...fullSettings.modelConfig, name: 'model-b' },
-        });
+        (SettingsHandlerAdapter.getModelConfig as jest.Mock).mockResolvedValue({ data: { ...fullSettings.modelConfig, name: 'model-b' } });
 
         // Act
         await store.dispatch(deleteProviderConfig('a'));

@@ -76,9 +76,7 @@ function titleCase(value: string): string {
  * "Copy all" can place the full composed preview on the clipboard in one shot.
  */
 function buildFullPromptText(groups: apperr.PreviewGroup[]): string {
-    return groups
-        .map((g) => `Inference ${g.index + 1} — ${titleCase(g.family)}\nSystem:\n${g.systemPrompt}\n\nUser:\n${g.userPrompt}`)
-        .join('\n\n');
+    return groups.map((g) => `Inference ${g.index + 1} — ${titleCase(g.family)}\nSystem:\n${g.systemPrompt}\n\nUser:\n${g.userPrompt}`).join('\n\n');
 }
 
 const PromptInspector: React.FC = memo(function PromptInspector() {

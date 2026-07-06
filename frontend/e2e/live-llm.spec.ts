@@ -195,12 +195,18 @@ test.describe('real-LLM matrix (Target B, local only)', () => {
             await page.getByRole('button', { name: /Toggle history rail/i }).click();
         }
         await expect(historyRail).toBeVisible();
-        await page.getByRole('button', { name: /^Restore entry/i }).first().click();
+        await page
+            .getByRole('button', { name: /^Restore entry/i })
+            .first()
+            .click();
         await page.waitForTimeout(300);
 
         await expect(page.locator('textarea').first()).toHaveValue(originalInput);
         const outputRegion = page.getByText('Output', { exact: false }).first().locator('xpath=ancestor::*[2]');
-        const restoredOutput = (await outputRegion.innerText()).toLowerCase().replace(/output[^\n]*\n?/, '').trim();
+        const restoredOutput = (await outputRegion.innerText())
+            .toLowerCase()
+            .replace(/output[^\n]*\n?/, '')
+            .trim();
         expect(restoredOutput.length).toBeGreaterThan(0);
         expect(restoredOutput).toBe(originalOutput);
     });

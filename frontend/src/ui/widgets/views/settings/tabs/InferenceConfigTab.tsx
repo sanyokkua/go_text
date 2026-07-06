@@ -81,9 +81,7 @@ const InferenceConfigTab: React.FC<Props> = ({ settings }) => {
                         step={1}
                         aria-label="Maximum number of retries"
                     />
-                    <p className={styles.caption}>
-                        How many times to automatically retry a failed request before giving up and showing an error.
-                    </p>
+                    <p className={styles.caption}>How many times to automatically retry a failed request before giving up and showing an error.</p>
                 </div>
             </div>
 

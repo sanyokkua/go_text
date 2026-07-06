@@ -126,9 +126,7 @@ describe('notifyError', () => {
     });
 
     it('uses the inner error\'s title for CodeStepFailed when Details has "innerTitle"', () => {
-        const action = notifyError(
-            wire(apperr.ErrorCode.CodeStepFailed, { stepIndex: '0', family: 'rewrite', innerTitle: 'Input too long' }),
-        );
+        const action = notifyError(wire(apperr.ErrorCode.CodeStepFailed, { stepIndex: '0', family: 'rewrite', innerTitle: 'Input too long' }));
         expect(action.payload.title).toBe('Step 1: Input too long');
     });
 
