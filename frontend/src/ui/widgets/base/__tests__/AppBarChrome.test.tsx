@@ -118,7 +118,7 @@ describe('AppBar — flattened layout renders all main-view controls', () => {
 
         // Provider, model and language pickers.
         expect(screen.getByRole('combobox', { name: /provider/i })).toBeInTheDocument();
-        expect(screen.getByRole('combobox', { name: /model/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /model/i })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /languages/i })).toBeInTheDocument();
 
         // Format segmented control.
@@ -160,7 +160,7 @@ describe('AppBar chrome — active provider accent', () => {
         renderAppBar();
 
         const providerTrigger = screen.getByRole('combobox', { name: /provider/i });
-        const modelTrigger = screen.getByRole('combobox', { name: /model/i });
+        const modelTrigger = screen.getByRole('button', { name: /model/i });
 
         expect(providerTrigger).toHaveAttribute('data-accent');
         expect(modelTrigger).not.toHaveAttribute('data-accent');

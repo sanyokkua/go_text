@@ -344,6 +344,12 @@ func TestService_TestModels_Success(t *testing.T) {
 	if outcome.Sample != "gpt-4o" {
 		t.Errorf("expected Sample=gpt-4o, got %q", outcome.Sample)
 	}
+	if len(outcome.Models) != 2 {
+		t.Fatalf("expected 2 discovered models, got %d", len(outcome.Models))
+	}
+	if outcome.Models[0].ID != "gpt-4o" || outcome.Models[1].ID != "gpt-3.5-turbo" {
+		t.Errorf("expected Models=[gpt-4o, gpt-3.5-turbo], got %v", outcome.Models)
+	}
 }
 
 func TestService_TestModels_EmptyList(t *testing.T) {
@@ -369,6 +375,9 @@ func TestService_TestModels_EmptyList(t *testing.T) {
 	}
 	if ae.Code != apperr.CodeModelNotFound {
 		t.Errorf("expected code=model_not_found, got %q", ae.Code)
+	}
+	if len(outcome.Models) != 0 {
+		t.Errorf("expected no discovered models on failure, got %d", len(outcome.Models))
 	}
 }
 
@@ -397,6 +406,9 @@ func TestService_TestModels_Unreachable(t *testing.T) {
 	}
 	if ae.Code != apperr.CodeProviderUnreachable {
 		t.Errorf("expected code=provider_unreachable, got %q", ae.Code)
+	}
+	if len(outcome.Models) != 0 {
+		t.Errorf("expected no discovered models on failure, got %d", len(outcome.Models))
 	}
 }
 

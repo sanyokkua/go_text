@@ -22,6 +22,13 @@
     outline: none;
     box-shadow: var(--focus-ring);
 }
+.trigger:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+.trigger:disabled:hover {
+    background: var(--surface-2);
+}
 
 .keyLabel {
     font-size: 10px;

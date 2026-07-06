@@ -106,10 +106,30 @@ describe('ModelPicker', () => {
             { id: 'llama3', label: 'llama3' },
         ]);
 
-        await userEvent.click(screen.getByRole('combobox'));
+        await userEvent.click(screen.getByRole('button', { name: 'Model' }));
 
         expect(await screen.findByRole('option', { name: 'qwen3:0.6b' })).toBeInTheDocument();
         expect(screen.getByRole('option', { name: 'llama3' })).toBeInTheDocument();
+    });
+
+    it('narrows the options to those matching typed search text', async () => {
+        (ActionHandlerAdapter.getModels as jest.Mock).mockResolvedValue({
+            data: [
+                { id: 'qwen3:0.6b', label: 'qwen3:0.6b' },
+                { id: 'llama3', label: 'llama3' },
+            ],
+            error: null,
+        });
+        renderPicker([
+            { id: 'qwen3:0.6b', label: 'qwen3:0.6b' },
+            { id: 'llama3', label: 'llama3' },
+        ]);
+
+        await userEvent.click(screen.getByRole('button', { name: 'Model' }));
+        await userEvent.type(await screen.findByRole('combobox', { name: 'Search models…' }), 'llama');
+
+        expect(await screen.findByRole('option', { name: 'llama3' })).toBeInTheDocument();
+        expect(screen.queryByRole('option', { name: 'qwen3:0.6b' })).not.toBeInTheDocument();
     });
 
     it('persists the chosen model via updateModelConfig when a new option is selected', async () => {
@@ -125,7 +145,7 @@ describe('ModelPicker', () => {
             { id: 'llama3', label: 'llama3' },
         ]);
 
-        await userEvent.click(screen.getByRole('combobox'));
+        await userEvent.click(screen.getByRole('button', { name: 'Model' }));
         await userEvent.click(await screen.findByRole('option', { name: 'llama3' }));
 
         await waitFor(() => {
@@ -137,7 +157,8 @@ describe('ModelPicker', () => {
         (ActionHandlerAdapter.getModels as jest.Mock).mockClear();
         renderPicker([{ id: 'qwen3:0.6b', label: 'qwen3:0.6b' }]);
 
-        await userEvent.click(screen.getByRole('button', { name: /refresh model list/i }));
+        await userEvent.click(screen.getByRole('button', { name: 'Model' }));
+        await userEvent.click(screen.getByRole('button', { name: 'Refresh list' }));
 
         await waitFor(() => {
             expect(ActionHandlerAdapter.getModels).toHaveBeenCalledWith('ollama');

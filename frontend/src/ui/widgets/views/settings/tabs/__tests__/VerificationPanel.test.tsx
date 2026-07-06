@@ -136,4 +136,73 @@ describe('VerificationPanel', () => {
             expect(screen.getByText(/✓ 100ms/)).toBeInTheDocument();
         });
     });
+
+    it('calls onModelsDiscovered with the discovered list after a successful models test', async () => {
+        const { ActionHandlerAdapter } = jest.requireMock('../../../../../../logic/adapter');
+        ActionHandlerAdapter.testModels.mockResolvedValueOnce({
+            data: {
+                check: 'models',
+                ok: true,
+                durationMs: 50,
+                modelCount: 2,
+                sample: 'gpt-4o',
+                models: [
+                    { id: 'gpt-4o', label: 'gpt-4o' },
+                    { id: 'gpt-4o-mini', label: 'gpt-4o-mini' },
+                ],
+            },
+            error: null,
+        });
+        const onModelsDiscovered = jest.fn();
+        render(
+            <Provider store={makeStore()}>
+                <VerificationPanel providerConfig={DRAFT} onModelsDiscovered={onModelsDiscovered} />
+            </Provider>,
+        );
+
+        await userEvent.click(screen.getByRole('button', { name: /test models/i }));
+
+        await waitFor(() => {
+            expect(onModelsDiscovered).toHaveBeenCalledWith([
+                { id: 'gpt-4o', label: 'gpt-4o' },
+                { id: 'gpt-4o-mini', label: 'gpt-4o-mini' },
+            ]);
+        });
+    });
+
+    it('does not call onModelsDiscovered when the models test succeeds without a models list', async () => {
+        // Default mock resolves { ok: true, modelCount: 3 } with no `models` field —
+        // mirrors a "connection"/"inference" outcome shape, which must not trigger it.
+        const onModelsDiscovered = jest.fn();
+        render(
+            <Provider store={makeStore()}>
+                <VerificationPanel providerConfig={DRAFT} onModelsDiscovered={onModelsDiscovered} />
+            </Provider>,
+        );
+
+        await userEvent.click(screen.getByRole('button', { name: /test models/i }));
+
+        await waitFor(() => {
+            expect(screen.getByText(/✓ 50ms/)).toBeInTheDocument();
+        });
+        expect(onModelsDiscovered).not.toHaveBeenCalled();
+    });
+
+    it('does not call onModelsDiscovered when the models test fails', async () => {
+        const { ActionHandlerAdapter } = jest.requireMock('../../../../../../logic/adapter');
+        ActionHandlerAdapter.testModels.mockResolvedValueOnce({ data: null, error: { code: 'provider_unreachable', message: 'unreachable' } });
+        const onModelsDiscovered = jest.fn();
+        render(
+            <Provider store={makeStore()}>
+                <VerificationPanel providerConfig={DRAFT} onModelsDiscovered={onModelsDiscovered} />
+            </Provider>,
+        );
+
+        await userEvent.click(screen.getByRole('button', { name: /test models/i }));
+
+        await waitFor(() => {
+            expect(screen.getByText(/✗/)).toBeInTheDocument();
+        });
+        expect(onModelsDiscovered).not.toHaveBeenCalled();
+    });
 });

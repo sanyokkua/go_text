@@ -117,8 +117,9 @@ func (s *Service) TestConnection(cfg settings.ProviderConfig) (*apperr.VerifyOut
 }
 
 // TestModels runs the provider's discovery strategy and reports the model
-// count and first model name. Failure codes: missing_credential,
-// provider_unreachable, model_not_found, internal.
+// count, first model name, and the full discovered list (so callers can
+// populate a model picker without a second discovery call). Failure codes:
+// missing_credential, provider_unreachable, model_not_found, internal.
 func (s *Service) TestModels(cfg settings.ProviderConfig) (*apperr.VerifyOutcome, error) {
 	start := time.Now()
 	outcome := &apperr.VerifyOutcome{Check: "models"}
@@ -159,6 +160,7 @@ func (s *Service) TestModels(cfg settings.ProviderConfig) (*apperr.VerifyOutcome
 	outcome.OK = true
 	outcome.ModelCount = len(models)
 	outcome.Sample = models[0].ID
+	outcome.Models = models
 	return outcome, nil
 }
 

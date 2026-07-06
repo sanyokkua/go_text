@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
 
 import { ProviderPresets as fetchBridgeMockPresets } from '../../../../../../../dev/bridge-mock/go/main/SettingsHandler';
+import { ActionHandlerAdapter } from '../../../../../../../logic/adapter';
 import { ProviderConfig } from '../../../../../../../logic/adapter/models';
 import uiReducer from '../../../../../../../logic/store/ui/slice';
 import ProviderForm, { BLANK_PROVIDER } from '../ProviderForm';
@@ -120,7 +121,7 @@ describe('ProviderForm two-column layout', () => {
         renderForm();
 
         const apiVersionInput = await screen.findByLabelText(/api version/i);
-        const modelTrigger = screen.getByRole('combobox', { name: 'Model' });
+        const modelTrigger = screen.getByRole('button', { name: 'Model' });
         const baseUrlInput = screen.getByLabelText(/base url/i);
 
         const grid = apiVersionInput.closest('div')?.parentElement ?? null;
@@ -282,5 +283,57 @@ describe('ProviderForm preset quick-fill', () => {
 
         expect(screen.queryByRole('button', { name: 'LM Studio' })).not.toBeInTheDocument();
         expect(screen.queryByText(/start from a preset/i)).not.toBeInTheDocument();
+    });
+});
+
+describe('ProviderForm model picker — populated by Test models', () => {
+    afterEach(() => {
+        // clearMocks (jest.config.cjs) resets call history but not a mock's resolved
+        // value, so a test that customizes testModels must restore the shared default.
+        (ActionHandlerAdapter.testModels as jest.Mock).mockResolvedValue({
+            data: { check: 'models', ok: true, durationMs: 1, modelCount: 0 },
+            error: null,
+        });
+    });
+
+    // Regression coverage for the "test models before Save" gap: a brand-new,
+    // unsaved provider draft (providerId === '') has no persisted ID to discover
+    // models by, so this is the ONLY way its picker can list models before Save.
+    it('populates the model picker from a successful Test models run, without Save', async () => {
+        (ActionHandlerAdapter.testModels as jest.Mock).mockResolvedValue({
+            data: {
+                check: 'models',
+                ok: true,
+                durationMs: 5,
+                modelCount: 2,
+                sample: 'gpt-4o',
+                models: [
+                    { id: 'gpt-4o', label: 'gpt-4o' },
+                    { id: 'gpt-4o-mini', label: 'gpt-4o-mini' },
+                ],
+            },
+            error: null,
+        });
+        renderNewForm([]);
+
+        await userEvent.click(screen.getByRole('button', { name: 'Test models' }));
+
+        await userEvent.click(await screen.findByRole('button', { name: 'Model' }));
+        expect(await screen.findByRole('option', { name: 'gpt-4o' })).toBeInTheDocument();
+        expect(screen.getByRole('option', { name: 'gpt-4o-mini' })).toBeInTheDocument();
+    });
+
+    it('does not touch the model picker when Test models fails', async () => {
+        (ActionHandlerAdapter.testModels as jest.Mock).mockResolvedValue({
+            data: null,
+            error: { code: 'provider_unreachable', message: 'unreachable' },
+        });
+        renderNewForm([]);
+
+        await userEvent.click(screen.getByRole('button', { name: 'Test models' }));
+        await screen.findByText(/✗/);
+
+        await userEvent.click(screen.getByRole('button', { name: 'Model' }));
+        expect(screen.queryByRole('option')).not.toBeInTheDocument();
     });
 });

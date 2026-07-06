@@ -1,7 +1,9 @@
 import { configureStore } from '@reduxjs/toolkit';
 import '@testing-library/jest-dom';
 import { fireEvent, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
+import { ActionHandlerAdapter } from '../../../../../../logic/adapter';
 import { Settings } from '../../../../../../logic/adapter/models';
 import notificationsReducer from '../../../../../../logic/store/notifications/slice';
 import settingsReducer from '../../../../../../logic/store/settings/slice';
@@ -100,6 +102,12 @@ function makeStore(settings: Settings = MOCK_SETTINGS) {
 }
 
 describe('ModelConfigTab', () => {
+    afterEach(() => {
+        // clearMocks (jest.config.cjs) resets call history but not a mock's resolved
+        // value, so tests that customize getModels must restore the shared default.
+        (ActionHandlerAdapter.getModels as jest.Mock).mockResolvedValue({ data: [], error: null });
+    });
+
     it('renders the Model section header', () => {
         render(
             <Provider store={makeStore()}>
@@ -242,6 +250,27 @@ describe('ModelConfigTab', () => {
         fireEvent.keyDown(slider, { key: 'End' });
 
         expect(slider).toHaveAttribute('aria-valuenow', '32000');
+    });
+
+    it('narrows the model picker options to those matching typed search text', async () => {
+        (ActionHandlerAdapter.getModels as jest.Mock).mockResolvedValue({
+            data: [
+                { id: 'gpt-4o', label: 'gpt-4o' },
+                { id: 'gpt-3.5-turbo', label: 'gpt-3.5-turbo' },
+            ],
+            error: null,
+        });
+        render(
+            <Provider store={makeStore()}>
+                <ModelConfigTab settings={MOCK_SETTINGS} />
+            </Provider>,
+        );
+
+        await userEvent.click(screen.getByRole('button', { name: 'Search models…' }));
+        await userEvent.type(await screen.findByRole('combobox', { name: 'Search models…' }), 'turbo');
+
+        expect(await screen.findByRole('option', { name: 'gpt-3.5-turbo' })).toBeInTheDocument();
+        expect(screen.queryByRole('option', { name: 'gpt-4o' })).not.toBeInTheDocument();
     });
 
     it('toggling Use max output tokens marks the form dirty independently of the context-window toggle', () => {

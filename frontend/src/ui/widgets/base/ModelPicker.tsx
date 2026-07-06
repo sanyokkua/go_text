@@ -1,13 +1,9 @@
-import { RefreshCw } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 
 import { useAppDispatch, useAppSelector } from '../../../logic/store';
 import { selectCurrentProvider, selectCurrentProviderModelItems, selectModelConfig } from '../../../logic/store/settings/selectors';
 import { discoverCurrentProviderModels, updateModelConfig } from '../../../logic/store/settings/thunks';
-import { IconButton } from '../../components/IconButton';
-import iconStyles from '../../components/IconButton.module.css';
-import { Select } from '../../primitives/Select';
-import { Tooltip } from '../../primitives/Tooltip';
+import { Combobox } from '../../primitives/Combobox';
 import styles from './ModelPicker.module.css';
 
 const ModelPicker: React.FC = () => {
@@ -52,18 +48,15 @@ const ModelPicker: React.FC = () => {
     // The model pill stays plain (.sel look); only the active provider pill is accented.
     return (
         <div className={styles.root}>
-            <Select value={modelConfig.name} onValueChange={handleModelChange} items={modelItems} keyLabel="Model" />
-            <Tooltip content="Refresh model list" side="bottom">
-                <IconButton
-                    aria-label="Refresh model list"
-                    compact
-                    disabled={refreshing}
-                    onClick={() => void handleRefresh()}
-                    className={refreshing ? iconStyles.spinning : ''}
-                >
-                    <RefreshCw size={14} />
-                </IconButton>
-            </Tooltip>
+            <Combobox
+                value={modelConfig.name}
+                onValueChange={handleModelChange}
+                items={modelItems}
+                keyLabel="Model"
+                placeholder="Search models…"
+                loading={refreshing}
+                onRefresh={() => void handleRefresh()}
+            />
         </div>
     );
 };

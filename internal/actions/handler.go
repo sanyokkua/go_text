@@ -204,7 +204,7 @@ func (h *ActionHandler) TestConnection(cfg settings.ProviderConfig) (res apperr.
 }
 
 // TestModels runs the provider's discovery strategy and reports the model
-// count and first model name.
+// count, first model name, and the full discovered list.
 func (h *ActionHandler) TestModels(cfg settings.ProviderConfig) (res apperr.VerifyResult) {
 	defer func() {
 		if r := recover(); r != nil {

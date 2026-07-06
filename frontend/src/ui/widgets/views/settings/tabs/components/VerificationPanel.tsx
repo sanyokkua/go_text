@@ -70,13 +70,16 @@ CheckRow.displayName = 'CheckRow';
 interface VerificationPanelProps {
     /** The live draft provider config — diagnostics run against this, even before Save. */
     providerConfig: ProviderConfig;
+    /** Called with the full model list when "Test models" succeeds, so the caller
+     * can populate its own model picker without waiting for Save. */
+    onModelsDiscovered?: (models: apperr.ModelInfo[]) => void;
 }
 
 const BUSY_PATTERN = /busy|already running/i;
 
 const SPIN_KEYFRAMES = `@keyframes vp-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`;
 
-const VerificationPanel: React.FC<VerificationPanelProps> = ({ providerConfig }) => {
+const VerificationPanel: React.FC<VerificationPanelProps> = ({ providerConfig, onModelsDiscovered }) => {
     const dispatch = useAppDispatch();
     const inferenceRunning = useAppSelector(selectInferenceRunning);
 
@@ -116,11 +119,14 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({ providerConfig })
         const result = await dispatch(testModels(providerConfig));
         if (testModels.fulfilled.match(result)) {
             applyOutcome(result.payload, setModelsState);
+            if (result.payload.ok && result.payload.models && result.payload.models.length > 0) {
+                onModelsDiscovered?.(result.payload.models);
+            }
         } else {
             const message = result.payload ?? 'Models test failed';
             setModelsState({ status: 'fail', message, durationMs: 0 });
         }
-    }, [dispatch, providerConfig, applyOutcome]);
+    }, [dispatch, providerConfig, applyOutcome, onModelsDiscovered]);
 
     const handleTestInference = useCallback(async () => {
         setInferenceState({ status: 'running', message: '', durationMs: 0 });

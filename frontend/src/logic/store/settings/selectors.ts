@@ -1,6 +1,7 @@
 import { createSelector } from '@reduxjs/toolkit';
 
 import { apperr } from '../../../../wailsjs/go/models';
+import { ComboboxItem } from '../../../ui/primitives/Combobox';
 import { SelectItem } from '../../../ui/primitives/Select';
 import { ProviderConfig, Settings } from '../../adapter';
 import { RootState } from '../index';
@@ -42,16 +43,17 @@ export const selectLanguageItems = createSelector([selectLanguageConfig], (cfg):
 });
 
 /**
- * Returns the model names selectable for the current provider in the AppBar picker.
+ * Returns the model names selectable for the current provider in the AppBar and
+ * Model Config pickers.
  *
  * When useCustomModels is enabled the provider ships its own list. Otherwise the
  * list is the live-discovered models unioned with the currently selected model
- * (deduped). The current model is always present so the Select value stays valid
- * even before discovery has run, and the list is never empty.
+ * (deduped). The current model is always present so the picker's value stays
+ * valid even before discovery has run, and the list is never empty.
  */
 export const selectCurrentProviderModelItems = createSelector(
     [selectCurrentProvider, selectModelConfig, selectDiscoveredModels],
-    (provider, modelCfg, discovered): SelectItem[] => {
+    (provider, modelCfg, discovered): ComboboxItem[] => {
         if (!provider) return [];
 
         const currentModel = modelCfg?.name ?? provider.selectedModel;

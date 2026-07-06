@@ -4,6 +4,8 @@ import { apperr } from '../../../../../../../wailsjs/go/models';
 import { ActionHandlerAdapter } from '../../../../../../logic/adapter';
 import { ProviderConfig } from '../../../../../../logic/adapter/models';
 import { AlertDialog } from '../../../../../primitives/AlertDialog';
+import type { ComboboxItem } from '../../../../../primitives/Combobox';
+import { Combobox } from '../../../../../primitives/Combobox';
 import type { SelectItem } from '../../../../../primitives/Select';
 import { Select } from '../../../../../primitives/Select';
 import { Switch } from '../../../../../primitives/Switch';
@@ -217,9 +219,9 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
     const valid = isFormValid(errors, form);
     const isOllama = form.providerType === 'ollama';
 
-    // Build model select items, prepending the current selectedModel if it's not in the discovered list.
-    const modelItems: SelectItem[] = useMemo(() => {
-        const items: SelectItem[] = discoveredModels.map((m) => ({ value: m.id, label: m.label }));
+    // Build model picker items, prepending the current selectedModel if it's not in the discovered list.
+    const modelItems: ComboboxItem[] = useMemo(() => {
+        const items: ComboboxItem[] = discoveredModels.map((m) => ({ value: m.id, label: m.label }));
         if (form.selectedModel !== '' && !discoveredModels.some((m) => m.id === form.selectedModel)) {
             items.unshift({ value: form.selectedModel, label: form.selectedModel });
         }
@@ -445,26 +447,17 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                     </span>
                     <div className={styles.modelRow}>
                         <div className={styles.modelSelect}>
-                            <Select
+                            <Combobox
                                 value={form.selectedModel}
                                 onValueChange={(v) => patch('selectedModel', v)}
                                 items={modelItems}
-                                placeholder={modelsLoading ? '(loading…)' : '(none)'}
+                                placeholder={modelsLoading ? '(loading…)' : 'Search models…'}
                                 keyLabel="Model"
+                                loading={modelsLoading}
+                                onRefresh={() => fetchModels(form.providerId)}
                                 disabled={modelsLoading}
-                                aria-labelledby="pf-model-label"
                             />
                         </div>
-                        <button
-                            type="button"
-                            onClick={() => fetchModels(form.providerId)}
-                            disabled={modelsLoading || form.providerId === ''}
-                            aria-label="Refresh model list"
-                            title="Refresh model list"
-                            className={styles.refreshBtn}
-                        >
-                            ⟳
-                        </button>
                     </div>
                     <p className={styles.helper}>Which model this provider will use for requests, unless overridden per-run.</p>
                 </div>
@@ -506,9 +499,11 @@ const ProviderForm: React.FC<ProviderFormProps> = ({
                 {form.useCustomModels && <TagInput value={form.customModels} onChange={(v) => patch('customModels', v)} />}
             </div>
 
-            {/* Verification panel — runs against the live draft, so diagnostics work before Save */}
+            {/* Verification panel — runs against the live draft, so diagnostics work before Save.
+                A successful "Test models" run also feeds this form's own model picker directly,
+                so a brand-new, unsaved provider draft can list its models before the first Save. */}
             <div className={styles.verifyField}>
-                <VerificationPanel providerConfig={form} />
+                <VerificationPanel providerConfig={form} onModelsDiscovered={setDiscoveredModels} />
             </div>
 
             {/* Action bar */}

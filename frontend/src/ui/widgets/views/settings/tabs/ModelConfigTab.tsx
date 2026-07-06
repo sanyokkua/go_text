@@ -11,8 +11,8 @@ import {
 } from '../../../../../logic/store';
 import { discoverCurrentProviderModels, updateModelConfig } from '../../../../../logic/store/settings/thunks';
 import { Button } from '../../../../components/Button';
+import { Combobox } from '../../../../primitives/Combobox';
 import { RadioGroup } from '../../../../primitives/RadioGroup';
-import { Select } from '../../../../primitives/Select';
 import { Slider } from '../../../../primitives/Slider';
 import { Switch } from '../../../../primitives/Switch';
 import styles from './ModelConfigTab.module.css';
@@ -136,11 +136,16 @@ const ModelConfigTab: React.FC<Props> = ({ settings }) => {
 
             <div className={styles.modelRow}>
                 <div className={styles.selectWrap}>
-                    <Select value={form.name} onValueChange={handleModelChange} items={modelSelectItems} placeholder="Select a model" />
+                    <Combobox
+                        value={form.name}
+                        onValueChange={handleModelChange}
+                        items={modelSelectItems}
+                        placeholder="Search models…"
+                        loading={refreshing}
+                        onRefresh={() => void handleRefresh()}
+                        disabled={!currentProvider}
+                    />
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => void handleRefresh()} disabled={refreshing || !currentProvider}>
-                    ⟳ Refresh
-                </Button>
             </div>
             <p className={styles.caption}>Which model this tab&apos;s settings apply to. Use Refresh if you don&apos;t see a model you expect.</p>
 
