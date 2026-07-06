@@ -28,6 +28,7 @@ All code in this project must follow the rules defined in `docs/ai_agent_rules/`
 | `frontend/src/**/*.test.ts`, `frontend/src/**/*.test.tsx` | `ts-tester` |
 | New feature design, system-level changes | `architect` |
 | Wails runtime, bindings, events, menus, EnumBind | load `wails-dev` skill |
+| `docs/**`, `README.md`, architecture/system write-ups | load `project-documentation` skill |
 | `internal/db/queries/*.sql` or `internal/db/store/` | run `sqlc generate` after changes |
 | `internal/db/migrations/*.sql` | migration runs automatically on next `db.Open`; confirm it is additive |
 
