@@ -9,7 +9,7 @@ import { expect, Page, test } from '@playwright/test';
  *
  * Model choice: use a reliable small instruction model. Ollama `gemma3:1b-it-q4_K_M`
  * or `qwen3:1.7b` (NOT `qwen3:0.6b`, which emits the `[NO_TEXT_PROVIDED]` empty-input
- * sentinel — a model artifact, see docs/V3_Temp_Docs/.tmp/mockup-gap-audit.md §N2).
+ * sentinel — a model artifact observed during manual gap-audit testing, not a bug).
  *
  * This suite covers NON-DESTRUCTIVE real-inference journeys. Destructive flows
  * (delete provider, factory reset, header CRUD that persists) mutate the real

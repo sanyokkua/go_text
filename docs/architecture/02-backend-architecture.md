@@ -25,6 +25,7 @@ the same orchestrator, handler, and envelope serve both single actions and multi
 
 | Package | Status | Responsibility |
 |---|---|---|
+| `internal/bootstrap` | **new** | Pre-DB, pre-context logger construction (`NewLogger`) used by `main()` before `ApplicationContextHolder` exists. Resolves dev-vs-release purely from a compile-time `dev`/`!dev` build tag (Wails' own CLI sets `dev` for `wails dev`), since `runtime.Environment(ctx)` isn't available this early. |
 | `internal/application` | evolved | DI container (`ApplicationContextHolder`); constructs and wires every service/handler; holds the app `ctx`; orchestrates startup/shutdown ordering |
 | `internal/db` | **new** | SQLite open + WAL pragmas; embedded goose migration runner; seeding. Owns `internal/db/store/` |
 | `internal/db/store` | **new (generated)** | sqlc-generated `Queries` struct, `Querier` interface, and row models. **Never hand-edited.** |
@@ -166,41 +167,65 @@ TS enum in `models.ts` for typed error handling.
 
 ## 5. Dependency-injection container
 
-`ApplicationContextHolder` in `internal/application/application.go` is the DI root. Construction order
-(dependencies first):
+`ApplicationContextHolder` in `internal/application/application.go` is the DI root. Construction is
+**two-phase**, because the database can only be opened once a config-folder path can be resolved
+(via `os.UserConfigDir()`), and the real per-run `ctx` Wails hands back in `OnStartup` isn't available
+before that — see `internal/bootstrap` in §2 for why the same reasoning applies to the logger.
+
+**Phase 1 — `NewApplicationContextHolder(appLogger, restyClient)`** (called synchronously in
+`main()`, before `wails.Run`): wires every service and handler with a **nil settings repository**
+and the bootstrap console-only logger. All handlers are fully constructed and already assigned to
+the `ApplicationContextHolder` struct fields Wails binds — but nothing has touched the database yet.
 
 ```
 file utils
-  → db.Open (open + migrate + seed)        → *db.Database (SQL + sqlc Queries)
-  → SqliteSettingsRepository               → SettingsService → SettingsHandler
-  → SqliteStackRepository                  → StackService    → StackHandler
-  → SqliteHistoryRepository                → HistoryService  → HistoryHandler
+  → SettingsService(repo=nil)               → SettingsHandler
   → tasklog, prompts, provider/llm services
   → ActionService (prompts + provider + settings + tasklog + history)
-                                           → ActionHandler
+                                            → ActionHandler
+  → StackHandler(repo=nil), HistoryHandler(repo=nil)
 ```
 
-`main.go` constructs the structured logger and resty client, calls the constructor, and handles the
-error (fatal log + minimal error dialog instead of running half-initialized). Handlers are exposed via
-the Wails `Bind` list; `EnumBind` exposes `apperr.ErrorCode` to TypeScript.
+**Phase 2 — `Init(ctx)`** (called from `OnStartup`, after `SetContext(ctx)`, once the real Wails
+`ctx` exists): opens the database (`db.Open`, which runs goose migrations and seeding), then
+backfills the already-constructed services with real SQLite-backed repositories via
+`SetRepository`/`Configure` calls — the handlers and services built in phase 1 are never replaced,
+only given real persistence. `Init` also restores the last-saved window size and reconfigures the
+bootstrap logger (level, rotation, file output) from the now-loadable `log.*` settings.
+
+`main.go` constructs the structured logger and resty client, calls the phase-1 constructor, and
+passes the resulting `ApplicationContextHolder` to `wails.Run`. If `Init` (phase 2) fails — most
+commonly because another instance already holds the DB's advisory lock — the app shows an error
+dialog instead of running half-initialized; it does not fall back to phase-1-only operation.
+Handlers are exposed via the Wails `Bind` list; `EnumBind` exposes `apperr.ErrorCode` to TypeScript.
 
 ---
 
 ## 6. Startup and shutdown sequence
 
+**Before `wails.Run` (in `main()`):**
+1. `bootstrap.NewLogger()` — console-only logger, dev/release resolved by compile-time build tag.
+2. `application.NewApplicationContextHolder(appLogger, restyClient)` — DI phase 1 (§5): every
+   service/handler constructed with a nil settings repository.
+
 **Startup (`OnStartup`):**
-1. `app.SetContext(ctx)` — store the runtime ctx (parent for all later runtime calls and cancellation).
-2. `db.Open` (invoked during DI construction) — open DB → migrate (goose) → seed-if-empty, atomically.
-   Any failure aborts construction with a fatal storage error.
+1. `app.SetContext(ctx)` — store the real Wails runtime ctx (parent for all later runtime calls
+   and cancellation).
+2. `app.Init(ctx)` — DI phase 2 (§5): open DB → migrate (goose) → seed-if-empty, atomically; wire
+   SQLite repositories into the already-built services/handlers; restore window size; reconfigure
+   the logger from settings. If `Init` fails, show an error dialog instead of proceeding — a
+   locked-database failure (another instance already running) gets a distinct "Already running"
+   message rather than the generic startup-error one.
 
 **Shutdown (`OnShutdown`):**
 1. Cancel every in-flight run via the `runId → CancelFunc` registry.
-2. Flush and close the rotating log file.
-3. Close the database: `db.Close()`.
+2. Close the database: `db.Close()`.
+3. Flush and close the rotating log file.
 
 ```
-OnStartup:  SetContext(ctx) → [db.Open: open → migrate → seed] → bindings ready
-OnShutdown: cancel in-flight runs → flush log file → close DB
+main():     bootstrap.NewLogger() → NewApplicationContextHolder (DI phase 1, nil repos)
+OnStartup:  SetContext(ctx) → Init(ctx) (DI phase 2: open → migrate → seed → wire repos)
+OnShutdown: cancel in-flight runs → close DB → flush log file
 ```
 
 ---

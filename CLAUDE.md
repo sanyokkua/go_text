@@ -168,9 +168,9 @@ that the adapter subscribes to and dispatches into the `run` slice.
 
 | Platform | JSON settings | SQLite database |
 |---|---|---|
-| macOS | `~/Library/Application Support/GoText/SettingsV2.json` | `.../gotext.db` |
-| Linux | `~/.config/GoText/SettingsV2.json` | `.../gotext.db` |
-| Windows | `%APPDATA%\GoText\SettingsV2.json` | `.../gotext.db` |
+| macOS | `~/Library/Application Support/GoTextApp/SettingsV2.json` | `.../gotext.db` |
+| Linux | `~/.config/GoTextApp/SettingsV2.json` | `.../gotext.db` |
+| Windows | `%APPDATA%\GoTextApp\SettingsV2.json` | `.../gotext.db` |
 
 ## Extending the App
 
@@ -191,8 +191,12 @@ that the adapter subscribes to and dispatches into the `run` slice.
 
 1. Define an interface in your new package (e.g., `MyServiceAPI`)
 2. Implement the struct
-3. Add field + instantiation to `ApplicationContextHolder` in `internal/application/application.go`
-   following the construction order: file utils → db → repositories → services → handlers
+3. Wiring is two-phase in `internal/application/application.go` (see
+   `docs/architecture/02-backend-architecture.md` §5 for the full rationale):
+   - In `NewApplicationContextHolder`, construct the service/handler with a **nil** repository —
+     the database isn't open yet at this point.
+   - In `Init(ctx)`, after `db.Open` succeeds, construct the real SQLite repository and wire it
+     into the already-built service via a `SetRepository`-style method.
 4. Expose via Wails `Bind` in `main.go` if the frontend needs it
 5. Run `wails generate module` if you added or changed bound methods
 
@@ -210,13 +214,22 @@ Integration tests in `internal/llms/` use `net/http/httptest` to mock LLM provid
 
 Frontend uses Jest (`npm run test`) and Playwright (`npm run verify:ui`).
 
-**CI guards that must pass:**
+**CI guards that must pass** (full gate set in `.github/workflows/main.yml`'s `test` job):
 ```bash
-go build ./...                                        # backend builds clean
-wails generate module && git diff --exit-code frontend/wailsjs/   # bindings in sync
-! grep -rq "@mui\|@emotion" frontend/src             # no MUI/emotion reintroduced
+gofmt -l .                                            # no unformatted Go files
+go vet ./...
 go test -race ./...                                   # race-free
+cd frontend && npm run format:check && npm run lint && npx tsc --noEmit
+npm run test:coverage
+! grep -rq "@mui\|@emotion" frontend/src              # no MUI/emotion reintroduced
+npm run verify:ui && npm run verify:smoke             # Playwright, headless
+govulncheck ./... && npm audit --audit-level=high     # security
+wails doctor && sqlc diff                             # tooling/schema sanity
+wails generate module && git diff --exit-code frontend/wailsjs/   # bindings in sync
 ```
+
+See `docs/architecture/05-build-and-configuration.md` §4 for the full gate table and §9 for the
+tag-triggered release/build workflow.
 
 ## Debugging
 

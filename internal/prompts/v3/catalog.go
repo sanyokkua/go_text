@@ -20,7 +20,7 @@ func buildCatalog() []apperr.ActionMeta {
 	return []apperr.ActionMeta{
 
 		// ── REWRITE — proofread (orderRank 10) ───────────────────────────────
-		// Source: docs/V3_Temp_Docs/SpecificationFolder/prompts/directives-rewrite.md §proofread
+		// Source: original v3 prompt draft — directives-rewrite.md §proofread
 		{
 			ID:               "rewrite.proofread.basic",
 			Name:             "Basic proofreading",
@@ -83,7 +83,7 @@ func buildCatalog() []apperr.ActionMeta {
 		},
 
 		// ── REWRITE — rewrite-intent (orderRank 20) ──────────────────────────
-		// Source: docs/V3_Temp_Docs/SpecificationFolder/prompts/directives-rewrite.md §rewrite-intent
+		// Source: original v3 prompt draft — directives-rewrite.md §rewrite-intent
 		{
 			ID:               "rewrite.intent.concise",
 			Name:             "Concise",
@@ -146,7 +146,7 @@ func buildCatalog() []apperr.ActionMeta {
 		},
 
 		// ── REWRITE — tone (orderRank 30) ────────────────────────────────────
-		// Source: docs/V3_Temp_Docs/SpecificationFolder/prompts/directives-rewrite.md §tone
+		// Source: original v3 prompt draft — directives-rewrite.md §tone
 		{
 			ID:               "rewrite.tone.professional",
 			Name:             "Professional",
@@ -389,7 +389,7 @@ func buildCatalog() []apperr.ActionMeta {
 		},
 
 		// ── REWRITE — style (orderRank 40) ───────────────────────────────────
-		// Source: docs/V3_Temp_Docs/SpecificationFolder/prompts/directives-rewrite.md §style
+		// Source: original v3 prompt draft — directives-rewrite.md §style
 		{
 			ID:               "rewrite.style.formal",
 			Name:             "Formal",
@@ -572,7 +572,7 @@ func buildCatalog() []apperr.ActionMeta {
 		},
 
 		// ── STRUCTURE — format (orderRank 50, composable) ────────────────────
-		// Source: docs/V3_Temp_Docs/SpecificationFolder/prompts/templates-structure.md §format
+		// Source: original v3 prompt draft — templates-structure.md §format
 		// ExclusivityGroup="" — multiple format directives may coexist in one stack.
 		{
 			ID:       "structure.format.markdown",
@@ -688,7 +688,7 @@ func buildCatalog() []apperr.ActionMeta {
 		},
 
 		// ── STRUCTURE — doc (orderRank 60, one type per run) ─────────────────
-		// Source: docs/V3_Temp_Docs/SpecificationFolder/prompts/templates-structure.md §doc
+		// Source: original v3 prompt draft — templates-structure.md §doc
 		{
 			ID:       "structure.doc.faq",
 			Name:     "FAQ",
@@ -1075,7 +1075,7 @@ func buildCatalog() []apperr.ActionMeta {
 		},
 
 		// ── SUMMARIZE (orderRank 80, terminal) ───────────────────────────────
-		// Source: docs/V3_Temp_Docs/SpecificationFolder/prompts/templates-summarize.md
+		// Source: original v3 prompt draft — templates-summarize.md
 		{
 			ID:       "summarize.summary",
 			Name:     "Summary",
@@ -1174,7 +1174,7 @@ func buildCatalog() []apperr.ActionMeta {
 		},
 
 		// ── TRANSLATE (orderRank 90, terminal) ───────────────────────────────
-		// Source: docs/V3_Temp_Docs/SpecificationFolder/prompts/templates-translate.md
+		// Source: original v3 prompt draft — templates-translate.md
 		{
 			ID:       "translate.text",
 			Name:     "Translate text",
@@ -1248,7 +1248,7 @@ func buildCatalog() []apperr.ActionMeta {
 		},
 
 		// ── PROMPT ENGINEERING (orderRank 100, terminal, standalone) ─────────
-		// Source: docs/V3_Temp_Docs/SpecificationFolder/prompts/templates-prompt-engineering.md
+		// Source: original v3 prompt draft — templates-prompt-engineering.md
 
 		// text-LLM tools — system: SysPromptEngText, requires: none
 		{

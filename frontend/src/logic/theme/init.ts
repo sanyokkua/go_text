@@ -1,4 +1,4 @@
-import type { ThemeEffective, ThemeMode } from '../store/theme/types';
+import type { ThemeEffective, ThemeMode } from '../store/ui/types';
 
 export function resolveEffectiveTheme(mode: ThemeMode | string): ThemeEffective {
     if (mode === 'dark') return 'dark';

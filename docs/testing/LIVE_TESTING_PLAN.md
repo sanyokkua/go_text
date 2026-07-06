@@ -17,7 +17,7 @@ functional surface changes — new settings, new action families, new error path
 
 | Version | Date | Change |
 |---|---|---|
-| v1.0 | 2026-07-03 | Initial version. Supersedes `docs/V3_Temp_Docs/2026-06-30-comprehensive-live-testing.md` (broad smoke pass) and `docs/V3_Temp_Docs/2026-07-01-context-window-live-testing.md` (context-window deep dive) as the canonical live-testing reference. Both are kept as historical prior art. |
+| v1.0 | 2026-07-03 | Initial version. Supersedes the earlier draft smoke-pass checklist and context-window deep-dive notes written during v3 planning, now consolidated here as the single canonical live-testing reference. |
 | v1.1 | 2026-07-03 | §2 baseline corrected: `useTemperature` defaults **on** (`temperature=0.5`), not off — verified against `internal/db/db.go` seeder and `internal/settings/repository_sqlite.go` read-fallback, which agree with each other. Found live during a full P0-P15 execution (2026-07-03 report). |
 | v1.2 | 2026-07-03 | §2 baseline corrected: inference defaults are `timeout=60`, `useMarkdownForOutput=false` (off), not `timeout=30`/"markdown on" — verified against `internal/db/db.go` seeder. Found live during the same P0-P15 run. |
 | v1.3 | 2026-07-05 | Process/methodology update, no functional-surface change. §1/§5: model requirements are now **dynamic size-class roles** instead of fixed model IDs — local models rotate often and pinning specific pulled models just for this suite doesn't scale; the agent maps whatever is installed onto the role table before each run. §4: added a standing model-output/prompt-guardrail verification step alongside the existing mechanism-only assertion rule. §8: documented the orchestrator + one-subagent-per-test-case execution pattern and the browser-MCP-vs-Computer-Use tool-selection split. Appendix C: the fault-injection proxy is now a persisted, reusable script rather than a rebuild-each-time throwaway. |
@@ -917,12 +917,13 @@ See §1's tables. Reminder: open the SQLite DB **read-only** while the app is ru
 noise unrelated to any real app bug.
 
 ### Appendix E — Prior art
-- `docs/V3_Temp_Docs/2026-06-30-comprehensive-live-testing.md` — original broad smoke-pass
-  checklist this plan supersedes; source of the `P{phase}-T{n}` ID convention and the
-  mechanism-over-content assertion philosophy.
-- `docs/V3_Temp_Docs/2026-07-01-context-window-live-testing.md` — deep-dive precedent for the
-  Findings-table format, the fault-injection proxy technique, and the "re-verify after fixes"
-  addendum pattern now formalized in `reports/README.md`.
-- `docs/V3_Temp_Docs/SpecificationFolder/14-implementation-plan.md` — the T00–T83+
-  implementation task tracker; `CONFIRMED` findings from this plan that require code changes
-  should reference or open a new `T{NN}` entry there.
+This plan consolidates and supersedes earlier draft testing material written during v3
+planning (since removed as superseded working material — see `docs/README.md`):
+- An original broad smoke-pass checklist — source of the `P{phase}-T{n}` ID convention and the
+  mechanism-over-content assertion philosophy used throughout this plan.
+- A context-window deep-dive test pass — precedent for the Findings-table format, the
+  fault-injection proxy technique, and the "re-verify after fixes" addendum pattern now
+  formalized in `reports/README.md`.
+
+`CONFIRMED` findings from this plan that require code changes should reference or open a new
+task in the project's issue tracker.

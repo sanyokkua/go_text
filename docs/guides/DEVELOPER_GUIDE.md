@@ -102,40 +102,69 @@ npm run verify:ui                 # Playwright/Chromium UI tests
 
 ### Prompt locations
 
-- System prompts (per family): `internal/prompts/categories/<family>.go`
-- Action directive fragments: same files, one constant per action
-- `ActionMeta` catalog: `internal/prompts/constants.go`
-- Two-tier system: each action has a **family** (which system prompt to use) and a **directive
-  fragment** (the action-specific user prompt text)
+The v3 prompt catalog lives entirely in `internal/prompts/v3/` — four files:
 
-### Adding a prompt to an existing category
+| File | Contents |
+|---|---|
+| `catalog.go` | `buildCatalog()` — the full list of `apperr.ActionMeta` entries, one per action |
+| `families.go` | Constants: family names, UI category labels, exclusivity groups, `Requires` token names |
+| `system.go` | The system-prompt text for each family (e.g. `SysRewrite`, `SysSummarize`) |
+| `catalog_test.go` | Catalog-shape tests (unique IDs, valid family references, etc.) |
 
-1. Open `internal/prompts/categories/<category>.go`
-2. Add a new system-prompt constant (if a new family is needed) and a directive-fragment constant
-3. In `internal/prompts/constants.go`, register a new `ActionMeta` entry:
-   - `ID`: unique action ID string
-   - `Family`: which family system prompt to use
-   - `DirectiveFragment`: the constant from step 2
-   - `Order`: sort rank within the group
-   - `ExclusivityGroup`: (optional) mutual-exclusion key
-   - `Mergeable`: whether the action can be merged with other same-family actions in a chain
-4. Restart `wails dev` — prompts are compiled into the binary
+Each action is one `apperr.ActionMeta` struct (`internal/apperr/results.go`):
 
-Template placeholders available in directive fragments:
+```go
+type ActionMeta struct {
+    ID               string   // unique action ID, e.g. "rewrite.proofread.basic"
+    Name             string   // display name shown in the UI
+    Category         string   // UI grouping label (a Cat* constant from families.go)
+    Family           string   // which system prompt this action uses (a Family* constant)
+    Directive        string   // the action-specific instruction text appended to the system prompt
+    OrderRank        int      // sort rank within its group
+    ExclusivityGroup string   // actions sharing a group are mutually exclusive in one stack (empty = composable)
+    Mergeable        bool     // whether this action can be merged with other same-family actions in a chain
+    Terminal         bool     // whether this action must be the last step in a chain
+    Requires         []string // runtime parameters the composer must inject (Req* constants)
+}
+```
+
+A **family** (`FamilyRewrite`, `FamilyStructure`, `FamilySummarize`, `FamilyTranslate`,
+`FamilyPromptEng`) determines which system prompt is used. The system prompt itself is not
+looked up inside `internal/prompts/v3/` — the mapping from family (and, for `structure`/
+`prompteng`, a sub-kind) to its system-prompt constant lives in a `switch` in
+`internal/actions/composer.go`. An action's `Directive` field is the user-prompt fragment that
+gets appended after the system prompt for its family.
+
+### Adding an action to an existing family
+
+1. Open `internal/prompts/v3/catalog.go` and find the family's section in `buildCatalog()`.
+2. Add a new `apperr.ActionMeta{...}` entry: give it a unique `ID`, pick the right `Category`
+   (an existing `Cat*` constant, or add one in `families.go`), set `Family` to the existing
+   family constant, write the `Directive` text, and set `OrderRank`/`ExclusivityGroup`/
+   `Mergeable`/`Terminal`/`Requires` following the pattern of neighboring entries in the same
+   group.
+3. Restart `wails dev` — the catalog is compiled into the binary, not loaded from disk.
+
+Template placeholders available inside `Directive` text (substituted by
+`internal/actions/composer.go`):
 - `{{user_text}}` — the user's input text
 - `{{user_format}}` — the chosen output format (Markdown / Plain Text)
-- `{{input_language}}` — source language for translation actions
-- `{{output_language}}` — target language for translation actions
+- `{{input_language}}` / `{{output_language}}` — source/target language for translation actions
+- `{{target_model}}` — target model name for prompt-engineering actions
+- `{{goal}}` — free-text goal for prompt-engineering actions
 
-### Adding a new prompt family (category)
+Only list a placeholder in `Requires` (in the `ActionMeta`) if the action actually needs that
+runtime parameter — the planner rejects a chain step if a `Requires` entry has no value
+supplied.
 
-1. Create `internal/prompts/categories/my_category.go`:
-   ```go
-   const MyFamilySystemPrompt = `...`
-   const MyFamilyGroupName = "My Category"
-   ```
-2. Add a new `PromptFamily` entry in `internal/prompts/constants.go`
-3. Add `ActionMeta` entries using the new family
+### Adding a new prompt family
+
+1. Add the family's system prompt as a new constant in `internal/prompts/v3/system.go` (follow
+   the existing constants' structure: absolute rules, output discipline, edge cases).
+2. Register the family name as a new `Family*` constant in `internal/prompts/v3/families.go`.
+3. Add a `case` for the new family in the system-prompt lookup `switch` in
+   `internal/actions/composer.go`.
+4. Add `ActionMeta` entries in `catalog.go` using the new family constant.
 
 ---
 
@@ -173,6 +202,17 @@ Provider kinds are implemented by registering a new `ProviderProfile` in `intern
 (or equivalent). A profile contains the completion-URL template, discovery endpoint + parser, auth
 scheme, and any body quirks specific to that API dialect. The `OpenAICompatibleProvider` struct is
 then parameterized by the profile — no new struct is needed for OpenAI-compatible variants.
+
+### Environment variables
+
+GoText itself defines no fixed environment variables — there's no `.env` file to set up and
+nothing to configure via the shell before running the app. The only place `os.Getenv` is called
+is inside the provider layer, and even there it's indirect: each provider config stores the
+**name** of an environment variable (`apiKeyEnvVar`, set by the user in Settings), and the actual
+secret is read from that named variable only at request time — never persisted to the database
+or written to a log (see `ErrorEnvelopeRules.md`'s "log the env-var name, never the value" rule).
+The frontend has no build-time or runtime environment variables of its own either (no
+`import.meta.env`/`process.env` usage in `frontend/src`).
 
 ---
 
@@ -336,10 +376,10 @@ Style using Radix `data-*` attributes:
 wails dev   # logs appear in the terminal at DEBUG level
 ```
 
-Log files (WARNING level and above in production):
-- macOS: `~/Library/Logs/GoText/`
-- Linux: `~/.local/state/GoText/`
-- Windows: `%APPDATA%\GoText\logs\`
+Log files (WARNING level and above in production), stored alongside settings and the database:
+- macOS: `~/Library/Application Support/GoTextApp/logs/`
+- Linux: `~/.config/GoTextApp/logs/`
+- Windows: `%APPDATA%\GoTextApp\logs\`
 
 ### Frontend state
 

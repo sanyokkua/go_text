@@ -13,8 +13,7 @@ YYYY-MM-DD-live-testing-report.md
 
 ## Report format
 
-Follow the Findings-table convention established by
-`docs/V3_Temp_Docs/2026-07-01-context-window-live-testing.md`:
+Follow the Findings-table convention below:
 
 ```markdown
 # GoText Live Testing Report — YYYY-MM-DD
@@ -54,8 +53,7 @@ Build under test: <git commit sha> / <wails dev | wails build binary path>
 ## Rules
 
 - Never edit a past report after it's filed — corrections go in a new report or an explicit
-  addendum section appended to the same file (see the 2026-07-01 doc's "Closing-Gate
-  Re-Verification" addendum for the pattern).
+  addendum section (e.g. a "Closing-Gate Re-Verification" section) appended to the same file.
 - Every `CONFIRMED` finding must result in a new or extended automated test case per
   `CLAUDE.md`'s rule ("For each found bug or reported issue, create a new test case or adopt
   an existing one"). Reference that test's file path in the Findings table.

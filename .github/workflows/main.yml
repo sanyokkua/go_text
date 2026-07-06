@@ -318,11 +318,11 @@ jobs:
       - name: FE – guard no @mui/@emotion
         working-directory: frontend
         run: |
-          if grep -r --include="*.ts" --include="*.tsx" "@mui\|@emotion" src/ --exclude-dir=ui; then
+          if grep -r --include="*.ts" --include="*.tsx" "@mui\|@emotion" src/; then
             echo "ERROR: @mui or @emotion imports found in v3 source — remove before merging"
             exit 1
           fi
-          echo "Guard passed: no @mui/@emotion in v3 source (src/ui/ excluded — v2 code)"
+          echo "Guard passed: no @mui/@emotion in v3 source"
 
       # ── UI verification (Target A — Vite dev server, mocked bridge) ───────────
 

@@ -27,6 +27,3 @@ export const selectArmedTarget = createSelector([selectArmedStackId, selectArmed
 export const selectBuildMode = (state: RootState): boolean => state.ui.buildMode;
 export const selectEditingStackId = (state: RootState): string | null => state.ui.editingStackId;
 export const selectActiveSettingsTab = (state: RootState): number => state.ui.activeSettingsTab;
-
-// Backward-compat alias — replaces the v2 `selectIsAppBusy` across old components
-export const selectIsAppBusy = selectInferenceRunning;

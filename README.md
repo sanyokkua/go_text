@@ -231,9 +231,9 @@ list, and inference settings.
 
 | Platform | Path |
 |---|---|
-| macOS | `~/Library/Application Support/GoText/` |
-| Linux | `~/.config/GoText/` |
-| Windows | `%APPDATA%\GoText\` |
+| macOS | `~/Library/Application Support/GoTextApp/` |
+| Linux | `~/.config/GoTextApp/` |
+| Windows | `%APPDATA%\GoTextApp\` |
 
 Files inside that folder:
 - `SettingsV2.json` — provider and UI preferences

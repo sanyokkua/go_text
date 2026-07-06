@@ -13,6 +13,5 @@ going forward:
 `ai_agent_rules/` is not versioned per app generation — it's a living set of coding standards
 for AI coding agents that evolves independently of the app's doc history.
 
-`V3_Temp_Docs/` holds working material (spec drafts, prompt drafts, early mockups) used while
-drafting the v3 redesign. It is superseded by the finalized docs at the root and is scheduled
-for removal once the redesign branch's documentation is finalized.
+The working material used while drafting the v3 redesign (spec drafts, prompt drafts, early
+mockups) has been removed now that it's superseded by the finalized docs at the root.

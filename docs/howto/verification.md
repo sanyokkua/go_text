@@ -45,7 +45,7 @@ npm run verify        # format-check + lint + type-check + unit tests + UI gates
 BASE_URL=http://localhost:34115 npm run verify:smoke
 ```
 
-### Gate Table (from 13-testing-specification.md §11)
+### Gate Table
 
 | # | Gate | Command | Blocks on |
 |---|---|---|---|
@@ -66,7 +66,7 @@ BASE_URL=http://localhost:34115 npm run verify:smoke
 
 ## Bridge Mock
 
-The bridge mock (`frontend/src/dev/bridge-mock/`) provides TypeScript implementations of every Wails-bound method from `08-api-contracts.md`. It is injected **only** in dev mode via a Vite plugin (`vite.config.ts`). It is never bundled into production builds.
+The bridge mock (`frontend/src/dev/bridge-mock/`) provides TypeScript implementations of every Wails-bound handler method (see `main.go`'s `Bind` list for the current set). It is injected **only** in dev mode via a Vite plugin (`vite.config.ts`). It is never bundled into production builds.
 
 To add a new handler as features land:
 1. Add the TypeScript file to `frontend/src/dev/bridge-mock/go/main/<HandlerName>.ts`

@@ -1,4 +1,4 @@
-import type { ThemeEffective } from '../../store/theme/types';
+import type { ThemeEffective } from '../../store/ui/types';
 import { applyTheme, initTheme, resolveEffectiveTheme, watchSystemTheme } from '../init';
 
 // ── matchMedia mock helpers ──────────────────────────────────────────────────
