@@ -5,7 +5,11 @@ frontend/wailsjs
 # --- Frontend (Node/npm) ---
 node_modules
 frontend/node_modules/*
-frontend/dist
+# main.go's //go:embed all:frontend/dist needs at least one file to resolve on
+# a fresh checkout, before the frontend is ever built — keep the placeholder,
+# ignore everything else the real build produces.
+frontend/dist/*
+!frontend/dist/.gitkeep
 frontend/coverage/*
 frontend/coverage/
 frontend/tmp/*

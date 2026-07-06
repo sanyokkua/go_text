@@ -279,6 +279,14 @@ jobs:
         working-directory: frontend
         run: npx playwright install --with-deps chromium
 
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+      # frontend imports from wailsjs/ (Go-generated bindings); gitignored and
+      # absent on a clean checkout, so it must be generated before building.
+      - name: Generate Wails bindings (frontend/wailsjs)
+        run: wails generate module
+
       # main.go embeds all:frontend/dist — it must exist before any Go step
       # (vet/test compile the package, which resolves the embed directive).
       - name: FE – build (produces frontend/dist for Go embed)
@@ -357,9 +365,7 @@ jobs:
         run: npm audit --audit-level=high
 
       # ── Codegen drift checks ─────────────────────────────────────────────────
-
-      - name: Install Wails CLI
-        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+      # (Wails CLI already installed above, ahead of the FE build step)
 
       - name: Go – wails doctor
         run: wails doctor
