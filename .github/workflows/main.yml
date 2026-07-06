@@ -121,8 +121,9 @@ jobs:
       # --------------------------------------------------
       - uses: actions/setup-go@v6
         with:
-          go-version: '1.25'
-          # Uses Go 1.25 (auto-updates to latest patch)
+          go-version: '1.26'
+          # Uses Go 1.26 (auto-updates to latest patch); sqlc requires >= 1.26
+          # and GOTOOLCHAIN=local (set by setup-go) won't auto-download one
           cache: true
           # Caches Go modules for faster builds
 
@@ -257,7 +258,9 @@ jobs:
 
       - uses: actions/setup-go@v6
         with:
-          go-version: '1.25'
+          go-version: '1.26'
+          # sqlc requires >= 1.26 and GOTOOLCHAIN=local (set by setup-go)
+          # won't auto-download a newer toolchain to satisfy it
           cache: true
 
       - uses: actions/setup-node@v5
