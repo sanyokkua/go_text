@@ -17,6 +17,8 @@ Large Language Models to intelligently edit and transform text. It provides 90+ 
 across categories like grammar correction, style adaptation, multi-language translation, document
 structuring, and summarization — all directly on your desktop without browser or cloud dependency.
 
+<img src="docs/screenshots/Welcome.png" alt="GoText main window, dark mode, clean view" width="800"/>
+
 The application connects to **any OpenAI-compatible LLM provider**, giving you the freedom to choose:
 
 - **Local privacy-first providers**: Ollama, LM Studio, Llama.cpp
@@ -299,7 +301,6 @@ To persist across restarts, pick one:
   ```bash
   launchctl load ~/Library/LaunchAgents/com.gotext.envvars.plist
   ```
-  Never commit a plist with a real key in it — treat it like any other secret.
 
 #### Windows
 
