@@ -156,7 +156,9 @@ For local LLM inference: 16 GB+ RAM, a modern CPU, and ideally a GPU with 6+ GB 
 - **Cloud Processing**: When using cloud providers, text is sent to the provider's API
 - **No Data Collection**: The application does not collect or transmit usage data
 - **Env-var credentials**: API keys are stored as environment-variable **names** only — the secret
-  is read with `os.Getenv` at request time and is never written to disk or logs
+  is read with `os.Getenv` at request time and is never written to disk or logs. See
+  [Setting Provider API Keys as Persistent Environment Variables](#setting-provider-api-keys-as-persistent-environment-variables)
+  for how to make that variable visible to the app on each OS
 
 ---
 
@@ -235,6 +237,107 @@ list, and inference settings.
 - Llama.cpp (local)
 - OpenAI (cloud)
 - OpenRouter (cloud)
+
+### Setting Provider API Keys as Persistent Environment Variables
+
+When a provider needs a secret (OpenAI, OpenRouter, or any custom cloud provider), GoText asks for
+the **name** of an environment variable in Settings, not the key itself — the key is read from that
+variable at request time. This means the variable has to exist somewhere the *app process* can see
+it.
+
+> **Important:** `export OPENROUTER_API_KEY=sk-or-...` typed into a terminal — or added to
+> `~/.zshrc`, `~/.bashrc`, or `~/.bash_profile` — only makes the variable visible to that terminal
+> session and to programs launched *from* it. GoText is normally launched as a GUI app (Dock, Start
+> Menu, Finder/Explorer, a desktop icon) — a separate process tree that never reads your shell
+> profile. To make a key visible to the app, set it as a **persistent, OS-global** environment
+> variable, not a shell-session one.
+
+#### macOS
+
+Quick, current-session only:
+
+```bash
+launchctl setenv OPENROUTER_API_KEY sk-or-your-key-value
+```
+
+Then fully quit and relaunch GoText. This lasts until you log out or reboot — after that it's gone
+unless you persist it with one of the options below.
+
+To persist across restarts, pick one:
+
+- **Simplest — re-run it at every login shell.** Add the same line to `~/.zprofile`:
+  ```bash
+  echo 'launchctl setenv OPENROUTER_API_KEY sk-or-your-key-value' >> ~/.zprofile
+  ```
+  `~/.zprofile` runs once whenever a login shell starts (e.g. opening Terminal), which re-registers
+  the variable with `launchd` for your whole session — including GUI apps launched afterward. The
+  catch: it only fires if you open a terminal at least once after logging in, before launching GoText.
+
+- **More reliable — a LaunchAgent that runs at login regardless of whether you ever open a
+  terminal.** Create `~/Library/LaunchAgents/com.gotext.envvars.plist`:
+  ```xml
+  <?xml version="1.0" encoding="UTF-8"?>
+  <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+    "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+  <plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>com.gotext.envvars</string>
+    <key>ProgramArguments</key>
+    <array>
+      <string>launchctl</string>
+      <string>setenv</string>
+      <string>OPENROUTER_API_KEY</string>
+      <string>sk-or-your-key-value</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+  </dict>
+  </plist>
+  ```
+  Then load it once:
+  ```bash
+  launchctl load ~/Library/LaunchAgents/com.gotext.envvars.plist
+  ```
+  Never commit a plist with a real key in it — treat it like any other secret.
+
+#### Windows
+
+The Environment Variables editor (**System Properties → Advanced → Environment Variables** → add
+under "User variables") is the GUI way most users already know. The PowerShell equivalent:
+
+```powershell
+[Environment]::SetEnvironmentVariable("OPENROUTER_API_KEY", "sk-or-your-key-value", "User")
+```
+
+This writes to `HKCU\Environment` in the registry — the same place the GUI editor writes to. It is
+**not** a per-terminal-session setting: unlike `$env:OPENROUTER_API_KEY = "sk-or-..."` (PowerShell)
+or `set OPENROUTER_API_KEY=sk-or-...` (cmd), which both vanish the moment that shell window closes
+and are never visible outside it, `SetEnvironmentVariable(..., "User")` persists across reboots and
+is picked up by every *new* process for that user account from then on. Already-running processes
+(an open File Explorer, a running GoText instance, an open terminal) won't see it until they're
+restarted, or until you log off and back on. `setx OPENROUTER_API_KEY "sk-or-your-key-value"` from
+`cmd.exe` is the command-line equivalent of the same "User" scope.
+
+#### Linux
+
+There is no single mechanism that works identically across every distro and desktop environment —
+pick based on your setup:
+
+- **Per-user, modern desktops (systemd + logind — most current GNOME/KDE distributions):** create
+  `~/.config/environment.d/gotext.conf` with:
+  ```
+  OPENROUTER_API_KEY=sk-or-your-key-value
+  ```
+  Log out and back in. This is picked up by the whole graphical session, not just shells started
+  afterward.
+
+- **System-wide, all users:** add the same `KEY=value` line (no `export`, no shell syntax) to
+  `/etc/environment`, then log out and back in.
+
+`export OPENROUTER_API_KEY=...` in `.bashrc`/`.profile`/`.bash_profile` does **not** reach an app
+launched from a desktop icon or application menu on most distributions/display managers — those
+files are only sourced by interactive shells, not by the graphical session itself.
 
 ### Settings and data locations
 

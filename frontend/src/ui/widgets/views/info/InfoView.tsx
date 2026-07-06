@@ -32,6 +32,34 @@ Browse the **Actions & Stacks** tab to explore available actions and preview the
 Press **⌘K** (or **Ctrl+K** on Windows/Linux) from anywhere in the app to open the command palette.
 - **↵** to run an action immediately
 - **⇧↵** to add the action to the current stack
+
+## Setting Provider API Keys (Environment Variables)
+
+Cloud providers (OpenAI, OpenRouter, or a custom one) read their API key from an environment
+variable whose **name** you set in Settings — GoText never stores the key itself. A plain
+\`export KEY=value\` in a terminal only lasts for that terminal session and won't reach GoText when
+launched from the Dock, Start Menu, or a desktop icon. Set it as a **persistent, OS-global**
+variable instead.
+
+**macOS**
+\`\`\`bash
+launchctl setenv OPENROUTER_API_KEY sk-or-your-key
+\`\`\`
+Then relaunch GoText. To survive reboots, add the same line to \`~/.zprofile\`, or create a login
+LaunchAgent that runs it via \`RunAtLoad\`.
+
+**Windows**
+System Properties → Advanced → Environment Variables → User variables — or:
+\`\`\`powershell
+[Environment]::SetEnvironmentVariable("OPENROUTER_API_KEY", "sk-or-your-key", "User")
+\`\`\`
+This persists across reboots (unlike \`$env:KEY = "value"\`, which is session-only). Restart
+GoText — or log off/on — to pick it up.
+
+**Linux**
+Create \`~/.config/environment.d/gotext.conf\` with \`OPENROUTER_API_KEY=sk-or-your-key\` (per-user,
+systemd) or add the same line to \`/etc/environment\` (system-wide), then log out and back in.
+\`.bashrc\`/\`.profile\` exports don't reach GUI-launched apps.
 `;
 
 const InfoView: React.FC = memo(function InfoView() {

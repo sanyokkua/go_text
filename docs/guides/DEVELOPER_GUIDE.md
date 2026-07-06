@@ -214,6 +214,13 @@ or written to a log (see `ErrorEnvelopeRules.md`'s "log the env-var name, never 
 The frontend has no build-time or runtime environment variables of its own either (no
 `import.meta.env`/`process.env` usage in `frontend/src`).
 
+During development, `wails dev` runs inside your terminal, so a shell-session `export` is enough —
+the dev process inherits it directly. Testing the **built** binary/app bundle (`wails build` output)
+is different: that binary is normally launched outside any shell (double-clicked, or run from
+Dock/Start Menu/a desktop icon), so it needs the OS-global, persistent env var mechanisms described
+in the main [README](../../README.md#setting-provider-api-keys-as-persistent-environment-variables)
+("Setting Provider API Keys as Persistent Environment Variables"), not a shell profile `export`.
+
 ---
 
 ## 6. Working with SQLite / Goose / sqlc
