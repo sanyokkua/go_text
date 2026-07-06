@@ -134,11 +134,11 @@ type AppSettingsMetadata struct {
 }
 
 type VerifyOutcome struct {
-	Check      string      `json:"check"`
-	OK         bool        `json:"ok"`
-	DurationMs int64       `json:"durationMs"`
-	ModelCount int         `json:"modelCount,omitempty"`
-	Sample     string      `json:"sample,omitempty"`
+	Check      string `json:"check"`
+	OK         bool   `json:"ok"`
+	DurationMs int64  `json:"durationMs"`
+	ModelCount int    `json:"modelCount,omitempty"`
+	Sample     string `json:"sample,omitempty"`
 	// Models carries the full discovered model list for the "models" check only,
 	// so the frontend can populate a model picker without a second round trip to
 	// the provider. Left empty for "connection" and "inference" checks.
