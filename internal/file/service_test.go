@@ -34,6 +34,7 @@ func setupTestEnv(t *testing.T) (string, func()) {
 
 	// Save original environment variables
 	originalHome := os.Getenv("HOME")
+	originalUserProfile := os.Getenv("USERPROFILE")
 	originalXDGConfig := os.Getenv("XDG_CONFIG_HOME")
 	originalAppData := os.Getenv("APPDATA")
 	originalLocalAppData := os.Getenv("LOCALAPPDATA")
@@ -41,6 +42,7 @@ func setupTestEnv(t *testing.T) (string, func()) {
 	// Cleanup function to restore environment and remove temp dir
 	cleanup := func() {
 		os.Setenv("HOME", originalHome)
+		os.Setenv("USERPROFILE", originalUserProfile)
 		os.Setenv("XDG_CONFIG_HOME", originalXDGConfig)
 		os.Setenv("APPDATA", originalAppData)
 		os.Setenv("LOCALAPPDATA", originalLocalAppData)
@@ -49,6 +51,9 @@ func setupTestEnv(t *testing.T) (string, func()) {
 
 	// Set environment variables to point to our temp directory
 	os.Setenv("HOME", tmpDir)
+	// os.UserHomeDir() reads %USERPROFILE% on Windows, not HOME — must be set
+	// too so the fallback_to_home_dir test cases resolve to tmpDir there.
+	os.Setenv("USERPROFILE", tmpDir)
 	os.Setenv("XDG_CONFIG_HOME", filepath.Join(tmpDir, ".config"))
 	os.Setenv("APPDATA", filepath.Join(tmpDir, "AppData", "Roaming"))
 	os.Setenv("LOCALAPPDATA", filepath.Join(tmpDir, "AppData", "Local"))
