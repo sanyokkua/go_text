@@ -10,5 +10,12 @@
         "name": "Oleksandr Kostenko",
         "email": "sanyokkua@gmail.com"
     },
-    "version": "2.0.1"
+    "version": "dev",
+    "info": {
+        "companyName": "Oleksandr Kostenko",
+        "productName": "GoText",
+        "productVersion": "dev",
+        "copyright": "Copyright © Oleksandr Kostenko",
+        "comments": "AI-powered text transformation"
+    }
 }

@@ -1,6 +1,9 @@
 package settings
 
-const AppVersion = "3.0.0-dev"
+// AppVersion is the running application version. It is overridden at build time via
+// -ldflags "-X go_text/internal/settings.AppVersion=<version>" (see .github/workflows/main.yml);
+// "dev" is the fallback for local wails dev / go build without that flag.
+var AppVersion = "dev"
 
 // ProviderKinds are the supported provider family identifiers (DB CHECK constraint values).
 var ProviderKinds = []string{"ollama", "lmstudio", "llamacpp", "openai", "azure"}

@@ -34,11 +34,50 @@ on:
         # false = build only (no release)
 
 # ==============================================================================
-# BUILD JOB - Compiles for all platforms in parallel
+# VERSION JOB - Computes the release version once; build and release jobs share it
 # ==============================================================================
 
 jobs:
+  determine-version:
+    runs-on: ubuntu-latest
+
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+
+    steps:
+      # --------------------------------------------------
+      # Extract version information
+      # --------------------------------------------------
+      - name: Extract version
+        id: version
+        # Creates outputs: steps.version.outputs.version and .tag
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            # Manual trigger
+            VERSION="${{ github.event.inputs.version }}"
+            # User entered: 1.0.0
+            TAG="v${VERSION}"
+            # We add 'v': v1.0.0
+          else
+            # Tag push
+            TAG="${{ github.ref_name }}"
+            # From git: v1.0.0
+            VERSION="${TAG#v}"
+            # Remove 'v': 1.0.0
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          # Makes version and tag available to downstream jobs via `needs`
+
+  # ==============================================================================
+  # BUILD JOB - Compiles for all platforms in parallel
+  # ==============================================================================
+
   build:
+    needs: determine-version
+    # Waits for the version to be computed so it can be injected into the build
+
     strategy:
       fail-fast: false
       # Continue other builds even if one fails
@@ -130,12 +169,26 @@ jobs:
         # npm ci is faster and more reliable than npm install in CI
 
       # --------------------------------------------------
+      # Patch wails.json with the release version
+      # --------------------------------------------------
+      - name: Patch wails.json with release version
+        shell: bash
+        # Forced bash: the Windows runner defaults to pwsh, but this needs
+        # bash string interpolation + jq (preinstalled on all 3 runner images)
+        run: |
+          VERSION="${{ needs.determine-version.outputs.version }}"
+          jq --arg v "$VERSION" '.version = $v | .info.productVersion = $v' wails.json > wails.json.tmp
+          mv wails.json.tmp wails.json
+          # Feeds build/windows/info.json and build/darwin/Info.plist's
+          # {{.Info.ProductVersion}} placeholders with the real release version
+
+      # --------------------------------------------------
       # Build the application (Linux - with tags)
       # --------------------------------------------------
       - name: Build Wails app (Linux)
         if: matrix.build_tags != ''
         # Only runs when build_tags is not empty (Linux)
-        run: wails build --platform ${{ matrix.platform }} -tags "${{ matrix.build_tags }}" -o "${{ matrix.output_name }}"
+        run: wails build --platform ${{ matrix.platform }} -tags "${{ matrix.build_tags }}" -o "${{ matrix.output_name }}" -ldflags "-X go_text/internal/settings.AppVersion=${{ needs.determine-version.outputs.version }}"
         # Single-line command works on all shells
         # Linux: wails build --platform linux/amd64 -tags "webkit2_41" -o GoText-linux-amd64
         # Output goes to build/bin/GoText-linux-amd64
@@ -146,7 +199,7 @@ jobs:
       - name: Build Wails app (Windows/macOS)
         if: matrix.build_tags == ''
         # Only runs when build_tags is empty (Windows/macOS)
-        run: wails build --platform ${{ matrix.platform }} -o "${{ matrix.output_name }}"
+        run: wails build --platform ${{ matrix.platform }} -o "${{ matrix.output_name }}" -ldflags "-X go_text/internal/settings.AppVersion=${{ needs.determine-version.outputs.version }}"
         # Single-line command works on all shells
         # Windows: wails build --platform windows/amd64 -o GoText-windows-amd64.exe
         # macOS: wails build --platform darwin/arm64 -o GoText-macos-arm64
@@ -322,8 +375,8 @@ jobs:
   # ==============================================================================
 
   create-release:
-    needs: [build, test]
-    # Waits for all build jobs to complete
+    needs: [determine-version, build, test]
+    # Waits for the shared version, all build jobs, and tests to complete
     # Skipped if any build fails
 
     runs-on: ubuntu-latest
@@ -343,30 +396,6 @@ jobs:
       # Required to create releases and upload assets
 
     steps:
-      # --------------------------------------------------
-      # Extract version information
-      # --------------------------------------------------
-      - name: Extract version
-        id: version
-        # Creates outputs: steps.version.outputs.version and .tag
-        run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            # Manual trigger
-            VERSION="${{ github.event.inputs.version }}"
-            # User entered: 1.0.0
-            TAG="v${VERSION}"
-            # We add 'v': v1.0.0
-          else
-            # Tag push
-            TAG="${{ github.ref_name }}"
-            # From git: v1.0.0
-            VERSION="${TAG#v}"
-            # Remove 'v': 1.0.0
-          fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
-          # Makes version and tag available to later steps
-
       # --------------------------------------------------
       # Download all build artifacts
       # --------------------------------------------------
@@ -402,7 +431,7 @@ jobs:
       # --------------------------------------------------
       - name: Prepare release assets
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
+          VERSION="${{ needs.determine-version.outputs.version }}"
           mkdir -p release-assets
           
           # Linux binary
@@ -470,13 +499,13 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ steps.version.outputs.tag }}
+          tag_name: ${{ needs.determine-version.outputs.tag }}
           # Tag name: v1.0.0
 
-          name: Release ${{ steps.version.outputs.version }}
+          name: Release ${{ needs.determine-version.outputs.version }}
           # Release title: Release 1.0.0
 
-          prerelease: ${{ contains(steps.version.outputs.version, '-') }}
+          prerelease: ${{ contains(needs.determine-version.outputs.version, '-') }}
           # Auto-detect pre-release:
           # 1.0.0 = release
           # 1.0.0-beta = pre-release
