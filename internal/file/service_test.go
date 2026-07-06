@@ -117,10 +117,19 @@ func TestEnsureAppSettingsFolderExists(t *testing.T) {
 			expectSuccess: true,
 			validateResult: func(t *testing.T, result string, err error, tmpDir string) {
 				assert.NoError(t, err)
-				// Should fall back to home directory
+				// os.UserConfigDir() falls back to $HOME/.config internally on Unix
+				// when XDG_CONFIG_HOME is unset — it only errors if $HOME is also
+				// unset, so the app's own fallback to os.UserHomeDir() is unreachable
+				// here on Linux/macOS; only Windows (APPDATA/USERPROFILE are
+				// independent env vars) actually exercises that branch.
 				expectedPath := filepath.Join(tmpDir, AppName)
-				if runtime.GOOS == "darwin" {
+				switch runtime.GOOS {
+				case "darwin":
 					expectedPath = filepath.Join(tmpDir, "Library", "Application Support", AppName)
+				case "windows":
+					// APPDATA unset above triggers the real app-level fallback.
+				default:
+					expectedPath = getAppConfigDir(tmpDir)
 				}
 				assert.Equal(t, expectedPath, result)
 
@@ -230,10 +239,19 @@ func TestGetAppSettingsFolderPath(t *testing.T) {
 			expectSuccess: true,
 			validateResult: func(t *testing.T, result string, err error, tmpDir string) {
 				assert.NoError(t, err)
-				// Should fall back to home directory
+				// os.UserConfigDir() falls back to $HOME/.config internally on Unix
+				// when XDG_CONFIG_HOME is unset — it only errors if $HOME is also
+				// unset, so the app's own fallback to os.UserHomeDir() is unreachable
+				// here on Linux/macOS; only Windows (APPDATA/USERPROFILE are
+				// independent env vars) actually exercises that branch.
 				expectedPath := filepath.Join(tmpDir, AppName)
-				if runtime.GOOS == "darwin" {
+				switch runtime.GOOS {
+				case "darwin":
 					expectedPath = filepath.Join(tmpDir, "Library", "Application Support", AppName)
+				case "windows":
+					// APPDATA unset above triggers the real app-level fallback.
+				default:
+					expectedPath = getAppConfigDir(tmpDir)
 				}
 				assert.Equal(t, expectedPath, result)
 
