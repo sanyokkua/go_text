@@ -1,0 +1,6 @@
+/* Compact model picker with inline refresh button */
+.root {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}

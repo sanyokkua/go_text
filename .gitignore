@@ -1,13 +1,56 @@
+# --- Wails ---
 build/bin
+frontend/wailsjs
+
+# --- Frontend (Node/npm) ---
 node_modules
+frontend/node_modules/*
 frontend/dist
-.idea/
-/qodana.yaml
+frontend/coverage/*
+frontend/coverage/
+frontend/tmp/*
 frontend/*.js
 frontend/*.d.ts
-frontend/wailsjs
-.DS_Store
+frontend/npm-debug.log*
+
+# --- Go build artifacts ---
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go workspaces
+go.work
+go.work.sum
+
+# --- IDE & OS ---
+.idea/
 .vscode/*
 .continue/*
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+.DS_Store
+Thumbs.db
+
+# --- Sensitive data ---
+*.env
+*.env.local
+
+# --- Project-specific ---
+/qodana.yaml
 .tmp/*
+**/.tmp/*
 .claude/settings.local.json
+docs/superpowers/*
+
+# Playwright MCP plugin output (AI debugging session artifacts)
+.playwright-mcp/
+# Root-level screenshots from debugging sessions
+/*.png

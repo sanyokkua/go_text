@@ -1,0 +1,123 @@
+.nav {
+    width: 178px;
+    flex-shrink: 0;
+    height: 100%;
+    border-right: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Matches the ProviderManagementTab.root stacking breakpoint: the list
+ * becomes a bounded-height panel above the form instead of a side rail. */
+@media (max-width: 600px) {
+    .nav {
+        width: 100%;
+        height: auto;
+        max-height: 240px;
+        border-right: none;
+        border-bottom: 1px solid var(--line);
+    }
+}
+
+.header {
+    margin: 0;
+    padding: var(--space-3) var(--space-3) var(--space-2);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+}
+
+.newBtnWrap {
+    padding: var(--space-2);
+}
+
+.newBtn {
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--teal);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--teal);
+    cursor: pointer;
+    font-size: 0.8125rem;
+    font-family: var(--font);
+    font-weight: 500;
+    text-align: center;
+}
+
+.list {
+    flex: 1;
+    overflow-y: auto;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--ink-3);
+    font-size: 0.8125rem;
+    padding: var(--space-4);
+    text-align: center;
+}
+
+.item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-3);
+    border: none;
+    border-left: 3px solid transparent;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+    font-size: 0.8125rem;
+    font-family: var(--font);
+    color: var(--ink);
+    flex-wrap: wrap;
+}
+
+/* Applied when the parent <li> has aria-selected="true" */
+li[aria-selected='true'] .item {
+    border-left-color: var(--teal);
+    background: var(--surface-2);
+}
+
+.itemName {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.currentBadge {
+    font-size: 0.65rem;
+    background: color-mix(in srgb, var(--teal) 15%, transparent);
+    border: 1px solid var(--teal);
+    color: var(--teal);
+    border-radius: var(--radius-pill);
+    padding: 1px 5px;
+    margin-left: var(--space-1);
+    flex-shrink: 0;
+    line-height: 1.4;
+}
+
+.dot {
+    flex-shrink: 0;
+    margin-right: var(--space-2);
+    font-size: 0.7rem;
+    line-height: 1;
+    color: var(--ink-3);
+}
+
+.dotCurrent {
+    color: var(--teal);
+}

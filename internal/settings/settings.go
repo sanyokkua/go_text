@@ -1,84 +1,85 @@
 package settings
 
-type ProviderType string
-type AuthType string
-
+// ProviderConfig is the v3 domain model — matches the providers table and
+// apperr.ProviderConfig exactly. No secrets: APIKeyEnvVar is the env-var name only.
 type ProviderConfig struct {
-	// Generated on the backend side, unique
-	ProviderID string `json:"providerId"`
-	// Set by User, should be unique
-	ProviderName string `json:"providerName"`
-	// Required
-	ProviderType ProviderType `json:"providerType"`
-	// Required, can be http or https, should end with /, like http://localhost:8080/, or http://localhost:8080/api/v1/
-	BaseUrl string `json:"baseUrl"`
-	// Optional, but is required if UseCustomModels is false, should not start with /, should be like api/models or api/v1/models
-	ModelsEndpoint string `json:"modelsEndpoint"`
-	// Required, should not start with /, should be like api/completion or api/v1/chatcompletion
-	CompletionEndpoint string `json:"completionEndpoint"`
-	// Required, default AuthTypeNone
-	AuthType AuthType `json:"authType"`
-	// Optional
-	AuthToken string `json:"authToken"`
-	// Default false, but if it is true - EnvVarTokenName shouldn't be empty
-	UseAuthTokenFromEnv bool `json:"useAuthTokenFromEnv"`
-	// Optional, but if UseAuthTokenFromEnv is true - should present
-	EnvVarTokenName string `json:"envVarTokenName"`
-	// Default false
-	UseCustomHeaders bool `json:"useCustomHeaders"`
-	// Optional, default empty
-	Headers map[string]string `json:"headers"`
-	// Default false, but if it is true - CustomModels shouldn't be empty
-	UseCustomModels bool `json:"useCustomModels"`
-	// Optional
-	CustomModels []string `json:"customModels"`
+	ID              string            `json:"id"`
+	Name            string            `json:"name"`
+	Kind            string            `json:"kind"`
+	BaseURL         string            `json:"baseUrl"`
+	AuthScheme      string            `json:"authScheme"`
+	APIKeyEnvVar    string            `json:"apiKeyEnvVar"`
+	APIVersion      string            `json:"apiVersion"`
+	SelectedModel   string            `json:"selectedModel"`
+	CompletionPath  string            `json:"completionPath"`
+	ModelsPath      string            `json:"modelsPath"`
+	UseCustomModels bool              `json:"useCustomModels"`
+	Headers         map[string]string `json:"headers"`
+	CustomModels    []string          `json:"customModels"`
+	CreatedAt       int64             `json:"createdAt"`
+	UpdatedAt       int64             `json:"updatedAt"`
 }
 
 type InferenceBaseConfig struct {
-	// Optional, default 30 seconds (timeout int value is seconds)
-	Timeout int `json:"timeout"`
-	// Optional, default 3 retry
-	MaxRetries int `json:"maxRetries"`
-	// Tell LLM to return output as Markdown
+	Timeout              int  `json:"timeout"`
+	MaxRetries           int  `json:"maxRetries"`
 	UseMarkdownForOutput bool `json:"useMarkdownForOutput"`
 }
 
 type ModelConfig struct {
-	// Required, non empty
-	Name string `json:"name"`
-	// Default is false, but if true - Temperature should be set
-	UseTemperature bool `json:"useTemperature"`
-	// Optional, but can be from 0 to 2
-	// 0.0 - 0.5	Deterministic, focused, accurate
-	// 0.6 - 1.0	Balanced creativity and coherence
-	// 1.1 - 2.0	Random, diverse, creative
-	Temperature float64 `json:"temperature"`
-	// Context window settings
-	// Default is false, but if true - ContextWindow should be set
-	UseContextWindow bool `json:"useContextWindow"`
-	// Optional, but can be from 1024 to 200000 tokens
-	// Controls maximum token limit for LLM responses
-	ContextWindow int `json:"contextWindow"`
-	// User choice for which token limit parameter to use
-	// true = max_tokens (legacy), false = max_completion_tokens (current)
-	UseLegacyMaxTokens bool `json:"useLegacyMaxTokens"`
+	Name               string  `json:"name"`
+	UseTemperature     bool    `json:"useTemperature"`
+	Temperature        float64 `json:"temperature"`
+	UseContextWindow   bool    `json:"useContextWindow"`
+	ContextWindow      int     `json:"contextWindow"`
+	UseLegacyMaxTokens bool    `json:"useLegacyMaxTokens"`
+	UseMaxOutputTokens bool    `json:"useMaxOutputTokens"`
+	MaxOutputTokens    int     `json:"maxOutputTokens"`
+}
+
+// AppBehaviorConfig — v3 adds HistoryEnabled/HistoryMaxEntries;
+// LogDirectory removed (moved to LoggingConfig).
+type AppBehaviorConfig struct {
+	EnableTaskLogging bool `json:"enableTaskLogging"`
+	HistoryEnabled    bool `json:"historyEnabled"`
+	HistoryMaxEntries int  `json:"historyMaxEntries"`
+}
+
+// UIPreferencesConfig holds persisted UI preferences that must survive restart.
+// Theme is "auto" | "light" | "dark". Layout is "side" | "stacked".
+// ViewMode is "preview" | "source" | "diff".
+type UIPreferencesConfig struct {
+	Theme            string `json:"theme"`
+	Layout           string `json:"layout"`
+	SidebarCollapsed bool   `json:"sidebarCollapsed"`
+	HistoryOpen      bool   `json:"historyOpen"`
+	ViewMode         string `json:"viewMode"`
+}
+
+// WindowSizeConfig holds the persisted native window dimensions.
+type WindowSizeConfig struct {
+	Width  int `json:"width"`
+	Height int `json:"height"`
+}
+
+// LoggingConfig maps the log.* KV rows from the settings table.
+type LoggingConfig struct {
+	LogFileEnabled bool   `json:"logFileEnabled"`
+	LogLevel       string `json:"logLevel"`
+	LogDirectory   string `json:"logDirectory"`
+	LogMaxSizeMB   int    `json:"logMaxSizeMB"`
+	LogMaxBackups  int    `json:"logMaxBackups"`
+	LogMaxAgeDays  int    `json:"logMaxAgeDays"`
+	LogCompress    bool   `json:"logCompress"`
 }
 
 type LanguageConfig struct {
-	// Required, non empty
-	Languages []string `json:"languages"`
-	// Required, non empty
-	DefaultInputLanguage string `json:"defaultInputLanguage"`
-	// Required, non empty
-	DefaultOutputLanguage string `json:"defaultOutputLanguage"`
+	Languages             []string `json:"languages"`
+	DefaultInputLanguage  string   `json:"defaultInputLanguage"`
+	DefaultOutputLanguage string   `json:"defaultOutputLanguage"`
 }
 
-type AppBehaviorConfig struct {
-	EnableTaskLogging bool   `json:"enableTaskLogging"`
-	LogDirectory      string `json:"logDirectory"` // "" = use OS default
-}
-
-// Settings - main struct that Will be saved to Hard Drive
+// Settings is the aggregate returned by GetSettings.
 type Settings struct {
 	AvailableProviderConfigs []ProviderConfig    `json:"availableProviderConfigs"`
 	CurrentProviderConfig    ProviderConfig      `json:"currentProviderConfig"`
@@ -88,11 +89,12 @@ type Settings struct {
 	AppBehaviorConfig        AppBehaviorConfig   `json:"appBehaviorConfig"`
 }
 
-// AppSettingsMetadata - Will be passed to the frontend, kind of wrapper with additional fields used by UI
+// AppSettingsMetadata — v3: DB path, AppVersion, AuthSchemes, ProviderKinds.
 type AppSettingsMetadata struct {
-	AuthTypes      []AuthType     `json:"authTypes"`
-	ProviderTypes  []ProviderType `json:"providerTypes"`
-	SettingsFolder string         `json:"settingsFolder"`
-	SettingsFile   string         `json:"settingsFile"`
-	LogsFolder     string         `json:"logsFolder"` // resolved absolute path shown in UI
+	AuthSchemes    []string `json:"authSchemes"`
+	ProviderKinds  []string `json:"providerKinds"`
+	SettingsFolder string   `json:"settingsFolder"`
+	DatabaseFile   string   `json:"databaseFile"`
+	LogsFolder     string   `json:"logsFolder"`
+	AppVersion     string   `json:"appVersion"`
 }

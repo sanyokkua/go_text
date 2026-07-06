@@ -1,139 +1,264 @@
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import { Box, Button, Checkbox, FormControlLabel, IconButton, TextField, Tooltip, Typography } from '@mui/material';
 import React, { useEffect, useState } from 'react';
-import { AppBehaviorConfig, AppSettingsMetadata, ClipboardServiceAdapter, getLogger, Settings } from '../../../../../logic/adapter';
-import { useAppDispatch, useAppSelector } from '../../../../../logic/store';
-import { enqueueNotification } from '../../../../../logic/store/notifications';
-import { selectAppBehaviorConfig } from '../../../../../logic/store/settings/selectors';
-import { updateAppBehaviorConfig } from '../../../../../logic/store/settings/thunks';
-import { setAppBusy } from '../../../../../logic/store/ui';
-import { parseError } from '../../../../../logic/utils/error_utils';
-import { SPACING } from '../../../../styles/constants';
 
-const logger = getLogger('AppBehaviorTab');
+import { openPath } from '../../../../../logic/adapter';
+import { AppBehaviorConfig, AppSettingsMetadata, LoggingConfig, Settings } from '../../../../../logic/adapter/models';
+import { useSettingsToast } from '../../../../../logic/hooks/useSettingsToast';
+import { useAppDispatch } from '../../../../../logic/store';
+import { clearHistory } from '../../../../../logic/store/history/thunks';
+import { enqueueNotification } from '../../../../../logic/store/notifications/slice';
+import { updateAppBehaviorConfig, updateLoggingConfig } from '../../../../../logic/store/settings/thunks';
+import { Button } from '../../../../components/Button';
+import { NumberStepper } from '../../../../components/NumberStepper';
+import { AlertDialog } from '../../../../primitives/AlertDialog';
+import { Select, SelectItem } from '../../../../primitives/Select';
+import { Switch } from '../../../../primitives/Switch';
+import styles from './AppBehaviorTab.module.css';
 
-interface AppBehaviorTabProps {
+const DEFAULT_LOGGING: LoggingConfig = {
+    logFileEnabled: false,
+    logLevel: 'info',
+    logDirectory: '',
+    logMaxSizeMB: 10,
+    logMaxBackups: 5,
+    logMaxAgeDays: 30,
+    logCompress: false,
+};
+
+const LOG_LEVEL_ITEMS: SelectItem[] = [
+    { value: 'trace', label: 'Trace' },
+    { value: 'debug', label: 'Debug' },
+    { value: 'info', label: 'Info' },
+    { value: 'warn', label: 'Warn' },
+    { value: 'error', label: 'Error' },
+];
+
+interface Props {
     settings: Settings;
-    metadata: AppSettingsMetadata;
+    metadata: AppSettingsMetadata | null;
 }
 
-const AppBehaviorTab: React.FC<AppBehaviorTabProps> = ({ settings, metadata }) => {
+const AppBehaviorTab: React.FC<Props> = ({ settings, metadata }) => {
     const dispatch = useAppDispatch();
-    const currentConfig = useAppSelector(selectAppBehaviorConfig);
+    const runWithToast = useSettingsToast();
+    const config: AppBehaviorConfig = settings.appBehaviorConfig;
+    const loggingCfg: LoggingConfig = settings.loggingConfig ?? DEFAULT_LOGGING;
 
-    const resolvedConfig: AppBehaviorConfig = currentConfig ?? settings.appBehaviorConfig;
+    const handleToggleFileLogging = (checked: boolean) => {
+        void runWithToast(dispatch(updateLoggingConfig({ ...loggingCfg, logFileEnabled: checked })), {
+            success: checked ? 'File logging enabled' : 'File logging disabled',
+        });
+    };
 
-    const [logDirectoryInput, setLogDirectoryInput] = useState(resolvedConfig.logDirectory);
+    const handleLogLevelChange = (level: string) => {
+        void runWithToast(dispatch(updateLoggingConfig({ ...loggingCfg, logLevel: level })), { success: `Log level set to ${level}` });
+    };
 
-    // Keep local text input in sync when the persisted config changes (e.g. after Reset)
+    const handleMaxFileSizeChange = (size: number) => {
+        void runWithToast(dispatch(updateLoggingConfig({ ...loggingCfg, logMaxSizeMB: size })), { success: `Max log size set to ${size} MB` });
+    };
+
+    const [localMaxEntries, setLocalMaxEntries] = useState<number>(config.historyMaxEntries ?? 500);
+    const [savingMaxEntries, setSavingMaxEntries] = useState(false);
+    const [clearDialogOpen, setClearDialogOpen] = useState(false);
+
     useEffect(() => {
-        setLogDirectoryInput(resolvedConfig.logDirectory);
-    }, [resolvedConfig.logDirectory]);
+        setLocalMaxEntries(config.historyMaxEntries ?? 500);
+    }, [config.historyMaxEntries]);
 
-    const dispatchUpdate = async (config: AppBehaviorConfig) => {
+    const handleToggleTaskLogging = (checked: boolean) => {
+        void runWithToast(dispatch(updateAppBehaviorConfig({ ...config, enableTaskLogging: checked })), {
+            success: checked ? 'Task logging enabled' : 'Task logging disabled',
+        });
+    };
+
+    const handleToggleHistory = (checked: boolean) => {
+        void runWithToast(dispatch(updateAppBehaviorConfig({ ...config, historyEnabled: checked })), {
+            success: checked ? 'History enabled' : 'History disabled',
+        });
+    };
+
+    const handleSaveMaxEntries = async () => {
+        setSavingMaxEntries(true);
         try {
-            dispatch(setAppBusy(true));
-            await dispatch(updateAppBehaviorConfig(config)).unwrap();
-            dispatch(enqueueNotification({ message: 'App behavior settings updated successfully', severity: 'success' }));
-        } catch (error: unknown) {
-            const err = parseError(error);
-            logger.logError(`Failed to update app behavior config: ${err.message}`);
-            dispatch(enqueueNotification({ message: `Failed to update app behavior settings: ${err.message}`, severity: 'error' }));
+            await runWithToast(dispatch(updateAppBehaviorConfig({ ...config, historyMaxEntries: localMaxEntries })), {
+                success: 'History limit saved',
+            });
         } finally {
-            dispatch(setAppBusy(false));
+            setSavingMaxEntries(false);
         }
     };
 
-    const handleToggleLogging = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newValue = e.target.checked;
-        logger.logDebug(`Task logging toggled: ${newValue}`);
-        await dispatchUpdate({ enableTaskLogging: newValue, logDirectory: resolvedConfig.logDirectory });
-    };
-
-    const handleLogDirectoryBlur = async () => {
-        if (logDirectoryInput === resolvedConfig.logDirectory) {
-            return;
-        }
-        logger.logDebug(`Log directory changed to: ${logDirectoryInput}`);
-        await dispatchUpdate({ enableTaskLogging: resolvedConfig.enableTaskLogging, logDirectory: logDirectoryInput });
-    };
-
-    const handleReset = async () => {
-        logger.logDebug('Resetting log directory to default');
-        setLogDirectoryInput('');
-        await dispatchUpdate({ enableTaskLogging: resolvedConfig.enableTaskLogging, logDirectory: '' });
-    };
-
-    const handleCopyLogsFolder = async () => {
+    const handleConfirmClear = async () => {
         try {
-            logger.logDebug(`Attempting to copy logs folder path: ${metadata.logsFolder}`);
-            const success = await ClipboardServiceAdapter.setText(metadata.logsFolder);
-            if (success) {
-                logger.logInfo('Logs folder path copied to clipboard');
-                dispatch(enqueueNotification({ message: 'Logs folder path copied to clipboard', severity: 'success' }));
-            }
-        } catch (error: unknown) {
-            const err = parseError(error);
-            logger.logError(`Failed to copy logs folder path: ${err.message}`);
-            dispatch(enqueueNotification({ message: 'Failed to copy logs folder path', severity: 'error' }));
+            await dispatch(clearHistory()).unwrap();
+            dispatch(
+                enqueueNotification({
+                    severity: 'info',
+                    surface: 'toast',
+                    title: 'History cleared',
+                    message: 'All history entries have been removed.',
+                }),
+            );
+        } catch {
+            dispatch(
+                enqueueNotification({
+                    severity: 'error',
+                    surface: 'toast',
+                    title: 'Failed to clear history',
+                    message: 'An error occurred while clearing history. Please try again.',
+                }),
+            );
         }
     };
+
+    const logsFolder = metadata?.logsFolder ?? '';
+
+    const handleOpenLogs = () => {
+        if (!logsFolder) return;
+        void runWithToast(openPath(logsFolder), {
+            success: 'Opened logs folder',
+            error: "Couldn't open the logs folder.",
+            errorTitle: 'Open failed',
+        });
+    };
+
+    const isMaxEntriesDirty = localMaxEntries !== (config.historyMaxEntries ?? 500);
+    const historyEnabled = config.historyEnabled ?? true;
 
     return (
-        <Box sx={{ padding: SPACING.SMALL, flex: 1 }}>
-            <Box sx={{ marginBottom: SPACING.STANDARD }}>
-                <Typography variant="body2" color="text.secondary" component="div" gutterBottom>
-                    This tab configures task input/output logging. When enabled, each completed prompt action is written to a log file for review.
-                </Typography>
-                <Typography variant="body2" color="text.secondary" component="div" gutterBottom>
-                    <strong>Log Directory:</strong> Leave empty to use the OS default location shown below. Provide an absolute path to override it.
-                </Typography>
-                <Typography variant="body2" color="text.secondary" component="div" gutterBottom>
-                    <strong>Note:</strong> The resolved logs folder path reflects the current OS default and is updated only after the app restarts or
-                    settings are reloaded.
-                </Typography>
-            </Box>
+        <section className={styles.root}>
+            <p className={styles.sectionHeader}>Log directory (shared by task + app logs)</p>
 
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: SPACING.STANDARD }}>
-                <FormControlLabel
-                    control={<Checkbox checked={resolvedConfig.enableTaskLogging} onChange={handleToggleLogging} />}
-                    label="Enable Task Logging"
+            <div className={styles.dirRow}>
+                <input className={styles.dirInput} type="text" value={logsFolder || '(OS default)'} readOnly aria-label="Log directory" />
+                <Button variant="ghost" size="sm" onClick={handleOpenLogs} disabled={!logsFolder}>
+                    📁 Open logs folder
+                </Button>
+            </div>
+            <p className={styles.resolvedPath}>
+                Resolved: <code>{logsFolder || '(OS default)'}</code> · app.log + tasks-*.jsonl
+            </p>
+
+            <hr className={styles.divider} />
+
+            <p className={styles.sectionHeader}>App File Logging</p>
+
+            <div className={styles.switchRow}>
+                <Switch
+                    id="file-logging-switch"
+                    checked={loggingCfg.logFileEnabled}
+                    onCheckedChange={handleToggleFileLogging}
+                    aria-label="Enable file logging"
                 />
+                <label htmlFor="file-logging-switch" className={styles.switchLabel}>
+                    Write logs to file
+                </label>
+                <span className={styles.switchHint}>— app.log in the logs folder</span>
+            </div>
 
-                <TextField
-                    label="Log Directory"
-                    value={logDirectoryInput}
-                    onChange={(e) => setLogDirectoryInput(e.target.value)}
-                    onBlur={handleLogDirectoryBlur}
-                    placeholder="Leave empty for default"
-                    helperText="Absolute path to the log directory. Leave empty to use the OS default."
-                    fullWidth
-                    size="small"
+            <div className={styles.selectRow}>
+                <span className={styles.entriesLabel}>Log level</span>
+                <Select
+                    value={loggingCfg.logLevel}
+                    onValueChange={handleLogLevelChange}
+                    items={LOG_LEVEL_ITEMS}
+                    placeholder="Select level"
+                    keyLabel="Level"
+                    disabled={!loggingCfg.logFileEnabled}
                 />
+            </div>
+            <p className={styles.caption}>
+                How much detail gets written to the log file. &ldquo;Debug&rdquo;/&ldquo;Trace&rdquo; are the most detailed and useful for
+                troubleshooting; &ldquo;Warn&rdquo;/&ldquo;Error&rdquo; keep the file smaller for everyday use.
+            </p>
 
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: SPACING.SMALL }}>
-                    <Typography variant="body2" sx={{ fontWeight: 'medium', minWidth: '150px' }}>
-                        Resolved Logs Folder:
-                    </Typography>
-                    <Typography variant="body1" sx={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {metadata.logsFolder}
-                    </Typography>
-                    <Tooltip title="Copy logs folder path">
-                        <IconButton size="small" onClick={handleCopyLogsFolder} aria-label="copy logs folder path">
-                            <ContentCopyIcon fontSize="small" color="primary" />
-                        </IconButton>
-                    </Tooltip>
-                </Box>
+            <div className={styles.entriesRow}>
+                <span className={styles.entriesLabel}>Max file size (MB)</span>
+                <NumberStepper
+                    value={loggingCfg.logMaxSizeMB}
+                    onChange={handleMaxFileSizeChange}
+                    min={1}
+                    max={100}
+                    step={1}
+                    disabled={!loggingCfg.logFileEnabled}
+                    aria-label="Max log file size MB"
+                />
+            </div>
+            <p className={styles.caption}>
+                The log file rotates (starts a new file) once it reaches this size, so logs don&apos;t grow without bound.
+            </p>
 
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', marginTop: SPACING.LARGE }}>
-                    <Button variant="outlined" color="secondary" onClick={handleReset}>
-                        Reset to Default
-                    </Button>
-                </Box>
-            </Box>
-        </Box>
+            <hr className={styles.divider} />
+
+            <div className={styles.switchRow}>
+                <Switch
+                    id="task-logging-switch"
+                    checked={config.enableTaskLogging}
+                    onCheckedChange={handleToggleTaskLogging}
+                    aria-label="Enable task logging"
+                />
+                <label htmlFor="task-logging-switch" className={styles.switchLabel}>
+                    Task logging
+                </label>
+                <span className={styles.switchHint}>— saves each run&apos;s prompts &amp; result to JSONL</span>
+            </div>
+
+            <hr className={styles.divider} />
+
+            <div className={styles.switchRow}>
+                <Switch id="history-enabled-switch" checked={historyEnabled} onCheckedChange={handleToggleHistory} aria-label="Enable history" />
+                <label htmlFor="history-enabled-switch" className={styles.switchLabel}>
+                    History
+                </label>
+                <span className={styles.switchHint}>— stores past runs for the history rail</span>
+            </div>
+
+            <div className={styles.entriesRow}>
+                <span className={styles.entriesLabel}>Max entries</span>
+                <NumberStepper
+                    value={localMaxEntries}
+                    onChange={setLocalMaxEntries}
+                    min={10}
+                    max={1000}
+                    step={10}
+                    disabled={!historyEnabled}
+                    aria-label="Maximum number of history entries"
+                />
+                <Button
+                    variant="primary"
+                    size="sm"
+                    disabled={!isMaxEntriesDirty || savingMaxEntries || !historyEnabled}
+                    onClick={() => {
+                        handleSaveMaxEntries().catch(() => undefined);
+                    }}
+                >
+                    {savingMaxEntries ? 'Saving…' : 'Save'}
+                </Button>
+                <Button variant="danger" size="sm" disabled={!historyEnabled} onClick={() => setClearDialogOpen(true)}>
+                    Clear history…
+                </Button>
+            </div>
+            <p className={styles.caption}>
+                The history rail keeps at most this many past runs; older ones are automatically removed once the limit is reached. Clearing history
+                permanently deletes all recorded runs and cannot be undone.
+            </p>
+
+            <AlertDialog
+                open={clearDialogOpen}
+                onOpenChange={setClearDialogOpen}
+                title="Clear history?"
+                description="All history entries will be permanently deleted. This cannot be undone."
+                confirmLabel="Clear history"
+                variant="danger"
+                onConfirm={() => {
+                    setClearDialogOpen(false);
+                    handleConfirmClear().catch(() => undefined);
+                }}
+            />
+        </section>
     );
 };
 
 AppBehaviorTab.displayName = 'AppBehaviorTab';
+
 export default AppBehaviorTab;

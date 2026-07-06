@@ -1,22 +1,11 @@
-/**
- * Actions State Management
- *
- * Manages prompt groups and available models for AI actions.
- * Handles loading and caching of action-related data from the backend.
- *
- * Key Features:
- * - Caches prompt groups for quick access
- * - Maintains list of available models for provider selection
- * - Handles model list updates when switching providers
- */
 import { createSlice } from '@reduxjs/toolkit';
 import { getLogger } from '../../adapter';
-import { getModelsList, getModelsListForProvider, getPromptGroups } from './thunks';
-import { ActionsState } from './types';
+import { loadActionCatalog, loadModels, loadModelsForProvider } from './thunks';
+import { ActionsCatalogState } from './types';
 
 const logger = getLogger('ActionsSlice');
 
-const initialState: ActionsState = { promptGroups: null, availableModels: [] };
+const initialState: ActionsCatalogState = { catalog: [], catalogStatus: 'idle', availableModels: [], modelsStatus: 'idle' };
 
 const actionsSlice = createSlice({
     name: 'actions',
@@ -24,17 +13,37 @@ const actionsSlice = createSlice({
     reducers: {},
     extraReducers: (builder) => {
         builder
-            .addCase(getPromptGroups.fulfilled, (state, action) => {
-                logger.logInfo(`Prompt groups loaded successfully (${Object.keys(action.payload.promptGroups).length} groups)`);
-                state.promptGroups = action.payload;
+            .addCase(loadActionCatalog.pending, (state) => {
+                state.catalogStatus = 'loading';
             })
-            .addCase(getModelsList.fulfilled, (state, action) => {
-                logger.logInfo(`Models list loaded successfully (${action.payload.length} models)`);
-                state.availableModels = action.payload;
+            .addCase(loadActionCatalog.fulfilled, (state, action) => {
+                logger.logInfo(`Catalog loaded: ${action.payload.length} actions`);
+                state.catalog = action.payload;
+                state.catalogStatus = 'success';
             })
-            .addCase(getModelsListForProvider.fulfilled, (state, action) => {
-                // Update models when switching providers - maintains provider-specific model lists
+            .addCase(loadActionCatalog.rejected, (state) => {
+                state.catalogStatus = 'error';
+            })
+            .addCase(loadModels.pending, (state) => {
+                state.modelsStatus = 'loading';
+            })
+            .addCase(loadModels.fulfilled, (state, action) => {
+                logger.logInfo(`Models loaded: ${action.payload.length}`);
                 state.availableModels = action.payload;
+                state.modelsStatus = 'success';
+            })
+            .addCase(loadModels.rejected, (state) => {
+                state.modelsStatus = 'error';
+            })
+            .addCase(loadModelsForProvider.pending, (state) => {
+                state.modelsStatus = 'loading';
+            })
+            .addCase(loadModelsForProvider.fulfilled, (state, action) => {
+                state.availableModels = action.payload;
+                state.modelsStatus = 'success';
+            })
+            .addCase(loadModelsForProvider.rejected, (state) => {
+                state.modelsStatus = 'error';
             });
     },
 });

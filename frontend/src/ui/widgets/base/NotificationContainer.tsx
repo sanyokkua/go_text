@@ -1,44 +1,35 @@
-import {Alert, Snackbar} from '@mui/material';
+// frontend/src/ui/widgets/base/NotificationContainer.tsx
 import React from 'react';
-import {selectNotificationsQueue, useAppDispatch, useAppSelector} from '../../../logic/store';
-import {removeNotification} from '../../../logic/store/notifications';
+import { selectNotificationsQueue, useAppDispatch, useAppSelector } from '../../../logic/store';
+import { removeNotification } from '../../../logic/store/notifications';
+import type { Severity } from '../../../logic/store/notifications/types';
+import type { ToastItem, ToastVariant } from '../../primitives/Toast';
+import { ToastProvider, ToastRegion } from '../../primitives/Toast';
 
-/**
- * Notification Container - Shows notifications from the Redux store
- * This component should be placed at the top level of the app layout
- */
+const SEVERITY_TO_VARIANT: Record<Severity, ToastVariant> = { success: 'success', error: 'error', warning: 'warning', info: 'info' };
+
+const LONG_DURATION_MS = 7000;
+
 const NotificationContainer: React.FC = () => {
     const dispatch = useAppDispatch();
-    const notifications = useAppSelector(selectNotificationsQueue);
+    const queue = useAppSelector(selectNotificationsQueue);
 
-    const handleClose = (id: string) => {
-        dispatch(removeNotification(id));
-    };
-
-    // Only show the oldest notification (first in queue)
-    const currentNotification = notifications[0];
-
-    if (!currentNotification) {
-        return null;
-    }
+    const toastItems: ToastItem[] = queue
+        .filter((n) => n.surface !== 'inline')
+        .map(
+            (n): ToastItem => ({
+                id: n.id,
+                variant: SEVERITY_TO_VARIANT[n.severity],
+                ...(n.title === undefined ? {} : { title: n.title }),
+                message: n.message,
+                duration: n.severity === 'warning' || n.severity === 'info' ? LONG_DURATION_MS : 5000,
+            }),
+        );
 
     return (
-        <Snackbar
-            open={true}
-            autoHideDuration={6000}
-            onClose={() => handleClose(currentNotification.id)}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            sx={{ zIndex: (theme) => theme.zIndex.snackbar }}
-        >
-            <Alert
-                onClose={() => handleClose(currentNotification.id)}
-                severity={currentNotification.severity}
-                variant="filled"
-                sx={{ width: '100%' }}
-            >
-                {currentNotification.message}
-            </Alert>
-        </Snackbar>
+        <ToastProvider>
+            <ToastRegion items={toastItems} onDismiss={(id) => dispatch(removeNotification(id))} />
+        </ToastProvider>
     );
 };
 

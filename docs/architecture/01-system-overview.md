@@ -1,177 +1,105 @@
-# System Overview
+# GoText — System Overview
 
-> **Text Processing Suite** - A native desktop application for AI-powered text processing, built with Wails v2.
+> **Version:** v3 · **Stack:** Go + Wails v2 backend; React 19 + TypeScript + Redux Toolkit frontend.
 
----
+## Summary
 
-## Table of Contents
+GoText ("GoText") is a native desktop application for AI-powered text transformation.
+A Wails v2 runtime hosts a Go backend and serves an embedded React SPA as the UI. All inference,
+persistence, and orchestration happen in the Go process; the frontend is presentation and local
+interaction state.
 
-- [High-Level Summary](#high-level-summary)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Architecture Diagram](#architecture-diagram)
-- [Design Philosophy](#design-philosophy)
+Users compose single actions or multi-step stacks across 90+ text-processing directives (rewriting,
+summarising, translating, structuring, prompt-engineering), run them against a configured LLM provider,
+and review the result with markdown and diff rendering.
 
----
+## Provider support
 
-## High-Level Summary
+| Type | Providers |
+|---|---|
+| Local | Ollama, LM Studio, Llama.cpp, and any OpenAI-compatible local API |
+| Cloud | OpenAI, OpenRouter, and any OpenAI-compatible cloud API |
 
-**Text Processing Suite** is a Wails v2 desktop application that leverages Large Language Models (LLMs) for intelligent text manipulation. The
-application provides a suite of text processing capabilities including:
+Credentials are never stored — only the **name** of an environment variable is persisted; the secret
+is read with `os.Getenv` at request time and never written to the database or logs.
 
-- **Proofreading & Grammar Correction** - Fix spelling, grammar, and punctuation
-- **Tone/Style Rewriting** - Adapt text for different audiences and contexts
-- **Summarization** - Generate concise summaries and key points
-- **Translation** - Multi-language text translation with language learning aids
-- **Document Formatting** - Convert and structure documents (Markdown, bullets, templates)
-- **Prompt Engineering** - Improve prompts for text, image, and video AI models
+## Tech stack
 
-The application supports multiple LLM providers including:
+| Component | Version / package |
+|---|---|
+| Go | 1.25.7 |
+| Desktop framework | Wails v2.12.0 |
+| React | 19.2.3 |
+| TypeScript | 5.9.3 |
+| Redux Toolkit | 2.11.2 |
+| UI primitives | `radix-ui` (Radix Primitives — not Radix Themes) |
+| Command palette | `cmdk` |
+| Build tool | Vite 7.x |
+| HTTP client | `resty.dev/v3` |
+| SQLite driver | `modernc.org/sqlite` (pure Go, no CGO) |
+| Migrations | `github.com/pressly/goose/v3` |
+| Type-safe SQL | `sqlc` (generated into `internal/db/store/`) |
+| Structured logging | `github.com/rs/zerolog` + `gopkg.in/natefinch/lumberjack.v2` |
+| Styling | Custom tokenized CSS (CSS variables + CSS Modules) — no Tailwind, no MUI |
 
-- **Local inference**: Ollama, LM Studio, Llama.cpp
-- **Cloud providers**: OpenAI, OpenRouter.ai
-- **Any OpenAI-compatible API**
-
----
-
-## Tech Stack
-
-| Layer           | Technology        | Version   | Purpose                                   |
-|-----------------|-------------------|-----------|-------------------------------------------|
-| **Runtime**     | Wails             | v2.11.0   | Desktop app framework bridging Go + Web   |
-| **Backend**     | Go                | 1.25.1    | Business logic, LLM integration, settings |
-| **Frontend**    | React             | 19.2.3    | UI framework                              |
-| **State**       | Redux Toolkit     | 2.11.2    | Centralized state management              |
-| **UI Library**  | Material-UI (MUI) | 7.3.6     | Component library                         |
-| **HTTP Client** | Resty             | v3 (beta) | REST API calls to LLM providers           |
-| **Logging**     | zerolog           | 1.34.0    | Structured backend logging                |
-| **Build Tool**  | Vite              | 7.3.0     | Frontend bundling                         |
-| **Language**    | TypeScript        | 5.9.3     | Frontend type safety                      |
-| **Testing**     | Jest + Testify    | -         | Unit and integration testing              |
-
----
-
-## Project Structure
+## Project structure
 
 ```
-go_text/
-├── main.go                      # Application entry point
-├── wails.json                   # Wails configuration
-├── go.mod                       # Go dependencies
-│
-├── internal/                    # Go backend packages
-│   ├── application/             # App context holder & DI
-│   ├── actions/                 # Text processing handlers & services
-│   ├── settings/                # Configuration management
-│   ├── llms/                    # LLM provider integration
-│   ├── prompts/                 # Prompt templates & service
-│   │   └── categories/          # Categorized prompt definitions
-│   ├── file/                    # File system utilities
-│   └── logging/                 # Custom logger implementation
-│
-├── frontend/                    # React frontend application
-│   ├── src/
-│   │   ├── main.tsx             # React entry point
-│   │   ├── logic/               # Business logic layer
-│   │   │   ├── adapter/         # Backend API adapters
-│   │   │   ├── store/           # Redux state management
-│   │   │   └── utils/           # Utility functions
-│   │   └── ui/                  # Presentation layer
-│   │       ├── AppLayout.tsx    # Root layout component
-│   │       ├── theme.ts         # Material-UI theme
-│   │       ├── components/      # Reusable UI components
-│   │       ├── styles/          # CSS and constants
-│   │       └── widgets/         # Feature-specific widgets
-│   │           ├── base/        # Core widgets (AppBar, StatusBar)
-│   │           └── views/       # View components
-│   ├── wailsjs/                 # Auto-generated Wails bindings
-│   │   └── go/                  # TypeScript bindings to Go
-│   └── package.json             # Node dependencies
-│
-├── build/                       # Build configuration
-│   ├── darwin/                  # macOS build files
-│   └── windows/                 # Windows build files
-│
-└── docs/                        # Documentation
-    ├── architecture/            # Architecture documentation
-    ├── guides/                  # Usage guides
-    └── rules/                   # Development rules
+internal/        Go backend packages
+frontend/        React TypeScript SPA
+build/           Wails platform configs (icons, manifests, Info.plist)
+docs/            Architecture docs, guides, agent rules, specs
+main.go          Wails entry point
 ```
 
----
+## Architecture diagram
 
-## Architecture Diagram
-
-```mermaid
-flowchart TB
-    subgraph User["User Interface"]
-        UI["React Application<br/>(MUI Components)"]
-    end
-
-    subgraph Frontend["Frontend Layer"]
-        Store["Redux Store<br/>settings | actions | editor | ui | notifications"]
-        Adapter["Adapter Layer<br/>(services.ts)"]
-        Wails["Wails JS Bindings<br/>(Auto-generated)"]
-    end
-
-    subgraph Bridge["Wails v2 Runtime"]
-        WailsRuntime["Method Binding<br/>Context & Events"]
-    end
-
-    subgraph Backend["Go Backend"]
-        Handlers["Handlers (API Layer)<br/>ActionHandler | SettingsHandler"]
-        Services["Services (Business Logic)<br/>ActionService | SettingsService | LLMService | PromptService"]
-        Repo["Repository Layer<br/>SettingsRepository"]
-        FileUtils["File Utilities<br/>FileUtilsService"]
-    end
-
-    subgraph External["External Systems"]
-        LLM["LLM Providers<br/>(Ollama, OpenAI, etc.)"]
-        FS["File System<br/>(Settings JSON)"]
-    end
-
-    UI --> Store
-    Store <--> Adapter
-    Adapter --> Wails
-    Wails <-->|" Bind/Call "| WailsRuntime
-    WailsRuntime <--> Handlers
-    Handlers --> Services
-    Services --> Repo
-    Services --> LLM
-    Repo --> FileUtils
-    FileUtils --> FS
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│  Frontend (React 19 + TypeScript + Redux Toolkit)                     │
+│    components → thunks → logic/adapter → Wails JS bindings + EventsOn │
+└───────────────────────────┬──────────────────────────────────────────┘
+                             │  Wails bridge (method calls + runtime events)
+                             │  uniform Result envelope · EnumBind · chain:* progress events
+┌───────────────────────────┴──────────────────────────────────────────┐
+│  Backend (Go)                                                          │
+│   Handlers  (Wails-bound; envelope returns; no ctx param)              │
+│       ↓                                                                │
+│   Services  (business logic; idiomatic (T, error) signatures)          │
+│       ↓                                                                │
+│   Repositories  (SQLite via sqlc-generated queries)                    │
+│                                                                        │
+│   Cross-cutting: providers · actions/orchestrator · prompts ·          │
+│                  apperr · logging · db · file · tasklog                │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
----
+## Architecture philosophy
 
-## Design Philosophy
+- **Layered backend:** Handler → Service → Repository, wired by manual DI in `internal/application/`
+- **Interface-based:** every collaborator is an interface — testable and replaceable without touching callers
+- **Redux Toolkit:** unidirectional data flow; slices cover settings, editor, actions, stacks, run progress, history, ui, notifications, about
+- **Adapter isolation:** frontend components reach the backend only through `frontend/src/logic/adapter/`, never importing `wailsjs` directly
+- **Single code path:** a single action is the degenerate one-step chain — same orchestrator, same envelope, same history entry
+- **Env-only credentials:** provider configs store only the env-var name; secrets are never persisted or logged
+- **Local-first:** all computation runs in the Go process; optional cloud LLM providers receive only the user-provided text
 
-### Layered Architecture
+## Key design decisions
 
-The application follows a clean layered architecture pattern:
+| Decision | Choice |
+|---|---|
+| Persistence | SQLite via `modernc.org/sqlite` (pure Go — cross-compiles cleanly with `wails build`) |
+| Schema management | Goose versioned migrations embedded in the binary; run on every `db.Open` |
+| Query layer | sqlc-generated type-safe Go code (`internal/db/store/`); never hand-edited |
+| Error contract | One typed `AppError`; one `WireError` on the wire; one concrete Result envelope per payload shape |
+| UI components | Radix Primitives (behaviour + accessibility) + custom tokenized CSS (all visual appearance) |
+| Concurrency | Single-writer SQLite + WAL; single in-flight inference per window (`InferenceGate`) |
+| Cancellation | Id-based cooperative cancel: `CancelChain(runId)` → registered `CancelFunc` → stops after current group |
 
-1. **Handler Layer** - External API surface exposed to the frontend via Wails bindings
-2. **Service Layer** - Core business logic, orchestration, validation
-3. **Repository Layer** - Data persistence abstraction
-4. **Utility Layer** - Cross-cutting concerns (file I/O, logging)
+## Related documentation
 
-### Key Design Decisions
-
-| Decision                              | Rationale                                                                                                                             |
-|---------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
-| **Interface-based design**            | All major components define interfaces (e.g., `ActionHandlerAPI`, `SettingsServiceAPI`) enabling testability and dependency injection |
-| **Redux Toolkit for state**           | Provides predictable state management with TypeScript integration, async thunks, and devtools support                                 |
-| **Adapter pattern for backend calls** | Abstracts Wails bindings behind clean service interfaces, enabling mock testing                                                       |
-| **Categorized prompts**               | Prompts organized by category (proofreading, rewriting, translation) with separate system and user prompts                            |
-| **Multiple provider support**         | Configurable LLM providers with unified OpenAI-compatible API abstraction                                                             |
-| **Local-first**                       | Supports local inference options (Ollama, LM Studio) for privacy and offline use                                                      |
-
-### Error Handling Strategy
-
-- **Backend**: Errors are wrapped with operation context using `fmt.Errorf("%s: %w", op, err)` pattern
-- **Frontend**: Errors are parsed via `parseError()` utility and surfaced through the notification system
-- **Logging**: All operations are logged with timing information and structured context
-
----
-
-*Next: [Backend Architecture](./02-backend-architecture.md)*
+- [Backend architecture](02-backend-architecture.md) — packages, DI wiring, handler pattern
+- [Frontend architecture](03-frontend-architecture.md) — slices, adapter, Radix, CSS tokens
+- [Data flow & communication](04-data-flow-and-communication.md) — events, cancellation, envelope
+- [Build & configuration](05-build-and-configuration.md) — commands, deps, CI guards
+- [Developer guide](../guides/DEVELOPER_GUIDE.md) — how to extend the app

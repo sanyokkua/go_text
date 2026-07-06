@@ -6,7 +6,7 @@
         "types": ["jest", "node"],
         "allowJs": false,
         "skipLibCheck": true,
-        "esModuleInterop": false,
+        "esModuleInterop": true,
         "allowSyntheticDefaultImports": true,
         "strict": true,
         "noImplicitAny": true,
@@ -15,14 +15,14 @@
         "noEmitOnError": true,
         "forceConsistentCasingInFileNames": true,
         "module": "ESNext",
-        "moduleResolution": "Node",
+        "moduleResolution": "bundler",
         "resolveJsonModule": true,
         "isolatedModules": true,
         "noEmit": true,
         "jsx": "react-jsx"
     },
     "include": ["src", "src/types/**/*.d.ts"],
-    "exclude": ["node_modules", "**/*.js", "src/logic", "src/ui"],
+    "exclude": ["node_modules", "**/*.js", "src/logic"],
     "typeRoots": ["node_modules/@types", "src/types"],
     "references": [{ "path": "./tsconfig.node.json" }]
 }

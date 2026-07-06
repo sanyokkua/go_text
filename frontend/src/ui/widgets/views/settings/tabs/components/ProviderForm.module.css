@@ -1,0 +1,264 @@
+.empty {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-3);
+    font-size: 0.875rem;
+    padding: var(--space-4);
+    text-align: center;
+}
+
+.root {
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
+    padding: var(--space-4);
+    display: flex;
+    flex-direction: column;
+}
+
+.field {
+    margin-bottom: var(--space-3);
+}
+
+/* Two-column row for paired fields (endpoints, version/model).
+   auto-fit collapses to a single column on narrow widths and lets a
+   lone field fill the row when its pair is hidden (e.g. non-azure). */
+.grid2 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+}
+
+.grid2 .field {
+    margin-bottom: 0;
+}
+
+.label {
+    font-size: 0.8rem;
+    color: var(--ink-2);
+    font-weight: 500;
+    margin-bottom: 2px;
+    display: block;
+}
+
+.labelInline {
+    font-size: 0.8rem;
+    color: var(--ink-2);
+    font-weight: 500;
+    margin-bottom: 0;
+    cursor: pointer;
+}
+
+.error {
+    color: var(--err);
+    font-size: 0.75rem;
+    margin-top: 2px;
+}
+
+.textInput {
+    width: 100%;
+    padding: 6px var(--space-2);
+    font-size: 0.875rem;
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    outline: none;
+    font-family: var(--font);
+    box-sizing: border-box;
+    transition: border-color 120ms ease;
+}
+
+.textInput:focus-visible {
+    border-color: var(--teal-light);
+    box-shadow: none;
+}
+
+.textInput:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.helper {
+    font-size: 0.8125rem;
+    color: var(--ink-3);
+    line-height: 1.45;
+    margin: 4px 0 0;
+}
+
+/* Auth segment */
+.authFieldset {
+    border: none;
+    margin: 0;
+    padding: 0;
+    margin-bottom: var(--space-3);
+}
+
+.authLegend {
+    font-size: 0.8rem;
+    color: var(--ink-2);
+    font-weight: 500;
+    margin-bottom: 2px;
+    float: left;
+    width: 100%;
+}
+
+.authRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    clear: both;
+}
+
+.authBtn {
+    padding: 4px var(--space-3);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+    font-size: 0.8125rem;
+    font-family: var(--font);
+    font-weight: 400;
+}
+
+.authBtn[aria-pressed='true'] {
+    border-color: var(--teal);
+    background: color-mix(in srgb, var(--teal) 15%, transparent);
+    color: var(--teal);
+    font-weight: 600;
+}
+
+/* Model row */
+.modelRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    align-items: center;
+}
+
+.modelSelect {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Switch rows */
+.switchRow {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.switchRowWithChild {
+    margin-bottom: var(--space-2);
+}
+
+/* Verification panel wrapper */
+.verifyField {
+    margin-bottom: var(--space-3);
+    margin-top: var(--space-2);
+}
+
+/* Action bar */
+.actionBar {
+    display: flex;
+    gap: var(--space-2);
+    margin-top: auto;
+    padding-top: var(--space-4);
+    flex-wrap: wrap;
+}
+
+.btnBase {
+    padding: 6px var(--space-3);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.8125rem;
+    font-family: var(--font);
+}
+
+.btnGhost {
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--ink);
+}
+
+.btnDanger {
+    border: 1px solid var(--err);
+    background: transparent;
+    color: var(--err);
+}
+
+.btnCancel {
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--ink-2);
+    margin-left: auto;
+}
+
+.btnSave {
+    border: none;
+    background: var(--teal);
+    color: var(--white);
+    font-weight: 600;
+}
+
+.btnSave:disabled {
+    background: var(--surface-2);
+    color: var(--ink-3);
+    cursor: not-allowed;
+}
+
+.envVarBanner {
+    margin: var(--space-2) 0 0;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--teal-light);
+    border-radius: var(--radius-sm);
+    background: var(--teal-50);
+    color: var(--ink-2);
+    font-size: 0.75rem;
+    line-height: 1.45;
+}
+
+.envVarCode {
+    padding: 1px 6px;
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    font-family: var(--mono);
+    color: var(--ink);
+}
+
+/* Preset quick-fill row (new-provider only) */
+.presetField {
+    margin-bottom: var(--space-3);
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--line);
+}
+
+.presetRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.presetBtn {
+    padding: 4px var(--space-3);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+    font-size: 0.8125rem;
+    font-family: var(--font);
+    font-weight: 500;
+}
+
+.presetBtn:hover {
+    border-color: var(--teal);
+    color: var(--teal);
+}

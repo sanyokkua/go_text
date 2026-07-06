@@ -1,8 +1,8 @@
-# Text Processing Suite
+# GoText
 
 ## Overview
 
-Text Processing Suite is a native desktop application for text processing that uses Large Language Models (LLMs). It provides features for
+GoText is a native desktop application for text processing that uses Large Language Models (LLMs). It provides features for
 proofreading, style rewriting, formatting, translation, and summarization.
 
 Unlike its [predecessor](https://github.com/sanyokkua/llmedit), which focused on local LLMs, this application is designed to work with any LLM
@@ -194,14 +194,14 @@ If you prefer to download a release rather than build locally, follow these step
 
 1. Download the archive from the releases page.
    ![release1](screens/06.Release_1.png)
-2. Extract the app (you will get `TextProcessingSuite.app`).
+2. Extract the app (you will get `GoText.app`).
    ![release2](screens/06.Release_2.png)
 3. If you try to run the app, macOS may show an error or block launch.
    ![release3](screens/06.Release_3.png)
 4. Remove the quarantine flag via Terminal:
 
 ```shell
-xattr -rd com.apple.quarantine TextProcessingSuite.app
+xattr -rd com.apple.quarantine GoText.app
 ```
 
 ![release4](screens/06.Release_4.png)

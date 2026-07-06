@@ -1,106 +1,152 @@
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import { Box, IconButton, Tooltip, Typography } from '@mui/material';
-import React from 'react';
-import { ClipboardServiceAdapter, getLogger } from '../../../../../logic/adapter';
-import { useAppDispatch } from '../../../../../logic/store';
-import { enqueueNotification } from '../../../../../logic/store/notifications';
-import { parseError } from '../../../../../logic/utils/error_utils';
-import { SPACING } from '../../../../styles/constants';
+import React, { useState } from 'react';
 
-const logger = getLogger('MetadataTab');
+import { ClipboardServiceAdapter, openPath } from '../../../../../logic/adapter';
+import { useSettingsToast } from '../../../../../logic/hooks/useSettingsToast';
+import { useAppDispatch, useAppSelector } from '../../../../../logic/store';
+import { enqueueNotification } from '../../../../../logic/store/notifications/slice';
+import { selectSettingsMetadata } from '../../../../../logic/store/settings/selectors';
+import { resetSettingsToDefault } from '../../../../../logic/store/settings/thunks';
+import { Button } from '../../../../components/Button';
+import { AlertDialog } from '../../../../primitives/AlertDialog';
+import styles from './MetadataTab.module.css';
 
-interface MetadataTabProps {
-    metadata: { settingsFolder: string; settingsFile: string };
-}
-
-/**
- * Helper component for displaying a metadata row with label, path, and copy button
- */
-interface MetadataRowProps {
-    label: string;
-    path: string;
-    tooltip: string;
-    ariaLabel: string;
-    onCopy: (text: string) => void;
-}
-
-const MetadataRow: React.FC<MetadataRowProps> = ({ label, path, tooltip, ariaLabel, onCopy }) => {
-    return (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: SPACING.SMALL }}>
-            <Typography variant="body2" sx={{ fontWeight: 'medium', minWidth: '150px' }}>
-                {label}:
-            </Typography>
-            <Typography variant="body1" sx={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {path}
-            </Typography>
-            <Tooltip title={tooltip}>
-                <IconButton size="small" onClick={() => onCopy(path)} aria-label={ariaLabel}>
-                    <ContentCopyIcon fontSize="small" color="primary" />
-                </IconButton>
-            </Tooltip>
-        </Box>
-    );
-};
-
-/**
- * Metadata Tab Component
- * Shows global settings information with copy functionality
- */
-const MetadataTab: React.FC<MetadataTabProps> = ({ metadata }) => {
+const MetadataTab: React.FC = () => {
     const dispatch = useAppDispatch();
+    const runWithToast = useSettingsToast();
+    const metadata = useAppSelector(selectSettingsMetadata);
+    const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
-    const handleCopy = async (text: string) => {
+    const handleCopyPath = async (path: string) => {
         try {
-            logger.logDebug(`Attempting to copy path to clipboard: ${text}`);
-            const success = await ClipboardServiceAdapter.setText(text);
-            if (success) {
-                logger.logInfo('Path copied to clipboard successfully');
-                dispatch(enqueueNotification({ message: 'Path copied to clipboard', severity: 'success' }));
-            }
-        } catch (error: unknown) {
-            const err = parseError(error);
-            logger.logError(`Failed to copy path to clipboard: ${err.message}`);
-            dispatch(enqueueNotification({ message: 'Failed to copy path', severity: 'error' }));
+            await ClipboardServiceAdapter.setText(path);
+            dispatch(enqueueNotification({ severity: 'info', surface: 'toast', title: 'Copied', message: 'Path copied to clipboard.' }));
+        } catch {
+            dispatch(
+                enqueueNotification({ severity: 'error', surface: 'toast', title: 'Copy failed', message: 'Could not write to the clipboard.' }),
+            );
         }
     };
 
-    return (
-        <Box sx={{ padding: SPACING.SMALL }}>
-            {/* Tab Description */}
-            <Box sx={{ marginBottom: SPACING.STANDARD }}>
-                <Typography variant="body2" color="text.secondary" component="div" gutterBottom>
-                    This tab displays the file system locations where your application settings are stored.
-                </Typography>
-                <Typography variant="body2" color="text.secondary" component="div" gutterBottom>
-                    Settings are automatically saved when you make changes in other tabs. You can copy these paths to locate your configuration files
-                    if needed for backup or manual editing.
-                </Typography>
-                <Typography variant="body2" color="text.secondary" component="div" gutterBottom>
-                    <strong>Note:</strong> Manual file editing is not recommended as it may cause configuration inconsistencies.
-                </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: SPACING.STANDARD }}>
-                {/* Folder */}
-                <MetadataRow
-                    label="Settings Folder"
-                    path={metadata.settingsFolder}
-                    tooltip="Copy settings folder path"
-                    ariaLabel="copy settings folder"
-                    onCopy={handleCopy}
-                />
+    const handleConfirmReset = async () => {
+        await runWithToast(dispatch(resetSettingsToDefault()), {
+            success: 'All settings have been restored to defaults.',
+            successTitle: 'Settings reset',
+        });
+    };
 
-                {/* File */}
-                <MetadataRow
-                    label="Settings File"
-                    path={metadata.settingsFile}
-                    tooltip="Copy settings file path"
-                    ariaLabel="copy settings file"
-                    onCopy={handleCopy}
-                />
-            </Box>
-        </Box>
+    const settingsFolder = metadata?.settingsFolder ?? '—';
+    const logsFolder = metadata?.logsFolder ?? '—';
+    const settingsFile = metadata?.settingsFile ?? '—';
+
+    const handleOpenFolder = () => {
+        if (!metadata) return;
+        void runWithToast(openPath(settingsFolder), {
+            success: 'Opened app folder',
+            error: "Couldn't open the app folder.",
+            errorTitle: 'Open failed',
+        });
+    };
+
+    const handleOpenLogs = () => {
+        if (!metadata) return;
+        void runWithToast(openPath(logsFolder), {
+            success: 'Opened logs folder',
+            error: "Couldn't open the logs folder.",
+            errorTitle: 'Open failed',
+        });
+    };
+
+    return (
+        <section className={styles.root}>
+            <div className={styles.appHeader}>
+                <h2 className={styles.appName}>GoText</h2>
+                <span className={styles.versionBadge}>{metadata?.appVersion ?? '—'}</span>
+                <span className={styles.stack}>Wails · Go · React + Radix</span>
+            </div>
+
+            <p className={styles.sectionHeader}>Data &amp; file locations</p>
+
+            <div className={styles.fieldRow}>
+                <span className={styles.fieldLabel}>App folder</span>
+                <code className={styles.monoPath}>{settingsFolder}</code>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Copy app folder path"
+                    onClick={() => {
+                        handleCopyPath(settingsFolder).catch(() => undefined);
+                    }}
+                >
+                    ⧉
+                </Button>
+                <Button variant="ghost" size="sm" aria-label="Open app folder" disabled={!metadata} onClick={handleOpenFolder}>
+                    📁
+                </Button>
+                <p className={styles.caption}>Where GoText stores its settings and database on this machine.</p>
+            </div>
+
+            <div className={styles.fieldRow}>
+                <span className={styles.fieldLabel}>Logs folder</span>
+                <code className={styles.monoPath}>{logsFolder}</code>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Copy logs folder path"
+                    onClick={() => {
+                        handleCopyPath(logsFolder).catch(() => undefined);
+                    }}
+                >
+                    ⧉
+                </Button>
+                <Button variant="ghost" size="sm" aria-label="Open logs folder" disabled={!metadata} onClick={handleOpenLogs}>
+                    📁
+                </Button>
+                <p className={styles.caption}>Where GoText writes its log files — check here if you&apos;re troubleshooting an issue.</p>
+            </div>
+
+            <div className={`${styles.fieldRow} ${styles.fieldRowLast}`}>
+                <span className={styles.fieldLabel}>Database</span>
+                <code className={styles.monoPath}>{settingsFile}</code>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Copy database path"
+                    onClick={() => {
+                        handleCopyPath(settingsFile).catch(() => undefined);
+                    }}
+                >
+                    ⧉
+                </Button>
+                <p className={styles.caption}>The SQLite database file containing your settings, providers, stacks, and history.</p>
+            </div>
+
+            <p className={styles.sectionHeader}>Danger zone</p>
+
+            <div className={styles.dangerZone}>
+                <p className={styles.dangerText}>
+                    Factory reset wipes all settings, providers, stacks &amp; history, then re-seeds defaults. This cannot be undone.
+                </p>
+                <Button variant="danger" size="sm" onClick={() => setResetDialogOpen(true)}>
+                    Factory reset…
+                </Button>
+            </div>
+
+            <AlertDialog
+                open={resetDialogOpen}
+                onOpenChange={setResetDialogOpen}
+                title="Factory reset?"
+                description="All settings will be wiped and restored to defaults. Are you sure?"
+                confirmLabel="Reset everything"
+                variant="danger"
+                onConfirm={() => {
+                    setResetDialogOpen(false);
+                    handleConfirmReset().catch(() => undefined);
+                }}
+            />
+        </section>
     );
 };
 
 MetadataTab.displayName = 'MetadataTab';
+
 export default MetadataTab;

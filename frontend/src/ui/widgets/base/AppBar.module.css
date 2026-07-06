@@ -1,0 +1,113 @@
+.bar {
+    width: 100%;
+    /* height: auto lets the bar grow as control groups wrap; the parent wrapper's
+       min-height floors it at the single-row app-bar height. */
+    height: auto;
+    min-height: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: var(--space-1) var(--space-3);
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+    color: var(--ink);
+    gap: var(--space-2);
+}
+
+/* `display: contents` dissolves these wrappers so every control becomes a direct
+   flex item of `.bar`. Only the items that don't fit wrap, one by one, instead of
+   a whole cluster dropping as a unit. */
+.left {
+    display: contents;
+}
+
+.right {
+    display: contents;
+}
+
+/* The first trailing control absorbs the remaining row space, pushing the right
+   cluster to the edge while still letting those controls wrap individually.
+   `:first-child` is unaffected by the parent's `display: contents`, so this
+   targets the first Segmented on the main view and the settings button elsewhere. */
+.right > :first-child {
+    margin-left: auto;
+}
+
+.wordmark {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--teal);
+    white-space: nowrap;
+}
+
+.sidebarBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 31px;
+    height: 31px;
+    background: none;
+    border: none;
+    color: var(--ink-3);
+    cursor: pointer;
+    border-radius: var(--radius);
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.sidebarBtn:hover {
+    color: var(--ink);
+    background: var(--surface-2);
+}
+
+.sidebarBtn:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.backBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    height: 31px;
+    background: none;
+    border: none;
+    color: var(--ink-3);
+    cursor: pointer;
+    font-size: 13px;
+    padding: 0 var(--space-2);
+    border-radius: var(--radius);
+    flex-shrink: 0;
+}
+
+.backBtn:hover {
+    color: var(--ink);
+    background: var(--surface-2);
+}
+
+.backBtn:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 23px;
+    height: 23px;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, var(--teal-light), var(--teal-dark));
+    color: var(--white);
+    font-weight: 700;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+/* ⌘K keeps its textual label but rides inside the shared IconButton box, so the
+   label must shrink to fit the uniform 31px square. */
+.cmdkLabel {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}

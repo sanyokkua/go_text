@@ -1,76 +1,187 @@
-import CloseIcon from '@mui/icons-material/Close';
-import InfoIcon from '@mui/icons-material/Info';
-import SettingsIcon from '@mui/icons-material/Settings';
-import { AppBar as MuiAppBar, Box, IconButton, Toolbar, Typography } from '@mui/material';
+import { ChevronLeft, History, Info, PanelLeft, Settings, X } from 'lucide-react';
 import React from 'react';
+
 import { getLogger } from '../../../logic/adapter';
-import { selectCurrentView, useAppDispatch, useAppSelector } from '../../../logic/store';
-import { toggleInfoView, toggleSettingsView } from '../../../logic/store/ui';
+import {
+    selectAppBehaviorConfig,
+    selectCurrentView,
+    selectHistoryOpen,
+    selectInferenceBaseConfig,
+    selectInferenceRunning,
+    selectLayout,
+    selectSidebarCollapsed,
+    selectViewMode,
+    useAppDispatch,
+    useAppSelector,
+} from '../../../logic/store';
+import { setViewMode } from '../../../logic/store/editor';
+import { persistUIPreferences, updateInferenceBaseConfig } from '../../../logic/store/settings/thunks';
+import { setCurrentView, setHistoryOpen, setLayout, setSidebarCollapsed, togglePalette } from '../../../logic/store/ui';
+import { IconButton } from '../../components/IconButton';
+import { Segmented } from '../../primitives/Segmented';
+import { Tooltip } from '../../primitives/Tooltip';
+import styles from './AppBar.module.css';
+import LanguagePicker from './LanguagePicker';
+import ModelPicker from './ModelPicker';
+import ProviderPicker from './ProviderPicker';
 
 const logger = getLogger('AppBar');
 
 const AppBar: React.FC = () => {
     const dispatch = useAppDispatch();
     const view = useAppSelector(selectCurrentView);
-    const showSettings = view === 'settings';
-    const showInfo = view === 'info';
-    const showMain = view === 'main';
-    const title = 'Text Processor';
+    const layout = useAppSelector(selectLayout);
+    const viewMode = useAppSelector(selectViewMode);
+    const sidebarCollapsed = useAppSelector(selectSidebarCollapsed);
+    const inferenceRunning = useAppSelector(selectInferenceRunning);
+    const historyOpen = useAppSelector(selectHistoryOpen);
+    const appBehavior = useAppSelector(selectAppBehaviorConfig);
+    const inferenceBaseConfig = useAppSelector(selectInferenceBaseConfig);
 
-    const handleInfoClick = () => {
-        logger.logInfo('Info button clicked');
-        dispatch(toggleInfoView());
+    const isMain = view === 'main';
+    const historyEnabled = appBehavior?.historyEnabled ?? true;
+    const formatValue = inferenceBaseConfig?.useMarkdownForOutput ? 'md' : 'plain';
+
+    const handleFormatChange = (v: string): void => {
+        if (!inferenceBaseConfig) return;
+        void dispatch(updateInferenceBaseConfig({ ...inferenceBaseConfig, useMarkdownForOutput: v === 'md' }));
     };
-
-    const handleRightButtonClick = () => {
-        if (showSettings) {
-            logger.logInfo('Closing settings');
-            dispatch(toggleSettingsView());
-        } else if (showInfo) {
-            logger.logInfo('Closing information');
-            dispatch(toggleInfoView());
-        } else {
-            logger.logInfo('Opening settings');
-            dispatch(toggleSettingsView());
-        }
-    };
-
-    const closeIcon = <CloseIcon color="inherit" fontSize="small" />;
-    const settingsIcon = <SettingsIcon color="inherit" fontSize="small" />;
-    const infoIcon = <InfoIcon color="inherit" fontSize="small" />;
-    const rightIcon = showSettings || showInfo ? closeIcon : settingsIcon;
 
     return (
-        <MuiAppBar position="static" sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <Toolbar sx={{ justifyContent: 'space-between', width: '100%' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-                    <Typography variant="h6" component="div" sx={{ lineHeight: 1 }}>
-                        {title}
-                    </Typography>
-                </Box>
-
-                <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-                    {showMain && (
-                        <IconButton
-                            color="inherit"
-                            aria-label="information"
-                            onClick={handleInfoClick}
-                            sx={{ height: 'fit-content', width: 'fit-content', ...{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.5)' } } }}
+        <header className={styles.bar}>
+            <div className={styles.left}>
+                {isMain && (
+                    <Tooltip content={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'} side="bottom">
+                        <button
+                            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                            aria-pressed={!sidebarCollapsed}
+                            onClick={() => {
+                                dispatch(setSidebarCollapsed(!sidebarCollapsed));
+                                void dispatch(persistUIPreferences());
+                                logger.logInfo('Sidebar toggled');
+                            }}
+                            className={styles.sidebarBtn}
                         >
-                            {infoIcon}
-                        </IconButton>
-                    )}
-                    <IconButton
-                        color="inherit"
-                        aria-label={showSettings ? 'close settings' : showInfo ? 'close information' : 'open settings'}
-                        onClick={handleRightButtonClick}
-                        sx={{ height: 'fit-content', width: 'fit-content', ...{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.5)' } } }}
+                            <PanelLeft size={16} />
+                        </button>
+                    </Tooltip>
+                )}
+                {!isMain && (
+                    <button
+                        aria-label="Back to editor"
+                        onClick={() => {
+                            dispatch(setCurrentView('main'));
+                            logger.logInfo('Navigated to main');
+                        }}
+                        className={styles.backBtn}
                     >
-                        {rightIcon}
+                        <ChevronLeft size={16} />
+                        <span>Editor</span>
+                    </button>
+                )}
+
+                <span className={styles.logo} aria-hidden="true">
+                    G
+                </span>
+                <span className={styles.wordmark}>GoText</span>
+
+                {isMain && (
+                    <>
+                        <ProviderPicker />
+                        <ModelPicker />
+                        <LanguagePicker />
+                    </>
+                )}
+            </div>
+
+            <div className={styles.right}>
+                {isMain && (
+                    <>
+                        <Segmented
+                            value={formatValue}
+                            onValueChange={handleFormatChange}
+                            items={[
+                                { value: 'plain', label: 'Plain' },
+                                { value: 'md', label: 'MD' },
+                            ]}
+                            disabled={inferenceRunning}
+                        />
+                        <Segmented
+                            value={viewMode}
+                            onValueChange={(v) => {
+                                dispatch(setViewMode(v as typeof viewMode));
+                                void dispatch(persistUIPreferences());
+                            }}
+                            items={[
+                                { value: 'preview', label: 'Preview' },
+                                { value: 'source', label: 'Source' },
+                                { value: 'diff', label: 'Diff' },
+                            ]}
+                            disabled={inferenceRunning}
+                        />
+                        <Segmented
+                            value={layout}
+                            onValueChange={(v) => {
+                                dispatch(setLayout(v as typeof layout));
+                                void dispatch(persistUIPreferences());
+                            }}
+                            items={[
+                                { value: 'side', label: '⊞ Side' },
+                                { value: 'stacked', label: '⊟ Stacked' },
+                            ]}
+                            disabled={inferenceRunning}
+                        />
+                        <Tooltip content="Command palette (⌘K)" side="bottom">
+                            <IconButton
+                                aria-label="Open command palette"
+                                disabled={inferenceRunning}
+                                onClick={() => {
+                                    dispatch(togglePalette());
+                                    logger.logInfo('Command palette toggled');
+                                }}
+                            >
+                                <span className={styles.cmdkLabel}>⌘K</span>
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip content={historyEnabled ? 'Toggle history' : 'History is disabled in Settings'} side="bottom">
+                            <IconButton
+                                aria-label="Toggle history rail"
+                                on={historyOpen}
+                                disabled={!historyEnabled}
+                                onClick={() => {
+                                    dispatch(setHistoryOpen(!historyOpen));
+                                    void dispatch(persistUIPreferences());
+                                    logger.logInfo('History toggled');
+                                }}
+                            >
+                                <History size={16} />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip content="About GoText" side="bottom">
+                            <IconButton
+                                aria-label="About and info"
+                                onClick={() => {
+                                    dispatch(setCurrentView('info'));
+                                    logger.logInfo('Navigated to info');
+                                }}
+                            >
+                                <Info size={16} />
+                            </IconButton>
+                        </Tooltip>
+                    </>
+                )}
+                <Tooltip content={isMain ? 'Settings' : 'Close'} side="bottom">
+                    <IconButton
+                        aria-label={isMain ? 'Open settings' : 'Close'}
+                        onClick={() => {
+                            dispatch(setCurrentView(isMain ? 'settings' : 'main'));
+                        }}
+                    >
+                        {isMain ? <Settings size={16} /> : <X size={16} />}
                     </IconButton>
-                </Box>
-            </Toolbar>
-        </MuiAppBar>
+                </Tooltip>
+            </div>
+        </header>
     );
 };
 

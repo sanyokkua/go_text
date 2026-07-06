@@ -1,501 +1,243 @@
-# Build & Configuration
+# GoText — Build & Configuration
 
-> Build processes, development workflow, configuration management, and dependency overview.
-
----
-
-## Table of Contents
-
-- [Development Workflow](#development-workflow)
-- [Build Process](#build-process)
-    - [Development Build](#development-build)
-    - [Production Build](#production-build)
-    - [Platform-Specific Builds](#platform-specific-builds)
-- [Configuration Management](#configuration-management)
-    - [Wails Configuration](#wails-configuration)
-    - [Application Settings](#application-settings)
-    - [Environment Variables](#environment-variables)
-- [Dependencies](#dependencies)
-    - [Go Dependencies](#go-dependencies)
-    - [NPM Dependencies](#npm-dependencies)
-- [Build Directory Structure](#build-directory-structure)
+> **Version:** v3 · Module: `go_text`
 
 ---
 
-## Development Workflow
+## 1. Prerequisites
 
-### Prerequisites
+| Requirement | Version |
+|---|---|
+| Go | 1.25+ |
+| Node.js | 20+ |
+| npm | 10+ |
+| Wails CLI | 2.x (`go install github.com/wailsapp/wails/v2/cmd/wails@latest`) |
 
-| Tool      | Version | Purpose                        |
-|-----------|---------|--------------------------------|
-| Go        | 1.25+   | Backend compilation            |
-| Node.js   | 20+     | Frontend build tools           |
-| Wails CLI | 2.x     | Development and build commands |
-| npm       | 10+     | Package management             |
+**Platform extras:**
 
-### Installing Wails CLI
+| Platform | Requirement |
+|---|---|
+| macOS | Xcode Command Line Tools |
+| Linux | `sudo apt-get install build-essential libgtk-3-dev libwebkit2gtk-4.1-dev` |
+| Windows | C++ Build Tools + WebView2 Runtime |
 
-```bash
-go install github.com/wailsapp/wails/v2/cmd/wails@latest
-```
-
-### Development Mode
-
-Run the application in development mode with hot-reload:
-
-```bash
-# From project root
-wails dev
-```
-
-This command:
-
-1. Starts the Vite dev server for frontend hot-reload
-2. Compiles and runs the Go backend
-3. Opens the application window
-4. Watches for file changes in both frontend and backend
-5. Auto-reloads when changes are detected
-
-**Frontend Dev Server**: Runs on auto-detected port (typically 34115)
-
-### Frontend-Only Development
-
-For faster frontend iteration without backend:
-
-```bash
-cd frontend
-npm run dev
-```
-
-> [!NOTE]
-> This runs the frontend in isolation. Wails bindings will not work; mock data or stubs are required.
-
-### Running Tests
-
-```bash
-# Go tests
-go test ./... -v
-
-# Frontend tests
-cd frontend
-npm test
-
-# With coverage
-npm run test:coverage
-```
+> **No SQLite system library needed.** GoText uses `modernc.org/sqlite` — a pure-Go driver with
+> no CGO dependency. `wails build` cross-compiles cleanly without any native SQLite installation.
 
 ---
 
-## Build Process
-
-### Development Build
+## 2. Development commands
 
 ```bash
-wails dev
+wails dev                           # start Wails dev server: hot-reload backend + frontend
+                                    # frontend available at http://localhost:34115
+
+cd frontend && npm run dev          # frontend-only Vite dev server with bridge mock
+                                    # UI runs without a Go backend — ideal for rapid UI iteration
+
+wails build                         # production build → build/bin/<AppName>
+wails doctor                        # verify all Wails prerequisites are installed
+wails generate module               # regenerate frontend/wailsjs/ after any Go signature change
 ```
 
-**What happens:**
-
-1. **Frontend**: Vite compiles TypeScript/React in development mode
-2. **Backend**: Go compiles with `-tags dev` for development features
-3. **Bindings**: Wails regenerates TypeScript bindings when Go signatures change
-4. **Hot reload**: Both frontend and backend support live reload
-
-### Production Build
-
-```bash
-wails build
-```
-
-**What happens:**
-
-1. **Frontend**:
-    - TypeScript compilation (`tsc`)
-    - Vite production build (minification, tree-shaking)
-    - Assets embedded in Go binary
-2. **Backend**:
-    - Go compiles with production optimizations
-    - Debug logging disabled
-    - Assets embedded via `//go:embed`
-3. **Output**: Single executable in `build/bin/`
-
-### Platform-Specific Builds
-
-#### macOS (Darwin)
-
-```bash
-# Build for current macOS
-wails build
-
-# Cross-compile for macOS arm64 (Apple Silicon)
-wails build -platform darwin/arm64
-
-# Cross-compile for macOS amd64 (Intel)
-wails build -platform darwin/amd64
-
-# Universal binary (both architectures)
-wails build -platform darwin/universal
-```
-
-**Output**: `build/bin/TextProcessingSuite.app`
-
-**macOS-specific configuration** in `build/darwin/`:
-
-- `Info.plist` - Application metadata and permissions
-- `Info.dev.plist` - Development-specific settings
-
-#### Windows
-
-```bash
-# Cross-compile for Windows (from macOS/Linux)
-wails build -platform windows/amd64
-
-# Or on Windows
-wails build
-```
-
-**Output**: `build/bin/TextProcessingSuite.exe`
-
-**Windows-specific configuration** in `build/windows/`:
-
-- `icon.ico` - Application icon
-- `wails.exe.manifest` - Windows manifest
-- `info.json` - Application metadata (version, copyright)
-- `installer/` - NSIS installer scripts
-
-#### Linux
-
-```bash
-wails build -platform linux/amd64
-```
-
-### Build Flags
-
-| Flag        | Purpose                           |
-|-------------|-----------------------------------|
-| `-clean`    | Clean build cache before building |
-| `-debug`    | Keep debug info in binary         |
-| `-devtools` | Include Chrome DevTools           |
-| `-upx`      | Compress binary with UPX          |
-| `-ldflags`  | Pass flags to Go linker           |
-| `-tags`     | Build tags to include             |
-| `-o`        | Output filename                   |
-
-**Example with flags:**
-
-```bash
-wails build -clean -ldflags="-s -w" -upx
-```
+`wails generate module` must be run whenever a bound handler method signature or a bound struct
+changes. The generated files in `frontend/wailsjs/` are never hand-edited.
 
 ---
 
-## Configuration Management
+## 3. Test commands
 
-### Wails Configuration
+```bash
+# Backend
+go test -race ./...                               # all Go tests with race detector (always use -race)
+go test ./internal/...                            # backend unit + integration tests
+go test -run TestName ./internal/actions/         # single named test
 
-**File**: `wails.json`
+# Frontend
+cd frontend && npm run test                       # Jest (all tests)
+cd frontend && npm run test:coverage              # Jest with coverage report
+cd frontend && npm run verify:ui                  # Playwright/Chromium UI tests
+```
+
+The integration tests in `internal/llms/` use `net/http/httptest` to mock LLM providers — no
+external LLM is needed to run the test suite.
+
+---
+
+## 4. CI guards
+
+`.github/workflows/main.yml` runs two jobs on every PR: `build` (compiles for Linux, Windows,
+and macOS ARM64 — a build failure on any platform fails CI) and `test` (the gate list below,
+all on `ubuntu-latest`). The workflow file itself is the source of truth; this table mirrors it.
+
+| Gate | Command | Blocks on |
+|---|---|---|
+| Go format | `gofmt -l .` | Unformatted Go files |
+| Go vet | `go vet ./...` | Vet warnings |
+| Go tests | `go test -race ./...` | Test failure or data race |
+| FE format | `npm run format:check` | Unformatted TS/CSS files |
+| FE lint | `npm run lint` | ESLint errors |
+| FE type-check | `npx tsc --noEmit` | Type errors |
+| FE unit tests | `npm run test:coverage` | Test failure |
+| No MUI/emotion | `grep -r "@mui\|@emotion" src/` (must find nothing) | Reintroduced MUI/emotion import anywhere in `frontend/src` |
+| UI gates (Target A) | `npm run verify:ui` | Playwright failure against the mocked-bridge dev server |
+| Smoke flows (Target A) | `npm run verify:smoke` | Playwright smoke-flow failure |
+| Go vulnerability scan | `govulncheck ./...` | Known-vulnerable Go dependency |
+| FE dependency audit | `npm audit --audit-level=high` | High/critical npm advisory |
+| Wails doctor | `wails doctor` | Missing/misconfigured Wails toolchain |
+| sqlc drift | `sqlc diff` | Hand-edited or stale `internal/db/store/` vs `queries/*.sql` |
+| Bindings drift | `wails generate module && git diff --exit-code frontend/wailsjs/` | Uncommitted or stale generated bindings |
+
+Any failing gate blocks merge — there is no "pre-existing failure" exception.
+
+---
+
+## 5. Key dependencies
+
+### Go modules
+
+| Module | Role |
+|---|---|
+| `github.com/wailsapp/wails/v2` | Desktop framework |
+| `resty.dev/v3` | HTTP client for LLM provider calls |
+| `github.com/rs/zerolog` | Structured logging |
+| `gopkg.in/natefinch/lumberjack.v2` | Log rotation |
+| `modernc.org/sqlite` | Pure-Go SQLite driver (no CGO) |
+| `github.com/pressly/goose/v3` | Schema migration runner |
+
+`sqlc` is a dev tool (not a module dependency) — run `sqlc generate` after changing query files.
+
+### Frontend (npm)
+
+| Package | Role |
+|---|---|
+| `react`, `react-dom` (19) | UI rendering |
+| `@reduxjs/toolkit`, `react-redux` | State management |
+| `radix-ui` | Behavior + accessibility primitives |
+| `cmdk` | Command palette and searchable pickers |
+| `react-markdown`, `remark-gfm`, `remark-math` | Markdown rendering |
+| `rehype-katex`, `rehype-highlight`, `highlight.js`, `mermaid` | Markdown extensions |
+| `lucide-react` | Tree-shakable SVG icons |
+| `typescript`, `vite` | Compiler and build tool |
+| `jest`, `@testing-library/react`, `@testing-library/user-event`, `jest-axe` | Tests |
+| `playwright` | Browser UI tests |
+
+**Removed in v3 (must not reappear):** `@mui/material`, `@mui/icons-material`, `@emotion/react`,
+`@emotion/styled`.
+
+---
+
+## 6. Settings and data persistence
+
+### Settings Database (per OS)
+
+Settings are persisted entirely in SQLite — no JSON settings file exists or is used by the
+running application.
+
+| Platform | Path |
+|---|---|
+| macOS | `~/Library/Application Support/GoTextApp/gotext.db` |
+| Linux | `~/.config/GoTextApp/gotext.db` |
+| Windows | `%APPDATA%\GoTextApp\gotext.db` |
+
+### Logs
+
+Logs share the same base directory as settings and the database (`os.UserConfigDir()` +
+`GoTextApp`), not the OS's generic log directory:
+
+| Platform | Path |
+|---|---|
+| macOS | `~/Library/Application Support/GoTextApp/logs/` |
+| Linux | `~/.config/GoTextApp/logs/` |
+| Windows | `%APPDATA%\GoTextApp\logs\` |
+
+---
+
+## 7. Working with the database
+
+### Adding a migration
+
+1. Create `internal/db/migrations/NNNN_description.sql` (goose format):
+   ```sql
+   -- +goose Up
+   ALTER TABLE providers ADD COLUMN display_name TEXT;
+
+   -- +goose Down
+   -- SQLite does not support DROP COLUMN in older versions; document the reverse procedure
+   ```
+2. The migration runs automatically on the next `db.Open` (app startup).
+3. Never modify an existing migration — always add a new numbered file.
+
+### Adding or changing a query
+
+1. Edit `internal/db/queries/*.sql`
+2. Run `sqlc generate` to regenerate `internal/db/store/*.go`
+3. Never edit `internal/db/store/` manually — it is always overwritten by sqlc
+
+---
+
+## 8. Wails configuration
+
+`wails.json` at the repo root controls the Wails build:
 
 ```json
 {
-    "$schema": "https://wails.io/schemas/config.v2.json",
-    "name": "TextProcessingSuite",
-    "outputfilename": "TextProcessingSuite",
-    "frontend:install": "npm install",
-    "frontend:build": "npm run build",
-    "frontend:dev:watcher": "npm run dev",
-    "frontend:dev:serverUrl": "auto",
-    "author": {
-        "name": "Oleksandr Kostenko",
-        "email": "sanyokkua@gmail.com"
-    }
+  "name": "GoText",
+  "outputfilename": "GoText",
+  "frontend:install": "npm install",
+  "frontend:build": "npm run build",
+  "frontend:dev:watcher": "npm run dev -- --mode wails",
+  "frontend:dev:serverUrl": "auto",
+  "author": { "name": "Oleksandr Kostenko", "email": "sanyokkua@gmail.com" },
+  "version": "dev",
+  "info": {
+    "companyName": "Oleksandr Kostenko",
+    "productName": "GoText",
+    "productVersion": "dev",
+    "copyright": "Copyright © Oleksandr Kostenko",
+    "comments": "AI-powered text transformation"
+  }
 }
 ```
 
-| Field                    | Purpose                                  |
-|--------------------------|------------------------------------------|
-| `name`                   | Application name                         |
-| `outputfilename`         | Binary output name                       |
-| `frontend:install`       | Command to install frontend dependencies |
-| `frontend:build`         | Command to build frontend for production |
-| `frontend:dev:watcher`   | Command to run frontend dev server       |
-| `frontend:dev:serverUrl` | Dev server URL (`auto` = auto-detect)    |
+`version`/`info.productVersion` stay at the placeholder `"dev"` in the repo. The release
+workflow patches both fields with the real version in the CI runner's checkout only (never
+committed back), and separately injects the same version into the Go binary via `-ldflags`
+(see §9, Release process).
 
-### Application Settings
-
-**Storage Location:**
-
-| Platform | Path                                                              |
-|----------|-------------------------------------------------------------------|
-| macOS    | `~/Library/Application Support/TextProcessingSuite/settings.json` |
-| Windows  | `%APPDATA%\TextProcessingSuite\settings.json`                     |
-| Linux    | `~/.config/TextProcessingSuite/settings.json`                     |
-
-**Settings Structure:**
-
-```json
-{
-    "availableProviderConfigs": [
-        {
-            "providerId": "uuid-here",
-            "providerName": "Ollama",
-            "providerType": "ollama",
-            "baseUrl": "http://127.0.0.1:11434/",
-            "modelsEndpoint": "v1/models",
-            "completionEndpoint": "v1/chat/completions",
-            "authType": "none",
-            "authToken": "",
-            "useAuthTokenFromEnv": false,
-            "envVarTokenName": "",
-            "useCustomHeaders": false,
-            "headers": {},
-            "useCustomModels": false,
-            "customModels": []
-        }
-    ],
-    "currentProviderConfig": {
-        /* Same structure */
-    },
-    "inferenceBaseConfig": {
-        "timeout": 60,
-        "maxRetries": 3,
-        "useMarkdownForOutput": false
-    },
-    "modelConfig": {
-        "name": "",
-        "useTemperature": true,
-        "temperature": 0.5
-    },
-    "languageConfig": {
-        "languages": [
-            "English",
-            "Ukrainian",
-            "..."
-        ],
-        "defaultInputLanguage": "English",
-        "defaultOutputLanguage": "Ukrainian"
-    }
-}
-```
-
-### Default Providers
-
-The application ships with preconfigured providers:
-
-| Provider   | Base URL                     | Type              | Auth         |
-|------------|------------------------------|-------------------|--------------|
-| Ollama     | `http://127.0.0.1:11434/`    | Ollama            | None         |
-| LM Studio  | `http://127.0.0.1:1234/`     | OpenAI-compatible | None         |
-| Llama.cpp  | `http://127.0.0.1:8080/`     | OpenAI-compatible | None         |
-| OpenRouter | `https://openrouter.ai/api/` | OpenAI-compatible | Bearer (env) |
-| OpenAI     | `https://api.openai.com/`    | OpenAI-compatible | Bearer (env) |
-
-### Environment Variables
-
-The application supports loading API tokens from environment variables:
-
-| Variable             | Provider      | Purpose            |
-|----------------------|---------------|--------------------|
-| `OPENROUTER_API_KEY` | OpenRouter.ai | API authentication |
-| `OPENAI_API_KEY`     | OpenAI        | API authentication |
-
-**How it works:**
-
-```go
-// llms/service.go
-func (s *LLMService) getAuthToken(provider *settings.ProviderConfig) string {
-if provider.UseAuthTokenFromEnv && provider.EnvVarTokenName != "" {
-if envToken := os.Getenv(provider.EnvVarTokenName); envToken != "" {
-return envToken
-}
-}
-return provider.AuthToken
-}
-```
-
-> [!CAUTION]
-> Never commit API tokens to version control. Use environment variables for sensitive credentials.
+The `frontend/wailsjs/` directory is the output of `wails generate module` —
+never edit files there.
 
 ---
 
-## Dependencies
+## 9. Release process
 
-### Go Dependencies
+Releases are built and published by the same `.github/workflows/main.yml` file, in two jobs
+that run after `build`/`test` pass: `build` (per-platform binaries) and `create-release`
+(publishes them). There are two ways to trigger a release:
 
-**Core Dependencies** (`go.mod`):
+1. **Tag push (recommended):** `git tag v1.0.0 && git push origin v1.0.0`. Any tag matching
+   `v*.*.*` triggers the workflow; the version is taken from the tag.
+2. **Manual dispatch:** Actions → "Build and Release Wails App" → Run workflow, entering a
+   version (no leading `v`) and whether to create a GitHub release. Useful for producing
+   unreleased test builds — set "Create release" to false and the artifacts are still uploaded
+   (7-day retention) but no release is published.
 
-| Module                         | Version       | Purpose                          |
-|--------------------------------|---------------|----------------------------------|
-| `github.com/wailsapp/wails/v2` | v2.11.0       | Desktop framework                |
-| `resty.dev/v3`                 | v3.0.0-beta.4 | HTTP client for LLM APIs         |
-| `github.com/rs/zerolog`        | v1.34.0       | Structured logging               |
-| `github.com/google/uuid`       | v1.6.0        | UUID generation for provider IDs |
-| `github.com/stretchr/testify`  | v1.11.1       | Test assertions                  |
+For each trigger, the workflow:
+1. Computes the version once (`determine-version` job) and shares it with the other jobs.
+2. Builds three platform binaries in parallel: `linux/amd64` (Ubuntu 24.04, `webkit2_41` build
+   tag), `windows/amd64`, and `darwin/arm64` (macOS Apple Silicon only — no Intel build).
+   Each build patches `wails.json`'s `version`/`info.productVersion` with the release version
+   (via `jq`, in that job's checkout only) and passes
+   `-ldflags "-X go_text/internal/settings.AppVersion=<version>"` to `wails build`, which is
+   the value the running app reports as its own version.
+3. Runs the full `test` job gate set (§4) — a release is not published if any gate fails.
+4. `create-release` downloads all platform artifacts, renames them with the version embedded
+   (e.g. `GoText-1.0.0-linux-amd64`), re-zips the macOS `.app` bundle (GitHub Actions flattens
+   its internal structure during upload/download, so the workflow restores it and re-applies
+   the execute bit before zipping), generates a `SHA256SUMS.txt` checksum file, and publishes a
+   GitHub Release with all of it attached. A version containing a hyphen (e.g. `1.0.0-beta`) is
+   automatically marked as a pre-release.
 
-**Why these choices:**
-
-- **Wails v2**: Modern, well-maintained Go + Web bridge. Alternatives (Electron, Tauri) were considered but Wails provides native Go experience.
-- **Resty v3**: Feature-rich HTTP client with retry, timeout, and request/response hooks. Better ergonomics than `net/http` for API clients.
-- **zerolog**: Zero-allocation JSON logger. Chosen for performance and structured output.
-- **UUID**: Standard Go UUID library for generating unique provider IDs.
-
-**Indirect Dependencies** (notable):
-
-| Module                         | Purpose             |
-|--------------------------------|---------------------|
-| `github.com/gorilla/websocket` | WebSocket support   |
-| `github.com/labstack/echo/v4`  | Internal dev server |
-| `github.com/samber/lo`         | Utility library     |
-
-### NPM Dependencies
-
-**Production Dependencies** (`package.json`):
-
-| Package               | Version | Purpose                    |
-|-----------------------|---------|----------------------------|
-| `react`               | 19.2.3  | UI library                 |
-| `react-dom`           | 19.2.3  | React DOM rendering        |
-| `@reduxjs/toolkit`    | 2.11.2  | State management           |
-| `react-redux`         | 9.2.0   | React Redux bindings       |
-| `@mui/material`       | 7.3.6   | Material Design components |
-| `@mui/icons-material` | 7.3.6   | Material icons             |
-| `@emotion/react`      | 11.14.0 | CSS-in-JS (MUI peer dep)   |
-| `@emotion/styled`     | 11.14.1 | Styled components (MUI)    |
-| `@fontsource/roboto`  | 5.2.9   | Roboto font                |
-| `uuid`                | 13.0.0  | Frontend UUID generation   |
-
-**Why these choices:**
-
-- **React 19**: Latest React with concurrent features, improved suspense
-- **Redux Toolkit**: Standard Redux with less boilerplate, RTK Query capabilities
-- **Material-UI 7**: Comprehensive component library with TypeScript support
-- **Emotion**: Required by MUI, provides excellent CSS-in-JS performance
-
-**Development Dependencies:**
-
-| Package                | Version | Purpose                     |
-|------------------------|---------|-----------------------------|
-| `typescript`           | 5.9.3   | Type checking               |
-| `vite`                 | 7.3.0   | Build tool                  |
-| `@vitejs/plugin-react` | 5.1.2   | React support for Vite      |
-| `jest`                 | 30.2.0  | Testing framework           |
-| `ts-jest`              | 29.4.6  | TypeScript Jest transformer |
-| `eslint`               | 9.39.2  | Code linting                |
-| `prettier`             | 3.7.4   | Code formatting             |
-
----
-
-## Build Directory Structure
-
-```
-build/
-├── README.md           # Build documentation
-├── appicon.png         # Application icon source
-│
-├── bin/                # Build output directory
-│   └── TextProcessingSuite     # (or .app/.exe)
-│
-├── darwin/             # macOS-specific files
-│   ├── Info.plist      # Production app metadata
-│   └── Info.dev.plist  # Development app metadata
-│
-└── windows/            # Windows-specific files
-    ├── icon.ico        # Windows icon
-    ├── wails.exe.manifest   # Windows manifest
-    ├── info.json       # Version info
-    └── installer/      # NSIS installer files
-```
-
-### macOS Info.plist
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "...">
-<plist version="1.0">
-    <dict>
-        <key>CFBundleName</key>
-        <string>TextProcessingSuite</string>
-        <key>CFBundleIdentifier</key>
-        <string>com.wails.textprocessingsuite</string>
-        ...
-    </dict>
-</plist>
-```
-
-### Windows info.json
-
-```json
-{
-    "fixed": {
-        "file_version": "1.0.0.0"
-    },
-    "info": {
-        "CompanyName": "Oleksandr Kostenko",
-        "ProductName": "TextProcessingSuite",
-        "FileDescription": "Text Processing Suite Application",
-        "ProductVersion": "1.0.0",
-        ...
-    }
-}
-```
-
----
-
-## NPM Scripts
-
-| Script          | Command             | Purpose                  |
-|-----------------|---------------------|--------------------------|
-| `dev`           | `vite`              | Start dev server         |
-| `build`         | `tsc && vite build` | Production build         |
-| `preview`       | `vite preview`      | Preview production build |
-| `test`          | `jest`              | Run tests                |
-| `test:watch`    | `jest --watch`      | Tests in watch mode      |
-| `test:coverage` | `jest --coverage`   | Tests with coverage      |
-
----
-
-## Quick Reference
-
-### Development Commands
-
-```bash
-# Start development
-wails dev
-
-# Run tests
-go test ./... -v
-cd frontend && npm test
-
-# Check linting
-cd frontend && npx eslint src/
-
-# Format code
-cd frontend && npx prettier --write src/
-```
-
-### Build Commands
-
-```bash
-# Production build (current platform)
-wails build
-
-# macOS universal
-wails build -platform darwin/universal
-
-# Windows (from macOS)
-wails build -platform windows/amd64
-
-# Clean and build
-wails build -clean
-```
-
-### Regenerate Bindings
-
-Bindings are auto-generated when Go handler signatures change. To force regeneration:
-
-```bash
-wails generate module
-```
-
----
-
-*Previous: [Data Flow & Communication](./04-data-flow-and-communication.md)*
+There is no macOS Intel (`darwin/amd64`) build and no code-signing/notarization step — both are
+current release-process limitations, not omissions from this document.

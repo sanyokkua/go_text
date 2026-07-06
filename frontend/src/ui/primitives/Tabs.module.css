@@ -1,0 +1,98 @@
+/* frontend/src/ui/primitives/Tabs.module.css */
+.root {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.vertical {
+    flex-direction: row;
+}
+
+.list {
+    display: flex;
+    flex-shrink: 0;
+}
+
+.root:not(.vertical) .list {
+    flex-direction: row;
+    border-bottom: 1px solid var(--line);
+}
+
+.vertical .list {
+    flex-direction: column;
+    width: 172px;
+    border-right: 1px solid var(--line);
+    padding: var(--space-2) 0;
+    gap: 2px;
+}
+
+.trigger {
+    display: inline-flex;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-2);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    user-select: none;
+    transition:
+        color 100ms,
+        background 100ms;
+}
+
+/* Horizontal trigger */
+.root:not(.vertical) .trigger {
+    padding: 9px 14px;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+}
+
+.root:not(.vertical) .trigger[data-state='active'] {
+    color: var(--teal);
+    border-bottom-color: var(--teal);
+}
+
+.root:not(.vertical) .trigger:hover:not([data-state='active']) {
+    color: var(--ink);
+}
+
+/* Vertical trigger */
+.vertical .trigger {
+    padding: 8px 14px;
+    width: 100%;
+    border-radius: var(--radius-sm);
+}
+
+.vertical .trigger[data-state='active'] {
+    background: var(--teal-50);
+    color: var(--teal-dark);
+    font-weight: 600;
+}
+
+:global(.dark) .vertical .trigger[data-state='active'] {
+    color: var(--teal-light);
+}
+
+.vertical .trigger:hover:not([data-state='active']) {
+    background: var(--surface-2);
+}
+
+.trigger:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.content {
+    flex: 1;
+    min-width: 0;
+    outline: none;
+}
+
+.root:not(.vertical) .content {
+    padding-top: var(--space-3);
+}
+.vertical .content {
+    padding-left: var(--space-3);
+}

@@ -1,4 +1,4 @@
-# Text Processing Suite - Architecture Documentation
+# GoText - Architecture Documentation
 
 ## Table of Contents
 
@@ -17,7 +17,7 @@
 
 ## Overview
 
-Text Processing Suite is a native desktop application built with **Wails v2** that combines a **Go backend** with a **React frontend**. The
+GoText is a native desktop application built with **Wails v2** that combines a **Go backend** with a **React frontend**. The
 application processes text using Large Language Models (LLMs) through OpenAI-compatible APIs, supporting operations like proofreading, formatting,
 translation, summarization, and transforming.
 
@@ -863,8 +863,8 @@ Edit `wails.json`:
 
 ```json
 {
-  "name": "TextProcessingSuite",
-  "outputfilename": "TextProcessingSuite",
+  "name": "GoText",
+  "outputfilename": "GoText",
   "author": {
     "name": "Your Name",
     "email": "your@email.com"
@@ -961,7 +961,7 @@ wails build -platform linux/amd64        # Linux 64-bit
 
 ## Conclusion
 
-This architecture documentation provides a comprehensive guide to understanding and modifying the Text Processing Suite application. The key
+This architecture documentation provides a comprehensive guide to understanding and modifying the GoText application. The key
 takeaways:
 
 1. **Wails v2** bridges Go backend and React frontend

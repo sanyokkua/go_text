@@ -89,3 +89,127 @@ func (a *App) startup(ctx context.Context) { a.ctx = ctx }
 | Testing patterns | `references/10-testing.md` |
 | Debugging & tooling | `references/11-debugging.md` |
 | Common patterns & best practices | `references/12-patterns.md` |
+
+---
+
+## GoText Application Notes
+
+These constraints and patterns apply specifically to the **GoText** codebase on top of standard
+Wails v2 rules.
+
+### No `context.Context` parameter in bound methods
+
+GoText handler methods take **no `ctx` parameter**. The `ctx` stored in `OnStartup` is held by the
+`ApplicationContextHolder` and passed to services internally:
+
+```go
+// ✅ GoText pattern — no ctx param
+func (h *ActionHandler) ProcessPromptChain(req actions.ChainRequest) (res apperr.ChainResultEnv) {
+    data, err := h.service.RunChain(h.ctx, req)  // ctx comes from the handler struct
+    ...
+}
+
+// ❌ Wrong for GoText — ctx shows up in the TS binding and confuses the frontend
+func (h *ActionHandler) ProcessPromptChain(ctx context.Context, req actions.ChainRequest) (res apperr.ChainResultEnv) {
+```
+
+### Result envelope return pattern
+
+**Never** return `(T, error)` from a bound method. Instead, return a concrete `apperr.*Result`
+envelope. The JS Promise always resolves; the frontend checks `res.error` to detect failures:
+
+```go
+// ✅ GoText — envelope; JS always resolves
+func (h *XxxHandler) DoThing(req Request) (res apperr.XxxResult) {
+    defer func() {
+        if r := recover(); r != nil {
+            ae := apperr.Internal(fmt.Errorf("panic: %v", r))
+            wire := apperr.ToWire(h.zlog, ae)
+            res = apperr.XxxResult{Error: &wire}
+        }
+    }()
+    data, err := h.service.DoThing(h.ctx, req)
+    if err != nil {
+        wire := apperr.ToWire(h.zlog, err)
+        return apperr.XxxResult{Error: &wire}
+    }
+    return apperr.XxxResult{Data: data}
+}
+```
+
+See `references/02-binding.md §GoText: Result Envelope Pattern` for full details.
+
+### EnumBind for ErrorCode
+
+GoText exposes `apperr.ErrorCode` as a real TypeScript enum in `models.ts` via `EnumBind`:
+
+```go
+// main.go
+wails.Run(&options.App{
+    EnumBind: []interface{}{
+        []interface{}{"ErrorCode", apperr.ErrorCode("")},
+    },
+    ...
+})
+```
+
+After any change to `apperr.ErrorCode` or the `EnumBind` list, run `wails generate module`.
+Frontend code switches on `apperr.ErrorCode.Auth`, `apperr.ErrorCode.Timeout`, etc. — never on
+raw string literals.
+
+### chain:* progress events contract
+
+Chain run progress flows from Go to frontend via three events. See
+`references/05-event-system.md §GoText Chain Progress Events` for the full contract.
+
+| Event | Payload | When |
+|---|---|---|
+| `chain:progress` | `{ runId, stepIndex, totalSteps, output }` | After each inference group completes |
+| `chain:error` | `{ runId, stepIndex, error: WireError }` | If a step fails (partial output may also be set) |
+| `chain:done` | `{ runId, output, cancelled }` | Final event — chain finished or cancelled |
+
+### Id-based cooperative cancellation
+
+Each chain run is tracked by a `runId` string. The frontend dispatches `CancelChain(runId)` to
+request cancellation; the handler signals the run's `context.CancelFunc` stored in the run
+registry. The chain emits `chain:done` with `cancelled: true` when the cancellation takes effect.
+
+```typescript
+// Frontend — cancel a running chain
+await CancelChain(runId)   // from wailsjs/go/actions/ActionHandler
+```
+
+```go
+// Go — run registry pattern
+type runRegistry struct {
+    mu      sync.Mutex
+    cancels map[string]context.CancelFunc
+}
+
+func (r *runRegistry) register(runId string, cancel context.CancelFunc) {
+    r.mu.Lock()
+    r.cancels[runId] = cancel
+    r.mu.Unlock()
+}
+
+func (r *runRegistry) cancel(runId string) {
+    r.mu.Lock()
+    if fn, ok := r.cancels[runId]; ok {
+        fn()
+        delete(r.cancels, runId)
+    }
+    r.mu.Unlock()
+}
+```
+
+On `OnShutdown`, cancel all in-flight runs by iterating the registry.
+
+### No-CGO SQLite constraint
+
+GoText uses `modernc.org/sqlite` — a pure-Go, CGO-free SQLite driver. Never substitute
+`github.com/mattn/go-sqlite3` or any other CGO driver. CGO breaks `wails build` cross-compilation.
+
+```go
+import _ "modernc.org/sqlite"
+db, err := sql.Open("sqlite", dbFilePath)
+```

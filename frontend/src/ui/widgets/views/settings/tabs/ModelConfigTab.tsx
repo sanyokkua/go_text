@@ -1,256 +1,260 @@
-import RefreshIcon from '@mui/icons-material/Refresh';
-import {
-    AutocompleteRenderInputParams,
-    Box,
-    Button,
-    Checkbox,
-    FormControl,
-    FormControlLabel,
-    FormLabel,
-    Radio,
-    RadioGroup,
-    Slider,
-    Typography,
-} from '@mui/material';
-import Autocomplete from '@mui/material/Autocomplete';
-import TextField from '@mui/material/TextField';
 import React, { useEffect, useState } from 'react';
-import { getLogger, ModelConfig, Settings } from '../../../../../logic/adapter';
-import { selectAvailableModels, useAppDispatch, useAppSelector } from '../../../../../logic/store';
-import { getModelsList } from '../../../../../logic/store/actions';
-import { enqueueNotification } from '../../../../../logic/store/notifications';
-import { updateModelConfig } from '../../../../../logic/store/settings';
-import { setAppBusy } from '../../../../../logic/store/ui';
-import { parseError } from '../../../../../logic/utils/error_utils';
-import { SPACING } from '../../../../styles/constants';
 
-const logger = getLogger('ModelConfigTab');
+import { Settings } from '../../../../../logic/adapter/models';
+import { useSettingsToast } from '../../../../../logic/hooks/useSettingsToast';
+import {
+    selectCurrentProvider,
+    selectCurrentProviderModelItems,
+    selectDiscoveredModels,
+    useAppDispatch,
+    useAppSelector,
+} from '../../../../../logic/store';
+import { discoverCurrentProviderModels, updateModelConfig } from '../../../../../logic/store/settings/thunks';
+import { Button } from '../../../../components/Button';
+import { Combobox } from '../../../../primitives/Combobox';
+import { RadioGroup } from '../../../../primitives/RadioGroup';
+import { Slider } from '../../../../primitives/Slider';
+import { Switch } from '../../../../primitives/Switch';
+import styles from './ModelConfigTab.module.css';
 
-interface ModelConfigTabProps {
+interface ModelForm {
+    name: string;
+    useTemperature: boolean;
+    temperature: number;
+    useContextWindow: boolean;
+    contextWindow: number;
+    useLegacyMaxTokens: boolean;
+    useMaxOutputTokens: boolean;
+    maxOutputTokens: number;
+}
+
+function toForm(cfg: Settings['modelConfig']): ModelForm {
+    return {
+        name: cfg.name,
+        useTemperature: cfg.useTemperature,
+        temperature: cfg.temperature,
+        useContextWindow: cfg.useContextWindow,
+        contextWindow: cfg.contextWindow,
+        useLegacyMaxTokens: cfg.useLegacyMaxTokens,
+        useMaxOutputTokens: cfg.useMaxOutputTokens,
+        maxOutputTokens: cfg.maxOutputTokens,
+    };
+}
+
+function isFormDirty(form: ModelForm, original: Settings['modelConfig']): boolean {
+    return (
+        form.name !== original.name ||
+        form.useTemperature !== original.useTemperature ||
+        form.temperature !== original.temperature ||
+        form.useContextWindow !== original.useContextWindow ||
+        form.contextWindow !== original.contextWindow ||
+        form.useLegacyMaxTokens !== original.useLegacyMaxTokens ||
+        form.useMaxOutputTokens !== original.useMaxOutputTokens ||
+        form.maxOutputTokens !== original.maxOutputTokens
+    );
+}
+
+const TOKEN_PARAM_OPTIONS = [
+    { value: 'false', label: 'max_completion_tokens (standard, recommended)' },
+    { value: 'true', label: 'max_tokens (legacy)' },
+];
+
+interface Props {
     settings: Settings;
 }
 
-/**
- * Model Config Tab Component
- * Configuration for model settings
- */
-const ModelConfigTab: React.FC<ModelConfigTabProps> = ({ settings }) => {
+const ModelConfigTab: React.FC<Props> = ({ settings }) => {
     const dispatch = useAppDispatch();
-    const availableModels = useAppSelector(selectAvailableModels);
-    const [formData, setFormData] = useState<ModelConfig>({ ...settings.modelConfig });
+    const runWithToast = useSettingsToast();
+    const currentProvider = useAppSelector(selectCurrentProvider);
+    // Ollama's native chat path always uses its own `num_predict` option, so the
+    // legacy/standard token-limit-parameter choice has no effect for this provider.
+    const isOllama = currentProvider?.providerType === 'ollama';
+    // Shared discovery source — same selector the AppBar ModelPicker consumes, so
+    // the two views never disagree about which models exist.
+    const modelSelectItems = useAppSelector(selectCurrentProviderModelItems);
+    const discoveredModels = useAppSelector(selectDiscoveredModels);
 
-    const fetchModels = async () => {
-        try {
-            logger.logDebug('Fetching models list');
-            dispatch(setAppBusy(true));
-            await dispatch(getModelsList()).unwrap();
-            logger.logInfo('Models list refreshed successfully');
-            dispatch(enqueueNotification({ message: 'Models list refreshed successfully', severity: 'success' }));
-        } catch (error: unknown) {
-            const err = parseError(error);
-            logger.logError(`Failed to refresh models: ${err.message}`);
-            dispatch(enqueueNotification({ message: `Failed to refresh models: ${err.message}`, severity: 'error' }));
-        } finally {
-            dispatch(setAppBusy(false));
-        }
-    };
+    const [form, setForm] = useState<ModelForm>(() => toForm(settings.modelConfig));
+    const [refreshing, setRefreshing] = useState(false);
+    const [saving, setSaving] = useState(false);
 
-    // Fetch models list on mount if empty
+    const providerId = currentProvider?.providerId ?? '';
+
     useEffect(() => {
-        if (availableModels.length === 0) {
-            logger.logDebug('No models available, fetching models list');
-            fetchModels();
+        setForm(toForm(settings.modelConfig));
+    }, [settings.modelConfig]);
+
+    // Discover models on mount and whenever the provider changes. Discovery resolves
+    // even on failure (the thunk swallows errors), so the spinner is safe.
+    useEffect(() => {
+        if (providerId) {
+            void dispatch(discoverCurrentProviderModels(providerId));
         }
-    }, [dispatch, availableModels.length]);
+    }, [dispatch, providerId]);
 
-    const handleRefreshModels = async () => {
-        logger.logDebug('Manual models refresh requested');
-        fetchModels();
-    };
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value, type } = e.target;
-        if (name) {
-            logger.logDebug(`Model config changed: ${name} = ${value}`);
-            setFormData((prev) => ({ ...prev, [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value }));
+    // Once discovery lands, force the temperature toggle off for the in-progress
+    // model selection if that model rejects temperature.
+    useEffect(() => {
+        const caps = discoveredModels.find((m) => m.id === form.name)?.caps;
+        if (caps?.supportsTemperature === false) {
+            setForm((prev) => (prev.useTemperature ? { ...prev, useTemperature: false } : prev));
         }
-    };
+    }, [discoveredModels, form.name]);
 
-    const handleSliderChange = (_: Event, newValue: number | number[]) => {
-        if (typeof newValue === 'number') {
-            logger.logDebug(`Temperature slider changed to: ${newValue}`);
-            setFormData((prev) => ({ ...prev, temperature: newValue }));
-        }
-    };
-
-    const handleContextWindowSliderChange = (_: Event, newValue: number | number[]) => {
-        if (typeof newValue === 'number') {
-            logger.logDebug(`Context window slider changed to: ${newValue}`);
-            setFormData((prev) => ({ ...prev, contextWindow: newValue }));
-        }
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleRefresh = async (): Promise<void> => {
+        if (!providerId) return;
+        setRefreshing(true);
         try {
-            logger.logDebug(`Updating model config: ${JSON.stringify(formData)}`);
-            dispatch(setAppBusy(true));
-            await dispatch(updateModelConfig(formData)).unwrap();
-            logger.logInfo('Model settings updated successfully');
-            dispatch(enqueueNotification({ message: 'Model settings updated successfully', severity: 'success' }));
-        } catch (error: unknown) {
-            const err = parseError(error);
-            logger.logError(`Failed to update model settings: ${err.message}`);
-            dispatch(enqueueNotification({ message: `Failed to update model settings: ${err.message}`, severity: 'error' }));
+            await dispatch(discoverCurrentProviderModels(providerId));
         } finally {
-            dispatch(setAppBusy(false));
+            setRefreshing(false);
         }
     };
+
+    // Switching to a model that rejects temperature clears the toggle immediately,
+    // before any save, matching the prior behaviour.
+    const handleModelChange = (modelId: string): void => {
+        const rejectsTemperature = discoveredModels.find((m) => m.id === modelId)?.caps?.supportsTemperature === false;
+        setForm((prev) => ({ ...prev, name: modelId, ...(rejectsTemperature ? { useTemperature: false } : {}) }));
+    };
+
+    const handleSave = async (): Promise<void> => {
+        setSaving(true);
+        try {
+            await runWithToast(dispatch(updateModelConfig(form)), { success: 'Model settings saved' });
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const isDirty = isFormDirty(form, settings.modelConfig);
 
     return (
-        <Box sx={{ padding: SPACING.SMALL, flex: 1 }}>
-            {/* Tab Description */}
-            <Box sx={{ marginBottom: SPACING.STANDARD }}>
-                <Typography variant="body2" color="text.secondary" component="div" gutterBottom>
-                    This tab allows you to configure the LLM model settings. Select which model to use and adjust its parameters.
-                </Typography>
-                <Typography variant="body2" color="text.secondary" component="div" gutterBottom>
-                    <strong>How to use:</strong> Choose a model from the dropdown list, configure temperature settings if needed, then click
-                    &quot;Update Model Settings&quot; to apply changes.
-                </Typography>
-                <Typography variant="body2" color="text.secondary" component="div" gutterBottom>
-                    <strong>Application:</strong> Changes are applied when you click the &quot;Update Model Settings&quot; button and will affect all
-                    subsequent LLM interactions.
-                </Typography>
-                <Typography variant="body2" color="text.secondary" component="div" gutterBottom>
-                    <strong>Note:</strong> The available models list depends on your current provider configuration. If you change providers, click
-                    &quot;Refresh Models&quot; to update the list.
-                </Typography>
-            </Box>
+        <section className={styles.root}>
+            <p className={styles.sectionHeader}>Model — searchable (+ refresh from provider)</p>
 
-            <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: SPACING.STANDARD }}>
-                <Box sx={{ display: 'flex', gap: SPACING.STANDARD, alignItems: 'center' }}>
-                    <Autocomplete
-                        fullWidth
-                        multiple={false}
-                        options={availableModels}
-                        value={formData.name}
-                        onChange={(_, newValue: string | null) => {
-                            logger.logDebug(`Model selected: ${newValue}`);
-                            setFormData((prev) => ({ ...prev, name: newValue || '' }));
-                        }}
-                        filterOptions={(options, state) => {
-                            // Custom filter
-                            return options.filter((option) => option.toLowerCase().includes(state.inputValue.toLowerCase()));
-                        }}
-                        renderInput={(params: AutocompleteRenderInputParams) => {
-                            // @ts-expect-error it is a bug in typing of MUI library
-                            return <TextField {...params} label="Select Model" placeholder="Type to filter models..." size="small" />;
-                        }}
-                        disablePortal
-                        autoHighlight
-                        clearOnBlur
-                        handleHomeEndKeys
+            <div className={styles.modelRow}>
+                <div className={styles.selectWrap}>
+                    <Combobox
+                        value={form.name}
+                        onValueChange={handleModelChange}
+                        items={modelSelectItems}
+                        placeholder="Search models…"
+                        loading={refreshing}
+                        onRefresh={() => void handleRefresh()}
+                        disabled={!currentProvider}
                     />
-                    <Button
-                        variant="outlined"
-                        color="secondary"
-                        startIcon={<RefreshIcon />}
-                        onClick={handleRefreshModels}
-                        sx={{ minWidth: 'fit-content' }}
-                    >
-                        Refresh Models
-                    </Button>
-                </Box>
+                </div>
+            </div>
+            <p className={styles.caption}>Which model this tab&apos;s settings apply to. Use Refresh if you don&apos;t see a model you expect.</p>
 
-                <FormControlLabel
-                    control={<Checkbox name="useTemperature" checked={formData.useTemperature} onChange={handleChange} />}
-                    label="Use Temperature"
-                />
-
-                {formData.useTemperature && (
-                    <Box sx={{ paddingX: SPACING.STANDARD }}>
-                        <Typography gutterBottom>Temperature: {formData.temperature}</Typography>
-                        <Slider
-                            value={formData.temperature}
-                            onChange={handleSliderChange}
-                            min={0}
-                            max={2}
-                            step={0.1}
-                            valueLabelDisplay="auto"
-                            marks={[
-                                { value: 0, label: '0.0' },
-                                { value: 0.5, label: '0.5' },
-                                { value: 1, label: '1.0' },
-                                { value: 1.5, label: '1.5' },
-                                { value: 2, label: '2.0' },
-                            ]}
-                        />
-                        <Typography variant="caption" color="text.primary">
-                            Lower values make output more deterministic, higher values more creative
-                        </Typography>
-                    </Box>
+            <div className={styles.toggleBlock}>
+                <div className={styles.toggleHead}>
+                    <Switch
+                        checked={form.useTemperature}
+                        onCheckedChange={(checked) => setForm((prev) => ({ ...prev, useTemperature: checked }))}
+                        aria-label="Use temperature"
+                    />
+                    <span className={styles.toggleLabel}>Use temperature</span>
+                    {form.useTemperature && <span className={styles.numericDisplay}>{form.temperature.toFixed(2)}</span>}
+                </div>
+                <p className={styles.caption}>
+                    Controls how random or focused the output is. Higher values are more creative but less predictable; lower values are more
+                    consistent.
+                </p>
+                {form.useTemperature && (
+                    <Slider
+                        value={[form.temperature]}
+                        onValueChange={([v]) => setForm((prev) => ({ ...prev, temperature: v }))}
+                        min={0}
+                        max={2}
+                        step={0.05}
+                    />
                 )}
+            </div>
 
-                <FormControlLabel
-                    control={<Checkbox name="useContextWindow" checked={formData.useContextWindow} onChange={handleChange} />}
-                    label="Use Context Window"
-                />
-
-                {formData.useContextWindow && (
-                    <Box sx={{ paddingX: SPACING.STANDARD }}>
-                        <Typography gutterBottom>Context Window: {formData.contextWindow} tokens</Typography>
-                        <Slider
-                            value={formData.contextWindow}
-                            onChange={handleContextWindowSliderChange}
-                            min={1024}
-                            max={200000}
-                            step={1024}
-                            valueLabelDisplay="auto"
-                            marks={[
-                                { value: 1024, label: '1K' },
-                                { value: 4096, label: '4K' },
-                                { value: 16384, label: '16K' },
-                                { value: 32768, label: '32K' },
-                                { value: 65536, label: '64K' },
-                                { value: 131072, label: '128K' },
-                                { value: 200000, label: '200K' },
-                            ]}
-                        />
-                        <Typography variant="caption" color="text.primary">
-                            Context window controls maximum token limit for LLM responses (1024-200000 tokens)
-                        </Typography>
-
-                        <FormControl component="fieldset" sx={{ mt: 2 }}>
-                            <FormLabel component="legend">Token Limit Parameter</FormLabel>
-                            <RadioGroup
-                                row
-                                name="useLegacyMaxTokens"
-                                value={formData.useLegacyMaxTokens ? 'legacy' : 'current'}
-                                onChange={(e) => {
-                                    const useLegacy = e.target.value === 'legacy';
-                                    setFormData((prev) => ({ ...prev, useLegacyMaxTokens: useLegacy }));
-                                }}
-                            >
-                                <FormControlLabel value="current" control={<Radio />} label="max_completion_tokens (Recommended)" />
-                                <FormControlLabel value="legacy" control={<Radio />} label="max_tokens (Legacy)" />
-                            </RadioGroup>
-                            <Typography variant="caption" color="text.secondary">
-                                Choose which parameter to use for controlling response length. max_completion_tokens is recommended for OpenAI.
-                            </Typography>
-                        </FormControl>
-                    </Box>
+            <div className={styles.toggleBlock}>
+                <div className={styles.toggleHead}>
+                    <Switch
+                        checked={form.useContextWindow}
+                        onCheckedChange={(checked) => setForm((prev) => ({ ...prev, useContextWindow: checked }))}
+                        aria-label="Use context window"
+                    />
+                    <span className={styles.toggleLabel}>Use context window</span>
+                    {form.useContextWindow && <span className={styles.numericDisplay}>{form.contextWindow.toLocaleString()}</span>}
+                </div>
+                <p className={styles.caption}>
+                    Sets how much conversation/history the model can consider at once. Larger values use more memory and may be slower.
+                </p>
+                {form.useContextWindow && (
+                    <Slider
+                        value={[form.contextWindow]}
+                        onValueChange={([v]) => setForm((prev) => ({ ...prev, contextWindow: v }))}
+                        min={1024}
+                        max={200000}
+                        step={4096}
+                    />
                 )}
+            </div>
 
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', marginTop: SPACING.LARGE }}>
-                    <Button variant="contained" color="primary" type="submit">
-                        Update Model Settings
-                    </Button>
-                </Box>
-            </Box>
-        </Box>
+            <div className={styles.toggleBlock}>
+                <div className={styles.toggleHead}>
+                    <Switch
+                        checked={form.useMaxOutputTokens}
+                        onCheckedChange={(checked) => setForm((prev) => ({ ...prev, useMaxOutputTokens: checked }))}
+                        aria-label="Use max output tokens"
+                    />
+                    <span className={styles.toggleLabel}>Use max output tokens</span>
+                    {form.useMaxOutputTokens && <span className={styles.numericDisplay}>{form.maxOutputTokens.toLocaleString()}</span>}
+                </div>
+                <p className={styles.caption}>
+                    Caps how long a single response can be. Lower this to save time/cost on shorter answers, or raise it for longer outputs.
+                </p>
+                {form.useMaxOutputTokens && (
+                    <Slider
+                        value={[form.maxOutputTokens]}
+                        onValueChange={([v]) => setForm((prev) => ({ ...prev, maxOutputTokens: v }))}
+                        min={1}
+                        max={32000}
+                        step={256}
+                    />
+                )}
+            </div>
+
+            <div className={styles.radioBlock}>
+                <p className={styles.radioHeader}>Token-limit parameter</p>
+                <RadioGroup
+                    value={form.useLegacyMaxTokens ? 'true' : 'false'}
+                    onValueChange={(val) => setForm((prev) => ({ ...prev, useLegacyMaxTokens: val === 'true' }))}
+                    items={TOKEN_PARAM_OPTIONS}
+                    disabled={isOllama}
+                />
+                <p className={styles.caption}>
+                    Controls which request field carries the output-token limit. Use the standard option unless your server needs the legacy name.
+                </p>
+                {isOllama && (
+                    <p className={styles.caption}>
+                        Disabled for Ollama — Ollama uses its own built-in chat protocol and always sets its own output-length option, so this choice
+                        has no effect.
+                    </p>
+                )}
+            </div>
+
+            <p className={styles.caption}>
+                Capability-aware: when the provider&apos;s catalog exposes it (Azure, LM Studio), the temperature toggle and context hint pre-fill
+                from the selected model.
+            </p>
+
+            <div className={styles.actions}>
+                <Button variant="primary" onClick={() => void handleSave()} disabled={!isDirty || saving}>
+                    {saving ? 'Saving…' : 'Save'}
+                </Button>
+            </div>
+        </section>
     );
 };
 
 ModelConfigTab.displayName = 'ModelConfigTab';
+
 export default ModelConfigTab;

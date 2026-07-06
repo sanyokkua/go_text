@@ -1,111 +1,117 @@
-import { Box, Button, Checkbox, FormControlLabel, TextField, Typography } from '@mui/material';
-import React, { useState } from 'react';
-import { getLogger, InferenceBaseConfig, Settings } from '../../../../../logic/adapter';
+import React, { useEffect, useState } from 'react';
+
+import { Settings } from '../../../../../logic/adapter/models';
+import { useSettingsToast } from '../../../../../logic/hooks/useSettingsToast';
 import { useAppDispatch } from '../../../../../logic/store';
-import { enqueueNotification } from '../../../../../logic/store/notifications';
-import { updateInferenceBaseConfig } from '../../../../../logic/store/settings';
-import { setAppBusy } from '../../../../../logic/store/ui';
-import { parseError } from '../../../../../logic/utils/error_utils';
-import { SPACING } from '../../../../styles/constants';
+import { updateInferenceBaseConfig } from '../../../../../logic/store/settings/thunks';
+import { Button } from '../../../../components/Button';
+import { NumberStepper } from '../../../../components/NumberStepper';
+import { Switch } from '../../../../primitives/Switch';
+import styles from './InferenceConfigTab.module.css';
 
-const logger = getLogger('InferenceConfigTab');
+interface InferenceForm {
+    timeout: number;
+    maxRetries: number;
+    useMarkdownForOutput: boolean;
+}
 
-interface InferenceConfigTabProps {
+function toForm(cfg: Settings['inferenceBaseConfig']): InferenceForm {
+    return { timeout: cfg.timeout, maxRetries: cfg.maxRetries, useMarkdownForOutput: cfg.useMarkdownForOutput };
+}
+
+function isFormDirty(form: InferenceForm, original: Settings['inferenceBaseConfig']): boolean {
+    return (
+        form.timeout !== original.timeout || form.maxRetries !== original.maxRetries || form.useMarkdownForOutput !== original.useMarkdownForOutput
+    );
+}
+
+interface Props {
     settings: Settings;
 }
 
-/**
- * Inference Config Tab Component
- * Configuration for inference settings
- */
-const InferenceConfigTab: React.FC<InferenceConfigTabProps> = ({ settings }) => {
+const InferenceConfigTab: React.FC<Props> = ({ settings }) => {
     const dispatch = useAppDispatch();
-    const [formData, setFormData] = useState<InferenceBaseConfig>({ ...settings.inferenceBaseConfig });
+    const runWithToast = useSettingsToast();
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value, type, checked } = e.target;
-        logger.logDebug(`Inference config changed: ${name} = ${type === 'checkbox' ? checked : value}`);
-        setFormData((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : type === 'number' ? Number(value) : value }));
-    };
+    const [form, setForm] = useState<InferenceForm>(() => toForm(settings.inferenceBaseConfig));
+    const [saving, setSaving] = useState(false);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    useEffect(() => {
+        setForm(toForm(settings.inferenceBaseConfig));
+    }, [settings.inferenceBaseConfig]);
+
+    const handleSave = async () => {
+        setSaving(true);
         try {
-            logger.logDebug(`Updating inference config: ${JSON.stringify(formData)}`);
-            dispatch(setAppBusy(true));
-            await dispatch(updateInferenceBaseConfig(formData)).unwrap();
-            logger.logInfo('Inference settings updated successfully');
-            dispatch(enqueueNotification({ message: 'Inference settings updated successfully', severity: 'success' }));
-        } catch (error: unknown) {
-            const err = parseError(error);
-            logger.logError(`Failed to update inference settings: ${err.message}`);
-            dispatch(enqueueNotification({ message: `Failed to update inference settings: ${err.message}`, severity: 'error' }));
+            await runWithToast(dispatch(updateInferenceBaseConfig(form)), { success: 'Inference settings saved' });
         } finally {
-            dispatch(setAppBusy(false));
+            setSaving(false);
         }
     };
 
+    const isDirty = isFormDirty(form, settings.inferenceBaseConfig);
+
     return (
-        <Box sx={{ padding: SPACING.SMALL, flex: 1 }}>
-            {/* Tab Description */}
-            <Box sx={{ marginBottom: SPACING.STANDARD }}>
-                <Typography variant="body2" color="text.secondary" component="div" gutterBottom>
-                    This tab configures the technical parameters for LLM API requests and output formatting.
-                </Typography>
-                <Typography variant="body2" color="text.secondary" component="div" gutterBottom>
-                    <strong>How to use:</strong> Adjust the timeout, retry, and output format settings, then click &quot;Update Inference
-                    Settings&quot; to apply changes.
-                </Typography>
-                <Typography variant="body2" color="text.secondary" component="div" gutterBottom>
-                    <strong>Application:</strong> Changes are applied when you click the &quot;Update Inference Settings&quot; button and will affect
-                    all subsequent LLM API calls.
-                </Typography>
-                <Typography variant="body2" color="text.secondary" component="div" gutterBottom>
-                    <strong>Note:</strong> Higher timeout values may be needed for complex requests or slow networks, but will make the application
-                    less responsive.
-                </Typography>
-            </Box>
+        <section className={styles.root}>
+            <div className={styles.fieldRow}>
+                <span className={styles.fieldLabel}>Request timeout (seconds)</span>
+                <div className={styles.fieldValue}>
+                    <NumberStepper
+                        value={form.timeout}
+                        onChange={(timeout) => setForm((prev) => ({ ...prev, timeout }))}
+                        min={10}
+                        max={3600}
+                        step={1}
+                        aria-label="Request timeout in seconds"
+                    />
+                    <p className={styles.caption}>
+                        How long to wait for a response before giving up. Raise this if you use large models or slow local hardware.
+                    </p>
+                </div>
+            </div>
 
-            <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: SPACING.STANDARD }}>
-                <TextField
-                    label="LLM Request Timeout (seconds)"
-                    name="timeout"
-                    type="number"
-                    value={formData.timeout}
-                    onChange={handleChange}
-                    slotProps={{ htmlInput: { min: 1, max: 600, step: 1 } }}
-                    helperText="Request timeout in seconds (1-600)"
-                    fullWidth
-                    size="small"
-                />
+            <div className={styles.fieldRow}>
+                <span className={styles.fieldLabel}>Max retries (transient only)</span>
+                <div className={styles.fieldValue}>
+                    <NumberStepper
+                        value={form.maxRetries}
+                        onChange={(maxRetries) => setForm((prev) => ({ ...prev, maxRetries }))}
+                        min={0}
+                        max={10}
+                        step={1}
+                        aria-label="Maximum number of retries"
+                    />
+                    <p className={styles.caption}>How many times to automatically retry a failed request before giving up and showing an error.</p>
+                </div>
+            </div>
 
-                <TextField
-                    label="LLM Request Max Retries"
-                    name="maxRetries"
-                    type="number"
-                    value={formData.maxRetries}
-                    onChange={handleChange}
-                    slotProps={{ htmlInput: { min: 0, max: 10, step: 1 } }}
-                    helperText="Maximum number of retries (0-10)"
-                    size="small"
-                    fullWidth
-                />
+            <div className={`${styles.fieldRow} ${styles.fieldRowLast}`}>
+                <span className={styles.fieldLabel}>Request Markdown output</span>
+                <div className={styles.fieldValue}>
+                    <Switch
+                        checked={form.useMarkdownForOutput}
+                        onCheckedChange={(checked) => setForm((prev) => ({ ...prev, useMarkdownForOutput: checked }))}
+                        aria-label="Request Markdown output"
+                    />
+                    <p className={styles.caption}>
+                        Ask the model to format its response using Markdown (headings, lists, code blocks) instead of plain prose.
+                    </p>
+                </div>
+            </div>
 
-                <FormControlLabel
-                    control={<Checkbox name="useMarkdownForOutput" checked={formData.useMarkdownForOutput} onChange={handleChange} />}
-                    label="Use Markdown for Output"
-                    sx={{ marginTop: SPACING.SMALL }}
-                />
+            <p className={styles.caption}>
+                Retries apply to transient errors only (timeout, 429, 5xx) — never to auth or &ldquo;not found&rdquo;. Backoff is automatic.
+            </p>
 
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', marginTop: SPACING.LARGE }}>
-                    <Button variant="contained" color="primary" type="submit">
-                        Update Inference Settings
-                    </Button>
-                </Box>
-            </Box>
-        </Box>
+            <div className={styles.actions}>
+                <Button variant="primary" onClick={handleSave} disabled={!isDirty || saving}>
+                    {saving ? 'Saving…' : 'Save'}
+                </Button>
+            </div>
+        </section>
     );
 };
 
 InferenceConfigTab.displayName = 'InferenceConfigTab';
+
 export default InferenceConfigTab;

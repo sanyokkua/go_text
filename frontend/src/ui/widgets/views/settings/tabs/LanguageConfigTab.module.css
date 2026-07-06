@@ -1,0 +1,100 @@
+.root {
+    padding: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.addRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    align-items: center;
+}
+
+.addInput {
+    flex: 1;
+    min-width: 0;
+    padding: 6px 10px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 0.875rem;
+}
+
+.langList {
+    display: flex;
+    flex-direction: column;
+}
+
+.helper {
+    font-size: 0.8125rem;
+    color: var(--ink-3);
+    line-height: 1.45;
+    margin: var(--space-2) 0 0;
+}
+
+.emptyMsg {
+    padding: var(--space-4);
+    color: var(--ink-3);
+    font-size: 0.875rem;
+    margin: 0;
+}
+
+.langRow {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--line);
+}
+
+.langRow:last-child {
+    border-bottom: none;
+}
+
+.langName {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.875rem;
+    color: var(--ink);
+}
+
+.inputBadge {
+    background: var(--teal-50);
+    border: 1px solid var(--teal);
+    color: var(--teal);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    white-space: nowrap;
+}
+
+.outputBadge {
+    background: var(--purple-50);
+    border: 1px solid var(--purple-line);
+    color: var(--purple);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    white-space: nowrap;
+}
+
+.triggerBtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: var(--radius);
+    color: var(--ink-2);
+    font-size: 1.1rem;
+    line-height: 1;
+}

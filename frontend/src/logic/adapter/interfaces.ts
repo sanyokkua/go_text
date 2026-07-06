@@ -1,28 +1,6 @@
-/**
- * Adapter Layer Interfaces
- *
- * Defines the contract between frontend and backend services.
- * These interfaces abstract the Wails-generated Go backend bindings.
- */
-import {
-    AppBehaviorConfig,
-    AppSettingsMetadata,
-    ChatCompletionRequest,
-    InferenceBaseConfig,
-    LanguageConfig,
-    ModelConfig,
-    PromptActionRequest,
-    Prompts,
-    ProviderConfig,
-    Settings,
-} from './models';
+import { apperr } from '../../../wailsjs/go/models';
+import { AppBehaviorConfig, InferenceBaseConfig, LoggingConfig, ModelConfig, ProviderConfig, UIPreferencesConfig } from './models';
 
-/**
- * Logging service interface for structured logging across the application
- *
- * Provides different log levels for debugging, error tracking, and information logging.
- * All methods are synchronous to avoid timing issues in critical paths.
- */
 export interface ILoggerService {
     logPrint(message: string): void;
     logTrace(message: string): void;
@@ -33,61 +11,74 @@ export interface ILoggerService {
     logWarning(message: string): void;
 }
 
-/**
- * Action handler interface for LLM operations
- *
- * Manages all AI-related operations including completion requests, model management,
- * and prompt processing. Acts as the bridge between frontend UI and backend LLM services.
- */
 export interface IActionHandler {
-    getCompletionResponseForProvider(providerConfig: ProviderConfig, arg2: ChatCompletionRequest): Promise<string>;
-    getModelsList(): Promise<Array<string>>;
-    getModelsListForProvider(providerConfig: ProviderConfig): Promise<Array<string>>;
-    getPromptGroups(): Promise<Prompts>;
-    processPrompt(promptActionRequest: PromptActionRequest): Promise<string>;
+    getActionCatalog(): Promise<apperr.CatalogResult>;
+    getModels(providerId: string): Promise<apperr.ModelsResult>;
+    previewPrompt(req: apperr.PromptPreviewRequest): Promise<apperr.PromptPreviewResult>;
+    processPromptChain(req: apperr.ChainRequest): Promise<apperr.ChainResultEnv>;
+    cancelChain(runId: string): Promise<apperr.VoidResult>;
+    cancelAllRuns(): Promise<void>;
+    testConnection(providerConfig: ProviderConfig): Promise<apperr.VerifyResult>;
+    testInference(providerConfig: ProviderConfig): Promise<apperr.VerifyResult>;
+    testModels(providerConfig: ProviderConfig): Promise<apperr.VerifyResult>;
 }
 
-/**
- * Settings handler interface for application configuration management
- *
- * Provides comprehensive CRUD operations for all application settings including
- * - Provider configurations (LLM service endpoints and authentication)
- * - Model configurations (temperature, model selection)
- * - Language configurations (supported languages, defaults)
- * - Inference base configurations (timeouts, retries)
- *
- * Follows a pattern of returning full updated objects rather than just success/failure.
- */
+export interface IHistoryHandler {
+    clearHistory(): Promise<apperr.VoidResult>;
+    deleteHistoryEntry(id: string): Promise<apperr.VoidResult>;
+    getHistoryEntry(id: string): Promise<apperr.HistoryEntryResult>;
+    listHistory(limit: number, offset: number): Promise<apperr.HistoryListResult>;
+}
+
+export interface IStackHandler {
+    createStack(stack: apperr.SavedStack): Promise<apperr.StackResult>;
+    deleteStack(id: string): Promise<apperr.VoidResult>;
+    duplicateStack(id: string, newName: string): Promise<apperr.StackResult>;
+    getStack(id: string): Promise<apperr.StackResult>;
+    listStacks(): Promise<apperr.StacksResult>;
+    suggestedStacks(): Promise<apperr.SuggestedStacksResult>;
+    updateStack(stack: apperr.SavedStack): Promise<apperr.StackResult>;
+}
+
+/** Returns raw wire envelopes — consumers call unwrap() to extract domain values. */
 export interface ISettingsHandler {
-    addLanguage(language: string): Promise<Array<string>>;
-    createProviderConfig(providerConfig: ProviderConfig): Promise<ProviderConfig>;
-    deleteProviderConfig(providerId: string): Promise<void>;
-    getAllProviderConfigs(): Promise<Array<ProviderConfig>>;
-    getAppSettingsMetadata(): Promise<AppSettingsMetadata>;
-    getCurrentProviderConfig(): Promise<ProviderConfig>;
-    getInferenceBaseConfig(): Promise<InferenceBaseConfig>;
-    getLanguageConfig(): Promise<LanguageConfig>;
-    getModelConfig(): Promise<ModelConfig>;
-    getSettings(): Promise<Settings>;
-    removeLanguage(language: string): Promise<Array<string>>;
-    resetSettingsToDefault(): Promise<Settings>;
-    setAsCurrentProviderConfig(providerId: string): Promise<ProviderConfig>;
-    setDefaultInputLanguage(language: string): Promise<void>;
-    setDefaultOutputLanguage(language: string): Promise<void>;
-    updateInferenceBaseConfig(inferenceBaseConfig: InferenceBaseConfig): Promise<InferenceBaseConfig>;
-    updateModelConfig(modelConfig: ModelConfig): Promise<ModelConfig>;
-    updateProviderConfig(providerConfig: ProviderConfig): Promise<ProviderConfig>;
-    getAppBehaviorConfig(): Promise<AppBehaviorConfig>;
-    updateAppBehaviorConfig(config: AppBehaviorConfig): Promise<AppBehaviorConfig>;
+    addLanguage(language: string): Promise<apperr.LanguagesResult>;
+    createProviderConfig(providerConfig: ProviderConfig): Promise<apperr.ProviderResult>;
+    deleteProviderConfig(providerId: string): Promise<apperr.VoidResult>;
+    getAllProviderConfigs(): Promise<apperr.ProvidersResult>;
+    getAppSettingsMetadata(): Promise<apperr.MetadataResult>;
+    getCurrentProviderConfig(): Promise<apperr.ProviderResult>;
+    getInferenceBaseConfig(): Promise<apperr.InferenceResult>;
+    getLanguageConfig(): Promise<apperr.LanguageResult>;
+    providerPresets(): Promise<apperr.ProviderPresetsResult>;
+    getModelConfig(): Promise<apperr.ModelConfigResult>;
+    getSettings(): Promise<apperr.SettingsResult>;
+    removeLanguage(language: string): Promise<apperr.LanguagesResult>;
+    resetSettingsToDefault(): Promise<apperr.SettingsResult>;
+    setAsCurrentProviderConfig(providerId: string): Promise<apperr.ProviderResult>;
+    setDefaultInputLanguage(language: string): Promise<apperr.VoidResult>;
+    setDefaultOutputLanguage(language: string): Promise<apperr.VoidResult>;
+    updateInferenceBaseConfig(config: InferenceBaseConfig): Promise<apperr.InferenceResult>;
+    updateModelConfig(config: ModelConfig): Promise<apperr.ModelConfigResult>;
+    updateProviderConfig(providerConfig: ProviderConfig): Promise<apperr.ProviderResult>;
+    getAppBehaviorConfig(): Promise<apperr.AppBehaviorResult>;
+    updateAppBehaviorConfig(config: AppBehaviorConfig): Promise<apperr.AppBehaviorResult>;
+    getUIPreferencesConfig(): Promise<apperr.UIPreferencesResult>;
+    updateUIPreferencesConfig(config: UIPreferencesConfig): Promise<apperr.UIPreferencesResult>;
+    getLoggingConfig(): Promise<apperr.LoggingResult>;
+    updateLoggingConfig(config: LoggingConfig): Promise<apperr.LoggingResult>;
 }
 
-/**
- * Clipboard service interface for system clipboard operations
- *
- * Abstracts platform-specific clipboard access with error handling.
- * Returns boolean success status for write operations to handle permission issues.
- */
 export interface IClipboardService {
     getText(): Promise<string>;
     setText(text: string): Promise<boolean>;
+}
+
+export interface IAppHandler {
+    logError(message: string): Promise<apperr.VoidResult>;
+    clipboardGetText(): Promise<apperr.StringResult>;
+    clipboardSetText(text: string): Promise<apperr.VoidResult>;
+    browserOpenURL(url: string): Promise<apperr.VoidResult>;
+    openPath(path: string): Promise<apperr.VoidResult>;
+    saveWindowSize(width: number, height: number): Promise<apperr.VoidResult>;
 }

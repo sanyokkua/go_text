@@ -1,0 +1,173 @@
+/* frontend/src/ui/primitives/Combobox.module.css */
+.trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: var(--radius);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.trigger:hover {
+    background: var(--surface);
+}
+.trigger:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+.trigger:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+.trigger:disabled:hover {
+    background: var(--surface-2);
+}
+
+.keyLabel {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-3);
+    font-weight: 600;
+}
+
+.valueLabel {
+    flex: 1;
+    text-align: left;
+}
+.caret {
+    font-size: 10px;
+    color: var(--ink-3);
+}
+
+/* Portaled content */
+.content {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-popover);
+    overflow: hidden;
+    width: 260px;
+    z-index: var(--z-overlay);
+}
+
+.command {
+    display: flex;
+    flex-direction: column;
+}
+
+.searchRow {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid var(--line);
+    padding: 0 var(--space-2);
+    gap: var(--space-2);
+}
+
+.input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    font-size: 13px;
+    color: var(--ink);
+    padding: 10px 0;
+}
+
+.input::placeholder {
+    color: var(--ink-3);
+}
+
+.refreshBtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 15px;
+    color: var(--ink-2);
+    padding: 4px;
+    border-radius: var(--radius-sm);
+    line-height: 1;
+}
+
+.refreshBtn:hover {
+    color: var(--ink);
+    background: var(--surface-2);
+}
+
+.spinning {
+    animation: spin 800ms linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.list {
+    max-height: 240px;
+    overflow-y: auto;
+    padding: var(--space-1);
+}
+
+.item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    padding: 8px 13px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    outline: none;
+    color: var(--ink);
+}
+
+.item[data-selected='true'],
+.item[aria-selected='true'] {
+    background: var(--surface-2);
+}
+
+.check {
+    font-size: 11px;
+    color: var(--teal);
+    flex-shrink: 0;
+}
+.itemLabel {
+    flex: 1;
+}
+
+.meta {
+    font-size: 11px;
+    color: var(--ink-3);
+    margin-left: auto;
+}
+
+.empty {
+    padding: 16px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--ink-3);
+}
+
+.footer {
+    border-top: 1px solid var(--line);
+    padding: 6px 13px;
+    font-size: 11px;
+    color: var(--ink-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .spinning {
+        animation: none;
+    }
+}

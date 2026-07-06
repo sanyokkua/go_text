@@ -31,6 +31,7 @@ type TaskLogEntry struct {
 	DurationMs     int64  `json:"durationMs"`
 	InputLanguage  string `json:"inputLanguage,omitempty"`
 	OutputLanguage string `json:"outputLanguage,omitempty"`
+	RunID          string `json:"runId,omitempty"`
 }
 
 // TaskLogServiceAPI is the contract for appending task log entries to disk.
@@ -92,7 +93,12 @@ func (s *TaskLogService) LogTaskExecution(entry TaskLogEntry) error {
 		return nil
 	}
 
-	logsDir, err := s.fileUtils.EnsureAppLogsFolderExists(cfg.LogDirectory)
+	logCfg, err := s.settingsService.GetLoggingConfig()
+	if err != nil {
+		s.logger.Warning(fmt.Sprintf("[%s] Failed to get logging config: %v", op, err))
+		return nil
+	}
+	logsDir, err := s.fileUtils.EnsureAppLogsFolderExists(logCfg.LogDirectory)
 	if err != nil {
 		s.logger.Warning(fmt.Sprintf("[%s] Failed to ensure logs folder exists: %v", op, err))
 		return nil

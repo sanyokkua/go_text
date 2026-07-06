@@ -7,6 +7,9 @@
 You are a **Senior Observability Engineer and Go Specialist**. You possess deep expertise in the Go `log/zerolog/slog` standard library, structured
 logging, and desktop application resource management.
 
+> **GoText project note:** GoText uses **zerolog** (not `log/slog`). All GoText-specific rules are in
+> §2.5–2.8 and §3.1. General patterns in §2.1–2.4 and §3.2–3.3 apply to any Go project.
+
 ## Objective
 
 Your primary goal is to generate **secure, structured, and performant** logging code. You must ensure logs are machine-readable for analysis while
@@ -107,6 +110,101 @@ slog.DebugCtx(ctx, "Computed data", "result", heavyData)
 }
 ```
 
+### 2.5 GoText structured fields (zerolog)
+
+GoText uses zerolog chained calls. Include these fields in every relevant log entry:
+
+| Field | Type | When to include |
+|---|---|---|
+| `component` | string | Always — names the package (e.g. `"actions"`, `"llms"`, `"settings"`) |
+| `op` | string | Every function entry at Debug/Info (e.g. `"RunChain"`, `"Chat"`) |
+| `run_id` | string | All chain-run entries — links events across steps |
+| `provider` | string | LLM calls — the provider kind string |
+| `duration_ms` | int64 | Completions — how long the operation took |
+
+```go
+// ✅ GOOD — chain completion
+log.Info().
+    Str("component", "actions").
+    Str("op", "RunChain").
+    Str("run_id", runID).
+    Int64("duration_ms", elapsed.Milliseconds()).
+    Msg("chain completed")
+
+// ✅ GOOD — LLM error
+log.Error().
+    Str("component", "llms").
+    Str("op", "Chat").
+    Str("provider", providerKind).
+    Err(err).
+    Msg("LLM request failed")
+```
+
+### 2.6 Secret redaction — log the env-var name, never the value
+
+GoText stores only the *name* of the environment variable, never the secret itself. This rule extends
+to logs:
+
+```go
+// ❌ BAD — logs the actual API key
+log.Debug().Str("api_key", os.Getenv(cfg.APIKeyEnvVar)).Msg("resolved credential")
+
+// ✅ GOOD — logs only the env-var name
+log.Debug().Str("api_key_env", cfg.APIKeyEnvVar).Msg("resolving credential")
+```
+
+Never pass the return value of `os.Getenv(cfg.APIKeyEnvVar)` to any log field.
+
+### 2.7 Lumberjack rotation — GoText configuration
+
+```go
+rotated := &lumberjack.Logger{
+    Filename:   logFilePath,  // resolved by internal/file
+    MaxSize:    5,            // MB
+    MaxBackups: 3,
+    MaxAge:     30,           // days
+    Compress:   true,
+}
+
+// In development: also write to stderr with console formatting
+multi := zerolog.MultiLevelWriter(
+    zerolog.ConsoleWriter{Out: os.Stderr},
+    rotated,
+)
+logger := zerolog.New(multi).With().Timestamp().Logger()
+```
+
+In production (`wails build`), write to the file only. Level is `WarnLevel` by default.
+In development (`wails dev`), also write to stderr at `DebugLevel`.
+
+### 2.8 Wails logger interface
+
+GoText's `internal/logging.Logger` implements the Wails `logger.Logger` interface directly (no
+separate bridge type) so Wails' internal log output routes through the same zerolog pipeline:
+
+```go
+func (l *Logger) Print(m string)   { /* ... */ zl.Log().Msg(m) }
+func (l *Logger) Trace(m string)   { /* ... */ zl.Trace().Msg(m) }
+func (l *Logger) Debug(m string)   { /* ... */ zl.Debug().Msg(m) }
+func (l *Logger) Info(m string)    { /* ... */ zl.Info().Msg(m) }
+func (l *Logger) Warning(m string) { /* ... */ zl.Warn().Msg(m) }
+func (l *Logger) Error(m string)   { /* ... */ zl.Error().Msg(m) }
+func (l *Logger) Fatal(m string)   { /* ... */ zl.Fatal().Msg(m) }
+```
+
+Pass the logger straight to Wails in `main.go`:
+```go
+appLogger, err := logging.New(logging.DefaultConfig(), true)
+// ...
+wails.Run(&options.App{
+    Logger: appLogger,
+    // ...
+})
+```
+
+This ensures Wails' own lifecycle events (window creation, binding errors) appear in the same
+log file rather than being silently dropped.
+
 ***
 
 ## 3. Desktop Application Specifics
@@ -118,6 +216,18 @@ slog.DebugCtx(ctx, "Computed data", "result", heavyData)
     - **Windows:** `%APPDATA%/YourApp/logs`
     - **macOS:** `~/Library/Logs/YourApp`
     - **Linux:** `~/.local/state/YourApp` (XDG State Home)
+
+**GoText log paths** (resolved by `internal/file.ResolveAppLogsFolderPath`, via `os.UserConfigDir()`
+joined with `AppName` (`"GoTextApp"` — see `internal/file/constants.go`) and `LogsDirName` (`"logs"`)):
+
+| Platform | Log folder |
+|---|---|
+| macOS | `~/Library/Application Support/GoTextApp/logs/` |
+| Linux | `~/.config/GoTextApp/logs/` |
+| Windows | `%APPDATA%\GoTextApp\logs\` |
+
+The log file inside that folder is `app.log`. Rotation creates timestamped `.log.gz` backups per
+the `Config.MaxBackups`/`MaxAgeDays` settings.
 
 ### 3.2 Rotation & Size Limits
 

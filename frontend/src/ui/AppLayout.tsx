@@ -1,33 +1,33 @@
-import { ThemeProvider } from '@mui/material';
-import CssBaseline from '@mui/material/CssBaseline';
-import React from 'react';
-import theme from './theme';
-import GlobalLoadingOverlay from './widgets/base/GlobalLoadingOverlay';
+import React, { useEffect } from 'react';
+import { useAppDispatch, useAppSelector } from '../logic/store';
+import { selectEffectiveTheme, selectThemeMode } from '../logic/store/ui/selectors';
+import { setThemeEffective } from '../logic/store/ui/slice';
+import { applyTheme, watchSystemTheme } from '../logic/theme/init';
+import { TooltipProvider } from './primitives/Tooltip';
 import NotificationContainer from './widgets/base/NotificationContainer';
 import AppMainView from './widgets/views/AppMainView';
 
-/**
- * App Layout - Root layout component
- *
- * Wraps the entire application with Material-UI theme and provides the main structure.
- * Handles theme provider setup and global component organization.
- *
- * Structure:
- * - ThemeProvider (wraps entire app)
- * - AppMainView (main content)
- * - GlobalLoadingOverlay (busy indicators)
- * - NotificationContainer (user notifications)
- */
 const AppLayout: React.FC = () => {
+    const dispatch = useAppDispatch();
+    const effective = useAppSelector(selectEffectiveTheme);
+    const mode = useAppSelector(selectThemeMode);
+
+    // Apply the effective theme to the DOM whenever Redux state changes
+    useEffect(() => {
+        applyTheme(effective);
+    }, [effective]);
+
+    // Watch OS preference changes; clean up when mode changes away from 'auto'
+    useEffect(() => {
+        const unwatch = watchSystemTheme(mode, (eff) => dispatch(setThemeEffective(eff)));
+        return unwatch;
+    }, [mode, dispatch]);
+
     return (
-        <ThemeProvider theme={theme}>
-            <React.Fragment>
-                <CssBaseline />
-                <AppMainView />
-                <GlobalLoadingOverlay />
-                <NotificationContainer />
-            </React.Fragment>
-        </ThemeProvider>
+        <TooltipProvider>
+            <AppMainView />
+            <NotificationContainer />
+        </TooltipProvider>
     );
 };
 

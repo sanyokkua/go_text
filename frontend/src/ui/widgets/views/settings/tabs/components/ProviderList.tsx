@@ -1,91 +1,60 @@
-import { Box, Button, Divider, List, ListItem, ListItemText, Typography } from '@mui/material';
 import React from 'react';
-import { getLogger, ProviderConfig } from '../../../../../../logic/adapter';
-import { SPACING } from '../../../../../styles/constants';
 
-const logger = getLogger('ProviderList');
+import { ProviderConfig } from '../../../../../../logic/adapter/models';
+import styles from './ProviderList.module.css';
 
 interface ProviderListProps {
     providers: ProviderConfig[];
-    currentProviderId: string;
-    onEdit: (providerId: string) => void;
-    onDelete: (providerId: string) => void;
-    onSetAsCurrent: (providerId: string) => void;
-    onCreateNew: () => void;
+    currentId: string;
+    selectedId: string | null;
+    onSelect: (id: string) => void;
+    onNew: () => void;
 }
 
-/**
- * Provider List Component
- * Displays a list of available providers with actions
- */
-const ProviderList: React.FC<ProviderListProps> = ({ providers, currentProviderId, onEdit, onDelete, onSetAsCurrent, onCreateNew }) => {
-    // Create logging wrappers for action handlers
-    const handleEdit = (providerId: string) => {
-        logger.logDebug(`Edit requested for provider: ${providerId}`);
-        onEdit(providerId);
-    };
+const ProviderList: React.FC<ProviderListProps> = ({ providers, currentId, selectedId, onSelect, onNew }) => (
+    <nav aria-label="Provider list" className={styles.nav}>
+        <h2 className={styles.header}>Providers</h2>
 
-    const handleDelete = (providerId: string) => {
-        logger.logDebug(`Delete requested for provider: ${providerId}`);
-        onDelete(providerId);
-    };
+        <ul role="listbox" aria-label="Providers" className={styles.list}>
+            {providers.length === 0 ? (
+                <li className={styles.empty}>(no providers)</li>
+            ) : (
+                providers.map((provider) => {
+                    const isSelected = provider.providerId === selectedId;
+                    const isCurrent = provider.providerId === currentId;
 
-    const handleSetAsCurrent = (providerId: string) => {
-        logger.logDebug(`Set as current requested for provider: ${providerId}`);
-        onSetAsCurrent(providerId);
-    };
+                    return (
+                        <li key={provider.providerId} role="option" aria-selected={isSelected}>
+                            <button
+                                type="button"
+                                onClick={() => onSelect(provider.providerId)}
+                                aria-label={isCurrent ? `${provider.providerName} (current)` : provider.providerName}
+                                className={styles.item}
+                            >
+                                <span aria-hidden="true" className={`${styles.dot} ${isCurrent ? styles.dotCurrent : ''}`}>
+                                    {isCurrent ? '●' : '○'}
+                                </span>
+                                <span className={styles.itemName}>{provider.providerName}</span>
 
-    const handleCreateNew = () => {
-        logger.logDebug('Create new provider requested');
-        onCreateNew();
-    };
+                                {isCurrent && (
+                                    <span aria-label="current provider" className={styles.currentBadge}>
+                                        current
+                                    </span>
+                                )}
+                            </button>
+                        </li>
+                    );
+                })
+            )}
+        </ul>
 
-    return (
-        <Box sx={{ padding: SPACING.STANDARD }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.STANDARD }}>
-                <Typography variant="subtitle1">Available Providers</Typography>
-                <Button variant="contained" color="primary" size="small" onClick={handleCreateNew}>
-                    Create New Provider
-                </Button>
-            </Box>
-
-            <List dense>
-                {providers.map((provider) => (
-                    <React.Fragment key={provider.providerId}>
-                        <ListItem
-                            secondaryAction={
-                                <Box sx={{ display: 'flex', gap: SPACING.SMALL }}>
-                                    {provider.providerId !== currentProviderId && (
-                                        <Button size="small" variant="outlined" onClick={() => handleSetAsCurrent(provider.providerId)}>
-                                            Apply as Current
-                                        </Button>
-                                    )}
-                                    <Button size="small" variant="outlined" onClick={() => handleEdit(provider.providerId)}>
-                                        Edit
-                                    </Button>
-                                    {provider.providerId !== currentProviderId && (
-                                        <Button size="small" variant="outlined" color="error" onClick={() => handleDelete(provider.providerId)}>
-                                            Delete
-                                        </Button>
-                                    )}
-                                </Box>
-                            }
-                        >
-                            <ListItemText
-                                primary={provider.providerId === currentProviderId ? `${provider.providerName} - (Current)` : provider.providerName}
-                                secondary={provider.providerType}
-                                slotProps={{
-                                    primary: { variant: 'body1', fontWeight: provider.providerId === currentProviderId ? 'bold' : 'normal' },
-                                }}
-                            />
-                        </ListItem>
-                        <Divider />
-                    </React.Fragment>
-                ))}
-            </List>
-        </Box>
-    );
-};
+        <div className={styles.newBtnWrap}>
+            <button type="button" onClick={onNew} aria-label="New provider" className={styles.newBtn}>
+                + New provider
+            </button>
+        </div>
+    </nav>
+);
 
 ProviderList.displayName = 'ProviderList';
 export default ProviderList;

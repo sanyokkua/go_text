@@ -4,22 +4,26 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
+
+	"go_text/internal/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// TestLogger is a simple logger for testing that implements the logger.Logger interface
-type TestLogger struct{}
-
-func (l *TestLogger) Print(message string)   {}
-func (l *TestLogger) Trace(message string)   {}
-func (l *TestLogger) Debug(message string)   {}
-func (l *TestLogger) Info(message string)    {}
-func (l *TestLogger) Warning(message string) {}
-func (l *TestLogger) Error(message string)   {}
-func (l *TestLogger) Fatal(message string)   {}
+// newTestLogger builds a real *logging.Logger for service construction in
+// tests. Level is set to error to minimize noise; it writes to io.Discard
+// (dev=false, no file sink configured) so it has no side effects.
+func newTestLogger(t *testing.T) *logging.Logger {
+	t.Helper()
+	cfg := logging.DefaultConfig()
+	cfg.Level = "error"
+	l, err := logging.New(cfg, false)
+	require.NoError(t, err)
+	return l
+}
 
 // setupTestEnv sets up a temporary environment for testing
 // Returns cleanup function to restore original environment
@@ -65,7 +69,7 @@ func getAppConfigDir(tmpDir string) string {
 
 func TestNewFileUtilsService(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		logger := &TestLogger{}
+		logger := newTestLogger(t)
 		service := NewFileUtilsService(logger)
 		assert.NotNil(t, service)
 	})
@@ -175,7 +179,7 @@ func TestEnsureAppSettingsFolderExists(t *testing.T) {
 			}
 
 			// Create service
-			logger := &TestLogger{}
+			logger := newTestLogger(t)
 			service := NewFileUtilsService(logger)
 
 			// Call the private method using reflection or test the public methods that use it
@@ -268,125 +272,11 @@ func TestGetAppSettingsFolderPath(t *testing.T) {
 			}
 
 			// Create service
-			logger := &TestLogger{}
+			logger := newTestLogger(t)
 			service := NewFileUtilsService(logger)
 
 			// Call the method
 			result, err := service.GetAppSettingsFolderPath()
-
-			// Validate result
-			if tt.validateResult != nil {
-				tt.validateResult(t, result, err, tmpDir)
-			}
-		})
-	}
-}
-
-func TestGetAppSettingsFilePath(t *testing.T) {
-	tests := []struct {
-		name           string
-		setupEnv       func(tmpDir string)
-		expectSuccess  bool
-		validateResult func(t *testing.T, result string, err error, tmpDir string)
-	}{
-		{
-			name: "success",
-			setupEnv: func(tmpDir string) {
-				// Default setup should work
-			},
-			expectSuccess: true,
-			validateResult: func(t *testing.T, result string, err error, tmpDir string) {
-				assert.NoError(t, err)
-				expectedFolderPath := getAppConfigDir(tmpDir)
-				expectedFilePath := filepath.Join(expectedFolderPath, SettingsFileName)
-				assert.Equal(t, expectedFilePath, result)
-
-				// Verify directory was created
-				info, statErr := os.Stat(expectedFolderPath)
-				assert.NoError(t, statErr)
-				assert.True(t, info.IsDir())
-			},
-		},
-		{
-			name: "fallback_to_home_dir",
-			setupEnv: func(tmpDir string) {
-				// Clear XDG_CONFIG_HOME to force fallback
-				os.Unsetenv("XDG_CONFIG_HOME")
-				if runtime.GOOS == "windows" {
-					os.Unsetenv("APPDATA")
-				}
-			},
-			expectSuccess: true,
-			validateResult: func(t *testing.T, result string, err error, tmpDir string) {
-				assert.NoError(t, err)
-				// Should fall back to home directory
-				expectedFolderPath := filepath.Join(tmpDir, AppName)
-				if runtime.GOOS == "darwin" {
-					expectedFolderPath = filepath.Join(tmpDir, "Library", "Application Support", AppName)
-				}
-				expectedFilePath := filepath.Join(expectedFolderPath, SettingsFileName)
-				assert.Equal(t, expectedFilePath, result)
-
-				// Verify directory was created
-				info, statErr := os.Stat(expectedFolderPath)
-				assert.NoError(t, statErr)
-				assert.True(t, info.IsDir())
-			},
-		},
-		{
-			name: "complete_failure",
-			setupEnv: func(tmpDir string) {
-				// Clear all environment variables to force complete failure
-				os.Unsetenv("HOME")
-				os.Unsetenv("XDG_CONFIG_HOME")
-				os.Unsetenv("APPDATA")
-				os.Unsetenv("LOCALAPPDATA")
-			},
-			expectSuccess: false,
-			validateResult: func(t *testing.T, result string, err error, tmpDir string) {
-				assert.Error(t, err)
-				assert.Empty(t, result)
-				assert.Contains(t, err.Error(), "failed to get settings folder path")
-			},
-		},
-		{
-			name: "directory_creation_failure",
-			setupEnv: func(tmpDir string) {
-				// Create a file where the directory should be to cause creation failure
-				expectedPath := getAppConfigDir(tmpDir)
-				parentDir := filepath.Dir(expectedPath)
-				err := os.MkdirAll(parentDir, 0700)
-				require.NoError(t, err)
-
-				// Create a file with the same name as the target directory
-				err = os.WriteFile(expectedPath, []byte("dummy"), 0600)
-				require.NoError(t, err)
-			},
-			expectSuccess: false,
-			validateResult: func(t *testing.T, result string, err error, tmpDir string) {
-				assert.Error(t, err)
-				assert.Empty(t, result)
-				assert.Contains(t, err.Error(), "failed to get settings folder path")
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tmpDir, cleanup := setupTestEnv(t)
-			defer cleanup()
-
-			// Apply test-specific environment setup
-			if tt.setupEnv != nil {
-				tt.setupEnv(tmpDir)
-			}
-
-			// Create service
-			logger := &TestLogger{}
-			service := NewFileUtilsService(logger)
-
-			// Call the method
-			result, err := service.GetAppSettingsFilePath()
 
 			// Validate result
 			if tt.validateResult != nil {
@@ -413,7 +303,7 @@ func TestFileUtilsService_ResolveAppLogsFolderPath(t *testing.T) {
 			},
 		},
 		{
-			name: "custom_dir_does_not_create_directory",
+			name:     "custom_dir_does_not_create_directory",
 			setupEnv: func(tmpDir string) {},
 			validateResult: func(t *testing.T, result string, err error, tmpDir string) {
 				assert.NoError(t, err)
@@ -468,7 +358,7 @@ func TestFileUtilsService_ResolveAppLogsFolderPath(t *testing.T) {
 				customDir = filepath.Join(tmpDir, "nonexistent-99999")
 			}
 
-			logger := &TestLogger{}
+			logger := newTestLogger(t)
 			service := NewFileUtilsService(logger)
 
 			result, err := service.ResolveAppLogsFolderPath(customDir)
@@ -525,7 +415,7 @@ func TestFileUtilsService_EnsureAppLogsFolderExists(t *testing.T) {
 				assert.NoError(t, err)
 
 				// Call again; must also succeed
-				logger := &TestLogger{}
+				logger := newTestLogger(t)
 				service := NewFileUtilsService(logger)
 				result2, err2 := service.EnsureAppLogsFolderExists(filepath.Join(tmpDir, "logs2"))
 				assert.NoError(t, err2)
@@ -575,7 +465,7 @@ func TestFileUtilsService_EnsureAppLogsFolderExists(t *testing.T) {
 				customDir = tt.setupEnv(t, tmpDir)
 			}
 
-			logger := &TestLogger{}
+			logger := newTestLogger(t)
 			service := NewFileUtilsService(logger)
 
 			result, err := service.EnsureAppLogsFolderExists(customDir)
@@ -585,4 +475,20 @@ func TestFileUtilsService_EnsureAppLogsFolderExists(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestFileUtilsService_GetAppDatabaseFilePath(t *testing.T) {
+	t.Run("returns path ending with gotext.db under GoTextApp dir", func(t *testing.T) {
+		tmpDir, cleanup := setupTestEnv(t)
+		defer cleanup()
+
+		_ = tmpDir
+		svc := NewFileUtilsService(newTestLogger(t))
+
+		path, err := svc.GetAppDatabaseFilePath()
+
+		require.NoError(t, err)
+		assert.True(t, strings.HasSuffix(path, "gotext.db"), "expected path to end with gotext.db, got: %s", path)
+		assert.Contains(t, path, "GoTextApp", "expected path to contain GoTextApp, got: %s", path)
+	})
 }

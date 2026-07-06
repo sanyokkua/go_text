@@ -1,208 +1,103 @@
-import { Box, Typography } from '@mui/material';
 import React, { useState } from 'react';
-import { ActionHandlerAdapter, getLogger, ProviderConfig, Settings } from '../../../../../logic/adapter';
-import { useAppDispatch } from '../../../../../logic/store';
-import { enqueueNotification } from '../../../../../logic/store/notifications';
+
+import { ProviderConfig } from '../../../../../logic/adapter/models';
+import { useSettingsToast } from '../../../../../logic/hooks/useSettingsToast';
+import { useAppDispatch, useAppSelector } from '../../../../../logic/store';
+import { selectAllSettings, selectProviderPresets, selectSettingsMetadata } from '../../../../../logic/store/settings/selectors';
 import {
     createProviderConfig,
     deleteProviderConfig,
-    getSettings,
     setAsCurrentProviderConfig,
     updateProviderConfig,
-} from '../../../../../logic/store/settings';
-import { setAppBusy } from '../../../../../logic/store/ui';
-import { parseError } from '../../../../../logic/utils/error_utils';
-import { testProviderModels } from '../../../../../logic/utils/provider_utils';
-import { SPACING } from '../../../../styles/constants';
-import ProviderForm from './components/ProviderForm';
+} from '../../../../../logic/store/settings/thunks';
+import ProviderForm, { BLANK_PROVIDER } from './components/ProviderForm';
 import ProviderList from './components/ProviderList';
+import styles from './ProviderManagementTab.module.css';
 
-const logger = getLogger('ProviderManagementTab');
+const NEW_ID = '__new__';
 
-interface ProviderManagementTabProps {
-    settings: Settings;
-    metadata: { authTypes: string[]; providerTypes: string[] };
-}
-
-/**
- * Provider Management Tab Component
- * Tab for managing all provider configurations (list, create, edit, delete)
- */
-const ProviderManagementTab: React.FC<ProviderManagementTabProps> = ({ settings, metadata }) => {
+const ProviderManagementTab: React.FC = () => {
     const dispatch = useAppDispatch();
-    const [editingProviderId, setEditingProviderId] = useState<string | null>(null);
-    const [showCreateForm, setShowCreateForm] = useState(false);
-    const [testResults, setTestResults] = useState<{ models: string[]; connectionSuccess: boolean } | null>(null);
+    const runWithToast = useSettingsToast();
+    const settings = useAppSelector(selectAllSettings);
+    const metadata = useAppSelector(selectSettingsMetadata);
+    const presets = useAppSelector(selectProviderPresets);
 
-    const handleEditProvider = (providerId: string) => {
-        logger.logDebug(`Editing provider with ID: ${providerId}`);
-        setEditingProviderId(providerId);
-        setShowCreateForm(false);
-    };
+    const [selectedId, setSelectedId] = useState<string | null>(null);
 
-    const handleCreateNew = () => {
-        logger.logDebug('Creating new provider');
-        setShowCreateForm(true);
-        setEditingProviderId(null);
-    };
+    if (!settings) {
+        return <div className={styles.loading}>Loading…</div>;
+    }
 
-    const handleCancelEdit = () => {
-        logger.logDebug('Canceling provider edit/create');
-        setEditingProviderId(null);
-        setShowCreateForm(false);
-        setTestResults(null);
-    };
+    const providers = settings.availableProviderConfigs;
+    const currentId = settings.currentProviderConfig?.providerId ?? '';
+    const authTypes = metadata?.authTypes ?? ['none', 'bearer', 'apiKey'];
+    const providerTypes = metadata?.providerTypes ?? ['openai', 'azure', 'anthropic', 'google', 'ollama', 'lmstudio'];
 
-    const handleSaveProvider = async (updatedProvider: ProviderConfig) => {
-        try {
-            logger.logDebug(`Saving provider: ${updatedProvider.providerName}`);
-            dispatch(setAppBusy(true));
+    const selectedProvider: ProviderConfig | null = (() => {
+        if (selectedId === null) return null;
+        if (selectedId === NEW_ID) return BLANK_PROVIDER;
+        return providers.find((p) => p.providerId === selectedId) ?? null;
+    })();
 
-            if (updatedProvider.providerId) {
-                // Update existing provider
-                logger.logInfo(`Updating existing provider: ${updatedProvider.providerId}`);
-                await dispatch(updateProviderConfig(updatedProvider)).unwrap();
-                dispatch(enqueueNotification({ message: 'Provider updated successfully', severity: 'success' }));
-            } else {
-                // Create new provider
-                logger.logInfo(`Creating new provider: ${updatedProvider.providerName}`);
-                await dispatch(createProviderConfig(updatedProvider)).unwrap();
-                dispatch(enqueueNotification({ message: 'Provider created successfully', severity: 'success' }));
-            }
+    const existingNames = providers.filter((p) => p.providerId !== selectedId).map((p) => p.providerName);
 
-            // Refresh settings
-            logger.logDebug('Refreshing settings after provider save');
-            await dispatch(getSettings()).unwrap();
+    const isCurrent = selectedId !== null && selectedId !== NEW_ID && selectedId === currentId;
 
-            handleCancelEdit();
-        } catch (error: unknown) {
-            const err = parseError(error);
-            logger.logError(`Failed to save provider: ${err.message}`);
-            dispatch(enqueueNotification({ message: `Failed to save provider: ${err.message}`, severity: 'error' }));
-        } finally {
-            dispatch(setAppBusy(false));
+    const handleSave = async (p: ProviderConfig) => {
+        if (selectedId === NEW_ID) {
+            const result = await dispatch(createProviderConfig(p)).unwrap();
+            const created = result.availableProviderConfigs.find((c) => c.providerName === p.providerName);
+            if (created) setSelectedId(created.providerId);
+        } else {
+            await dispatch(updateProviderConfig(p)).unwrap();
         }
     };
 
-    const handleDeleteProvider = async (providerId: string) => {
-        try {
-            logger.logDebug(`Attempting to delete provider: ${providerId}`);
-            if (providerId === settings.currentProviderConfig.providerId) {
-                logger.logWarning('Attempted to delete current provider - operation blocked');
-                dispatch(enqueueNotification({ message: 'Cannot delete current provider', severity: 'error' }));
-                return;
-            }
-
-            logger.logInfo(`Deleting provider: ${providerId}`);
-            dispatch(setAppBusy(true));
-            await dispatch(deleteProviderConfig(providerId)).unwrap();
-
-            // Refresh settings
-            logger.logDebug('Refreshing settings after provider deletion');
-            await dispatch(getSettings()).unwrap();
-
-            logger.logInfo('Provider deleted successfully');
-            dispatch(enqueueNotification({ message: 'Provider deleted successfully', severity: 'success' }));
-        } catch (error: unknown) {
-            const err = parseError(error);
-            logger.logError(`Failed to delete provider: ${err.message}`);
-            dispatch(enqueueNotification({ message: `Failed to delete provider: ${err.message}`, severity: 'error' }));
-        } finally {
-            dispatch(setAppBusy(false));
-        }
+    const handleSaveWithToast = (p: ProviderConfig) => {
+        void runWithToast({ unwrap: () => handleSave(p) }, { success: selectedId === NEW_ID ? 'Provider created' : 'Provider saved' });
     };
 
-    const handleSetAsCurrent = async (providerId: string) => {
-        try {
-            logger.logDebug(`Setting provider as current: ${providerId}`);
-            dispatch(setAppBusy(true));
-            await dispatch(setAsCurrentProviderConfig(providerId)).unwrap();
-
-            // Refresh settings
-            logger.logDebug('Refreshing settings after setting current provider');
-            await dispatch(getSettings()).unwrap();
-
-            logger.logInfo('Current provider updated successfully');
-            dispatch(enqueueNotification({ message: 'Current provider updated successfully', severity: 'success' }));
-        } catch (error: unknown) {
-            const err = parseError(error);
-            logger.logError(`Failed to set current provider: ${err.message}`);
-            dispatch(enqueueNotification({ message: `Failed to set current provider: ${err.message}`, severity: 'error' }));
-        } finally {
-            dispatch(setAppBusy(false));
-        }
+    const handleDelete = async (id: string) => {
+        await dispatch(deleteProviderConfig(id)).unwrap();
+        setSelectedId(null);
     };
 
-    const handleTestModels = async (providerConfig: ProviderConfig) => {
-        await testProviderModels(dispatch, providerConfig, setTestResults);
+    const handleDeleteWithToast = (id: string) => {
+        void runWithToast({ unwrap: () => handleDelete(id) }, { success: 'Provider deleted' });
     };
 
-    const handleTestInference = async (providerConfig: ProviderConfig, modelId: string) => {
-        try {
-            logger.logDebug(`Testing inference with model: ${modelId}`);
-            dispatch(setAppBusy(true));
-
-            const chatCompletionRequest = { model: modelId, messages: [{ role: 'user', content: 'Hello' }], stream: false };
-
-            const response = await ActionHandlerAdapter.getCompletionResponseForProvider(providerConfig, chatCompletionRequest);
-            logger.logInfo(`Connection test successful: ${response && JSON.stringify(response)}`);
-
-            dispatch(enqueueNotification({ message: 'Connection test successful!', severity: 'success' }));
-        } catch (error: unknown) {
-            const err = parseError(error);
-            logger.logError(`Connection test failed: ${err.message}`);
-            dispatch(enqueueNotification({ message: `Connection test failed: ${err.message}`, severity: 'error' }));
-        } finally {
-            dispatch(setAppBusy(false));
-        }
+    const handleSetCurrent = (id: string) => {
+        void runWithToast(dispatch(setAsCurrentProviderConfig(id)), { success: 'Current provider updated' });
     };
 
-    const editingProvider = editingProviderId ? settings.availableProviderConfigs.find((p) => p.providerId === editingProviderId) : undefined;
+    const handleCancel = () => {
+        if (selectedId === NEW_ID) setSelectedId(null);
+    };
 
     return (
-        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: SPACING.STANDARD }}>
-            {/* Tab Description */}
-            <Box sx={{ padding: SPACING.SMALL, marginBottom: SPACING.SMALL }}>
-                <Typography variant="body2" color="text.secondary" component="div" gutterBottom>
-                    This tab allows you to manage all your LLM provider configurations. You can create multiple providers and switch between them as
-                    needed.
-                </Typography>
-                <Typography variant="body2" color="text.secondary" component="div" gutterBottom>
-                    <strong>How to use:</strong> Click &quot;Create New Provider&quot; to add a new configuration, or use the Edit/Delete buttons for
-                    existing providers. Click &quot;Apply as Current&quot; to switch to a different provider.
-                </Typography>
-                <Typography variant="body2" color="text.secondary" component="div" gutterBottom>
-                    <strong>Important:</strong> After changing providers or provider settings, you may need to select a model again as the available
-                    models list will be refreshed.
-                </Typography>
-                <Typography variant="body2" color="text.secondary" component="div" gutterBottom>
-                    <strong>Note:</strong> You cannot delete the currently active provider. Set another provider as current first.
-                </Typography>
-            </Box>
-
-            {/* Provider List or Form */}
-            {showCreateForm || editingProviderId ? (
-                <ProviderForm
-                    provider={editingProvider!}
-                    authTypes={metadata.authTypes}
-                    providerTypes={metadata.providerTypes}
-                    onSave={handleSaveProvider}
-                    onCancel={handleCancelEdit}
-                    onTestModels={handleTestModels}
-                    onTestInference={handleTestInference}
-                    testResults={testResults}
-                />
-            ) : (
-                <ProviderList
-                    providers={settings.availableProviderConfigs}
-                    currentProviderId={settings.currentProviderConfig.providerId}
-                    onEdit={handleEditProvider}
-                    onDelete={handleDeleteProvider}
-                    onSetAsCurrent={handleSetAsCurrent}
-                    onCreateNew={handleCreateNew}
-                />
-            )}
-        </Box>
+        <div className={styles.root}>
+            <ProviderList
+                providers={providers}
+                currentId={currentId}
+                selectedId={selectedId}
+                onSelect={(id) => setSelectedId(id)}
+                onNew={() => setSelectedId(NEW_ID)}
+            />
+            <ProviderForm
+                provider={selectedProvider}
+                isNew={selectedId === NEW_ID}
+                presets={presets}
+                authTypes={authTypes}
+                providerTypes={providerTypes}
+                existingNames={existingNames}
+                isCurrent={isCurrent}
+                onSave={handleSaveWithToast}
+                onDelete={handleDeleteWithToast}
+                onSetCurrent={handleSetCurrent}
+                onCancel={handleCancel}
+            />
+        </div>
     );
 };
 

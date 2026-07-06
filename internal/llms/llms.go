@@ -17,7 +17,9 @@ type CompletionRequestMessage struct {
 }
 
 type Options struct {
-	Temperature float64 `json:"temperature,omitempty"`
+	Temperature *float64 `json:"temperature,omitempty"`
+	NumCtx      *int     `json:"num_ctx,omitempty"`     // ollama context window (native endpoint only, see T63)
+	NumPredict  *int     `json:"num_predict,omitempty"` // ollama output-token cap; native equivalent of max_tokens
 }
 
 // ChatCompletionRequest represents the structure for OpenAI-compatible API requests
@@ -63,4 +65,35 @@ type RequestParameters struct {
 	Headers            map[string]string
 	TimeoutSeconds     int
 	MaxRetries         int
+}
+
+// OllamaTagsEntry and OllamaTagsResponse parse the native Ollama /api/tags response.
+type OllamaTagsEntry struct {
+	Name string `json:"name"`
+}
+
+type OllamaTagsResponse struct {
+	Models []OllamaTagsEntry `json:"models"`
+}
+
+// azureDeploymentCapability indicates which inference tasks a deployment supports.
+type azureDeploymentCapability struct {
+	ChatCompletion bool `json:"chat_completion"`
+}
+
+type azureDeploymentFeatures struct {
+	Temperature *bool `json:"temperature,omitempty"`
+}
+
+type azureDeploymentLimits struct {
+	MaxPromptTokens *int `json:"max_prompt_tokens,omitempty"`
+}
+
+// azureDeploymentEntry is the rich per-deployment shape from Azure discovery.
+type azureDeploymentEntry struct {
+	ID           string                     `json:"id"`
+	DisplayName  string                     `json:"display_name,omitempty"`
+	Capabilities *azureDeploymentCapability `json:"capabilities,omitempty"`
+	Features     *azureDeploymentFeatures   `json:"features,omitempty"`
+	Limits       *azureDeploymentLimits     `json:"limits,omitempty"`
 }

@@ -1,11 +1,24 @@
 import {
-    GetCompletionResponseForProvider,
-    GetModelsList,
-    GetModelsListForProvider,
-    GetPromptGroups,
-    ProcessPrompt,
+    CancelAllRuns,
+    CancelChain,
+    GetActionCatalog,
+    GetModels,
+    PreviewPrompt,
+    ProcessPromptChain,
+    TestConnection,
+    TestInference,
+    TestModels,
 } from '../../../wailsjs/go/actions/ActionHandler';
-import { llms, settings } from '../../../wailsjs/go/models';
+import {
+    LogError as AppLogError,
+    BrowserOpenURL,
+    ClipboardGetText,
+    ClipboardSetText,
+    OpenPath,
+    SaveWindowSize,
+} from '../../../wailsjs/go/application/ApplicationContextHolder';
+import { ClearHistory, DeleteHistoryEntry, GetHistoryEntry, ListHistory } from '../../../wailsjs/go/history/HistoryHandler';
+import { apperr } from '../../../wailsjs/go/models';
 import {
     AddLanguage,
     CreateProviderConfig,
@@ -16,8 +29,11 @@ import {
     GetCurrentProviderConfig,
     GetInferenceBaseConfig,
     GetLanguageConfig,
+    GetLoggingConfig,
     GetModelConfig,
     GetSettings,
+    GetUIPreferencesConfig,
+    ProviderPresets,
     RemoveLanguage,
     ResetSettingsToDefault,
     SetAsCurrentProviderConfig,
@@ -25,32 +41,84 @@ import {
     SetDefaultOutputLanguage,
     UpdateAppBehaviorConfig,
     UpdateInferenceBaseConfig,
+    UpdateLoggingConfig,
     UpdateModelConfig,
     UpdateProviderConfig,
+    UpdateUIPreferencesConfig,
 } from '../../../wailsjs/go/settings/SettingsHandler';
-import { ClipboardGetText, ClipboardSetText, LogDebug, LogError, LogFatal, LogInfo, LogPrint, LogTrace, LogWarning } from '../../../wailsjs/runtime';
-import { parseError } from '../utils/error_utils';
-import { IActionHandler, IClipboardService, ILoggerService, ISettingsHandler } from './interfaces';
 import {
-    AppBehaviorConfig,
-    AppSettingsMetadata,
-    ChatCompletionRequest,
-    InferenceBaseConfig,
-    LanguageConfig,
-    ModelConfig,
-    PromptActionRequest,
-    Prompts,
-    ProviderConfig,
-    Settings,
-} from './models';
+    CreateStack,
+    DeleteStack,
+    DuplicateStack,
+    GetStack,
+    ListStacks,
+    SuggestedStacks,
+    UpdateStack,
+} from '../../../wailsjs/go/stacks/StackHandler';
+import { LogDebug, LogError, LogFatal, LogInfo, LogPrint, LogTrace, LogWarning } from '../../../wailsjs/runtime';
+import { guardArity } from './bridgeGuard';
+import { IActionHandler, IAppHandler, IClipboardService, IHistoryHandler, ILoggerService, ISettingsHandler, IStackHandler } from './interfaces';
+import { toWireBehavior, toWireLogging, toWireProvider, toWireUIPreferences } from './mappers';
+import { AppBehaviorConfig, InferenceBaseConfig, LoggingConfig, ModelConfig, ProviderConfig, UIPreferencesConfig } from './models';
 
-/**
- * Formats log messages with service context for consistent logging structure
- *
- * @param message - The log message content
- * @param serviceName - Optional service name for context
- * @returns Formatted log message with service prefix
- */
+// Guarded wrappers: reject on argument-count mismatch instead of risking a
+// hung Promise (see bridgeGuard.ts for why this is necessary with Wails v2).
+const CancelAllRunsSafe = guardArity('ActionHandler.CancelAllRuns', CancelAllRuns);
+const CancelChainSafe = guardArity('ActionHandler.CancelChain', CancelChain);
+const GetActionCatalogSafe = guardArity('ActionHandler.GetActionCatalog', GetActionCatalog);
+const GetModelsSafe = guardArity('ActionHandler.GetModels', GetModels);
+const PreviewPromptSafe = guardArity('ActionHandler.PreviewPrompt', PreviewPrompt);
+const ProcessPromptChainSafe = guardArity('ActionHandler.ProcessPromptChain', ProcessPromptChain);
+const TestConnectionSafe = guardArity('ActionHandler.TestConnection', TestConnection);
+const TestInferenceSafe = guardArity('ActionHandler.TestInference', TestInference);
+const TestModelsSafe = guardArity('ActionHandler.TestModels', TestModels);
+
+const AppLogErrorSafe = guardArity('AppHandler.LogError', AppLogError);
+const BrowserOpenURLSafe = guardArity('AppHandler.BrowserOpenURL', BrowserOpenURL);
+const ClipboardGetTextSafe = guardArity('AppHandler.ClipboardGetText', ClipboardGetText);
+const ClipboardSetTextSafe = guardArity('AppHandler.ClipboardSetText', ClipboardSetText);
+const OpenPathSafe = guardArity('AppHandler.OpenPath', OpenPath);
+const SaveWindowSizeSafe = guardArity('AppHandler.SaveWindowSize', SaveWindowSize);
+
+const ClearHistorySafe = guardArity('HistoryHandler.ClearHistory', ClearHistory);
+const DeleteHistoryEntrySafe = guardArity('HistoryHandler.DeleteHistoryEntry', DeleteHistoryEntry);
+const GetHistoryEntrySafe = guardArity('HistoryHandler.GetHistoryEntry', GetHistoryEntry);
+const ListHistorySafe = guardArity('HistoryHandler.ListHistory', ListHistory);
+
+const AddLanguageSafe = guardArity('SettingsHandler.AddLanguage', AddLanguage);
+const CreateProviderConfigSafe = guardArity('SettingsHandler.CreateProviderConfig', CreateProviderConfig);
+const DeleteProviderConfigSafe = guardArity('SettingsHandler.DeleteProviderConfig', DeleteProviderConfig);
+const GetAllProviderConfigsSafe = guardArity('SettingsHandler.GetAllProviderConfigs', GetAllProviderConfigs);
+const GetAppBehaviorConfigSafe = guardArity('SettingsHandler.GetAppBehaviorConfig', GetAppBehaviorConfig);
+const GetAppSettingsMetadataSafe = guardArity('SettingsHandler.GetAppSettingsMetadata', GetAppSettingsMetadata);
+const GetCurrentProviderConfigSafe = guardArity('SettingsHandler.GetCurrentProviderConfig', GetCurrentProviderConfig);
+const GetInferenceBaseConfigSafe = guardArity('SettingsHandler.GetInferenceBaseConfig', GetInferenceBaseConfig);
+const GetLanguageConfigSafe = guardArity('SettingsHandler.GetLanguageConfig', GetLanguageConfig);
+const GetLoggingConfigSafe = guardArity('SettingsHandler.GetLoggingConfig', GetLoggingConfig);
+const GetModelConfigSafe = guardArity('SettingsHandler.GetModelConfig', GetModelConfig);
+const GetSettingsSafe = guardArity('SettingsHandler.GetSettings', GetSettings);
+const GetUIPreferencesConfigSafe = guardArity('SettingsHandler.GetUIPreferencesConfig', GetUIPreferencesConfig);
+const ProviderPresetsSafe = guardArity('SettingsHandler.ProviderPresets', ProviderPresets);
+const RemoveLanguageSafe = guardArity('SettingsHandler.RemoveLanguage', RemoveLanguage);
+const ResetSettingsToDefaultSafe = guardArity('SettingsHandler.ResetSettingsToDefault', ResetSettingsToDefault);
+const SetAsCurrentProviderConfigSafe = guardArity('SettingsHandler.SetAsCurrentProviderConfig', SetAsCurrentProviderConfig);
+const SetDefaultInputLanguageSafe = guardArity('SettingsHandler.SetDefaultInputLanguage', SetDefaultInputLanguage);
+const SetDefaultOutputLanguageSafe = guardArity('SettingsHandler.SetDefaultOutputLanguage', SetDefaultOutputLanguage);
+const UpdateAppBehaviorConfigSafe = guardArity('SettingsHandler.UpdateAppBehaviorConfig', UpdateAppBehaviorConfig);
+const UpdateInferenceBaseConfigSafe = guardArity('SettingsHandler.UpdateInferenceBaseConfig', UpdateInferenceBaseConfig);
+const UpdateLoggingConfigSafe = guardArity('SettingsHandler.UpdateLoggingConfig', UpdateLoggingConfig);
+const UpdateModelConfigSafe = guardArity('SettingsHandler.UpdateModelConfig', UpdateModelConfig);
+const UpdateProviderConfigSafe = guardArity('SettingsHandler.UpdateProviderConfig', UpdateProviderConfig);
+const UpdateUIPreferencesConfigSafe = guardArity('SettingsHandler.UpdateUIPreferencesConfig', UpdateUIPreferencesConfig);
+
+const CreateStackSafe = guardArity('StackHandler.CreateStack', CreateStack);
+const DeleteStackSafe = guardArity('StackHandler.DeleteStack', DeleteStack);
+const DuplicateStackSafe = guardArity('StackHandler.DuplicateStack', DuplicateStack);
+const GetStackSafe = guardArity('StackHandler.GetStack', GetStack);
+const ListStacksSafe = guardArity('StackHandler.ListStacks', ListStacks);
+const SuggestedStacksSafe = guardArity('StackHandler.SuggestedStacks', SuggestedStacks);
+const UpdateStackSafe = guardArity('StackHandler.UpdateStack', UpdateStack);
+
 function formatLogMessage(message: string, serviceName?: string): string {
     if (serviceName && serviceName.trim().length > 0) {
         return `[FrontendLogger].${serviceName}: ${message}`;
@@ -58,16 +126,6 @@ function formatLogMessage(message: string, serviceName?: string): string {
     return `[FrontendLogger].${message}`;
 }
 
-/**
- * Safely executes log functions with error handling
- *
- * Wraps Wails-generated log functions to prevent crashes from logging errors.
- * Falls back to console.error if the primary logging mechanism fails.
- *
- * @param message - The log message content
- * @param logFunction - The Wails-generated log function to call
- * @param serviceName - Optional service name for context
- */
 function logMessage(message: string, logFunction: (arg: string) => void, serviceName?: string) {
     try {
         logFunction(formatLogMessage(message, serviceName));
@@ -76,26 +134,9 @@ function logMessage(message: string, logFunction: (arg: string) => void, service
     }
 }
 
-/**
- * Logger Service Implementation
- *
- * Concrete implementation of ILoggerService that wraps Wails-generated logging functions.
- * Provides structured logging with service context and error handling.
- *
- * Features:
- * - Service-specific logging context
- * - Error-safe logging operations
- * - Static factory method for easy instantiation
- */
 export class LoggerService implements ILoggerService {
     constructor(private readonly loggerServiceName?: string) {}
 
-    /**
-     * Factory method to create logger instances with service context
-     *
-     * @param serviceName - Name of the service for logging context
-     * @returns Configured LoggerService instance
-     */
     static getLogger(serviceName?: string): LoggerService {
         return new LoggerService(serviceName);
     }
@@ -103,595 +144,321 @@ export class LoggerService implements ILoggerService {
     logDebug(message: string): void {
         logMessage(message, LogDebug, this.loggerServiceName);
     }
-
     logError(message: string): void {
         logMessage(message, LogError, this.loggerServiceName);
     }
-
     logFatal(message: string): void {
         logMessage(message, LogFatal, this.loggerServiceName);
     }
-
     logInfo(message: string): void {
         logMessage(message, LogInfo, this.loggerServiceName);
     }
-
     logPrint(message: string): void {
         logMessage(message, LogPrint, this.loggerServiceName);
     }
-
     logTrace(message: string): void {
         logMessage(message, LogTrace, this.loggerServiceName);
     }
-
     logWarning(message: string): void {
         logMessage(message, LogWarning, this.loggerServiceName);
     }
 }
-/**
- * Action Handler Service Implementation
- *
- * Concrete implementation of IActionHandler that bridges frontend UI with backend LLM services.
- * Handles all AI-related operations including completion requests, model management, and prompt processing.
- *
- * Key Responsibilities:
- * - Converting frontend models to Wails-compatible formats
- * - Error handling and logging for all LLM operations
- * - Managing provider-specific operations
- * - Processing user-initiated prompt actions
- */
+
+export class AppHandler implements IAppHandler {
+    constructor(private readonly logger: ILoggerService) {}
+
+    logError(message: string): Promise<apperr.VoidResult> {
+        this.logger.logDebug(`AppHandler.logError: ${message}`);
+        return AppLogErrorSafe(message);
+    }
+
+    clipboardGetText(): Promise<apperr.StringResult> {
+        return ClipboardGetTextSafe();
+    }
+
+    clipboardSetText(text: string): Promise<apperr.VoidResult> {
+        return ClipboardSetTextSafe(text);
+    }
+
+    browserOpenURL(url: string): Promise<apperr.VoidResult> {
+        this.logger.logDebug(`AppHandler.browserOpenURL: ${url}`);
+        return BrowserOpenURLSafe(url);
+    }
+
+    openPath(path: string): Promise<apperr.VoidResult> {
+        this.logger.logDebug(`AppHandler.openPath: ${path}`);
+        return OpenPathSafe(path);
+    }
+
+    saveWindowSize(width: number, height: number): Promise<apperr.VoidResult> {
+        return SaveWindowSizeSafe(width, height);
+    }
+}
+
 export class ActionHandler implements IActionHandler {
     constructor(private readonly logger: ILoggerService) {}
 
-    /**
-     * Gets completion response from a specific provider
-     *
-     * @param providerConfig - Provider configuration to use
-     * @param chatCompletionRequest - Complete request with a model, messages, and parameters
-     * @returns Generated completion text
-     * @throws Rejects with original error if operation fails
-     */
-    async getCompletionResponseForProvider(providerConfig: ProviderConfig, chatCompletionRequest: ChatCompletionRequest): Promise<string> {
-        try {
-            this.logger.logInfo(
-                `Attempt to call Wails generated GetCompletionResponseForProvider with provider: ${providerConfig.providerName}, request: ${JSON.stringify(chatCompletionRequest)}`,
-            );
-            const wailsProviderConfig = settings.ProviderConfig.createFrom(providerConfig);
-            const wailsChatCompletionRequest = llms.ChatCompletionRequest.createFrom(chatCompletionRequest);
-            const result = await GetCompletionResponseForProvider(wailsProviderConfig, wailsChatCompletionRequest);
-            this.logger.logInfo(`Wails generated GetCompletionResponseForProvider completed successfully`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated GetCompletionResponseForProvider failed: ${err.message}`);
-            return Promise.reject(error);
-        }
+    async getActionCatalog(): Promise<apperr.CatalogResult> {
+        this.logger.logInfo('getActionCatalog');
+        return GetActionCatalogSafe();
     }
 
-    /**
-     * Retrieves a list of available models from current provider
-     *
-     * @returns Array of model names
-     * @throws Rejects with original error if operation fails
-     */
-    async getModelsList(): Promise<Array<string>> {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated GetModelsList`);
-            const result = await GetModelsList();
-            this.logger.logInfo(`Wails generated GetModelsList completed successfully, found ${result.length} models`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated GetModelsList failed: ${err.message}`);
-            return Promise.reject(error);
-        }
+    async getModels(providerId: string): Promise<apperr.ModelsResult> {
+        this.logger.logInfo(`getModels: ${providerId}`);
+        return GetModelsSafe(providerId);
     }
 
-    /**
-     * Retrieves a list of available models from specific provider
-     *
-     * @param providerConfig - Provider configuration to query
-     * @returns Array of model names
-     * @throws Rejects with original error if operation fails
-     */
-    async getModelsListForProvider(providerConfig: ProviderConfig): Promise<Array<string>> {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated GetModelsListForProvider with provider: ${providerConfig.providerName}`);
-            const result = await GetModelsListForProvider(providerConfig);
-            this.logger.logInfo(`Wails generated GetModelsListForProvider completed successfully, found ${result.length} models`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated GetModelsListForProvider failed: ${err.message}`);
-            return Promise.reject(error);
-        }
+    async previewPrompt(req: apperr.PromptPreviewRequest): Promise<apperr.PromptPreviewResult> {
+        this.logger.logInfo('previewPrompt');
+        return PreviewPromptSafe(req);
     }
 
-    /**
-     * Retrieves all available prompt groups
-     *
-     * @returns Complete prompts collection with all groups and individual prompts
-     * @throws Rejects with original error if operation fails
-     */
-    async getPromptGroups(): Promise<Prompts> {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated GetPromptGroups`);
-            const result = await GetPromptGroups();
-            const groupCount = Object.keys(result.promptGroups).length;
-            this.logger.logInfo(`Wails generated GetPromptGroups completed successfully, found ${groupCount} prompt groups`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated GetPromptGroups failed: ${err.message}`);
-            return Promise.reject(error);
-        }
+    async processPromptChain(req: apperr.ChainRequest): Promise<apperr.ChainResultEnv> {
+        this.logger.logInfo('processPromptChain');
+        return ProcessPromptChainSafe(req);
     }
 
-    /**
-     * Processes a specific prompt action with user input
-     *
-     * @param promptActionRequest - Request containing prompt ID, input text, and language config
-     * @returns Generated output text from prompt processing
-     * @throws Rejects with original error if operation fails
-     */
-    async processPrompt(promptActionRequest: PromptActionRequest): Promise<string> {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated ProcessPrompt with request: ${JSON.stringify(promptActionRequest)}`);
-            const result = await ProcessPrompt(promptActionRequest);
-            this.logger.logInfo(`Wails generated ProcessPrompt completed successfully`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated ProcessPrompt failed: ${err.message}`);
-            return Promise.reject(error);
-        }
+    async cancelChain(runId: string): Promise<apperr.VoidResult> {
+        this.logger.logInfo(`cancelChain: ${runId}`);
+        return CancelChainSafe(runId);
+    }
+
+    async cancelAllRuns(): Promise<void> {
+        this.logger.logInfo('cancelAllRuns');
+        return CancelAllRunsSafe();
+    }
+
+    async testConnection(providerConfig: ProviderConfig): Promise<apperr.VerifyResult> {
+        this.logger.logInfo(`testConnection: ${providerConfig.providerName}`);
+        return TestConnectionSafe(toWireProvider(providerConfig));
+    }
+
+    async testInference(providerConfig: ProviderConfig): Promise<apperr.VerifyResult> {
+        this.logger.logInfo(`testInference: ${providerConfig.providerName}`);
+        return TestInferenceSafe(toWireProvider(providerConfig));
+    }
+
+    async testModels(providerConfig: ProviderConfig): Promise<apperr.VerifyResult> {
+        this.logger.logInfo(`testModels: ${providerConfig.providerName}`);
+        return TestModelsSafe(toWireProvider(providerConfig));
     }
 }
-/**
- * Settings Handler Service Implementation
- *
- * Concrete implementation of ISettingsHandler that manages all application configuration.
- * Bridges the frontend UI with backend settings persistence and provides comprehensive CRUD operations.
- *
- * Key Responsibilities:
- * - Converting frontend models to Wails-compatible formats
- * - Error handling and logging for all settings operations
- * - Managing provider configurations (create, read, update, delete)
- * - Handling language, model, and inference configurations
- * - Providing factory reset functionality
- */
+
 export class SettingsHandler implements ISettingsHandler {
     constructor(private readonly logger: ILoggerService) {}
 
-    /**
-     * Adds a new language to the supported languages list
-     *
-     * @param language - Language code to add (e.g., "en", "es")
-     * @returns Updated array of all supported languages
-     * @throws Rejects with original error if operation fails
-     */
-    async addLanguage(language: string): Promise<Array<string>> {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated AddLanguage with language: ${language}`);
-            const result = await AddLanguage(language);
-            this.logger.logInfo(`Wails generated AddLanguage completed successfully, languages count: ${result.length}`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated AddLanguage failed: ${err.message}`);
-            return Promise.reject(error);
-        }
+    async addLanguage(language: string): Promise<apperr.LanguagesResult> {
+        this.logger.logInfo(`addLanguage: ${language}`);
+        return AddLanguageSafe(language);
     }
 
-    /**
-     * Creates a new provider configuration
-     *
-     * @param providerConfig - Complete provider configuration
-     * @returns Created provider configuration with generated ID
-     * @throws Rejects with original error if operation fails
-     */
-    async createProviderConfig(providerConfig: ProviderConfig): Promise<ProviderConfig> {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated CreateProviderConfig with provider: ${providerConfig.providerName}`);
-            const wailsProviderConfig = settings.ProviderConfig.createFrom(providerConfig);
-            const result = await CreateProviderConfig(wailsProviderConfig);
-            this.logger.logInfo(`Wails generated CreateProviderConfig completed successfully for provider: ${result.providerName}`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated CreateProviderConfig failed: ${err.message}`);
-            return Promise.reject(error);
-        }
+    async createProviderConfig(providerConfig: ProviderConfig): Promise<apperr.ProviderResult> {
+        this.logger.logInfo(`createProviderConfig: ${providerConfig.providerName}`);
+        return CreateProviderConfigSafe(toWireProvider(providerConfig));
     }
 
-    /**
-     * Deletes a provider configuration by ID
-     *
-     * @param providerId - ID of provider to delete
-     * @throws Rejects with original error if operation fails
-     */
-    async deleteProviderConfig(providerId: string): Promise<void> {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated DeleteProviderConfig with providerId: ${providerId}`);
-            await DeleteProviderConfig(providerId);
-            this.logger.logInfo(`Wails generated DeleteProviderConfig completed successfully`);
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated DeleteProviderConfig failed: ${err.message}`);
-            return Promise.reject(error);
-        }
+    async deleteProviderConfig(providerId: string): Promise<apperr.VoidResult> {
+        this.logger.logInfo(`deleteProviderConfig: ${providerId}`);
+        return DeleteProviderConfigSafe(providerId);
     }
 
-    /**
-     * Retrieves all available provider configurations
-     *
-     * @returns Array of all provider configurations
-     * @throws Rejects with original error if operation fails
-     */
-    async getAllProviderConfigs(): Promise<Array<ProviderConfig>> {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated GetAllProviderConfigs`);
-            const result = await GetAllProviderConfigs();
-            this.logger.logInfo(`Wails generated GetAllProviderConfigs completed successfully, found ${result.length} providers`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated GetAllProviderConfigs failed: ${err.message}`);
-            return Promise.reject(error);
-        }
+    async getAllProviderConfigs(): Promise<apperr.ProvidersResult> {
+        this.logger.logInfo('getAllProviderConfigs');
+        return GetAllProviderConfigsSafe();
     }
 
-    /**
-     * Retrieves application settings metadata
-     *
-     * @returns Metadata including auth types, provider types, and file locations
-     * @throws Rejects with original error if operation fails
-     */
-    async getAppSettingsMetadata(): Promise<AppSettingsMetadata> {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated GetAppSettingsMetadata`);
-            const result = await GetAppSettingsMetadata();
-            this.logger.logInfo(`Wails generated GetAppSettingsMetadata completed successfully`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated GetAppSettingsMetadata failed: ${err.message}`);
-            return Promise.reject(error);
-        }
+    async getAppSettingsMetadata(): Promise<apperr.MetadataResult> {
+        this.logger.logInfo('getAppSettingsMetadata');
+        return GetAppSettingsMetadataSafe();
     }
 
-    /**
-     * Retrieves the currently active provider configuration
-     *
-     * @returns Current provider configuration
-     * @throws Rejects with original error if operation fails
-     */
-    async getCurrentProviderConfig(): Promise<ProviderConfig> {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated GetCurrentProviderConfig`);
-            const result = await GetCurrentProviderConfig();
-            this.logger.logInfo(`Wails generated GetCurrentProviderConfig completed successfully for provider: ${result.providerName}`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated GetCurrentProviderConfig failed: ${err.message}`);
-            return Promise.reject(error);
-        }
+    async getCurrentProviderConfig(): Promise<apperr.ProviderResult> {
+        this.logger.logInfo('getCurrentProviderConfig');
+        return GetCurrentProviderConfigSafe();
     }
 
-    /**
-     * Retrieves the inference base configuration
-     *
-     * @returns Inference configuration with timeout, retries, and formatting options
-     * @throws Rejects with original error if operation fails
-     */
-    async getInferenceBaseConfig(): Promise<InferenceBaseConfig> {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated GetInferenceBaseConfig`);
-            const result = await GetInferenceBaseConfig();
-            this.logger.logInfo(`Wails generated GetInferenceBaseConfig completed successfully`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated GetInferenceBaseConfig failed: ${err.message}`);
-            return Promise.reject(error);
-        }
+    async getInferenceBaseConfig(): Promise<apperr.InferenceResult> {
+        this.logger.logInfo('getInferenceBaseConfig');
+        return GetInferenceBaseConfigSafe();
     }
 
-    /**
-     * Retrieves the language configuration
-     *
-     * @returns Language configuration with supported languages and defaults
-     * @throws Rejects with original error if operation fails
-     */
-    async getLanguageConfig(): Promise<LanguageConfig> {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated GetLanguageConfig`);
-            const result = await GetLanguageConfig();
-            this.logger.logInfo(`Wails generated GetLanguageConfig completed successfully, languages count: ${result.languages.length}`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated GetLanguageConfig failed: ${err.message}`);
-            return Promise.reject(error);
-        }
+    async getLanguageConfig(): Promise<apperr.LanguageResult> {
+        this.logger.logInfo('getLanguageConfig');
+        return GetLanguageConfigSafe();
     }
 
-    /**
-     * Retrieves the model configuration
-     *
-     * @returns Model configuration with selected model and temperature settings
-     * @throws Rejects with original error if operation fails
-     */
-    async getModelConfig(): Promise<ModelConfig> {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated GetModelConfig`);
-            const result = await GetModelConfig();
-            this.logger.logInfo(`Wails generated GetModelConfig completed successfully for model: ${result.name}`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated GetModelConfig failed: ${err.message}`);
-            return Promise.reject(error);
-        }
+    async providerPresets(): Promise<apperr.ProviderPresetsResult> {
+        this.logger.logInfo('providerPresets');
+        return ProviderPresetsSafe();
     }
 
-    /**
-     * Retrieves complete application settings
-     *
-     * @returns Full settings object with all configurations
-     * @throws Rejects with original error if operation fails
-     */
-    async getSettings(): Promise<Settings> {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated GetSettings`);
-            const result = await GetSettings();
-            this.logger.logInfo(`Wails generated GetSettings completed successfully, providers count: ${result.availableProviderConfigs.length}`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated GetSettings failed: ${err.message}`);
-            return Promise.reject(error);
-        }
+    async getModelConfig(): Promise<apperr.ModelConfigResult> {
+        this.logger.logInfo('getModelConfig');
+        return GetModelConfigSafe();
     }
 
-    /**
-     * Removes a language from the supported languages list
-     *
-     * @param language - Language code to remove (e.g., "en", "es")
-     * @returns Updated array of all supported languages
-     * @throws Rejects with original error if operation fails
-     */
-    async removeLanguage(language: string): Promise<Array<string>> {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated RemoveLanguage with language: ${language}`);
-            const result = await RemoveLanguage(language);
-            this.logger.logInfo(`Wails generated RemoveLanguage completed successfully, languages count: ${result.length}`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated RemoveLanguage failed: ${err.message}`);
-            return Promise.reject(error);
-        }
+    async getSettings(): Promise<apperr.SettingsResult> {
+        this.logger.logInfo('getSettings');
+        return GetSettingsSafe();
     }
 
-    /**
-     * Resets all settings to default values
-     *
-     * @returns Complete settings object with default values
-     * @throws Rejects with original error if operation fails
-     */
-    async resetSettingsToDefault(): Promise<Settings> {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated ResetSettingsToDefault`);
-            const result = await ResetSettingsToDefault();
-            this.logger.logInfo(`Wails generated ResetSettingsToDefault completed successfully`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated ResetSettingsToDefault failed: ${err.message}`);
-            return Promise.reject(error);
-        }
+    async removeLanguage(language: string): Promise<apperr.LanguagesResult> {
+        this.logger.logInfo(`removeLanguage: ${language}`);
+        return RemoveLanguageSafe(language);
     }
 
-    /**
-     * Sets a provider as the current/active provider
-     *
-     * @param providerId - ID of provider to activate
-     * @returns Updated provider configuration that is now active
-     * @throws Rejects with original error if operation fails
-     */
-    async setAsCurrentProviderConfig(providerId: string): Promise<ProviderConfig> {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated SetAsCurrentProviderConfig with providerId: ${providerId}`);
-            const result = await SetAsCurrentProviderConfig(providerId);
-            this.logger.logInfo(`Wails generated SetAsCurrentProviderConfig completed successfully for provider: ${result.providerName}`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated SetAsCurrentProviderConfig failed: ${err.message}`);
-            return Promise.reject(error);
-        }
+    async resetSettingsToDefault(): Promise<apperr.SettingsResult> {
+        this.logger.logInfo('resetSettingsToDefault');
+        return ResetSettingsToDefaultSafe();
     }
 
-    /**
-     * Sets the default input language
-     *
-     * @param language - Language code to set as default for input
-     * @throws Rejects with original error if operation fails
-     */
-    async setDefaultInputLanguage(language: string): Promise<void> {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated SetDefaultInputLanguage with language: ${language}`);
-            await SetDefaultInputLanguage(language);
-            this.logger.logInfo(`Wails generated SetDefaultInputLanguage completed successfully`);
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated SetDefaultInputLanguage failed: ${err.message}`);
-            return Promise.reject(error);
-        }
+    async setAsCurrentProviderConfig(providerId: string): Promise<apperr.ProviderResult> {
+        this.logger.logInfo(`setAsCurrentProviderConfig: ${providerId}`);
+        return SetAsCurrentProviderConfigSafe(providerId);
     }
 
-    /**
-     * Sets the default output language
-     *
-     * @param language - Language code to set as default for output
-     * @throws Rejects with original error if operation fails
-     */
-    async setDefaultOutputLanguage(language: string): Promise<void> {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated SetDefaultOutputLanguage with language: ${language}`);
-            await SetDefaultOutputLanguage(language);
-            this.logger.logInfo(`Wails generated SetDefaultOutputLanguage completed successfully`);
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated SetDefaultOutputLanguage failed: ${err.message}`);
-            return Promise.reject(error);
-        }
+    async setDefaultInputLanguage(language: string): Promise<apperr.VoidResult> {
+        this.logger.logInfo(`setDefaultInputLanguage: ${language}`);
+        return SetDefaultInputLanguageSafe(language);
     }
 
-    /**
-     * Updates the inference base configuration
-     *
-     * @param inferenceBaseConfig - Complete inference configuration to update
-     * @returns Updated inference configuration
-     * @throws Rejects with original error if operation fails
-     */
-    async updateInferenceBaseConfig(inferenceBaseConfig: InferenceBaseConfig): Promise<InferenceBaseConfig> {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated UpdateInferenceBaseConfig`);
-            const wailsInferenceBaseConfig = settings.InferenceBaseConfig.createFrom(inferenceBaseConfig);
-            const result = await UpdateInferenceBaseConfig(wailsInferenceBaseConfig);
-            this.logger.logInfo(`Wails generated UpdateInferenceBaseConfig completed successfully`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated UpdateInferenceBaseConfig failed: ${err.message}`);
-            return Promise.reject(error);
-        }
+    async setDefaultOutputLanguage(language: string): Promise<apperr.VoidResult> {
+        this.logger.logInfo(`setDefaultOutputLanguage: ${language}`);
+        return SetDefaultOutputLanguageSafe(language);
     }
 
-    /**
-     * Updates the model configuration
-     *
-     * @param modelConfig - Complete model configuration to update
-     * @returns Updated model configuration
-     * @throws Rejects with original error if operation fails
-     */
-    async updateModelConfig(modelConfig: ModelConfig): Promise<ModelConfig> {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated UpdateModelConfig with model: ${modelConfig.name}`);
-            const wailsModelConfig = settings.ModelConfig.createFrom(modelConfig);
-            const result = await UpdateModelConfig(wailsModelConfig);
-            this.logger.logInfo(`Wails generated UpdateModelConfig completed successfully for model: ${result.name}`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated UpdateModelConfig failed: ${err.message}`);
-            return Promise.reject(error);
-        }
+    async updateInferenceBaseConfig(config: InferenceBaseConfig): Promise<apperr.InferenceResult> {
+        this.logger.logInfo('updateInferenceBaseConfig');
+        return UpdateInferenceBaseConfigSafe(config);
     }
 
-    /**
-     * Updates a provider configuration
-     *
-     * @param providerConfig - Complete provider configuration to update
-     * @returns Updated provider configuration
-     * @throws Rejects with original error if operation fails
-     */
-    async updateProviderConfig(providerConfig: ProviderConfig): Promise<ProviderConfig> {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated UpdateProviderConfig with provider: ${providerConfig.providerName}`);
-            const wailsProviderConfig = settings.ProviderConfig.createFrom(providerConfig);
-            const result = await UpdateProviderConfig(wailsProviderConfig);
-            this.logger.logInfo(`Wails generated UpdateProviderConfig completed successfully for provider: ${result.providerName}`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated UpdateProviderConfig failed: ${err.message}`);
-            return Promise.reject(error);
-        }
+    async updateModelConfig(config: ModelConfig): Promise<apperr.ModelConfigResult> {
+        this.logger.logInfo(`updateModelConfig: ${config.name}`);
+        return UpdateModelConfigSafe(config);
     }
 
-    /**
-     * Retrieves the application behavior configuration
-     *
-     * @returns App behavior configuration with task logging settings
-     * @throws Rejects with original error if operation fails
-     */
-    async getAppBehaviorConfig(): Promise<AppBehaviorConfig> {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated GetAppBehaviorConfig`);
-            const result = await GetAppBehaviorConfig();
-            this.logger.logInfo(`Wails generated GetAppBehaviorConfig completed successfully`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated GetAppBehaviorConfig failed: ${err.message}`);
-            return Promise.reject(error);
-        }
+    async updateProviderConfig(providerConfig: ProviderConfig): Promise<apperr.ProviderResult> {
+        this.logger.logInfo(`updateProviderConfig: ${providerConfig.providerName}`);
+        return UpdateProviderConfigSafe(toWireProvider(providerConfig));
     }
 
-    /**
-     * Updates the application behavior configuration
-     *
-     * @param config - App behavior configuration to update
-     * @returns Updated app behavior configuration
-     * @throws Rejects with original error if operation fails
-     */
-    async updateAppBehaviorConfig(config: AppBehaviorConfig): Promise<AppBehaviorConfig> {
-        try {
-            this.logger.logInfo(`Attempt to call Wails generated UpdateAppBehaviorConfig`);
-            const wailsConfig = settings.AppBehaviorConfig.createFrom(config);
-            const result = await UpdateAppBehaviorConfig(wailsConfig);
-            this.logger.logInfo(`Wails generated UpdateAppBehaviorConfig completed successfully`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated UpdateAppBehaviorConfig failed: ${err.message}`);
-            return Promise.reject(error);
-        }
+    async getAppBehaviorConfig(): Promise<apperr.AppBehaviorResult> {
+        this.logger.logInfo('getAppBehaviorConfig');
+        return GetAppBehaviorConfigSafe();
+    }
+
+    async updateAppBehaviorConfig(config: AppBehaviorConfig): Promise<apperr.AppBehaviorResult> {
+        this.logger.logInfo('updateAppBehaviorConfig');
+        return UpdateAppBehaviorConfigSafe(toWireBehavior(config));
+    }
+
+    async getUIPreferencesConfig(): Promise<apperr.UIPreferencesResult> {
+        this.logger.logInfo('getUIPreferencesConfig');
+        return GetUIPreferencesConfigSafe();
+    }
+
+    async updateUIPreferencesConfig(config: UIPreferencesConfig): Promise<apperr.UIPreferencesResult> {
+        this.logger.logInfo('updateUIPreferencesConfig');
+        return UpdateUIPreferencesConfigSafe(toWireUIPreferences(config));
+    }
+
+    async getLoggingConfig(): Promise<apperr.LoggingResult> {
+        this.logger.logInfo('getLoggingConfig');
+        return GetLoggingConfigSafe();
+    }
+
+    async updateLoggingConfig(config: LoggingConfig): Promise<apperr.LoggingResult> {
+        this.logger.logInfo('updateLoggingConfig');
+        return UpdateLoggingConfigSafe(toWireLogging(config));
     }
 }
-export class ClipboardService implements IClipboardService {
+
+export class HistoryHandler implements IHistoryHandler {
     constructor(private readonly logger: ILoggerService) {}
 
-    /**
-     * Retrieves text from the system clipboard
-     *
-     * @returns Clipboard text content
-     * @throws Rejects with error if clipboard access fails or is empty
-     */
+    async clearHistory(): Promise<apperr.VoidResult> {
+        this.logger.logInfo('clearHistory');
+        return ClearHistorySafe();
+    }
+
+    async deleteHistoryEntry(id: string): Promise<apperr.VoidResult> {
+        this.logger.logInfo(`deleteHistoryEntry: ${id}`);
+        return DeleteHistoryEntrySafe(id);
+    }
+
+    async getHistoryEntry(id: string): Promise<apperr.HistoryEntryResult> {
+        this.logger.logInfo(`getHistoryEntry: ${id}`);
+        return GetHistoryEntrySafe(id);
+    }
+
+    async listHistory(limit: number, offset: number): Promise<apperr.HistoryListResult> {
+        this.logger.logInfo(`listHistory: limit=${limit} offset=${offset}`);
+        return ListHistorySafe(limit, offset);
+    }
+}
+
+export class StackHandler implements IStackHandler {
+    constructor(private readonly logger: ILoggerService) {}
+
+    async createStack(stack: apperr.SavedStack): Promise<apperr.StackResult> {
+        this.logger.logInfo(`createStack: ${stack.name}`);
+        return CreateStackSafe(stack);
+    }
+
+    async deleteStack(id: string): Promise<apperr.VoidResult> {
+        this.logger.logInfo(`deleteStack: ${id}`);
+        return DeleteStackSafe(id);
+    }
+
+    async duplicateStack(id: string, newName: string): Promise<apperr.StackResult> {
+        this.logger.logInfo(`duplicateStack: ${id} -> ${newName}`);
+        return DuplicateStackSafe(id, newName);
+    }
+
+    async getStack(id: string): Promise<apperr.StackResult> {
+        this.logger.logInfo(`getStack: ${id}`);
+        return GetStackSafe(id);
+    }
+
+    async listStacks(): Promise<apperr.StacksResult> {
+        this.logger.logInfo('listStacks');
+        return ListStacksSafe();
+    }
+
+    async suggestedStacks(): Promise<apperr.SuggestedStacksResult> {
+        this.logger.logInfo('suggestedStacks');
+        return SuggestedStacksSafe();
+    }
+
+    async updateStack(stack: apperr.SavedStack): Promise<apperr.StackResult> {
+        this.logger.logInfo(`updateStack: ${stack.name}`);
+        return UpdateStackSafe(stack);
+    }
+}
+
+export class ClipboardService implements IClipboardService {
+    constructor(
+        private readonly logger: ILoggerService,
+        private readonly appHandler: IAppHandler,
+    ) {}
+
     async getText(): Promise<string> {
         try {
-            this.logger.logInfo(`Attempt to call Wails generated ClipboardGetText`);
-            const result = await ClipboardGetText();
-            this.logger.logInfo(`Wails generated ClipboardGetText completed successfully`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated ClipboardGetText failed: ${err.message}`);
-            return Promise.reject(error);
+            const result = await this.appHandler.clipboardGetText();
+            return result.data ?? '';
+        } catch (e) {
+            this.logger.logError(`ClipboardGetText failed: ${String(e)}`);
+            return '';
         }
     }
 
-    /**
-     * Sets text content to the system clipboard
-     *
-     * @param text - Text content to copy to clipboard
-     * @returns Boolean indicating success (true) or failure (false)
-     * @throws Rejects with error if clipboard access fails
-     */
     async setText(text: string): Promise<boolean> {
         try {
-            this.logger.logInfo(`Attempt to call Wails generated ClipboardSetText with text length: ${text.length}`);
-            const result = await ClipboardSetText(text);
-            this.logger.logInfo(`Wails generated ClipboardSetText completed successfully, result: ${result}`);
-            return result;
-        } catch (error) {
-            const err = parseError(error);
-            this.logger.logError(`Wails generated ClipboardSetText failed: ${err.message}`);
-            return Promise.reject(error);
+            const result = await this.appHandler.clipboardSetText(text);
+            return !result.error;
+        } catch (e) {
+            this.logger.logError(`ClipboardSetText failed: ${String(e)}`);
+            return false;
         }
     }
 }

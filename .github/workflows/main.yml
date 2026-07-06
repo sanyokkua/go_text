@@ -34,11 +34,50 @@ on:
         # false = build only (no release)
 
 # ==============================================================================
-# BUILD JOB - Compiles for all platforms in parallel
+# VERSION JOB - Computes the release version once; build and release jobs share it
 # ==============================================================================
 
 jobs:
+  determine-version:
+    runs-on: ubuntu-latest
+
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+
+    steps:
+      # --------------------------------------------------
+      # Extract version information
+      # --------------------------------------------------
+      - name: Extract version
+        id: version
+        # Creates outputs: steps.version.outputs.version and .tag
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            # Manual trigger
+            VERSION="${{ github.event.inputs.version }}"
+            # User entered: 1.0.0
+            TAG="v${VERSION}"
+            # We add 'v': v1.0.0
+          else
+            # Tag push
+            TAG="${{ github.ref_name }}"
+            # From git: v1.0.0
+            VERSION="${TAG#v}"
+            # Remove 'v': 1.0.0
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          # Makes version and tag available to downstream jobs via `needs`
+
+  # ==============================================================================
+  # BUILD JOB - Compiles for all platforms in parallel
+  # ==============================================================================
+
   build:
+    needs: determine-version
+    # Waits for the version to be computed so it can be injected into the build
+
     strategy:
       fail-fast: false
       # Continue other builds even if one fails
@@ -48,23 +87,23 @@ jobs:
           # Linux (Ubuntu 24.04 with webkit2gtk-4.1)
           - platform: linux/amd64
             os: ubuntu-24.04
-            output_name: TextProcessingSuite-linux-amd64
-            artifact_path: build/bin/TextProcessingSuite-linux-amd64
+            output_name: GoText-linux-amd64
+            artifact_path: build/bin/GoText-linux-amd64
             build_tags: webkit2_41
             # webkit2_41 tag required for Ubuntu 24.04
 
           # Windows (with WebView2)
           - platform: windows/amd64
             os: windows-latest
-            output_name: TextProcessingSuite-windows-amd64.exe
-            artifact_path: build/bin/TextProcessingSuite-windows-amd64.exe
+            output_name: GoText-windows-amd64.exe
+            artifact_path: build/bin/GoText-windows-amd64.exe
             build_tags: ""
 
           # macOS Apple Silicon
           - platform: darwin/arm64
             os: macos-latest
-            output_name: TextProcessingSuite-macos-arm64
-            artifact_path: build/bin/TextProcessingSuite.app
+            output_name: GoText-macos-arm64
+            artifact_path: build/bin/GoText.app
             build_tags: ""
 
     runs-on: ${{ matrix.os }}
@@ -130,15 +169,29 @@ jobs:
         # npm ci is faster and more reliable than npm install in CI
 
       # --------------------------------------------------
+      # Patch wails.json with the release version
+      # --------------------------------------------------
+      - name: Patch wails.json with release version
+        shell: bash
+        # Forced bash: the Windows runner defaults to pwsh, but this needs
+        # bash string interpolation + jq (preinstalled on all 3 runner images)
+        run: |
+          VERSION="${{ needs.determine-version.outputs.version }}"
+          jq --arg v "$VERSION" '.version = $v | .info.productVersion = $v' wails.json > wails.json.tmp
+          mv wails.json.tmp wails.json
+          # Feeds build/windows/info.json and build/darwin/Info.plist's
+          # {{.Info.ProductVersion}} placeholders with the real release version
+
+      # --------------------------------------------------
       # Build the application (Linux - with tags)
       # --------------------------------------------------
       - name: Build Wails app (Linux)
         if: matrix.build_tags != ''
         # Only runs when build_tags is not empty (Linux)
-        run: wails build --platform ${{ matrix.platform }} -tags "${{ matrix.build_tags }}" -o "${{ matrix.output_name }}"
+        run: wails build --platform ${{ matrix.platform }} -tags "${{ matrix.build_tags }}" -o "${{ matrix.output_name }}" -ldflags "-X go_text/internal/settings.AppVersion=${{ needs.determine-version.outputs.version }}"
         # Single-line command works on all shells
-        # Linux: wails build --platform linux/amd64 -tags "webkit2_41" -o TextProcessingSuite-linux-amd64
-        # Output goes to build/bin/TextProcessingSuite-linux-amd64
+        # Linux: wails build --platform linux/amd64 -tags "webkit2_41" -o GoText-linux-amd64
+        # Output goes to build/bin/GoText-linux-amd64
 
       # --------------------------------------------------
       # Build the application (Windows/macOS - no tags)
@@ -146,10 +199,10 @@ jobs:
       - name: Build Wails app (Windows/macOS)
         if: matrix.build_tags == ''
         # Only runs when build_tags is empty (Windows/macOS)
-        run: wails build --platform ${{ matrix.platform }} -o "${{ matrix.output_name }}"
+        run: wails build --platform ${{ matrix.platform }} -o "${{ matrix.output_name }}" -ldflags "-X go_text/internal/settings.AppVersion=${{ needs.determine-version.outputs.version }}"
         # Single-line command works on all shells
-        # Windows: wails build --platform windows/amd64 -o TextProcessingSuite-windows-amd64.exe
-        # macOS: wails build --platform darwin/arm64 -o TextProcessingSuite-macos-arm64
+        # Windows: wails build --platform windows/amd64 -o GoText-windows-amd64.exe
+        # macOS: wails build --platform darwin/arm64 -o GoText-macos-arm64
         # Output goes to build/bin/[output_name]
 
       # --------------------------------------------------
@@ -166,9 +219,9 @@ jobs:
       # --------------------------------------------------
       - name: Fix executable permissions (macOS)
         if: runner.os == 'macOS'
-        run: chmod +x build/bin/TextProcessingSuite.app/Contents/MacOS/*
+        run: chmod +x build/bin/GoText.app/Contents/MacOS/*
         # Makes the binary inside .app bundle executable
-        # Path: TextProcessingSuite.app/Contents/MacOS/TextProcessingSuite
+        # Path: GoText.app/Contents/MacOS/GoText
 
       # --------------------------------------------------
       # Upload build artifacts
@@ -178,27 +231,152 @@ jobs:
         with:
           name: ${{ matrix.output_name }}
           # Artifact names:
-          # - TextProcessingSuite-linux-amd64
-          # - TextProcessingSuite-windows-amd64.exe
-          # - TextProcessingSuite-macos-arm64
+          # - GoText-linux-amd64
+          # - GoText-windows-amd64.exe
+          # - GoText-macos-arm64
           path: ${{ matrix.artifact_path }}
           # Uploads only the main artifact:
-          # - Linux: build/bin/TextProcessingSuite-linux-amd64
-          # - Windows: build/bin/TextProcessingSuite-windows-amd64.exe
-          # - macOS: build/bin/TextProcessingSuite.app (entire .app bundle)
+          # - Linux: build/bin/GoText-linux-amd64
+          # - Windows: build/bin/GoText-windows-amd64.exe
+          # - macOS: build/bin/GoText.app (entire .app bundle)
           # NOTE: For macOS, GitHub Actions flattens the structure:
-          #   Uploaded as: TextProcessingSuite.app/Contents/...
+          #   Uploaded as: GoText.app/Contents/...
           #   Downloaded as: Contents/... (top-level folder stripped)
           retention-days: 7
           # Auto-delete after 7 days to save storage
+
+  # ==============================================================================
+  # TEST JOB — Runs all §11 verification gates (headless)
+  # ==============================================================================
+
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.25'
+          cache: true
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24.x'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Linux system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libgtk-3-dev libwebkit2gtk-4.1-dev
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      # ── Go gates ──────────────────────────────────────────────────────────────
+
+      - name: Go – format check
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "Unformatted Go files: $unformatted"
+            exit 1
+          fi
+
+      - name: Go – vet
+        run: go vet ./...
+
+      - name: Go – tests (race)
+        run: go test -race ./...
+
+      # ── Frontend gates ────────────────────────────────────────────────────────
+
+      - name: FE – format check
+        working-directory: frontend
+        run: npm run format:check
+
+      - name: FE – lint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: FE – type-check
+        working-directory: frontend
+        run: npx tsc --noEmit
+
+      - name: FE – unit tests with coverage
+        working-directory: frontend
+        run: npm run test:coverage
+
+      # ── Guard: no @mui/@emotion in v3 source ─────────────────────────────────
+
+      - name: FE – guard no @mui/@emotion
+        working-directory: frontend
+        run: |
+          if grep -r --include="*.ts" --include="*.tsx" "@mui\|@emotion" src/; then
+            echo "ERROR: @mui or @emotion imports found in v3 source — remove before merging"
+            exit 1
+          fi
+          echo "Guard passed: no @mui/@emotion in v3 source"
+
+      # ── UI verification (Target A — Vite dev server, mocked bridge) ───────────
+
+      - name: FE – UI gates Target A
+        working-directory: frontend
+        run: npm run verify:ui
+        env:
+          CI: true
+
+      - name: FE – interaction smoke flows Target A
+        working-directory: frontend
+        run: npm run verify:smoke
+        env:
+          CI: true
+
+      # ── Security checks ───────────────────────────────────────────────────────
+
+      - name: Go – install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: Go – vulnerability check
+        run: govulncheck ./...
+
+      - name: FE – npm audit
+        working-directory: frontend
+        run: npm audit --audit-level=high
+
+      # ── Codegen drift checks ─────────────────────────────────────────────────
+
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+      - name: Go – wails doctor
+        run: wails doctor
+
+      - name: Install sqlc
+        run: go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+
+      - name: Go – sqlc drift check
+        run: sqlc diff
+
+      - name: Go – wails bindings drift check
+        run: |
+          wails generate module
+          git diff --exit-code frontend/wailsjs/ || \
+            (echo "ERROR: wailsjs bindings are out of sync — run 'wails generate module' and commit" && exit 1)
 
   # ==============================================================================
   # RELEASE JOB - Creates GitHub Release with build artifacts
   # ==============================================================================
 
   create-release:
-    needs: build
-    # Waits for all build jobs to complete
+    needs: [determine-version, build, test]
+    # Waits for the shared version, all build jobs, and tests to complete
     # Skipped if any build fails
 
     runs-on: ubuntu-latest
@@ -219,30 +397,6 @@ jobs:
 
     steps:
       # --------------------------------------------------
-      # Extract version information
-      # --------------------------------------------------
-      - name: Extract version
-        id: version
-        # Creates outputs: steps.version.outputs.version and .tag
-        run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            # Manual trigger
-            VERSION="${{ github.event.inputs.version }}"
-            # User entered: 1.0.0
-            TAG="v${VERSION}"
-            # We add 'v': v1.0.0
-          else
-            # Tag push
-            TAG="${{ github.ref_name }}"
-            # From git: v1.0.0
-            VERSION="${TAG#v}"
-            # Remove 'v': 1.0.0
-          fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
-          # Makes version and tag available to later steps
-
-      # --------------------------------------------------
       # Download all build artifacts
       # --------------------------------------------------
       - uses: actions/download-artifact@v6
@@ -251,13 +405,13 @@ jobs:
         # Downloads everything to ./artifacts/
         # Structure after download (macOS gets flattened):
         # artifacts/
-        #   TextProcessingSuite-linux-amd64/
-        #     TextProcessingSuite-linux-amd64
-        #   TextProcessingSuite-windows-amd64.exe/
-        #     TextProcessingSuite-windows-amd64.exe
-        #   TextProcessingSuite-macos-arm64/
+        #   GoText-linux-amd64/
+        #     GoText-linux-amd64
+        #   GoText-windows-amd64.exe/
+        #     GoText-windows-amd64.exe
+        #   GoText-macos-arm64/
         #     Contents/
-        #       MacOS/TextProcessingSuite
+        #       MacOS/GoText
         #       Info.plist
         #       Resources/iconfile.icns
 
@@ -277,14 +431,14 @@ jobs:
       # --------------------------------------------------
       - name: Prepare release assets
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
+          VERSION="${{ needs.determine-version.outputs.version }}"
           mkdir -p release-assets
           
           # Linux binary
-          LINUX="artifacts/TextProcessingSuite-linux-amd64/TextProcessingSuite-linux-amd64"
+          LINUX="artifacts/GoText-linux-amd64/GoText-linux-amd64"
           if [ -f "$LINUX" ]; then
-            cp "$LINUX" "release-assets/TextProcessingSuite-${VERSION}-linux-amd64"
-            # Result: TextProcessingSuite-1.0.0-linux-amd64
+            cp "$LINUX" "release-assets/GoText-${VERSION}-linux-amd64"
+            # Result: GoText-1.0.0-linux-amd64
             echo "✅ Linux"
           else
             echo "❌ Linux binary not found at: $LINUX"
@@ -292,10 +446,10 @@ jobs:
           fi
           
           # Windows binary
-          WINDOWS="artifacts/TextProcessingSuite-windows-amd64.exe/TextProcessingSuite-windows-amd64.exe"
+          WINDOWS="artifacts/GoText-windows-amd64.exe/GoText-windows-amd64.exe"
           if [ -f "$WINDOWS" ]; then
-            cp "$WINDOWS" "release-assets/TextProcessingSuite-${VERSION}-windows-amd64.exe"
-            # Result: TextProcessingSuite-1.0.0-windows-amd64.exe
+            cp "$WINDOWS" "release-assets/GoText-${VERSION}-windows-amd64.exe"
+            # Result: GoText-1.0.0-windows-amd64.exe
             echo "✅ Windows"
           else
             echo "❌ Windows binary not found at: $WINDOWS"
@@ -303,20 +457,20 @@ jobs:
           fi
           
           # macOS ARM64 - recreate .app structure and zip
-          MACOS_ARM_DIR="artifacts/TextProcessingSuite-macos-arm64"
+          MACOS_ARM_DIR="artifacts/GoText-macos-arm64"
           if [ -d "$MACOS_ARM_DIR/Contents" ]; then
             # GitHub Actions flattened the .app bundle, we need to recreate it
             cd "$MACOS_ARM_DIR"
             # Create the .app bundle with proper structure
-            mkdir -p TextProcessingSuite.app
-            mv Contents TextProcessingSuite.app/
+            mkdir -p GoText.app
+            mv Contents GoText.app/
             # CRITICAL: Restore executable permissions that were set during build
-            chmod +x TextProcessingSuite.app/Contents/MacOS/*
+            chmod +x GoText.app/Contents/MacOS/*
             # Now zip it with proper flags to preserve permissions
             # -r = recursive
             # -y = preserve symlinks
             # -X = preserve Unix file attributes (CRITICAL for executable permissions)
-            zip -r -y -X "../../release-assets/TextProcessingSuite-${VERSION}-macos-arm64.app.zip" TextProcessingSuite.app
+            zip -r -y -X "../../release-assets/GoText-${VERSION}-macos-arm64.app.zip" GoText.app
             cd ../..
             echo "✅ macOS ARM64 app zipped"
             # Note: The -X flag is essential for macOS apps to remain executable after unzipping
@@ -345,13 +499,13 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ steps.version.outputs.tag }}
+          tag_name: ${{ needs.determine-version.outputs.tag }}
           # Tag name: v1.0.0
 
-          name: Release ${{ steps.version.outputs.version }}
+          name: Release ${{ needs.determine-version.outputs.version }}
           # Release title: Release 1.0.0
 
-          prerelease: ${{ contains(steps.version.outputs.version, '-') }}
+          prerelease: ${{ contains(needs.determine-version.outputs.version, '-') }}
           # Auto-detect pre-release:
           # 1.0.0 = release
           # 1.0.0-beta = pre-release
@@ -361,9 +515,9 @@ jobs:
 
           files: release-assets/*
           # Uploads all files from release-assets/
-          # - TextProcessingSuite-1.0.0-linux-amd64
-          # - TextProcessingSuite-1.0.0-windows-amd64.exe
-          # - TextProcessingSuite-1.0.0-macos-arm64.app.zip
+          # - GoText-1.0.0-linux-amd64
+          # - GoText-1.0.0-windows-amd64.exe
+          # - GoText-1.0.0-macos-arm64.app.zip
           # - SHA256SUMS.txt
 
 # ==============================================================================

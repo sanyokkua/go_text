@@ -1,55 +1,142 @@
-/**
- * UI State Management
- *
- * Manages user interface state including view navigation, tab selection,
- * and global busy indicators. This slice handles synchronous UI state
- * transitions that don't require async operations.
- */
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { getLogger } from '../../adapter';
-import { UIState } from './types';
+import { processPromptChain } from '../run/thunks';
+import { getUIPreferences, testProviderInference } from '../settings/thunks';
+import { CurrentView, ThemeEffective, ThemeMode, UIState } from './types';
 
-const logger = getLogger('UISlice');
-
-const initialState: UIState = { view: 'main', activeSettingsTab: 0, activeActionsTab: '', isAppBusy: false, currentTask: 'N/A' };
+const initialState: UIState = {
+    layout: 'side',
+    sidebarCollapsed: false,
+    historyOpen: false,
+    paletteOpen: false,
+    inferenceRunning: false,
+    currentView: 'main',
+    armedActionId: null,
+    armedStackId: null,
+    activeActionsTab: null,
+    activeSettingsTab: 0,
+    buildMode: false,
+    editingStackId: null,
+    theme: { mode: 'auto', effective: 'light' },
+};
 
 const uiSlice = createSlice({
     name: 'ui',
     initialState,
     reducers: {
-        toggleSettingsView: (state) => {
-            const newView = state.view === 'main' ? 'settings' : 'main';
-            logger.logInfo(`Toggling view to: ${newView}`);
-            state.view = newView;
+        setLayout: (state, action: PayloadAction<'side' | 'stacked'>) => {
+            state.layout = action.payload;
         },
-        toggleInfoView: (state) => {
-            if (state.view === 'settings') {
-                state.view = 'main';
-            } else {
-                state.view = state.view === 'main' ? 'info' : 'main';
-            }
-            logger.logInfo(`Toggling info view to: ${state.view}`);
+        toggleSidebar: (state) => {
+            state.sidebarCollapsed = !state.sidebarCollapsed;
         },
-        setActiveSettingsTab: (state, action: PayloadAction<number>) => {
-            logger.logDebug(`Setting active settings tab to: ${action.payload}`);
-            state.activeSettingsTab = action.payload;
+        setSidebarCollapsed: (state, action: PayloadAction<boolean>) => {
+            state.sidebarCollapsed = action.payload;
         },
-        setActiveActionsTab: (state, action: PayloadAction<string>) => {
-            logger.logDebug(`Setting active actions tab to: ${action.payload}`);
+        toggleHistory: (state) => {
+            state.historyOpen = !state.historyOpen;
+        },
+        setHistoryOpen: (state, action: PayloadAction<boolean>) => {
+            state.historyOpen = action.payload;
+        },
+        togglePalette: (state) => {
+            state.paletteOpen = !state.paletteOpen;
+        },
+        setPaletteOpen: (state, action: PayloadAction<boolean>) => {
+            state.paletteOpen = action.payload;
+        },
+        setThemeMode: (state, action: PayloadAction<ThemeMode>) => {
+            state.theme.mode = action.payload;
+        },
+        setThemeEffective: (state, action: PayloadAction<ThemeEffective>) => {
+            state.theme.effective = action.payload;
+        },
+        setCurrentView: (state, action: PayloadAction<CurrentView>) => {
+            state.currentView = action.payload;
+        },
+        // Arming a single action and arming a stack are mutually exclusive run-targets.
+        armAction: (state, action: PayloadAction<string | null>) => {
+            state.armedActionId = action.payload;
+            state.armedStackId = null;
+        },
+        armStack: (state, action: PayloadAction<string | null>) => {
+            state.armedStackId = action.payload;
+            state.armedActionId = null;
+        },
+        setActiveActionsTab: (state, action: PayloadAction<string | null>) => {
             state.activeActionsTab = action.payload;
         },
-        setAppBusy: (state, action: PayloadAction<boolean>) => {
-            logger.logInfo(`Setting app busy state to: ${action.payload}`);
-            state.isAppBusy = action.payload;
+        setActiveSettingsTab: (state, action: PayloadAction<number>) => {
+            state.activeSettingsTab = action.payload;
         },
-        setCurrentTask: (state, action: PayloadAction<string>) => {
-            logger.logInfo(`Setting current task to: ${action.payload}`);
-            state.currentTask = action.payload;
+        enterBuildMode: (state) => {
+            state.buildMode = true;
+            state.editingStackId = null;
+        },
+        exitBuildMode: (state) => {
+            state.buildMode = false;
+            state.editingStackId = null;
+        },
+        // Enters build mode with a specific stack id in a single atomic action so that
+        // no intermediate state exists where editingStackId is null while buildMode is true.
+        enterEditMode: (state, action: PayloadAction<string>) => {
+            state.buildMode = true;
+            state.editingStackId = action.payload;
         },
     },
-    extraReducers: () => {},
+    extraReducers: (builder) => {
+        builder
+            .addCase(processPromptChain.pending, (state) => {
+                state.inferenceRunning = true;
+            })
+            .addCase(processPromptChain.fulfilled, (state) => {
+                state.inferenceRunning = false;
+            })
+            .addCase(processPromptChain.rejected, (state) => {
+                state.inferenceRunning = false;
+            })
+            .addCase(testProviderInference.pending, (state) => {
+                state.inferenceRunning = true;
+            })
+            .addCase(testProviderInference.fulfilled, (state) => {
+                state.inferenceRunning = false;
+            })
+            .addCase(testProviderInference.rejected, (state) => {
+                state.inferenceRunning = false;
+            })
+            .addCase(getUIPreferences.fulfilled, (state, action) => {
+                state.theme.mode = action.payload.mode;
+                state.theme.effective = action.payload.effective;
+                state.layout = action.payload.layout;
+                state.sidebarCollapsed = action.payload.sidebarCollapsed;
+                state.historyOpen = action.payload.historyOpen;
+            });
+    },
 });
 
-export const { toggleSettingsView, toggleInfoView, setActiveSettingsTab, setActiveActionsTab, setAppBusy, setCurrentTask } = uiSlice.actions;
+export const {
+    setLayout,
+    toggleSidebar,
+    setSidebarCollapsed,
+    toggleHistory,
+    setHistoryOpen,
+    togglePalette,
+    setPaletteOpen,
+    setThemeMode,
+    setThemeEffective,
+    setCurrentView,
+    armAction,
+    armStack,
+    setActiveActionsTab,
+    setActiveSettingsTab,
+    enterBuildMode,
+    exitBuildMode,
+    enterEditMode,
+} = uiSlice.actions;
+
+// Navigation helpers — each navigates to the named view
+export const navigateToSettings = () => setCurrentView('settings');
+export const navigateToInfo = () => setCurrentView('info');
+export const navigateToMain = () => setCurrentView('main');
+export const navigateToStacks = () => setCurrentView('stacks');
 
 export default uiSlice.reducer;

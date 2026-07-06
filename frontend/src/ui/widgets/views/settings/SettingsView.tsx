@@ -1,115 +1,108 @@
-import { Box, Divider, Skeleton } from '@mui/material';
 import React from 'react';
-import { selectActiveSettingsTab, selectAllSettings, selectSettingsMetadata, useAppDispatch, useAppSelector } from '../../../../logic/store';
+
+import { selectActiveSettingsTab, useAppDispatch, useAppSelector } from '../../../../logic/store';
+import { selectAllSettings, selectSettingsMetadata } from '../../../../logic/store/settings/selectors';
 import { setActiveSettingsTab } from '../../../../logic/store/ui';
-import SettingsTabs from './SettingsTabs';
+import { TabDef, Tabs } from '../../../primitives/Tabs';
+import styles from './SettingsView.module.css';
 import AppBehaviorTab from './tabs/AppBehaviorTab';
-import CurrentProviderTab from './tabs/CurrentProviderTab';
-import FactoryResetTab from './tabs/FactoryResetTab';
+import AppearanceTab from './tabs/AppearanceTab';
 import InferenceConfigTab from './tabs/InferenceConfigTab';
 import LanguageConfigTab from './tabs/LanguageConfigTab';
 import MetadataTab from './tabs/MetadataTab';
 import ModelConfigTab from './tabs/ModelConfigTab';
 import ProviderManagementTab from './tabs/ProviderManagementTab';
 
-/**
- * Main Settings View Component
- * This is the root component for the settings view
- *
- * Key Responsibilities:
- * - Managing settings tab navigation
- * - Rendering the appropriate settings tab content
- * - Providing layout structure for settings panels
- * - Handling loading states
- *
- * Design Features:
- * - Tab-based navigation with horizontal layout
- * - Dynamic content rendering based on active tab
- * - Consistent spacing and dividers
- * - Full-size container with proper overflow handling
- *
- * Tab Structure:
- * 0 - Metadata (settings file locations)
- * 1 - Current Provider (view and edit current provider)
- * 2 - Provider Management (manage all providers: list, create, edit, delete)
- * 3 - Model Configuration (model selection and parameters)
- * 4 - Inference Configuration (timeout, retries, formatting)
- * 5 - Language Configuration (supported languages and defaults)
- * 6 - Factory Reset (reset to default settings)
- * 7 - App Behavior (task logging configuration)
- */
+/** Composes a glyph + text tab label; spacing between the two is handled by `.labelWrap`'s flex gap. */
+const tabLabel = (glyph: string, text: string): React.ReactNode => (
+    <span className={styles.labelWrap}>
+        <span className={styles.glyph} aria-hidden="true">
+            {glyph}
+        </span>
+        <span>{text}</span>
+    </span>
+);
+
 const SettingsView: React.FC = () => {
     const dispatch = useAppDispatch();
     const activeTab = useAppSelector(selectActiveSettingsTab);
     const settings = useAppSelector(selectAllSettings);
     const metadata = useAppSelector(selectSettingsMetadata);
 
-    const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-        dispatch(setActiveSettingsTab(newValue));
-    };
-
-    const nothingToDisplay = <Skeleton />;
-
-    if (!settings || !metadata) {
-        return nothingToDisplay;
+    if (!settings) {
+        return <div className={styles.loading}>Loading settings…</div>;
     }
 
-    let activeTabView;
-    switch (activeTab) {
-        case 0: {
-            activeTabView = <MetadataTab metadata={{ settingsFolder: metadata.settingsFolder, settingsFile: metadata.settingsFile }} />;
-            break;
-        }
-        case 1: {
-            activeTabView = <CurrentProviderTab settings={settings} metadata={metadata} />;
-            break;
-        }
-
-        case 2: {
-            activeTabView = <ProviderManagementTab settings={settings} metadata={metadata} />;
-            break;
-        }
-
-        case 3: {
-            activeTabView = <ModelConfigTab settings={settings} />;
-            break;
-        }
-        case 4: {
-            activeTabView = <InferenceConfigTab settings={settings} />;
-            break;
-        }
-        case 5: {
-            activeTabView = <LanguageConfigTab settings={settings} />;
-            break;
-        }
-        case 6: {
-            activeTabView = <FactoryResetTab />;
-            break;
-        }
-        case 7: {
-            activeTabView = <AppBehaviorTab settings={settings} metadata={metadata} />;
-            break;
-        }
-        default: {
-            activeTabView = nothingToDisplay;
-            break;
-        }
-    }
+    const tabs: TabDef[] = [
+        {
+            value: '0',
+            label: tabLabel('🎨', 'Appearance'),
+            content: (
+                <div className={styles.content}>
+                    <AppearanceTab />
+                </div>
+            ),
+        },
+        {
+            value: '1',
+            label: tabLabel('🗒', 'Logging'),
+            content: (
+                <div className={styles.content}>
+                    <AppBehaviorTab settings={settings} metadata={metadata} />
+                </div>
+            ),
+        },
+        {
+            value: '2',
+            label: tabLabel('🔌', 'Providers'),
+            content: (
+                <div className={styles.content}>
+                    <ProviderManagementTab />
+                </div>
+            ),
+        },
+        {
+            value: '3',
+            label: tabLabel('⚙', 'Model'),
+            content: (
+                <div className={styles.content}>
+                    <ModelConfigTab settings={settings} />
+                </div>
+            ),
+        },
+        {
+            value: '4',
+            label: tabLabel('✍', 'Generation'),
+            content: (
+                <div className={styles.content}>
+                    <InferenceConfigTab settings={settings} />
+                </div>
+            ),
+        },
+        {
+            value: '5',
+            label: tabLabel('🌐', 'Languages'),
+            content: (
+                <div className={styles.content}>
+                    <LanguageConfigTab settings={settings} />
+                </div>
+            ),
+        },
+        {
+            value: '6',
+            label: tabLabel('ℹ', 'About & data'),
+            content: (
+                <div className={styles.content}>
+                    <MetadataTab />
+                </div>
+            ),
+        },
+    ];
 
     return (
-        <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <Box sx={{ overflow: 'hidden', paddingTop: 1 }}>
-                <Divider />
-            </Box>
-
-            <Box sx={{ width: '100%', height: '90%', flexGrow: 1, padding: 1, overflowY: 'auto' }}>
-                {/* Settings Tabs Bar */}
-                <SettingsTabs activeTab={activeTab} onChange={handleTabChange} />
-
-                {/* Tab Content */}
-                <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto' }}>{activeTabView}</Box>
-            </Box>
-        </Box>
+        <div className={styles.root}>
+            <Tabs value={String(activeTab)} onValueChange={(v) => dispatch(setActiveSettingsTab(Number(v)))} orientation="vertical" tabs={tabs} />
+        </div>
     );
 };
 

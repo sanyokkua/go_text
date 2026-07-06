@@ -6,7 +6,7 @@
 /**
  * Height constants for consistent layout calculations
  */
-export const UI_HEIGHTS = { APP_BAR: '6vh', STATUS_BAR: '4vh', ACTIONS_PANEL: '30vh' };
+export const UI_HEIGHTS = { APP_BAR: '6vh', ACTIONS_PANEL: '30vh' };
 
 /**
  * Height calculation utilities
@@ -17,7 +17,7 @@ export const HEIGHT_UTILS = {
      * @returns CSS calc string for content area height
      */
     contentAreaHeight: (): string => {
-        return `calc(100vh - ${UI_HEIGHTS.APP_BAR} - ${UI_HEIGHTS.STATUS_BAR})`;
+        return `calc(100vh - ${UI_HEIGHTS.APP_BAR})`;
     },
 
     /**

@@ -1,0 +1,90 @@
+/* Normative design tokens — 11-mockup-documentation.md §1. Do NOT rename these. */
+
+:root {
+    /* Brand / accent */
+    --teal: #009688;
+    --teal-dark: #00796b;
+    --teal-light: #4db6ac;
+    --teal-50: #e0f2f1;
+    --purple: #5e35b1;
+    --purple-light: #b39ddb;
+    --purple-50: #ede7f6;
+    --purple-line: #d1c4e9;
+
+    /* Status */
+    --ok: #2e9e6b;
+    --ok-bg: #d8f0e3;
+    --warn: #c9821a;
+    --err: #d05353;
+    --err-dark: #b04444;
+    --err-bg: #fae3e3;
+
+    /* Diff */
+    --add: #cdeede;
+    --del: #f6d2d2;
+
+    /* Surfaces & text — light */
+    --bg: #eef1f1;
+    --surface: #ffffff;
+    --surface-2: #f0f4f3;
+    --line: #e2e8e7;
+    --ink: #16201e;
+    --ink-2: #4a5754;
+    --ink-3: #7d8b88;
+
+    /* Elevation */
+    --shadow: 0 1px 2px rgba(16, 32, 30, 0.06), 0 8px 24px rgba(16, 32, 30, 0.08);
+    --shadow-popover: 0 18px 44px rgba(16, 32, 30, 0.22);
+    --shadow-primary: 0 4px 12px rgba(0, 150, 136, 0.28);
+
+    /* Radii */
+    --radius-sm: 7px;
+    --radius: 9px;
+    --radius-md: 12px;
+    --radius-lg: 14px;
+    --radius-xl: 16px;
+    --radius-pill: 999px;
+
+    /* Spacing (4-pt scale) */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+
+    /* Focus ring */
+    --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--teal);
+
+    /* Typography */
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --mono: 'SF Mono', ui-monospace, 'JetBrains Mono', Menlo, monospace;
+
+    /* Z-index */
+    --z-overlay: 100;
+    --z-modal: 200;
+    --z-toast: 300;
+
+    /* Utility */
+    --white: #ffffff;
+    --scrim: rgba(0, 0, 0, 0.1);
+}
+
+.dark {
+    --bg: #0e1413;
+    --surface: #141b1a;
+    --surface-2: #1d2625;
+    --line: #2a3635;
+    --ink: #e8f1ef;
+    --ink-2: #9fb2ae;
+    --ink-3: #6f817d;
+    --teal-50: rgba(0, 150, 136, 0.16);
+    --purple-50: rgba(94, 53, 177, 0.22);
+    --purple-line: rgba(149, 117, 205, 0.4);
+    --ok-bg: rgba(46, 158, 107, 0.22);
+    --err-dark: #c05555;
+    --err-bg: rgba(208, 83, 83, 0.2);
+    --add: rgba(46, 158, 107, 0.32);
+    --del: rgba(208, 83, 83, 0.3);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px rgba(0, 0, 0, 0.4);
+    --shadow-popover: 0 18px 44px rgba(0, 0, 0, 0.5);
+    --scrim: rgba(0, 0, 0, 0.25);
+}

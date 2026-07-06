@@ -1,0 +1,70 @@
+/* Combined language pill for the AppBar (mockup .sel look) */
+.pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: var(--radius);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.pill:hover {
+    background: var(--surface);
+}
+
+.pill:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.key {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-3);
+    font-weight: 600;
+}
+
+.value {
+    color: var(--ink);
+}
+
+.arrow {
+    color: var(--ink-3);
+    font-size: 0.7rem;
+    line-height: 1;
+}
+
+.caret {
+    font-size: 10px;
+    color: var(--ink-3);
+    margin-left: 2px;
+}
+
+/* Popover body: stacked input/output language fields */
+.popover {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.fieldLabel {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-3);
+    font-weight: 600;
+}

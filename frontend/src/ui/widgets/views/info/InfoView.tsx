@@ -1,115 +1,139 @@
-import { Box, CircularProgress, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
-import React from 'react';
-import { getLogger } from '../../../../logic/adapter';
-import { selectPromptGroups, useAppSelector } from '../../../../logic/store';
+import React, { memo, useEffect } from 'react';
+import { selectAboutSection, selectSuggestedStacks, useAppDispatch, useAppSelector } from '../../../../logic/store';
+import { setAboutSection } from '../../../../logic/store/about/slice';
+import { fetchSuggestedStacks } from '../../../../logic/store/about/thunks';
+import { AboutSection } from '../../../../logic/store/about/types';
+import { MarkdownView } from '../../../components/MarkdownView';
+import { StackGlyph } from '../../../components/StackGlyph';
+import { Tabs } from '../../../primitives/Tabs';
+import CatalogList from './CatalogList';
+import styles from './InfoView.module.css';
+import PromptInspector from './PromptInspector';
 
-const logger = getLogger('InfoView');
+const GUIDE_CONTENT = `# GoText
 
-/**
- * Information View Component
- *
- * Displays comprehensive information about the application, including
- * - Application description and purpose
- * - Explanation of LLM processing
- * - Available actions organized by prompt groups
- *
- * Handles loading states gracefully when prompt groups are not yet loaded.
- */
-const InfoView: React.FC = () => {
-    const promptGroups = useAppSelector(selectPromptGroups);
+Transform text with AI-powered actions. Each action applies a specific transformation via a language model.
 
-    if (!promptGroups) {
-        logger.logDebug('Prompt groups not loaded yet, showing loading state');
-        return (
-            <Box sx={{ p: 3, width: '100%', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
-                <Typography variant="h4" gutterBottom>
-                    About Text Processor
-                </Typography>
-                <Typography component="p">
-                    Text Processor is a powerful text transformation tool that uses Large Language Models (LLMs) to perform various text operations
-                    including translation, summarization, formatting, and more.
-                </Typography>
+## Quick Start
 
-                <Typography variant="h5" gutterBottom sx={{ mt: 3 }}>
-                    Available Actions
-                </Typography>
-                <Typography component="p">Loading action information...</Typography>
-                <CircularProgress />
-            </Box>
-        );
-    }
+1. Enter text in the editor
+2. Select an action from the sidebar
+3. Press **Run**
 
-    if (Object.keys(promptGroups.promptGroups).length === 0) {
-        return (
-            <Box sx={{ p: 3, overflow: 'auto', height: '100%' }}>
-                <Typography variant="h4" gutterBottom>
-                    About Text Processor
-                </Typography>
-                <Typography component="p">
-                    Text Processor is a powerful text transformation tool that uses Large Language Models (LLMs) to perform various text operations
-                    including translation, summarization, formatting, and more.
-                </Typography>
+## Actions & Stacks
 
-                <Typography variant="h5" gutterBottom sx={{ mt: 3 }}>
-                    Available Actions
-                </Typography>
-                <Typography>No action groups available.</Typography>
-            </Box>
-        );
-    }
+**Actions** are single-step transformations.
+**Stacks** chain multiple actions together to build a processing pipeline.
+
+Browse the **Actions & Stacks** tab to explore available actions and preview the exact prompts they send to the model.
+
+## ⌘K Command Palette
+
+Press **⌘K** (or **Ctrl+K** on Windows/Linux) from anywhere in the app to open the command palette.
+- **↵** to run an action immediately
+- **⇧↵** to add the action to the current stack
+
+## Setting Provider API Keys (Environment Variables)
+
+Cloud providers (OpenAI, OpenRouter, or a custom one) read their API key from an environment
+variable whose **name** you set in Settings — GoText never stores the key itself. A plain
+\`export KEY=value\` in a terminal only lasts for that terminal session and won't reach GoText when
+launched from the Dock, Start Menu, or a desktop icon. Set it as a **persistent, OS-global**
+variable instead.
+
+**macOS**
+\`\`\`bash
+launchctl setenv OPENROUTER_API_KEY sk-or-your-key
+\`\`\`
+Then relaunch GoText. To survive reboots, add the same line to \`~/.zprofile\`, or create a login
+LaunchAgent that runs it via \`RunAtLoad\`.
+
+**Windows**
+System Properties → Advanced → Environment Variables → User variables — or:
+\`\`\`powershell
+[Environment]::SetEnvironmentVariable("OPENROUTER_API_KEY", "sk-or-your-key", "User")
+\`\`\`
+This persists across reboots (unlike \`$env:KEY = "value"\`, which is session-only). Restart
+GoText — or log off/on — to pick it up.
+
+**Linux**
+Create \`~/.config/environment.d/gotext.conf\` with \`OPENROUTER_API_KEY=sk-or-your-key\` (per-user,
+systemd) or add the same line to \`/etc/environment\` (system-wide), then log out and back in.
+\`.bashrc\`/\`.profile\` exports don't reach GUI-launched apps.
+`;
+
+const InfoView: React.FC = memo(function InfoView() {
+    const dispatch = useAppDispatch();
+    const section = useAppSelector(selectAboutSection);
+    const suggestedStacks = useAppSelector(selectSuggestedStacks);
+
+    useEffect(() => {
+        if (suggestedStacks.length === 0) {
+            dispatch(fetchSuggestedStacks());
+        }
+    }, [dispatch, suggestedStacks.length]);
 
     return (
-        <Box sx={{ p: 3, overflow: 'auto', height: '100%' }}>
-            <Typography variant="h4" gutterBottom>
-                About Text Processor
-            </Typography>
-            <Typography component="p">
-                Text Processor is a powerful text transformation tool that uses Large Language Models (LLMs) to perform various text operations
-                including translation, summarization, formatting, and more.
-            </Typography>
+        <div className={styles.root}>
+            <header className={styles.header}>
+                <h1 className={styles.title}>GoText</h1>
+                <p className={styles.subtitle}>AI-powered text transformations</p>
+            </header>
 
-            <Typography variant="h5" gutterBottom sx={{ mt: 3 }}>
-                How It Works
-            </Typography>
-            <Typography component="p">
-                The application sends your text to advanced AI models that process and transform it based on the selected action. Results are
-                generated by AI and should be reviewed for accuracy.
-            </Typography>
-
-            <Typography variant="h5" gutterBottom sx={{ mt: 3 }}>
-                Available Actions
-            </Typography>
-            {Object.entries(promptGroups.promptGroups).map(([groupId, group]) => (
-                <Box key={groupId} sx={{ mb: 4 }}>
-                    <Typography variant="h6" gutterBottom>
-                        {group.groupName}
-                    </Typography>
-                    <TableContainer component={Paper} elevation={0} sx={{ border: `1px solid 'secondary.dark'` }}>
-                        <Table size="small">
-                            <TableHead sx={{ backgroundColor: 'secondary.dark' }}>
-                                <TableRow>
-                                    <TableCell sx={{ color: 'secondary.contrastText', fontWeight: 'bold' }}>Action Name</TableCell>
-                                    <TableCell sx={{ color: 'secondary.contrastText', fontWeight: 'bold' }}>Description</TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody sx={{ backgroundColor: 'secondary.light' }}>
-                                {Object.entries(group.prompts).map(([promptId, prompt]) => (
-                                    <TableRow
-                                        key={promptId}
-                                        sx={{ 'color': 'secondary.contrastText', '&:hover': { backgroundColor: 'rgba(255, 64, 129, 0.08)' } }}
-                                    >
-                                        <TableCell sx={{ color: 'secondary.contrastText' }}>{prompt.name}</TableCell>
-                                        <TableCell sx={{ color: 'secondary.contrastText' }}>{prompt.description}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
-                </Box>
-            ))}
-        </Box>
+            <div className={styles.tabsWrapper}>
+                <Tabs
+                    value={section}
+                    onValueChange={(v) => dispatch(setAboutSection(v as AboutSection))}
+                    orientation="vertical"
+                    tabs={[
+                        {
+                            value: 'guide',
+                            label: 'Guide',
+                            content: (
+                                <div className={styles.guideContent}>
+                                    <MarkdownView source={GUIDE_CONTENT} />
+                                    {suggestedStacks.length > 0 && (
+                                        <section className={styles.suggestions} aria-label="Suggested stacks">
+                                            <h2 className={styles.suggestionsTitle}>Suggested stacks</h2>
+                                            <p className={styles.suggestionsHint}>Ideas to build your own multi-step pipelines.</p>
+                                            <ul className={styles.suggestionList}>
+                                                {suggestedStacks.map((s) => (
+                                                    <li key={s.name} className={styles.suggestionRow}>
+                                                        <StackGlyph icon={s.icon} className={styles.suggestionIcon} />
+                                                        <div className={styles.suggestionBody}>
+                                                            <span className={styles.suggestionName}>{s.name}</span>
+                                                            <div className={styles.suggestionActions}>
+                                                                {s.actionNames.map((name, index) => (
+                                                                    <span key={`${s.name}-${index}`} className={styles.suggestionChip}>
+                                                                        {name}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </section>
+                                    )}
+                                </div>
+                            ),
+                        },
+                        {
+                            value: 'actions-stacks',
+                            label: 'Actions & Stacks',
+                            content: (
+                                <div className={styles.catalogAndInspector}>
+                                    <CatalogList />
+                                    <PromptInspector />
+                                </div>
+                            ),
+                        },
+                    ]}
+                />
+            </div>
+        </div>
     );
-};
+});
 
 InfoView.displayName = 'InfoView';
 export default InfoView;

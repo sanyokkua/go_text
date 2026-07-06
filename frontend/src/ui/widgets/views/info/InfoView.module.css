@@ -1,0 +1,119 @@
+.root {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    background: var(--surface);
+    color: var(--ink);
+}
+
+.header {
+    flex-shrink: 0;
+    padding: var(--space-4);
+    border-bottom: 1px solid var(--line);
+}
+
+.title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--ink);
+}
+
+.subtitle {
+    margin: var(--space-1) 0 0;
+    font-size: 0.875rem;
+    color: var(--ink-muted, var(--ink));
+    opacity: 0.7;
+}
+
+.tabsWrapper {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+}
+
+.guideContent {
+    padding: var(--space-4);
+    overflow-y: auto;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.catalogAndInspector {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    height: 100%;
+    overflow: hidden;
+}
+
+.suggestions {
+    margin-top: var(--space-4);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--line);
+}
+
+.suggestionsTitle {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--ink);
+}
+
+.suggestionsHint {
+    margin: var(--space-1) 0 var(--space-3);
+    font-size: 0.875rem;
+    color: var(--ink-3);
+}
+
+.suggestionList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.suggestionRow {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+}
+
+.suggestionIcon {
+    color: var(--ink-2);
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.suggestionBody {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    min-width: 0;
+}
+
+.suggestionName {
+    font-weight: 600;
+    color: var(--ink);
+}
+
+.suggestionActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+}
+
+.suggestionChip {
+    padding: 2px var(--space-2);
+    font-size: 0.75rem;
+    color: var(--ink-2);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-pill);
+}

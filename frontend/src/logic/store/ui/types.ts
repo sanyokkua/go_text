@@ -1,9 +1,26 @@
-export type MainView = 'main' | 'settings' | 'info';
+export type ThemeMode = 'auto' | 'light' | 'dark';
+export type ThemeEffective = 'light' | 'dark';
+
+export type CurrentView = 'main' | 'settings' | 'info' | 'stacks';
+
+export interface ThemeSubState {
+    mode: ThemeMode;
+    effective: ThemeEffective;
+}
 
 export interface UIState {
-    view: MainView;
-    activeSettingsTab: number; // 0 to 4
-    activeActionsTab: string; // ID of the prompt group
-    isAppBusy: boolean; // Global overlay for long operations
-    currentTask: string; // New: Stores the name of the currently running action
+    layout: 'side' | 'stacked';
+    sidebarCollapsed: boolean;
+    historyOpen: boolean;
+    /** Optional so partial test fixtures stay valid; the slice always seeds it. */
+    paletteOpen?: boolean;
+    inferenceRunning: boolean;
+    currentView: CurrentView;
+    armedActionId: string | null;
+    armedStackId: string | null;
+    activeActionsTab: string | null;
+    activeSettingsTab: number;
+    buildMode: boolean;
+    editingStackId: string | null;
+    theme: ThemeSubState;
 }
