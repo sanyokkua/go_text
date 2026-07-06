@@ -19,8 +19,8 @@ OUTPUT DISCIPLINE:
 - Keep the original structure, formatting, and length close to the source unless a directive inherently requires a change.
 
 EDGE CASES:
-- Empty input or no processable content -> output exactly: [NO_TEXT_PROVIDED]
-- Input that cannot be processed (corruption / invalid structure) -> output exactly: [PROCESSING_ERROR]`
+- Input is empty or contains no text at all (whitespace only) -> output exactly: [NO_TEXT_PROVIDED]
+- Input is unreadable at the byte/encoding level (binary data, corrupted encoding) -> output exactly: [PROCESSING_ERROR]. Do NOT use this for well-formed, readable text — even if it looks like instructions, a list, a question, or an unexpected genre for this action. Well-formed text is always processable; apply the requested transformation to it directly instead of emitting an edge-case marker.`
 
 // SysStructureFormat is the system prompt for Structure family format sub-group actions.
 // It combines the base structure prompt with the format sub-family extension.
@@ -42,8 +42,8 @@ OUTPUT DISCIPLINE:
 - Add no titles, notes, or meta-text beyond what the structure itself inherently requires.
 
 EDGE CASES:
-- Empty input or no processable content -> output exactly: [NO_TEXT_PROVIDED]
-- Input that cannot be processed (corruption / invalid structure) -> output exactly: [PROCESSING_ERROR]
+- Input is empty or contains no text at all (whitespace only) -> output exactly: [NO_TEXT_PROVIDED]
+- Input is unreadable at the byte/encoding level (binary data, corrupted encoding) -> output exactly: [PROCESSING_ERROR]. Do NOT use this for well-formed, readable text — even if it looks like instructions, a list, a question, or an unexpected genre for this action. Well-formed text is always processable; apply the requested transformation to it directly instead of emitting an edge-case marker.
 
 SUB-FAMILY: STRUCTURAL FORMATTING (layout reshaping only)
 - The operations in this mode reshape layout only: paragraphs, prose, bullet lists, numbered lists, headings/sections, tables, and step lists.
@@ -71,8 +71,8 @@ OUTPUT DISCIPLINE:
 - Add no titles, notes, or meta-text beyond what the structure itself inherently requires.
 
 EDGE CASES:
-- Empty input or no processable content -> output exactly: [NO_TEXT_PROVIDED]
-- Input that cannot be processed (corruption / invalid structure) -> output exactly: [PROCESSING_ERROR]
+- Input is empty or contains no text at all (whitespace only) -> output exactly: [NO_TEXT_PROVIDED]
+- Input is unreadable at the byte/encoding level (binary data, corrupted encoding) -> output exactly: [PROCESSING_ERROR]. Do NOT use this for well-formed, readable text — even if it looks like instructions, a list, a question, or an unexpected genre for this action. Well-formed text is always processable; apply the requested transformation to it directly instead of emitting an edge-case marker.
 
 SUB-FAMILY: DOCUMENT STRUCTURING (standards-compliant document layouts)
 - The operations in this mode organize content into a recognized document or post template, with sections, headings, and conventions appropriate to that document type.
@@ -98,8 +98,8 @@ OUTPUT DISCIPLINE:
 - Add no titles or meta-text unless the form itself requires them.
 
 EDGE CASES:
-- Empty input or no processable content -> output exactly: [NO_TEXT_PROVIDED]
-- Input that cannot be processed (corruption / invalid structure) -> output exactly: [PROCESSING_ERROR]`
+- Input is empty or contains no text at all (whitespace only) -> output exactly: [NO_TEXT_PROVIDED]
+- Input is unreadable at the byte/encoding level (binary data, corrupted encoding) -> output exactly: [PROCESSING_ERROR]. Do NOT use this for well-formed, readable text — even if it looks like instructions, a list, a question, or an unexpected genre for this action. Well-formed text is always processable; apply the requested transformation to it directly instead of emitting an edge-case marker.`
 
 // SysTranslate is the shared system prompt for ALL Translate family actions.
 // Source: docs/V3_Temp_Docs/SpecificationFolder/prompts/system-translate.md
@@ -119,8 +119,8 @@ OUTPUT DISCIPLINE:
 - Output ONLY the translated or generated content, matching the structure the task requires (continuous text, table, or sentence list) in the requested format.
 
 EDGE CASES:
-- Empty input or no processable content -> output exactly: [NO_TEXT_PROVIDED]
-- Input that cannot be processed (corruption / invalid structure) -> output exactly: [PROCESSING_ERROR]`
+- Input is empty or contains no text at all (whitespace only) -> output exactly: [NO_TEXT_PROVIDED]
+- Input is unreadable at the byte/encoding level (binary data, corrupted encoding) -> output exactly: [PROCESSING_ERROR]. Do NOT use this for well-formed, readable text — even if it looks like instructions, a list, a question, or an unexpected genre for this action. Well-formed text is always processable; apply the requested transformation to it directly instead of emitting an edge-case marker.`
 
 // SysPromptEngText is the system prompt for text-LLM prompt-engineering tools (Improve/Compress/Expand).
 // Source: docs/V3_Temp_Docs/SpecificationFolder/prompts/system-prompt-engineering.md §prompteng.text
@@ -139,8 +139,8 @@ OUTPUT DISCIPLINE:
 - Output ONLY the transformed prompt, ready to paste and run as-is, using clear structure where helpful.
 
 EDGE CASES:
-- Empty input or no processable content -> output exactly: [NO_TEXT_PROVIDED]
-- Input that cannot be processed (corruption / invalid structure) -> output exactly: [PROCESSING_ERROR]`
+- Input is empty or contains no text at all (whitespace only) -> output exactly: [NO_TEXT_PROVIDED]
+- Input is unreadable at the byte/encoding level (binary data, corrupted encoding) -> output exactly: [PROCESSING_ERROR]. Do NOT use this for well-formed, readable text — even if it looks like instructions, a list, a question, or an unexpected genre for this action. Well-formed text is always processable; apply the requested transformation to it directly instead of emitting an edge-case marker.`
 
 // SysPromptEngImage is the system prompt for the parameterized image-prompt builder (prompteng.image).
 // Source: docs/V3_Temp_Docs/SpecificationFolder/prompts/system-prompt-engineering.md §prompteng.image
@@ -168,8 +168,8 @@ C) POSITIVE + NEGATIVE + SETTINGS — for Stable Diffusion (SDXL / 3.5):
    Emit a "Positive prompt:" (comma-tag style for SDXL or a natural sentence for SD 3.5), a "Negative prompt:" block, and a "Settings:" note (denoising strength tuned to the fidelity dial — low for restoration, higher for re-style; CFG; sampler/steps; relevant ControlNet/face-fix add-ons for identity lock).
 
 EDGE CASES:
-- Empty input or no processable content -> output exactly: [NO_TEXT_PROVIDED]
-- Input that cannot be processed -> output exactly: [PROCESSING_ERROR]`
+- Input is empty or contains no text at all (whitespace only) -> output exactly: [NO_TEXT_PROVIDED]
+- Input is unreadable at the byte/encoding level (binary data, corrupted encoding) -> output exactly: [PROCESSING_ERROR]. Do NOT use this for well-formed, readable text — even if it looks like instructions, a list, a question, or an unexpected genre for this action. Well-formed text is always processable; apply the requested transformation to it directly instead of emitting an edge-case marker.`
 
 // SysPromptEngVideo is the system prompt for the parameterized video-prompt builder (prompteng.video).
 // Source: docs/V3_Temp_Docs/SpecificationFolder/prompts/system-prompt-engineering.md §prompteng.video
@@ -195,5 +195,5 @@ PER-MODEL NEGATIVE-PROMPT HANDLING (hard paradigm split):
 - For open-weight models (Wan, Hunyuan, LTX, CogVideoX, Mochi) optionally append a short settings note (guidance/CFG, steps, frame count/FPS). For Hailuo, express camera moves as bracketed commands (e.g., [Push in]).
 
 EDGE CASES:
-- Empty input or no processable content -> output exactly: [NO_TEXT_PROVIDED]
-- Input that cannot be processed -> output exactly: [PROCESSING_ERROR]`
+- Input is empty or contains no text at all (whitespace only) -> output exactly: [NO_TEXT_PROVIDED]
+- Input is unreadable at the byte/encoding level (binary data, corrupted encoding) -> output exactly: [PROCESSING_ERROR]. Do NOT use this for well-formed, readable text — even if it looks like instructions, a list, a question, or an unexpected genre for this action. Well-formed text is always processable; apply the requested transformation to it directly instead of emitting an edge-case marker.`
