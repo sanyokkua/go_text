@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -346,5 +347,33 @@ func TestOpenAICompatibleProvider_ListModels_401_Auth(t *testing.T) {
 	var ae *apperr.AppError
 	if !errors.As(err, &ae) || ae.Code != apperr.CodeAuth {
 		t.Errorf("want CodeAuth, got %v", err)
+	}
+}
+
+// --- ListModels: 404 → CodeModelNotFound with a non-empty model placeholder ---
+//
+// Finding #1 (2026-07-05 live testing report): a provider that 404s on its models-listing
+// endpoint (e.g. a Base URL pointed at a non-LLM HTTP server) used to surface
+// "Model/deployment  wasn't found on X." with a blank model name, because ListModels passed ""
+// as the model argument to mapHTTPStatus. There is no specific model being listed here, so the
+// message must show the ModelUnavailablePlaceholder instead of an empty string.
+func TestOpenAICompatibleProvider_ListModels_404_ModelNotFoundHasPlaceholder(t *testing.T) {
+	t.Parallel()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+
+	p := newTestProvider(t, srv.URL+"/", KindOpenAI, "")
+	_, err := p.ListModels(context.Background())
+	var ae *apperr.AppError
+	if !errors.As(err, &ae) || ae.Code != apperr.CodeModelNotFound {
+		t.Fatalf("want CodeModelNotFound, got %v", err)
+	}
+	if ae.Details["model"] != apperr.ModelUnavailablePlaceholder {
+		t.Errorf("Details[model] = %q, want %q (no blank model name)", ae.Details["model"], apperr.ModelUnavailablePlaceholder)
+	}
+	if strings.Contains(ae.Message, "  ") {
+		t.Errorf("message has a double space (blank model substitution): %q", ae.Message)
 	}
 }

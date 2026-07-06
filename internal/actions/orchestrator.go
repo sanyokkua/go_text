@@ -80,6 +80,7 @@ func (a *ActionService) RunChain(
 
 	input := req.InputText
 	completed := 0
+	inferences := 0
 
 	logFinished := func(status string, runErr error) {
 		ev := lg.Info()
@@ -105,7 +106,7 @@ func (a *ActionService) RunChain(
 				Completed: completed,
 				Error:     cancelErr.Message,
 			}
-			a.recordChainHistory(req, plan, cfg, partialResult, cancelErr, completed, time.Since(startTime))
+			a.recordChainHistory(req, plan, cfg, partialResult, cancelErr, completed, inferences, time.Since(startTime))
 			logFinished(chainStatusCancelled, cancelErr)
 			return partialResult, cancelErr
 		default:
@@ -156,7 +157,7 @@ func (a *ActionService) RunChain(
 					Completed: completed,
 					Error:     cancelErr.Message,
 				}
-				a.recordChainHistory(req, plan, cfg, partialResult, cancelErr, completed, time.Since(startTime))
+				a.recordChainHistory(req, plan, cfg, partialResult, cancelErr, completed, inferences, time.Since(startTime))
 				logFinished(chainStatusCancelled, cancelErr)
 				return partialResult, cancelErr
 			}
@@ -173,18 +174,19 @@ func (a *ActionService) RunChain(
 				FailedIndex: &idx,
 				Error:       wrapped.Message,
 			}
-			a.recordChainHistory(req, plan, cfg, failedResult, wrapped, completed, time.Since(startTime))
+			a.recordChainHistory(req, plan, cfg, failedResult, wrapped, completed, inferences, time.Since(startTime))
 			logFinished(chainStatusFailed, wrapped)
 			return failedResult, wrapped
 		}
 
 		input = out
 		completed++
+		inferences++
 		emit(i, total, group.Family, "done")
 	}
 
 	successResult := &apperr.ChainResult{FinalText: input, Completed: completed}
-	a.recordChainHistory(req, plan, cfg, successResult, nil, completed, time.Since(startTime))
+	a.recordChainHistory(req, plan, cfg, successResult, nil, completed, inferences, time.Since(startTime))
 	logFinished(chainStatusDone, nil)
 	return successResult, nil
 }
@@ -198,6 +200,7 @@ func (a *ActionService) recordChainHistory(
 	result *apperr.ChainResult,
 	runErr error,
 	completed int,
+	inferences int,
 	duration time.Duration,
 ) {
 	applied := make([]apperr.AppliedAction, 0)
@@ -272,7 +275,7 @@ func (a *ActionService) recordChainHistory(
 		InputLang:    req.InputLanguageID,
 		OutputLang:   req.OutputLanguageID,
 		DurationMs:   duration.Milliseconds(),
-		Inferences:   completed,
+		Inferences:   inferences,
 		Status:       status,
 		ErrorCode:    errorCode,
 		FailedIndex:  failedIndex,

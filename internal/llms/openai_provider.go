@@ -177,7 +177,7 @@ func (p *OpenAICompatibleProvider) ListModels(ctx context.Context) ([]apperr.Mod
 		return nil, mapTransportError(p.cfg.Config.Name, p.buildBaseURL(), err)
 	}
 	if resp.IsError() {
-		return nil, mapHTTPStatus(p.cfg.Config.Name, "", resp)
+		return nil, mapHTTPStatus(p.cfg.Config.Name, apperr.ModelUnavailablePlaceholder, resp)
 	}
 
 	models, err := p.profile.DiscoveryStrategy(resp.Bytes())

@@ -45,7 +45,7 @@ describe('Toast', () => {
     });
 
     it('renders warning info variant without title', () => {
-        render(<Wrapper items={[{ id: '2', variant: 'info', message: 'Run cancelled after step 1.' }]} onDismiss={() => {}} />);
-        expect(screen.getByText('Run cancelled after step 1.')).toBeInTheDocument();
+        render(<Wrapper items={[{ id: '2', variant: 'info', message: 'Run cancelled during step 1.' }]} onDismiss={() => {}} />);
+        expect(screen.getByText('Run cancelled during step 1.')).toBeInTheDocument();
     });
 });

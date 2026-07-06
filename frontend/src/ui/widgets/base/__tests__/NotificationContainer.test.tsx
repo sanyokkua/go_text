@@ -76,9 +76,9 @@ describe('NotificationContainer', () => {
 
     it('renders an info toast for cancelled run', () => {
         const store = makeStore();
-        store.dispatch(enqueueNotification({ severity: 'info', surface: 'toast', title: 'Cancelled', message: 'Run cancelled after step 2.' }));
+        store.dispatch(enqueueNotification({ severity: 'info', surface: 'toast', title: 'Cancelled', message: 'Run cancelled during step 2.' }));
         renderWithStore(store);
         expect(screen.getByText('Cancelled')).toBeInTheDocument();
-        expect(screen.getByText('Run cancelled after step 2.')).toBeInTheDocument();
+        expect(screen.getByText('Run cancelled during step 2.')).toBeInTheDocument();
     });
 });

@@ -474,10 +474,10 @@ func (s *SettingsService) RemoveLanguage(language string) ([]string, error) {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	if strings.ToLower(language) == strings.ToLower(langCfg.DefaultInputLanguage) {
-		return nil, apperr.Validation("language", "not the current default input language", language)
+		return nil, apperr.Validation("language", "is the current default input language and cannot be removed", language)
 	}
 	if strings.ToLower(language) == strings.ToLower(langCfg.DefaultOutputLanguage) {
-		return nil, apperr.Validation("language", "not the current default output language", language)
+		return nil, apperr.Validation("language", "is the current default output language and cannot be removed", language)
 	}
 	if err := s.settingsRepo.RemoveLanguage(language); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)

@@ -143,7 +143,7 @@ function buildNotification(wire: apperr.WireError): Omit<Notification, 'id'> {
                 severity: 'info',
                 surface: 'toast',
                 title: 'Cancelled',
-                message: `Run cancelled after step ${stepNumber}. Partial result kept.`,
+                message: `Run cancelled during step ${stepNumber}. Partial result kept.`,
                 ...withDetails(wire),
             };
         case apperr.ErrorCode.CodeInternal:

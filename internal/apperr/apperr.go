@@ -173,6 +173,11 @@ func RateLimited(provider string, retryAfter int, cause error) *AppError {
 	}
 }
 
+// ModelUnavailablePlaceholder is the display value for ModelNotFound's model argument when the
+// caller has no specific model name to report (e.g. a 404 from a model-listing request, as opposed
+// to a named model missing from a non-empty catalog).
+const ModelUnavailablePlaceholder = "(none discovered)"
+
 func ModelNotFound(provider, model string, cause error) *AppError {
 	return &AppError{
 		Code:    CodeModelNotFound,
@@ -258,7 +263,7 @@ func Cancelled(stepIndex int) *AppError {
 	return &AppError{
 		Code:    CodeCancelled,
 		Title:   "Cancelled",
-		Message: fmt.Sprintf("Run cancelled after step %d. Partial result kept.", stepIndex+1),
+		Message: fmt.Sprintf("Run cancelled during step %d. Partial result kept.", stepIndex+1),
 		Details: map[string]string{
 			"stepIndex": strconv.Itoa(stepIndex),
 		},

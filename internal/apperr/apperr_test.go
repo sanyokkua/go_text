@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/rs/zerolog"
@@ -326,6 +327,14 @@ func TestCancelled(t *testing.T) {
 	}
 	if e.Details["stepIndex"] != "2" {
 		t.Errorf("Details[stepIndex]: got %q", e.Details["stepIndex"])
+	}
+	// Finding #15 (2026-07-05 live testing report): stepIndex is the step that was IN PROGRESS
+	// when cancellation happened, not one that completed — the message must not imply completion.
+	if !strings.Contains(e.Message, "during step 3") {
+		t.Errorf("expected message to reference step 3 without implying completion, got %q", e.Message)
+	}
+	if strings.Contains(e.Message, "after step") {
+		t.Errorf("message implies the step completed before cancellation, got %q", e.Message)
 	}
 }
 

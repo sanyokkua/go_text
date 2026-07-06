@@ -154,7 +154,7 @@ func (s *Service) TestModels(cfg settings.ProviderConfig) (*apperr.VerifyOutcome
 	}
 	if len(models) == 0 {
 		outcome.OK = false
-		return outcome, apperr.ModelNotFound(cfg.Name, "(none discovered)", nil)
+		return outcome, apperr.ModelNotFound(cfg.Name, apperr.ModelUnavailablePlaceholder, nil)
 	}
 	outcome.OK = true
 	outcome.ModelCount = len(models)

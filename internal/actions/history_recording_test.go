@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -146,6 +147,57 @@ func TestRunChain_RecordsHistory_MultiStep_KindStack(t *testing.T) {
 	}
 	if hist.recorded[0].Kind != "stack" {
 		t.Errorf("kind = %q, want stack (two steps)", hist.recorded[0].Kind)
+	}
+}
+
+// Finding #16 (2026-07-05 live testing report): the same-language translate short-circuit skips
+// the LLM call entirely, so the recorded history entry must show Inferences=0, not 1 — Inferences
+// must track real LLM calls made, distinct from the group-completion count used elsewhere.
+func TestRunChain_RecordsHistory_SameLanguageTranslate_ZeroInferences(t *testing.T) {
+	t.Parallel()
+	var called int64
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt64(&called, 1)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	hist := &recordingHistoryService{}
+	svc := newChainServiceWithRecording(t, srv.URL, hist)
+
+	var translateID string
+	for _, m := range svc.GetActionCatalog() {
+		if m.Family == "translate" {
+			translateID = m.ID
+			break
+		}
+	}
+	if translateID == "" {
+		t.Skip("no translate action in catalog")
+	}
+
+	_, err := svc.RunChain(context.Background(), apperr.ChainRequest{
+		RunID:            "run-hist-same-lang",
+		InputText:        "bonjour",
+		Steps:            []apperr.ChainStep{{ActionID: translateID}},
+		InputLanguageID:  "fr",
+		OutputLanguageID: "fr",
+	}, nil)
+	if err != nil {
+		t.Fatalf("RunChain error: %v", err)
+	}
+	if atomic.LoadInt64(&called) != 0 {
+		t.Fatalf("expected no LLM call, server was called %d time(s)", called)
+	}
+	if len(hist.recorded) != 1 {
+		t.Fatalf("expected 1 history entry, got %d", len(hist.recorded))
+	}
+	e := hist.recorded[0]
+	if e.Status != "success" {
+		t.Errorf("status = %q, want success", e.Status)
+	}
+	if e.Inferences != 0 {
+		t.Errorf("inferences = %d, want 0 (no LLM call was made)", e.Inferences)
 	}
 }
 

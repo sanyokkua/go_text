@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"go_text/internal/apperr"
@@ -740,6 +741,14 @@ func TestSettingsService_RemoveLanguage_RejectsRemovingDefaultInputLanguage(t *t
 	if ae.Code != apperr.CodeValidation {
 		t.Errorf("expected CodeValidation, got %q", ae.Code)
 	}
+	// Finding #5 (2026-07-05 live testing report): the message must read forward
+	// ("is the default and cannot be removed"), not backward ("not the default").
+	if !strings.Contains(ae.Message, "cannot be removed") {
+		t.Errorf("expected message to explain the language cannot be removed, got %q", ae.Message)
+	}
+	if strings.HasPrefix(ae.Message, "language not") {
+		t.Errorf("message reads backwards (implies rejection because it is NOT the default): %q", ae.Message)
+	}
 }
 
 // T84 regression (P4-T3 live repro): removing the current default output
@@ -765,6 +774,14 @@ func TestSettingsService_RemoveLanguage_RejectsRemovingDefaultOutputLanguage(t *
 	}
 	if ae.Code != apperr.CodeValidation {
 		t.Errorf("expected CodeValidation, got %q", ae.Code)
+	}
+	// Finding #5 (2026-07-05 live testing report): same forward-reading wording check as the
+	// default-input-language case above.
+	if !strings.Contains(ae.Message, "cannot be removed") {
+		t.Errorf("expected message to explain the language cannot be removed, got %q", ae.Message)
+	}
+	if strings.HasPrefix(ae.Message, "language not") {
+		t.Errorf("message reads backwards (implies rejection because it is NOT the default): %q", ae.Message)
 	}
 
 	if _, err := svc.AddLanguage("Klingon"); err != nil {
