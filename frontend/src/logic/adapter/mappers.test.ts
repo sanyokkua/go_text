@@ -64,13 +64,13 @@ describe('fromWireMetadata', () => {
         w.authSchemes = ['none', 'bearer'];
         w.providerKinds = ['ollama', 'openai'];
         w.settingsFolder = '/home/user/.config';
-        w.databaseFile = 'SettingsV2.db';
+        w.databaseFile = 'app.db';
         w.logsFolder = '/home/user/.local/state';
         const m = fromWireMetadata(w);
         expect(m.authTypes).toEqual(['none', 'bearer']);
         expect(m.providerTypes).toEqual(['ollama', 'openai']);
         expect(m.settingsFolder).toBe('/home/user/.config');
-        expect(m.settingsFile).toBe('SettingsV2.db');
+        expect(m.settingsFile).toBe('app.db');
         expect(m.logsFolder).toBe('/home/user/.local/state');
     });
 });

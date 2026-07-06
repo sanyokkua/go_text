@@ -129,15 +129,10 @@ Any failing gate blocks merge — there is no "pre-existing failure" exception.
 
 ## 6. Settings and data persistence
 
-### Settings JSON (per OS)
+### Settings Database (per OS)
 
-| Platform | Path |
-|---|---|
-| macOS | `~/Library/Application Support/GoTextApp/SettingsV2.json` |
-| Linux | `~/.config/GoTextApp/SettingsV2.json` |
-| Windows | `%APPDATA%\GoTextApp\SettingsV2.json` |
-
-### SQLite database
+Settings are persisted entirely in SQLite — no JSON settings file exists or is used by the
+running application.
 
 | Platform | Path |
 |---|---|

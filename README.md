@@ -349,8 +349,9 @@ files are only sourced by interactive shells, not by the graphical session itsel
 | Windows  | `%APPDATA%\GoTextApp\`                     |
 
 Files inside that folder:
-- `SettingsV2.json` — provider and UI preferences
-- `gotext.db` — SQLite database (action history, saved stacks, provider configs)
+- `gotext.db` — SQLite database holding all persisted app state: providers, current-provider
+  selection, settings (app behavior, inference, UI preferences), languages, saved stacks, and
+  action history
 
 ### Configuration options
 
@@ -441,6 +442,9 @@ go_text/
 
 ## Documentation
 
+- **[docs/index.md](docs/index.md)** — canonical service overview for AI agents and contributors:
+  identity, entry/exit points, data contracts, and configuration; the top-level entry point that
+  complements the deeper docs below
 - **[Architecture Documentation](docs/architecture/README.md)** — Technical architecture
 - **[Developer Guide](docs/guides/DEVELOPER_GUIDE.md)** — How to extend the app
 
@@ -452,6 +456,19 @@ go_text/
 - LLM provider templates inspired by the OpenAI API specification
 - Predecessor project: [llmedit](https://github.com/sanyokkua/llmedit) — Python proof-of-concept
 - Development and testing on macOS with verified providers: Ollama, LM Studio, OpenAI-compatible, OpenRouter
+
+---
+
+## Contributing
+
+No formal `CONTRIBUTING.md` exists yet in this repository. Contributions should follow the code
+standards already established in the project's [`CLAUDE.md`](CLAUDE.md) and the detailed rule
+sets under [`docs/ai_agent_rules/`](docs/ai_agent_rules/) (clean code, Go logging, Go/TypeScript
+testing, Redux, error-envelope conventions, SQLite/goose/sqlc, and Radix UI/CSS rules).
+
+## License
+
+No LICENSE file is currently present in this repository — licensing terms are not yet established.
 
 ---
 

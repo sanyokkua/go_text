@@ -15,7 +15,6 @@ const fileComponent = "file"
 
 type FileUtilsServiceAPI interface {
 	GetAppSettingsFolderPath() (string, error)
-	GetAppSettingsFilePath() (string, error)
 	GetAppDatabaseFilePath() (string, error)
 	ResolveAppLogsFolderPath(customDir string) (string, error)
 	EnsureAppLogsFolderExists(customDir string) (string, error)
@@ -78,27 +77,6 @@ func (s *FileUtilsService) GetAppSettingsFolderPath() (string, error) {
 	lg := s.log(op)
 	lg.Debug().Msg("retrieving application settings folder path")
 	return s.ensureAppSettingsFolderExists()
-}
-
-func (s *FileUtilsService) GetAppSettingsFilePath() (string, error) {
-	const op = "FileUtilsService.GetAppSettingsFilePath"
-	startTime := time.Now()
-	lg := s.log(op)
-	lg.Debug().Msg("retrieving application settings file path")
-
-	appConfigDir, err := s.GetAppSettingsFolderPath()
-	if err != nil {
-		lg.Error().Err(err).Msg("failed to get application config directory")
-		return "", fmt.Errorf("%s: failed to get settings folder path: %w", op, err)
-	}
-
-	settingsPath := filepath.Join(appConfigDir, SettingsFileName)
-	lg.Trace().Str("path", settingsPath).Msg("settings file path")
-
-	duration := time.Since(startTime)
-	lg.Debug().Int64("duration_ms", duration.Milliseconds()).Msg("successfully retrieved settings file path")
-
-	return settingsPath, nil
 }
 
 func (s *FileUtilsService) GetAppDatabaseFilePath() (string, error) {

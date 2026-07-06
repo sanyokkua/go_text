@@ -59,10 +59,14 @@ wails doctor                 # verify Wails installation
 wails generate module        # regenerate frontend/wailsjs/ after any Go signature change
 
 cd frontend && npm install   # install frontend deps
+cd frontend && npm run format       # prettier --write (auto-fix formatting)
 cd frontend && npm run test  # run Jest tests
+cd frontend && npm run test:watch   # Jest in watch mode
 cd frontend && npm run test:coverage
+cd frontend && npm run preview      # serve the production Vite build locally
 cd frontend && npm run verify:ui  # Playwright/Chromium UI tests (Target A: bridge-mock)
 cd frontend && npm run verify:live  # local-only real-LLM E2E (Target B): needs `wails dev` at :34115 + LM Studio/Ollama running. Use a reliable small model (Ollama gemma3:1b / qwen3:1.7b — NOT qwen3:0.6b). Excluded from CI.
+cd frontend && npm run verify        # composite gate: check-no-mui → format:check → lint → tsc --noEmit → test → verify:ui
 
 go test -race ./...          # all Go tests with race detector (always use -race)
 go test ./internal/...       # backend unit/integration tests
@@ -90,6 +94,7 @@ Repositories  (settings/repository_sqlite.go, history/repository_sqlite.go, etc.
 
 **Key packages:**
 - `internal/apperr/` — `AppError`, `ErrorCode` catalog, constructors, `WireError`, `ToWire`, and all `*Result` envelope types. Imports no other internal package.
+- `internal/bootstrap/` — `NewLogger()` constructs a console-only logger used before the database and full `internal/logging` pipeline are available during early startup (called first thing in `main()`, ahead of DI wiring).
 - `internal/db/` — SQLite open (modernc.org/sqlite) + WAL pragmas, goose migrations, seeding. `internal/db/store/` is sqlc-generated — **never hand-edit it**.
 - `internal/actions/` — `runStep`, `Planner`, `Composer`, `ChainOrchestrator`, run registry (`runId → CancelFunc`), `ActionHandler`.
 - `internal/gate/` — `InferenceGate`: single-flight, process-wide; shared by chain runs and provider test-inference. At most one inference at a time.
@@ -149,7 +154,12 @@ logic/adapter/     → thin wrappers around Wails auto-generated JS bindings (fr
 logic/store/       → Redux Toolkit slices: settings, editor, actions, stacks, run, history, ui,
                      notifications, about
 logic/hooks/       → domain hooks: useChainEvents, useSettingsToast
+logic/theme/       → dark-mode resolution/init: resolveEffectiveTheme, applyTheme, initTheme,
+                     watchSystemTheme (system prefers-color-scheme listener)
+logic/utils/       → shared utilities: error_utils (parseError — normalizes unknown errors),
+                     provider_utils, stack_utils (computeInferences — matches backend step grouping)
 dev/bridge-mock/   → dev-only bridge mock (frontend-only Vite dev server; no Go backend)
+types/             → shared TypeScript ambient declarations (e.g. css-modules.d.ts for *.module.css)
 ```
 
 **Components never import from `wailsjs/` directly — all backend access goes through `logic/adapter/`.**
@@ -167,11 +177,13 @@ that the adapter subscribes to and dispatches into the `run` slice.
 
 ### Settings Persistence
 
-| Platform | JSON settings | SQLite database |
-|---|---|---|
-| macOS | `~/Library/Application Support/GoTextApp/SettingsV2.json` | `.../gotext.db` |
-| Linux | `~/.config/GoTextApp/SettingsV2.json` | `.../gotext.db` |
-| Windows | `%APPDATA%\GoTextApp\SettingsV2.json` | `.../gotext.db` |
+Settings are persisted entirely in SQLite — no JSON settings file is read or written.
+
+| Platform | SQLite database |
+|---|---|
+| macOS | `~/Library/Application Support/GoTextApp/gotext.db` |
+| Linux | `~/.config/GoTextApp/gotext.db` |
+| Windows | `%APPDATA%\GoTextApp\gotext.db` |
 
 ## Extending the App
 

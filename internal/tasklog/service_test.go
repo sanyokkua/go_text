@@ -123,7 +123,6 @@ func (m *mockFileUtilsService) EnsureAppLogsFolderExists(_ string) (string, erro
 }
 
 func (m *mockFileUtilsService) GetAppSettingsFolderPath() (string, error) { return "", nil }
-func (m *mockFileUtilsService) GetAppSettingsFilePath() (string, error)   { return "", nil }
 func (m *mockFileUtilsService) GetAppDatabaseFilePath() (string, error)   { return "", nil }
 func (m *mockFileUtilsService) ResolveAppLogsFolderPath(_ string) (string, error) {
 	return "", nil
@@ -224,7 +223,6 @@ func TestNewTaskLogService(t *testing.T) {
 			var svc settings.SettingsServiceAPI
 			var fu interface {
 				GetAppSettingsFolderPath() (string, error)
-				GetAppSettingsFilePath() (string, error)
 				GetAppDatabaseFilePath() (string, error)
 				ResolveAppLogsFolderPath(string) (string, error)
 				EnsureAppLogsFolderExists(string) (string, error)

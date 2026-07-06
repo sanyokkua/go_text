@@ -58,7 +58,6 @@ type fakeFileUtils struct {
 }
 
 func (fakeFileUtils) GetAppSettingsFolderPath() (string, error) { return "", nil }
-func (fakeFileUtils) GetAppSettingsFilePath() (string, error)   { return "", nil }
 func (f fakeFileUtils) GetAppDatabaseFilePath() (string, error) { return f.dbPath, f.dbPathErr }
 func (fakeFileUtils) ResolveAppLogsFolderPath(string) (string, error) {
 	return "", nil

@@ -31,7 +31,6 @@ func newTestLogger(t *testing.T) *logging.Logger {
 type stubFileUtils struct{}
 
 func (stubFileUtils) GetAppSettingsFolderPath() (string, error)        { return "", nil }
-func (stubFileUtils) GetAppSettingsFilePath() (string, error)          { return "", nil }
 func (stubFileUtils) GetAppDatabaseFilePath() (string, error)          { return "", nil }
 func (stubFileUtils) ResolveAppLogsFolderPath(string) (string, error)  { return "", nil }
 func (stubFileUtils) EnsureAppLogsFolderExists(string) (string, error) { return "", nil }
@@ -245,7 +244,6 @@ type ensuringFileUtils struct {
 }
 
 func (ensuringFileUtils) GetAppSettingsFolderPath() (string, error) { return "/cfg", nil }
-func (ensuringFileUtils) GetAppSettingsFilePath() (string, error)   { return "/cfg/SettingsV2.json", nil }
 func (ensuringFileUtils) GetAppDatabaseFilePath() (string, error)   { return "/cfg/gotext.db", nil }
 func (f ensuringFileUtils) ResolveAppLogsFolderPath(string) (string, error) {
 	return f.nonExistentDir, nil

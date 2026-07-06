@@ -23,24 +23,28 @@ the same orchestrator, handler, and envelope serve both single actions and multi
 
 ## 2. Package map
 
-| Package | Status | Responsibility |
+All packages below are part of the current, stable architecture. The **Origin** column records each
+package's provenance relative to the pre-v3 codebase for historical context only — it is not a
+work-in-progress indicator.
+
+| Package | Origin | Responsibility |
 |---|---|---|
-| `internal/bootstrap` | **new** | Pre-DB, pre-context logger construction (`NewLogger`) used by `main()` before `ApplicationContextHolder` exists. Resolves dev-vs-release purely from a compile-time `dev`/`!dev` build tag (Wails' own CLI sets `dev` for `wails dev`), since `runtime.Environment(ctx)` isn't available this early. |
+| `internal/bootstrap` | added in v3 | Pre-DB, pre-context logger construction (`NewLogger`) used by `main()` before `ApplicationContextHolder` exists. Resolves dev-vs-release purely from a compile-time `dev`/`!dev` build tag (Wails' own CLI sets `dev` for `wails dev`), since `runtime.Environment(ctx)` isn't available this early. |
 | `internal/application` | evolved | DI container (`ApplicationContextHolder`); constructs and wires every service/handler; holds the app `ctx`; orchestrates startup/shutdown ordering |
-| `internal/db` | **new** | SQLite open + WAL pragmas; embedded goose migration runner; seeding. Owns `internal/db/store/` |
-| `internal/db/store` | **new (generated)** | sqlc-generated `Queries` struct, `Querier` interface, and row models. **Never hand-edited.** |
-| `internal/apperr` | **new** | Typed `AppError` + `ErrorCode` catalog + constructors; `WireError` / Result envelope types; `toWire` boundary mapper. Imports no other internal package (cycle-free). |
+| `internal/db` | added in v3 | SQLite open + WAL pragmas; embedded goose migration runner; seeding. Owns `internal/db/store/` |
+| `internal/db/store` | added in v3 (generated) | sqlc-generated `Queries` struct, `Querier` interface, and row models. **Never hand-edited.** |
+| `internal/apperr` | added in v3 | Typed `AppError` + `ErrorCode` catalog + constructors; `WireError` / Result envelope types; `toWire` boundary mapper. Imports no other internal package (cycle-free). |
 | `internal/llms` | evolved | `Provider` interface, `OpenAICompatibleProvider`, per-kind `ProviderProfile`, `ProviderFactory`, discovery strategies, provider verification |
 | `internal/actions` | evolved | `runStep`, `Planner`, `Composer`, `ChainOrchestrator`, run registry (`runId → CancelFunc`), and the bound `ActionHandler` |
 | `internal/prompts` | evolved | Two-tier family system prompts + atomic directive fragments; `ActionMeta` catalog; `BuildPlanAndPrompts`; `PreviewPrompt` composition |
-| `internal/history` | **new** | Per-run action history: model, SQLite repository, service, bound handler |
+| `internal/history` | added in v3 | Per-run action history: model, SQLite repository, service, bound handler |
 | `internal/settings` | evolved | Provider/model/inference/language/app-behavior config; SQLite-backed repository behind the preserved service interface |
-| `internal/stacks` | **new** | Saved stack CRUD; SQLite repository; bound handler |
-| `internal/gate` | **new** | Single-flight `InferenceGate` — process-wide, single-slot; shared by chain runs and provider test-inference |
+| `internal/stacks` | added in v3 | Saved stack CRUD; SQLite repository; bound handler |
+| `internal/gate` | added in v3 | Single-flight `InferenceGate` — process-wide, single-slot; shared by chain runs and provider test-inference |
 | `internal/logging` | evolved | Configured zerolog instance + console/lumberjack file multi-writer; `WithOp`/`Timer` helpers; implements the Wails `logger.Logger` interface |
 | `internal/file` | preserved | OS-specific path resolution: config folder, DB file path, logs folder |
 | `internal/tasklog` | preserved | Per-step daily JSONL diagnostic records, gated by `EnableTaskLogging`. Independent of user-facing history. |
-| `internal/verification` | **new** | Provider diagnostics (`TestConnection`, `TestModels`, `TestInference`) — never recorded to history |
+| `internal/verification` | added in v3 | Provider diagnostics (`TestConnection`, `TestModels`, `TestInference`) — never recorded to history |
 
 ---
 

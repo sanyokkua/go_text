@@ -4,6 +4,10 @@ The documentation at the root of this folder (`architecture/`, `guides/`, `howto
 `ai_agent_rules/`, `screenshots/`, `appicon.png`) always describes the **current** app — right
 now that's the **v3** redesign.
 
+[`index.md`](index.md) is the canonical AI-facing entry point for this current documentation
+set — start there for a machine-readable overview that links out to the architecture, developer,
+and verification guides below it.
+
 Earlier generations of the app's documentation are preserved as frozen snapshots, not updated
 going forward:
 
