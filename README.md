@@ -5,6 +5,7 @@
 [![React](https://img.shields.io/badge/React-19.2.3-61DAFB)](https://react.dev/)
 
 > A native desktop application for intelligent text transformation powered by Large Language Models.
+
 <img src="docs/appicon.png" alt="drawing" width="200"/>
 
 ---
@@ -24,7 +25,7 @@ The application connects to **any OpenAI-compatible LLM provider**, giving you t
 Built with Go for efficient backend processing and React for a responsive UI, GoText delivers native
 performance with a small distribution footprint.
 
-*(v3 screenshot pending — see [docs/screenshots](docs/screenshots/README.md))*
+<img src="docs/screenshots/App_03_Main_Result_SidebarsOpen.png" alt="GoText main window, side layout, both sidebars open" width="800"/>
 
 ---
 
@@ -88,56 +89,64 @@ the built-in progress indicator.
 Every completed run is logged to the **history rail** with its applied actions and output preview.
 Restore any past result with a single click.
 
+> Note: The results of the processed text heavily depend on the backend LLM model chosen for the task. Small models, with sizes up to 4B parameters, can even ignore prompt instructions and hallucinate heavily. I recommend using models with 4B+ parameters for English text; for other languages, I would recommend 20B+ parameter models. The new generation of Gemma4, such as gemma4:e4b-mlx, already shows good results in most cases, while GPT-OSS 20B, Gemma4 12B/26B, and similar LLM models demonstrate the best results.
 ---
 
 ## Screenshots
 
-> Screenshots below are pending capture for the v3 redesign — see
-> [docs/screenshots](docs/screenshots/README.md) for the full list of shots to be added.
+> The full screenshot library — including bonus scenarios not shown here (translation, prompt
+> engineering, provider creation, model configuration) — lives in
+> [docs/screenshots](docs/screenshots/README.md).
 
-### Main Application Interface
+### Main Interface
 
-- *Main Interface - Before processing clicked* — pending
-- *Main Interface - Processing the action* — pending
-- *Main Interface - result of the previous action* — pending
-- *Main Interface - another result of the summary* — pending
+Column layout with both the Actions sidebar and History rail open — the sidebar carries a saved
+stack (`Proofread + Meeting Notes`) and the History rail already has several prior runs:
 
-### Prompt Change and Results
+<img src="docs/screenshots/App_03_Main_Result_SidebarsOpen.png" alt="Main window, side-by-side layout, both sidebars open" width="800"/>
 
-- *Main Interface - improving prompt for image generation* — pending
+Single-column stacked layout with both sidebars closed, showing a `Formal` style rewrite of an
+informal message about auth-module technical debt:
 
-Good example — an improved prompt can produce a great result:
+<img src="docs/screenshots/App_04_Main_Stacked_SidebarsClosed.png" alt="Main window, stacked layout, both sidebars closed" width="800"/>
 
-- *Generated Image using improved prompt* — pending
+### Diff and Markdown Output
 
-### Translation Example
+`Enhanced proofreading` applied to a typo-ridden release announcement — mostly small, localized
+corrections:
 
-- *Translation* — pending
+<img src="docs/screenshots/App_05_Diff_EnhancedProofreading.png" alt="Diff view of an enhanced-proofreading correction" width="800"/>
 
-### Multi-Provider Configuration
+The same `Formal` rewrite from above in Diff view — a much heavier, sentence-level rewrite by
+comparison:
 
-- *Provider Settings - Current Provider Info* — pending
-- *Provider Settings - Providers List* — pending
-- *Provider Settings - Creation of the New Provider* — pending
-- *Provider Settings - Creation of the New Provider Extended* — pending
+<img src="docs/screenshots/App_06_Diff_FormalTone.png" alt="Diff view of a Formal style rewrite" width="800"/>
 
-### Model Configuration
+The saved `Proofread + Meeting Notes` stack (`Enhanced proofreading` → `Meeting notes / minutes`)
+turning rambling sync notes into a structured Markdown document with real headings and bullet
+lists:
 
-- *Model Settings* — pending
+<img src="docs/screenshots/App_07_Markdown_MeetingNotes.png" alt="Markdown preview of a meeting-notes stack result" width="800"/>
+
+### Provider Configuration
+
+Providers tab showing the current Ollama provider (`http://127.0.0.1:11434/`, model
+`gemma4:e4b-mlx`) alongside a second configured LM Studio provider:
+
+<img src="docs/screenshots/Settings_01_Providers_Current.png" alt="Settings, Providers tab, current provider" width="800"/>
 
 ---
 
 ## System Requirements
 
-| Requirement | Minimum |
-|---|---|
-| Operating System | macOS 12+, Windows 10+, Linux (modern) |
-| RAM | 2 GB (8+ GB recommended for local models) |
-| Disk Space | 15 MB + space for local LLM models |
-| Network | Internet connection for cloud providers |
+| Requirement      | Minimum                                                                        |
+| ---------------- | ------------------------------------------------------------------------------ |
+| Operating System | macOS 12+, Windows 10+, Linux (modern)                                         |
+| RAM              | 128MB (In Case of Cloud Providers usage) (16+ GB recommended for local models) |
+| Disk Space       | ~30 MB + space for local LLM models                                            |
+| Network          | Internet connection for cloud providers                                        |
 
-For local LLM inference: 16 GB+ RAM, modern 4-core CPU, and ideally a GPU with 6+ GB VRAM.
-Larger models (13B+ parameters) typically need 12 GB+ VRAM for smooth operation.
+For local LLM inference: 16 GB+ RAM, a modern CPU, and ideally a GPU with 6+ GB VRAM. Larger models (13B+ parameters) typically need 12 GB+ VRAM for smooth operation. Since Apple Silicon uses shared memory, 16 GB or more is recommended to run capable models.
 
 ---
 
@@ -157,12 +166,12 @@ Larger models (13B+ parameters) typically need 12 GB+ VRAM for smooth operation.
 
 Download the latest release from the [GitHub Releases Page](https://github.com/sanyokkua/go_text/releases).
 
-| Platform | File |
-|---|---|
+| Platform              | File                           |
+| --------------------- | ------------------------------ |
 | macOS (Apple Silicon) | `GoText-*-macos-arm64.app.zip` |
-| macOS (Intel) | `GoText-*-macos-amd64.app.zip` |
-| Windows (64-bit) | `GoText-*-windows-amd64.exe` |
-| Linux (64-bit) | `GoText-*-linux-amd64` |
+| macOS (Intel)         | `GoText-*-macos-amd64.app.zip` |
+| Windows (64-bit)      | `GoText-*-windows-amd64.exe`   |
+| Linux (64-bit)        | `GoText-*-linux-amd64`         |
 
 *(Release page screenshot pending)*
 
@@ -229,11 +238,11 @@ list, and inference settings.
 
 ### Settings and data locations
 
-| Platform | Path |
-|---|---|
-| macOS | `~/Library/Application Support/GoTextApp/` |
-| Linux | `~/.config/GoTextApp/` |
-| Windows | `%APPDATA%\GoTextApp\` |
+| Platform | Path                                       |
+| -------- | ------------------------------------------ |
+| macOS    | `~/Library/Application Support/GoTextApp/` |
+| Linux    | `~/.config/GoTextApp/`                     |
+| Windows  | `%APPDATA%\GoTextApp\`                     |
 
 Files inside that folder:
 - `SettingsV2.json` — provider and UI preferences
@@ -265,20 +274,20 @@ Files inside that folder:
 
 ## Technology Stack
 
-| Component | Technology | Version |
-|---|---|---|
-| Backend | Go | 1.25.7 |
-| Desktop framework | Wails | v2.12.0 |
-| Frontend | React | 19.2.3 |
-| Language | TypeScript | 5.9.3 |
-| State management | Redux Toolkit | 2.11.2 |
-| UI primitives | Radix Primitives (`radix-ui`) | ^1.6.0 |
-| Command palette | `cmdk` | latest |
-| HTTP client | Resty | v3 |
-| Build tool | Vite | 7.x |
-| Logging | zerolog | 1.34.0 |
-| SQLite driver | modernc.org/sqlite (pure Go) | latest |
-| Migrations | goose v3 | latest |
+| Component         | Technology                    | Version |
+| ----------------- | ----------------------------- | ------- |
+| Backend           | Go                            | 1.25.7  |
+| Desktop framework | Wails                         | v2.12.0 |
+| Frontend          | React                         | 19.2.3  |
+| Language          | TypeScript                    | 5.9.3   |
+| State management  | Redux Toolkit                 | 2.11.2  |
+| UI primitives     | Radix Primitives (`radix-ui`) | ^1.6.0  |
+| Command palette   | `cmdk`                        | latest  |
+| HTTP client       | Resty                         | v3      |
+| Build tool        | Vite                          | 7.x     |
+| Logging           | zerolog                       | 1.34.0  |
+| SQLite driver     | modernc.org/sqlite (pure Go)  | latest  |
+| Migrations        | goose v3                      | latest  |
 
 ---
 
