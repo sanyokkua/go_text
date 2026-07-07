@@ -91,6 +91,15 @@ the built-in progress indicator.
 Every completed run is logged to the **history rail** with its applied actions and output preview.
 Restore any past result with a single click.
 
+### Interface Customization
+
+Settings → Appearance lets you hide any combination of the AppBar's Provider/Model selectors,
+Language picker, Output format toggle, Output mode toggle, IO layout toggle, Command palette (⌘K)
+button, History button, and Info button — decluttering the bar down to just the sidebar toggle and
+Settings button if that's all you use day to day. Everything you hide stays configurable from
+Settings, and the app also remembers the last action or stack you ran and re-arms it automatically
+the next time you launch GoText.
+
 > Note: The results of the processed text heavily depend on the backend LLM model chosen for the task. Small models, with sizes up to 4B parameters, can even ignore prompt instructions and hallucinate heavily. I recommend using models with 4B+ parameters for English text; for other languages, I would recommend 20B+ parameter models. The new generation of Gemma4, such as gemma4:e4b-mlx, already shows good results in most cases, while GPT-OSS 20B, Gemma4 12B/26B, and similar LLM models demonstrate the best results.
 ---
 

@@ -100,7 +100,9 @@ Repositories  (settings/repository_sqlite.go, history/repository_sqlite.go, etc.
 - `internal/gate/` — `InferenceGate`: single-flight, process-wide; shared by chain runs and provider test-inference. At most one inference at a time.
 - `internal/history/` — Per-run action history: model, SQLite repository, service, bound handler.
 - `internal/stacks/` — Saved stack CRUD: model, SQLite repository, service, bound handler.
-- `internal/settings/` — Provider/model/inference/language/app-behavior config; SQLite-backed repository.
+- `internal/settings/` — Provider/model/inference/language/app-behavior config, plus small UI-preference
+  config groups (`UIPreferencesConfig`, `AppBarVisibilityConfig`, `LastSelectionConfig`) all backed by
+  the same generic `settings(key, value, type)` KV table; SQLite-backed repository.
 - `internal/llms/` — `Provider` interface, `OpenAICompatibleProvider`, `ProviderProfile`, `ProviderFactory`, model discovery, provider verification.
 - `internal/prompts/` — `PromptService` wraps the v3 catalog; `SanitizeReasoningBlock`. `BuildPlanAndPrompts`/`PreviewPrompt` live in `internal/actions/`. Catalog: `internal/prompts/v3/` — `catalog.go` (`ActionMeta` entries), `families.go`/`system.go` (family system prompts).
 - `internal/verification/` — Provider diagnostic tests (`TestConnection`, `TestModels`, `TestInference`). Diagnostic only; never recorded to history.
@@ -185,6 +187,10 @@ Settings are persisted entirely in SQLite — no JSON settings file is read or w
 | Linux | `~/.config/GoTextApp/gotext.db` |
 | Windows | `%APPDATA%\GoTextApp\gotext.db` |
 
+`wails dev` uses an isolated `GoTextApp-Dev` folder instead (same paths, `GoTextApp` → `GoTextApp-Dev`,
+via `internal/file/service.go`'s `isDev`-aware path resolution) — a dev session never touches
+production settings/DB/logs.
+
 ## Extending the App
 
 ### Adding a Prompt
@@ -212,6 +218,17 @@ Settings are persisted entirely in SQLite — no JSON settings file is read or w
      into the already-built service via a `SetRepository`-style method.
 4. Expose via Wails `Bind` in `main.go` if the frontend needs it
 5. Run `wails generate module` if you added or changed bound methods
+
+### Adding a Small Persisted Preference (no migration needed)
+
+For a small config group of a few scalar fields (see `UIPreferencesConfig`, `AppBarVisibilityConfig`,
+`LastSelectionConfig` in `internal/settings/settings.go`), reuse the existing generic `settings`
+KV table instead of a new migration/table:
+1. Add the struct in `internal/settings/settings.go`; pick a dotted key prefix (e.g. `ui.myFeature.*`).
+2. Add `Get*`/`Update*` to `SettingsRepositoryAPI`/`repository_sqlite.go` using `getBool`/`getInt`/
+   `getFloat`/`getString` + `UpsertSetting` — mirror `GetUIPreferencesConfig`/`UpdateUIPreferencesConfig`.
+3. Passthrough in `service.go`, bound envelope methods in `handler.go` (new `apperr.*Config`/`*Result`
+   types), then `wails generate module`.
 
 ### Working with SQLite / sqlc / goose
 
@@ -248,7 +265,8 @@ tag-triggered release/build workflow.
 
 - **Backend logs**: terminal output during `wails dev` (DEBUG level in dev, WARNING in prod)
 - **Frontend logs + Redux state**: right-click app window → Inspect, use Redux DevTools extension
-- **SQLite**: DB file at `[config folder]/gotext.db`; open with any SQLite browser for inspection
+- **SQLite**: DB file at `[config folder]/gotext.db` (`GoTextApp-Dev` under `wails dev`, `GoTextApp`
+  in production); open with any SQLite browser for inspection
 - **Wails bindings missing**: run `wails generate module`
 - **Context missing error**: verify `app.SetContext(ctx)` in `OnStartup` in `main.go`
 - **History not recording**: check history service wiring in `internal/application/application.go`

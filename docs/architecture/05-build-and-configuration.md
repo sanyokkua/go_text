@@ -151,6 +151,30 @@ Logs share the same base directory as settings and the database (`os.UserConfigD
 | Linux | `~/.config/GoTextApp/logs/` |
 | Windows | `%APPDATA%\GoTextApp\logs\` |
 
+### Dev builds use an isolated settings/DB/logs folder
+
+`wails dev` never touches the paths above. `internal/file/service.go`'s `FileUtilsService` resolves
+every path (settings folder, `gotext.db`, `logs/`) through a single `appDirName()` helper that
+returns `internal/file/constants.go`'s `AppNameDev = "GoTextApp-Dev"` instead of `AppName` when the
+service was constructed with `isDev=true`. `isDev` is `bootstrap.IsDevBuild` — the same
+compile-time `dev`/`!dev` build tag described in `02-backend-architecture.md` §2, which Wails' own
+CLI sets automatically for `wails dev` and never sets for `wails build`/`go build`/`go test`. So a
+`wails dev` session reads/writes:
+
+| Platform | Path |
+|---|---|
+| macOS | `~/Library/Application Support/GoTextApp-Dev/{gotext.db, logs/}` |
+| Linux | `~/.config/GoTextApp-Dev/{gotext.db, logs/}` |
+| Windows | `%APPDATA%\GoTextApp-Dev\{gotext.db, logs\}` |
+
+completely independent of a production install's `GoTextApp` folder — local development and testing
+can never corrupt or mix with real user data, and (as a side effect) a `wails dev` instance and a
+packaged production build can run at the same time without tripping the single-instance flock
+(`gotext.db.lock`, next to `gotext.db`), since the two lock files now live in different folders.
+Settings → About in the running app always reflects the folder actually in use, since
+`AppSettingsMetadata.SettingsFolder`/`DatabaseFile`/`LogsFolder` are computed from the same
+`FileUtilsService` calls.
+
 ---
 
 ## 7. Working with the database
