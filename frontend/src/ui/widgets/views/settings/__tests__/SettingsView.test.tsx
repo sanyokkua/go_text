@@ -76,6 +76,16 @@ const BASE_UI_STATE: UIState = {
     buildMode: false,
     editingStackId: null,
     theme: { mode: 'auto', effective: 'light' },
+    appBarVisibility: {
+        providerModelSelectors: true,
+        languagePicker: true,
+        outputFormatToggle: true,
+        outputModeToggle: true,
+        layoutToggle: true,
+        commandPaletteButton: true,
+        historyButton: true,
+        infoButton: true,
+    },
 };
 
 function makeStore(activeSettingsTab = 0, settings: Settings | null = MOCK_SETTINGS) {

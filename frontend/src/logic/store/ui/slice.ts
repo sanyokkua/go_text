@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { AppBarVisibilityConfig } from '../../adapter/models';
 import { processPromptChain } from '../run/thunks';
-import { getUIPreferences, testProviderInference } from '../settings/thunks';
+import { getAppBarVisibility, getUIPreferences, restoreLastSelection, testProviderInference } from '../settings/thunks';
 import { CurrentView, ThemeEffective, ThemeMode, UIState } from './types';
 
 const initialState: UIState = {
@@ -17,6 +18,16 @@ const initialState: UIState = {
     buildMode: false,
     editingStackId: null,
     theme: { mode: 'auto', effective: 'light' },
+    appBarVisibility: {
+        providerModelSelectors: true,
+        languagePicker: true,
+        outputFormatToggle: true,
+        outputModeToggle: true,
+        layoutToggle: true,
+        commandPaletteButton: true,
+        historyButton: true,
+        infoButton: true,
+    },
 };
 
 const uiSlice = createSlice({
@@ -82,6 +93,13 @@ const uiSlice = createSlice({
             state.buildMode = true;
             state.editingStackId = action.payload;
         },
+        setAppBarVisibility: (state, action: PayloadAction<AppBarVisibilityConfig>) => {
+            state.appBarVisibility = action.payload;
+        },
+        toggleAppBarElement: (state, action: PayloadAction<keyof AppBarVisibilityConfig>) => {
+            const key = action.payload;
+            state.appBarVisibility[key] = !state.appBarVisibility[key];
+        },
     },
     extraReducers: (builder) => {
         builder
@@ -109,6 +127,13 @@ const uiSlice = createSlice({
                 state.layout = action.payload.layout;
                 state.sidebarCollapsed = action.payload.sidebarCollapsed;
                 state.historyOpen = action.payload.historyOpen;
+            })
+            .addCase(getAppBarVisibility.fulfilled, (state, action) => {
+                state.appBarVisibility = action.payload;
+            })
+            .addCase(restoreLastSelection.fulfilled, (state, action) => {
+                state.armedActionId = action.payload.armedActionId;
+                state.armedStackId = action.payload.armedStackId;
             });
     },
 });
@@ -131,6 +156,8 @@ export const {
     enterBuildMode,
     exitBuildMode,
     enterEditMode,
+    setAppBarVisibility,
+    toggleAppBarElement,
 } = uiSlice.actions;
 
 // Navigation helpers — each navigates to the named view

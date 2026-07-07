@@ -10,6 +10,7 @@ import (
 
 	"go_text/internal/actions"
 	"go_text/internal/apperr"
+	"go_text/internal/bootstrap"
 	"go_text/internal/db"
 	"go_text/internal/file"
 	"go_text/internal/gate"
@@ -48,7 +49,7 @@ type ApplicationContextHolder struct {
 // NewApplicationContextHolder wires the DI graph.
 // The bootstrap appLogger is console-only; Init() reconfigures it from DB settings.
 func NewApplicationContextHolder(appLogger *logging.Logger, restyClient *resty.Client) *ApplicationContextHolder {
-	fileUtilsService := file.NewFileUtilsService(appLogger)
+	fileUtilsService := file.NewFileUtilsService(appLogger, bootstrap.IsDevBuild)
 	// settingsRepo is nil until Init() opens the DB and wires SqliteSettingsRepository.
 	settingsService := settings.NewSettingsService(appLogger, nil, fileUtilsService)
 	settingsHandler := settings.NewSettingsHandler(settingsService, providerPresets())
@@ -161,6 +162,7 @@ func (a *ApplicationContextHolder) Init(ctx context.Context) error {
 	stackRepo := stacks.NewSqliteStackRepository(database)
 	a.StackHandler.SetRepository(stackRepo)
 	a.ActionHandler.SetStackLookup(a.StackHandler)
+	a.StackHandler.SetLastSelectionUpdater(a.SettingsService)
 
 	// Read logging config via service (now SQLite-backed).
 	logCfg, err := a.SettingsService.GetLoggingConfig()

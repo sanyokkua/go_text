@@ -376,6 +376,183 @@ func TestSqliteSettingsRepository_UIPreferencesConfig_FullRoundTrip(t *testing.T
 	}
 }
 
+// ── AppBar visibility ───────────────────────────────────────────────────────
+
+func TestSqliteSettingsRepository_GetAppBarVisibilityConfig_DefaultsAllTrue(t *testing.T) {
+	t.Parallel()
+	// Arrange: a freshly-seeded DB has never written any ui.appbar.* key.
+	repo := newRepo(t)
+
+	// Act
+	got, err := repo.GetAppBarVisibilityConfig()
+
+	// Assert
+	if err != nil {
+		t.Fatalf("GetAppBarVisibilityConfig: %v", err)
+	}
+	want := &settings.AppBarVisibilityConfig{
+		ProviderModelSelectors: true,
+		LanguagePicker:         true,
+		OutputFormatToggle:     true,
+		OutputModeToggle:       true,
+		LayoutToggle:           true,
+		CommandPaletteButton:   true,
+		HistoryButton:          true,
+		InfoButton:             true,
+	}
+	if *got != *want {
+		t.Errorf("default AppBarVisibilityConfig: want %+v, got %+v", want, got)
+	}
+}
+
+func TestSqliteSettingsRepository_AppBarVisibilityConfig_RoundTrip(t *testing.T) {
+	tests := []struct {
+		name  string
+		input settings.AppBarVisibilityConfig
+	}{
+		{
+			name: "single_field_false",
+			input: settings.AppBarVisibilityConfig{
+				ProviderModelSelectors: true,
+				LanguagePicker:         true,
+				OutputFormatToggle:     true,
+				OutputModeToggle:       true,
+				LayoutToggle:           true,
+				CommandPaletteButton:   true,
+				HistoryButton:          true,
+				InfoButton:             false,
+			},
+		},
+		{
+			name:  "all_false",
+			input: settings.AppBarVisibilityConfig{},
+		},
+		{
+			name: "mixed",
+			input: settings.AppBarVisibilityConfig{
+				ProviderModelSelectors: false,
+				LanguagePicker:         true,
+				OutputFormatToggle:     false,
+				OutputModeToggle:       true,
+				LayoutToggle:           false,
+				CommandPaletteButton:   true,
+				HistoryButton:          false,
+				InfoButton:             true,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			// Arrange: each case gets its own freshly-seeded DB.
+			repo := newRepo(t)
+
+			// Act
+			if err := repo.UpdateAppBarVisibilityConfig(&tt.input); err != nil {
+				t.Fatalf("UpdateAppBarVisibilityConfig: %v", err)
+			}
+			got, err := repo.GetAppBarVisibilityConfig()
+
+			// Assert
+			if err != nil {
+				t.Fatalf("GetAppBarVisibilityConfig: %v", err)
+			}
+			if *got != tt.input {
+				t.Errorf("round-trip mismatch: want %+v, got %+v", tt.input, got)
+			}
+		})
+	}
+}
+
+// ── Last selection ───────────────────────────────────────────────────────────
+
+func TestSqliteSettingsRepository_GetLastSelectionConfig_DefaultsToNone(t *testing.T) {
+	t.Parallel()
+	// Arrange: a freshly-seeded DB has never written any ui.lastSelection.* key.
+	repo := newRepo(t)
+
+	// Act
+	got, err := repo.GetLastSelectionConfig()
+
+	// Assert
+	if err != nil {
+		t.Fatalf("GetLastSelectionConfig: %v", err)
+	}
+	want := &settings.LastSelectionConfig{Kind: "none", ActionID: "", StackID: ""}
+	if *got != *want {
+		t.Errorf("default LastSelectionConfig: want %+v, got %+v", want, got)
+	}
+}
+
+func TestSqliteSettingsRepository_LastSelectionConfig_RoundTrip(t *testing.T) {
+	tests := []struct {
+		name  string
+		input settings.LastSelectionConfig
+	}{
+		{
+			name:  "stack_selection",
+			input: settings.LastSelectionConfig{Kind: "stack", StackID: "stack-42"},
+		},
+		{
+			name:  "action_selection",
+			input: settings.LastSelectionConfig{Kind: "action", ActionID: "action-7"},
+		},
+		{
+			name:  "none_selection",
+			input: settings.LastSelectionConfig{Kind: "none"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			// Arrange: each case gets its own freshly-seeded DB.
+			repo := newRepo(t)
+
+			// Act
+			if err := repo.UpdateLastSelectionConfig(&tt.input); err != nil {
+				t.Fatalf("UpdateLastSelectionConfig: %v", err)
+			}
+			got, err := repo.GetLastSelectionConfig()
+
+			// Assert
+			if err != nil {
+				t.Fatalf("GetLastSelectionConfig: %v", err)
+			}
+			if *got != tt.input {
+				t.Errorf("round-trip mismatch: want %+v, got %+v", tt.input, got)
+			}
+		})
+	}
+}
+
+func TestSqliteSettingsRepository_LastSelectionConfig_UpdateOverwritesPreviousValue(t *testing.T) {
+	t.Parallel()
+	// Arrange: write an initial stack selection, proving the update path is an upsert.
+	repo := newRepo(t)
+	first := &settings.LastSelectionConfig{Kind: "stack", StackID: "stack-1"}
+	second := &settings.LastSelectionConfig{Kind: "action", ActionID: "action-2"}
+
+	// Act
+	if err := repo.UpdateLastSelectionConfig(first); err != nil {
+		t.Fatalf("UpdateLastSelectionConfig (first): %v", err)
+	}
+	if err := repo.UpdateLastSelectionConfig(second); err != nil {
+		t.Fatalf("UpdateLastSelectionConfig (second): %v", err)
+	}
+	got, err := repo.GetLastSelectionConfig()
+
+	// Assert: the second write overwrote the first (upsert, not insert-only);
+	// StackID from the first write must not leak into the second's read.
+	if err != nil {
+		t.Fatalf("GetLastSelectionConfig: %v", err)
+	}
+	if *got != *second {
+		t.Errorf("expected second write to fully overwrite first: want %+v, got %+v", second, got)
+	}
+}
+
 // ── Window size ────────────────────────────────────────────────────────────
 
 func TestSqliteSettingsRepository_GetWindowSizeConfig_Default(t *testing.T) {

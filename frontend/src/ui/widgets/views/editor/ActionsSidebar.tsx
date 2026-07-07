@@ -12,6 +12,7 @@ import {
     useAppDispatch,
     useAppSelector,
 } from '../../../../logic/store';
+import { persistLastSelection } from '../../../../logic/store/settings/thunks';
 import { addStep } from '../../../../logic/store/stacks/builder/slice';
 import { armAction, armStack, enterBuildMode, setCurrentView } from '../../../../logic/store/ui';
 import { StackGlyph } from '../../../components/StackGlyph';
@@ -96,6 +97,7 @@ const ActionsSidebar: React.FC = () => {
                                     // Stacks are not addable as build-mode steps — they are only armable in normal mode.
                                     if (buildMode || inferenceRunning || isArmed) return;
                                     dispatch(armStack(stack.id));
+                                    void dispatch(persistLastSelection());
                                     logger.logInfo(`Armed stack: ${stack.id}`);
                                 }}
                                 disabled={inferenceRunning && !isArmed}
@@ -157,9 +159,11 @@ const ActionsSidebar: React.FC = () => {
                                                 logger.logInfo(`Build: added step ${action.id}`);
                                             } else if (isSelected) {
                                                 dispatch(armAction(null));
+                                                void dispatch(persistLastSelection());
                                                 logger.logInfo(`Deselected action: ${action.id}`);
                                             } else {
                                                 dispatch(armAction(action.id));
+                                                void dispatch(persistLastSelection());
                                                 logger.logInfo(`Armed action: ${action.id}`);
                                             }
                                         }}

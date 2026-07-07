@@ -1000,3 +1000,330 @@ func TestSettingsService_DeleteProviderConfig_LastProvider_ClearsModel(t *testin
 		t.Errorf("expected active model cleared after deleting last provider, got %q", got.Name)
 	}
 }
+
+// ── AppBarVisibilityConfig passthrough ──────────────────────────────────────
+
+// Regression: GetAppBarVisibilityConfig/UpdateAppBarVisibilityConfig must be
+// plain passthroughs to the repository (no service-level validation), and a
+// round trip through the real SQLite repo must preserve every field.
+func TestSettingsService_AppBarVisibilityConfig_PassthroughRoundTrip(t *testing.T) {
+	t.Parallel()
+	repo := newRepo(t)
+	svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
+
+	cfg := &settings.AppBarVisibilityConfig{
+		ProviderModelSelectors: false,
+		LanguagePicker:         true,
+		OutputFormatToggle:     false,
+		OutputModeToggle:       true,
+		LayoutToggle:           false,
+		CommandPaletteButton:   true,
+		HistoryButton:          false,
+		InfoButton:             true,
+	}
+
+	updated, err := svc.UpdateAppBarVisibilityConfig(cfg)
+	if err != nil {
+		t.Fatalf("UpdateAppBarVisibilityConfig: %v", err)
+	}
+	if *updated != *cfg {
+		t.Errorf("UpdateAppBarVisibilityConfig return: want %+v, got %+v", cfg, updated)
+	}
+
+	got, err := svc.GetAppBarVisibilityConfig()
+	if err != nil {
+		t.Fatalf("GetAppBarVisibilityConfig: %v", err)
+	}
+	if *got != *cfg {
+		t.Errorf("GetAppBarVisibilityConfig after update: want %+v, got %+v", cfg, got)
+	}
+}
+
+// ── LastSelectionConfig passthrough + validation ────────────────────────────
+
+// Regression: GetLastSelectionConfig/UpdateLastSelectionConfig must round trip
+// through the real SQLite repo for every valid Kind value.
+func TestSettingsService_LastSelectionConfig_PassthroughRoundTrip(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  *settings.LastSelectionConfig
+	}{
+		{name: "stack", cfg: &settings.LastSelectionConfig{Kind: "stack", StackID: "stack-1"}},
+		{name: "action", cfg: &settings.LastSelectionConfig{Kind: "action", ActionID: "action-1"}},
+		{name: "none", cfg: &settings.LastSelectionConfig{Kind: "none"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			repo := newRepo(t)
+			svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
+
+			updated, err := svc.UpdateLastSelectionConfig(tt.cfg)
+			if err != nil {
+				t.Fatalf("UpdateLastSelectionConfig: %v", err)
+			}
+			if *updated != *tt.cfg {
+				t.Errorf("UpdateLastSelectionConfig return: want %+v, got %+v", tt.cfg, updated)
+			}
+
+			got, err := svc.GetLastSelectionConfig()
+			if err != nil {
+				t.Fatalf("GetLastSelectionConfig: %v", err)
+			}
+			if *got != *tt.cfg {
+				t.Errorf("GetLastSelectionConfig after update: want %+v, got %+v", tt.cfg, got)
+			}
+		})
+	}
+}
+
+// Regression: UpdateLastSelectionConfig must reject any Kind outside
+// action|stack|none with apperr.CodeValidation, mirroring the enum validation
+// style used by UpdateUIPreferencesConfig's theme/layout/viewMode checks.
+func TestSettingsService_UpdateLastSelectionConfig_ValidatesKind(t *testing.T) {
+	tests := []struct {
+		name    string
+		kind    string
+		wantErr bool
+	}{
+		{name: "valid_action", kind: "action", wantErr: false},
+		{name: "valid_stack", kind: "stack", wantErr: false},
+		{name: "valid_none", kind: "none", wantErr: false},
+		{name: "invalid_empty", kind: "", wantErr: true},
+		{name: "invalid_unknown", kind: "bogus", wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			repo := newRepo(t)
+			svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
+
+			_, err := svc.UpdateLastSelectionConfig(&settings.LastSelectionConfig{Kind: tt.kind})
+
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("UpdateLastSelectionConfig(kind=%q) error = %v, wantErr %v", tt.kind, err, tt.wantErr)
+			}
+			if !tt.wantErr {
+				return
+			}
+			var ae *apperr.AppError
+			if !errors.As(err, &ae) {
+				t.Fatalf("want *apperr.AppError, got %T: %v", err, err)
+			}
+			if ae.Code != apperr.CodeValidation {
+				t.Errorf("expected CodeValidation, got %q", ae.Code)
+			}
+		})
+	}
+}
+
+// ── ClearLastSelectionIfStack ────────────────────────────────────────────────
+
+// Regression: deleting the stack currently referenced by the last-selection
+// pointer must reset it to {Kind: "none"}.
+func TestSettingsService_ClearLastSelectionIfStack_ClearsMatchingStack(t *testing.T) {
+	t.Parallel()
+	repo := newRepo(t)
+	svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
+
+	if err := repo.UpdateLastSelectionConfig(&settings.LastSelectionConfig{Kind: "stack", StackID: "stack-1"}); err != nil {
+		t.Fatalf("seed UpdateLastSelectionConfig: %v", err)
+	}
+
+	if err := svc.ClearLastSelectionIfStack("stack-1"); err != nil {
+		t.Fatalf("ClearLastSelectionIfStack: %v", err)
+	}
+
+	got, err := repo.GetLastSelectionConfig()
+	if err != nil {
+		t.Fatalf("GetLastSelectionConfig: %v", err)
+	}
+	want := &settings.LastSelectionConfig{Kind: "none"}
+	if *got != *want {
+		t.Errorf("expected last selection cleared to %+v, got %+v", want, got)
+	}
+}
+
+// Regression: a last selection pointing at a different stack must be left
+// untouched (no-op, no error).
+func TestSettingsService_ClearLastSelectionIfStack_LeavesDifferentStackUntouched(t *testing.T) {
+	t.Parallel()
+	repo := newRepo(t)
+	svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
+
+	seeded := &settings.LastSelectionConfig{Kind: "stack", StackID: "stack-1"}
+	if err := repo.UpdateLastSelectionConfig(seeded); err != nil {
+		t.Fatalf("seed UpdateLastSelectionConfig: %v", err)
+	}
+
+	if err := svc.ClearLastSelectionIfStack("stack-2"); err != nil {
+		t.Fatalf("ClearLastSelectionIfStack: %v", err)
+	}
+
+	got, err := repo.GetLastSelectionConfig()
+	if err != nil {
+		t.Fatalf("GetLastSelectionConfig: %v", err)
+	}
+	if *got != *seeded {
+		t.Errorf("expected last selection untouched at %+v, got %+v", seeded, got)
+	}
+}
+
+// Regression: a last selection of Kind "action" must be left untouched
+// regardless of the stackID argument passed in.
+func TestSettingsService_ClearLastSelectionIfStack_LeavesActionSelectionUntouched(t *testing.T) {
+	t.Parallel()
+	repo := newRepo(t)
+	svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
+
+	seeded := &settings.LastSelectionConfig{Kind: "action", ActionID: "action-1"}
+	if err := repo.UpdateLastSelectionConfig(seeded); err != nil {
+		t.Fatalf("seed UpdateLastSelectionConfig: %v", err)
+	}
+
+	// Passing the action's ActionID as the stackID argument must not match
+	// (Kind must be "stack" for a clear to happen).
+	if err := svc.ClearLastSelectionIfStack("action-1"); err != nil {
+		t.Fatalf("ClearLastSelectionIfStack: %v", err)
+	}
+
+	got, err := repo.GetLastSelectionConfig()
+	if err != nil {
+		t.Fatalf("GetLastSelectionConfig: %v", err)
+	}
+	if *got != *seeded {
+		t.Errorf("expected action selection untouched at %+v, got %+v", seeded, got)
+	}
+}
+
+// errLastSelectionRepo is a minimal settings.SettingsRepositoryAPI fake used
+// only to inject a repository-level failure into ClearLastSelectionIfStack.
+// Every method other than the two exercised by the test panics, following
+// this file's convention for narrowly-scoped fakes.
+type errLastSelectionRepo struct {
+	getErr    error
+	updateErr error
+}
+
+func (r *errLastSelectionRepo) ListProviders() ([]settings.ProviderConfig, error) {
+	panic("not implemented in test")
+}
+func (r *errLastSelectionRepo) GetProvider(_ string) (*settings.ProviderConfig, error) {
+	panic("not implemented in test")
+}
+func (r *errLastSelectionRepo) GetCurrentProvider() (*settings.ProviderConfig, error) {
+	panic("not implemented in test")
+}
+func (r *errLastSelectionRepo) CreateProvider(_ *settings.ProviderConfig) (*settings.ProviderConfig, error) {
+	panic("not implemented in test")
+}
+func (r *errLastSelectionRepo) UpdateProvider(_ *settings.ProviderConfig) (*settings.ProviderConfig, error) {
+	panic("not implemented in test")
+}
+func (r *errLastSelectionRepo) DeleteProvider(_ string) error { panic("not implemented in test") }
+func (r *errLastSelectionRepo) SetCurrentProvider(_ string) error {
+	panic("not implemented in test")
+}
+func (r *errLastSelectionRepo) GetInferenceConfig() (*settings.InferenceBaseConfig, error) {
+	panic("not implemented in test")
+}
+func (r *errLastSelectionRepo) UpdateInferenceConfig(_ *settings.InferenceBaseConfig) error {
+	panic("not implemented in test")
+}
+func (r *errLastSelectionRepo) GetModelConfig() (*settings.ModelConfig, error) {
+	panic("not implemented in test")
+}
+func (r *errLastSelectionRepo) UpdateModelConfig(_ *settings.ModelConfig) error {
+	panic("not implemented in test")
+}
+func (r *errLastSelectionRepo) GetAppBehaviorConfig() (*settings.AppBehaviorConfig, error) {
+	panic("not implemented in test")
+}
+func (r *errLastSelectionRepo) UpdateAppBehaviorConfig(_ *settings.AppBehaviorConfig) error {
+	panic("not implemented in test")
+}
+func (r *errLastSelectionRepo) GetUIPreferencesConfig() (*settings.UIPreferencesConfig, error) {
+	panic("not implemented in test")
+}
+func (r *errLastSelectionRepo) UpdateUIPreferencesConfig(_ *settings.UIPreferencesConfig) error {
+	panic("not implemented in test")
+}
+func (r *errLastSelectionRepo) GetAppBarVisibilityConfig() (*settings.AppBarVisibilityConfig, error) {
+	panic("not implemented in test")
+}
+func (r *errLastSelectionRepo) UpdateAppBarVisibilityConfig(_ *settings.AppBarVisibilityConfig) error {
+	panic("not implemented in test")
+}
+func (r *errLastSelectionRepo) GetLastSelectionConfig() (*settings.LastSelectionConfig, error) {
+	if r.getErr != nil {
+		return nil, r.getErr
+	}
+	return &settings.LastSelectionConfig{Kind: "stack", StackID: "stack-1"}, nil
+}
+func (r *errLastSelectionRepo) UpdateLastSelectionConfig(_ *settings.LastSelectionConfig) error {
+	return r.updateErr
+}
+func (r *errLastSelectionRepo) GetLoggingConfig() (*settings.LoggingConfig, error) {
+	panic("not implemented in test")
+}
+func (r *errLastSelectionRepo) UpdateLoggingConfig(_ *settings.LoggingConfig) error {
+	panic("not implemented in test")
+}
+func (r *errLastSelectionRepo) GetWindowSizeConfig() (*settings.WindowSizeConfig, error) {
+	panic("not implemented in test")
+}
+func (r *errLastSelectionRepo) UpdateWindowSizeConfig(_ *settings.WindowSizeConfig) error {
+	panic("not implemented in test")
+}
+func (r *errLastSelectionRepo) GetLanguageConfig() (*settings.LanguageConfig, error) {
+	panic("not implemented in test")
+}
+func (r *errLastSelectionRepo) AddLanguage(_ string) error    { panic("not implemented in test") }
+func (r *errLastSelectionRepo) RemoveLanguage(_ string) error { panic("not implemented in test") }
+func (r *errLastSelectionRepo) SetDefaultInputLanguage(_ string) error {
+	panic("not implemented in test")
+}
+func (r *errLastSelectionRepo) SetDefaultOutputLanguage(_ string) error {
+	panic("not implemented in test")
+}
+func (r *errLastSelectionRepo) ResetToDefaults() error { panic("not implemented in test") }
+
+// Regression: a repository read failure inside ClearLastSelectionIfStack must
+// be propagated to the caller, not swallowed.
+func TestSettingsService_ClearLastSelectionIfStack_PropagatesReadError(t *testing.T) {
+	t.Parallel()
+	wantErr := errors.New("boom: read failure")
+	repo := &errLastSelectionRepo{getErr: wantErr}
+	svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
+
+	err := svc.ClearLastSelectionIfStack("stack-1")
+
+	if err == nil {
+		t.Fatal("ClearLastSelectionIfStack() = nil, want propagated error")
+	}
+	if !errors.Is(err, wantErr) {
+		t.Errorf("expected wrapped %v, got %v", wantErr, err)
+	}
+}
+
+// Regression: a repository write failure inside ClearLastSelectionIfStack
+// must be propagated to the caller, not swallowed.
+func TestSettingsService_ClearLastSelectionIfStack_PropagatesWriteError(t *testing.T) {
+	t.Parallel()
+	wantErr := errors.New("boom: write failure")
+	// getErr is nil so GetLastSelectionConfig returns the fake's stack-1
+	// default, matching the stackID argument below so the update path runs.
+	repo := &errLastSelectionRepo{updateErr: wantErr}
+	svc := settings.NewSettingsService(newTestLogger(t), repo, stubFileUtils{})
+
+	err := svc.ClearLastSelectionIfStack("stack-1")
+
+	if err == nil {
+		t.Fatal("ClearLastSelectionIfStack() = nil, want propagated error")
+	}
+	if !errors.Is(err, wantErr) {
+		t.Errorf("expected wrapped %v, got %v", wantErr, err)
+	}
+}

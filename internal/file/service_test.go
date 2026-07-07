@@ -63,25 +63,32 @@ func setupTestEnv(t *testing.T) (string, func()) {
 
 // getAppConfigDir gets the expected app config directory based on OS
 func getAppConfigDir(tmpDir string) string {
+	return getAppConfigDirForName(tmpDir, AppName)
+}
+
+// getAppConfigDirForName gets the expected app config directory based on OS
+// for an arbitrary app directory name (used to assert dev-mode isolation
+// against AppNameDev instead of the production AppName).
+func getAppConfigDirForName(tmpDir, appName string) string {
 	if runtime.GOOS == "windows" {
-		return filepath.Join(tmpDir, "AppData", "Roaming", AppName)
+		return filepath.Join(tmpDir, "AppData", "Roaming", appName)
 	} else if runtime.GOOS == "darwin" {
-		return filepath.Join(tmpDir, "Library", "Application Support", AppName)
+		return filepath.Join(tmpDir, "Library", "Application Support", appName)
 	} else {
-		return filepath.Join(tmpDir, ".config", AppName)
+		return filepath.Join(tmpDir, ".config", appName)
 	}
 }
 
 func TestNewFileUtilsService(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		logger := newTestLogger(t)
-		service := NewFileUtilsService(logger)
+		service := NewFileUtilsService(logger, false)
 		assert.NotNil(t, service)
 	})
 
 	t.Run("panic_when_logger_is_nil", func(t *testing.T) {
 		assert.PanicsWithValue(t, "logger cannot be nil", func() {
-			NewFileUtilsService(nil)
+			NewFileUtilsService(nil, false)
 		})
 	})
 }
@@ -194,7 +201,7 @@ func TestEnsureAppSettingsFolderExists(t *testing.T) {
 
 			// Create service
 			logger := newTestLogger(t)
-			service := NewFileUtilsService(logger)
+			service := NewFileUtilsService(logger, false)
 
 			// Call the private method using reflection or test the public methods that use it
 			// Since ensureAppSettingsFolderExists is private, we'll test it through GetAppSettingsFolderPath
@@ -296,7 +303,7 @@ func TestGetAppSettingsFolderPath(t *testing.T) {
 
 			// Create service
 			logger := newTestLogger(t)
-			service := NewFileUtilsService(logger)
+			service := NewFileUtilsService(logger, false)
 
 			// Call the method
 			result, err := service.GetAppSettingsFolderPath()
@@ -382,7 +389,7 @@ func TestFileUtilsService_ResolveAppLogsFolderPath(t *testing.T) {
 			}
 
 			logger := newTestLogger(t)
-			service := NewFileUtilsService(logger)
+			service := NewFileUtilsService(logger, false)
 
 			result, err := service.ResolveAppLogsFolderPath(customDir)
 
@@ -439,7 +446,7 @@ func TestFileUtilsService_EnsureAppLogsFolderExists(t *testing.T) {
 
 				// Call again; must also succeed
 				logger := newTestLogger(t)
-				service := NewFileUtilsService(logger)
+				service := NewFileUtilsService(logger, false)
 				result2, err2 := service.EnsureAppLogsFolderExists(filepath.Join(tmpDir, "logs2"))
 				assert.NoError(t, err2)
 				assert.Equal(t, result, result2)
@@ -489,7 +496,7 @@ func TestFileUtilsService_EnsureAppLogsFolderExists(t *testing.T) {
 			}
 
 			logger := newTestLogger(t)
-			service := NewFileUtilsService(logger)
+			service := NewFileUtilsService(logger, false)
 
 			result, err := service.EnsureAppLogsFolderExists(customDir)
 
@@ -506,7 +513,7 @@ func TestFileUtilsService_GetAppDatabaseFilePath(t *testing.T) {
 		defer cleanup()
 
 		_ = tmpDir
-		svc := NewFileUtilsService(newTestLogger(t))
+		svc := NewFileUtilsService(newTestLogger(t), false)
 
 		path, err := svc.GetAppDatabaseFilePath()
 
@@ -514,4 +521,76 @@ func TestFileUtilsService_GetAppDatabaseFilePath(t *testing.T) {
 		assert.True(t, strings.HasSuffix(path, "gotext.db"), "expected path to end with gotext.db, got: %s", path)
 		assert.Contains(t, path, "GoTextApp", "expected path to contain GoTextApp, got: %s", path)
 	})
+}
+
+// TestFileUtilsService_DevIsolation verifies that isDev=true switches the
+// settings/database/logs folder resolution to the isolated AppNameDev
+// directory instead of the production AppName directory, on both the
+// primary os.UserConfigDir() path and the os.UserHomeDir() fallback path.
+func TestFileUtilsService_DevIsolation(t *testing.T) {
+	tests := []struct {
+		name        string
+		isDev       bool
+		wantDirName string
+	}{
+		{name: "prod_mode", isDev: false, wantDirName: AppName},
+		{name: "dev_mode", isDev: true, wantDirName: AppNameDev},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name+"_uses_os_config_dir", func(t *testing.T) {
+			tmpDir, cleanup := setupTestEnv(t)
+			defer cleanup()
+
+			logger := newTestLogger(t)
+			service := NewFileUtilsService(logger, tt.isDev)
+
+			wantConfigDir := getAppConfigDirForName(tmpDir, tt.wantDirName)
+
+			settingsPath, err := service.GetAppSettingsFolderPath()
+			require.NoError(t, err)
+			assert.Equal(t, wantConfigDir, settingsPath)
+
+			dbPath, err := service.GetAppDatabaseFilePath()
+			require.NoError(t, err)
+			assert.Equal(t, filepath.Join(wantConfigDir, DatabaseFileName), dbPath)
+
+			logsPath, err := service.ResolveAppLogsFolderPath("")
+			require.NoError(t, err)
+			assert.Equal(t, filepath.Join(wantConfigDir, LogsDirName), logsPath)
+		})
+
+		t.Run(tt.name+"_falls_back_to_home_dir", func(t *testing.T) {
+			tmpDir, cleanup := setupTestEnv(t)
+			defer cleanup()
+
+			// Clear XDG_CONFIG_HOME to force the same fallback path exercised by
+			// TestGetAppSettingsFolderPath's "fallback_to_home_dir" case.
+			os.Unsetenv("XDG_CONFIG_HOME")
+			if runtime.GOOS == "windows" {
+				os.Unsetenv("APPDATA")
+			}
+
+			logger := newTestLogger(t)
+			service := NewFileUtilsService(logger, tt.isDev)
+
+			expectedPath := filepath.Join(tmpDir, tt.wantDirName)
+			switch runtime.GOOS {
+			case "darwin":
+				expectedPath = filepath.Join(tmpDir, "Library", "Application Support", tt.wantDirName)
+			case "windows":
+				// APPDATA unset above triggers the real app-level fallback.
+			default:
+				expectedPath = getAppConfigDirForName(tmpDir, tt.wantDirName)
+			}
+
+			settingsPath, err := service.GetAppSettingsFolderPath()
+			require.NoError(t, err)
+			assert.Equal(t, expectedPath, settingsPath)
+
+			logsPath, err := service.ResolveAppLogsFolderPath("")
+			require.NoError(t, err)
+			assert.Equal(t, filepath.Join(expectedPath, LogsDirName), logsPath)
+		})
+	}
 }

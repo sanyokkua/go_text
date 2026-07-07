@@ -1,5 +1,6 @@
 import { createSelector } from '@reduxjs/toolkit';
 
+import { AppBarVisibilityConfig } from '../../adapter/models';
 import { RootState } from '../index';
 import { CurrentView, ThemeEffective, ThemeMode } from './types';
 
@@ -27,3 +28,4 @@ export const selectArmedTarget = createSelector([selectArmedStackId, selectArmed
 export const selectBuildMode = (state: RootState): boolean => state.ui.buildMode;
 export const selectEditingStackId = (state: RootState): string | null => state.ui.editingStackId;
 export const selectActiveSettingsTab = (state: RootState): number => state.ui.activeSettingsTab;
+export const selectAppBarVisibility = (state: RootState): AppBarVisibilityConfig => state.ui.appBarVisibility;

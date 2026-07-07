@@ -21,6 +21,10 @@ type SettingsRepositoryAPI interface {
 	UpdateAppBehaviorConfig(cfg *AppBehaviorConfig) error
 	GetUIPreferencesConfig() (*UIPreferencesConfig, error)
 	UpdateUIPreferencesConfig(cfg *UIPreferencesConfig) error
+	GetAppBarVisibilityConfig() (*AppBarVisibilityConfig, error)
+	UpdateAppBarVisibilityConfig(cfg *AppBarVisibilityConfig) error
+	GetLastSelectionConfig() (*LastSelectionConfig, error)
+	UpdateLastSelectionConfig(cfg *LastSelectionConfig) error
 	GetLoggingConfig() (*LoggingConfig, error)
 	UpdateLoggingConfig(cfg *LoggingConfig) error
 	GetWindowSizeConfig() (*WindowSizeConfig, error)

@@ -93,6 +93,11 @@ type SettingsServiceAPI interface {
 	UpdateAppBehaviorConfig(cfg *AppBehaviorConfig) (*AppBehaviorConfig, error)
 	GetUIPreferencesConfig() (*UIPreferencesConfig, error)
 	UpdateUIPreferencesConfig(cfg *UIPreferencesConfig) (*UIPreferencesConfig, error)
+	GetAppBarVisibilityConfig() (*AppBarVisibilityConfig, error)
+	UpdateAppBarVisibilityConfig(cfg *AppBarVisibilityConfig) (*AppBarVisibilityConfig, error)
+	GetLastSelectionConfig() (*LastSelectionConfig, error)
+	UpdateLastSelectionConfig(cfg *LastSelectionConfig) (*LastSelectionConfig, error)
+	ClearLastSelectionIfStack(stackID string) error
 	GetLoggingConfig() (*LoggingConfig, error)
 	UpdateLoggingConfig(cfg *LoggingConfig) (*LoggingConfig, error)
 	GetWindowSizeConfig() (*WindowSizeConfig, error)
@@ -532,6 +537,53 @@ func (s *SettingsService) UpdateUIPreferencesConfig(cfg *UIPreferencesConfig) (*
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	return cfg, nil
+}
+
+func (s *SettingsService) GetAppBarVisibilityConfig() (*AppBarVisibilityConfig, error) {
+	return s.settingsRepo.GetAppBarVisibilityConfig()
+}
+
+func (s *SettingsService) UpdateAppBarVisibilityConfig(cfg *AppBarVisibilityConfig) (*AppBarVisibilityConfig, error) {
+	const op = "SettingsService.UpdateAppBarVisibilityConfig"
+	if err := s.settingsRepo.UpdateAppBarVisibilityConfig(cfg); err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return cfg, nil
+}
+
+func (s *SettingsService) GetLastSelectionConfig() (*LastSelectionConfig, error) {
+	return s.settingsRepo.GetLastSelectionConfig()
+}
+
+func (s *SettingsService) UpdateLastSelectionConfig(cfg *LastSelectionConfig) (*LastSelectionConfig, error) {
+	const op = "SettingsService.UpdateLastSelectionConfig"
+	switch cfg.Kind {
+	case "action", "stack", "none":
+		// valid
+	default:
+		return nil, apperr.Validation("kind", "one of action|stack|none", cfg.Kind)
+	}
+	if err := s.settingsRepo.UpdateLastSelectionConfig(cfg); err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return cfg, nil
+}
+
+// ClearLastSelectionIfStack resets the persisted last-selection to "none" iff it currently
+// points at stackID. No-op (not an error) if the last selection is something else.
+func (s *SettingsService) ClearLastSelectionIfStack(stackID string) error {
+	const op = "SettingsService.ClearLastSelectionIfStack"
+	cfg, err := s.settingsRepo.GetLastSelectionConfig()
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	if cfg.Kind != "stack" || cfg.StackID != stackID {
+		return nil
+	}
+	if err := s.settingsRepo.UpdateLastSelectionConfig(&LastSelectionConfig{Kind: "none"}); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	return nil
 }
 
 func (s *SettingsService) GetLoggingConfig() (*LoggingConfig, error) {

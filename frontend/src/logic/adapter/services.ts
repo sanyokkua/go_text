@@ -24,11 +24,13 @@ import {
     CreateProviderConfig,
     DeleteProviderConfig,
     GetAllProviderConfigs,
+    GetAppBarVisibilityConfig,
     GetAppBehaviorConfig,
     GetAppSettingsMetadata,
     GetCurrentProviderConfig,
     GetInferenceBaseConfig,
     GetLanguageConfig,
+    GetLastSelectionConfig,
     GetLoggingConfig,
     GetModelConfig,
     GetSettings,
@@ -39,8 +41,10 @@ import {
     SetAsCurrentProviderConfig,
     SetDefaultInputLanguage,
     SetDefaultOutputLanguage,
+    UpdateAppBarVisibilityConfig,
     UpdateAppBehaviorConfig,
     UpdateInferenceBaseConfig,
+    UpdateLastSelectionConfig,
     UpdateLoggingConfig,
     UpdateModelConfig,
     UpdateProviderConfig,
@@ -58,8 +62,17 @@ import {
 import { LogDebug, LogError, LogFatal, LogInfo, LogPrint, LogTrace, LogWarning } from '../../../wailsjs/runtime';
 import { guardArity } from './bridgeGuard';
 import { IActionHandler, IAppHandler, IClipboardService, IHistoryHandler, ILoggerService, ISettingsHandler, IStackHandler } from './interfaces';
-import { toWireBehavior, toWireLogging, toWireProvider, toWireUIPreferences } from './mappers';
-import { AppBehaviorConfig, InferenceBaseConfig, LoggingConfig, ModelConfig, ProviderConfig, UIPreferencesConfig } from './models';
+import { toWireAppBarVisibility, toWireBehavior, toWireLastSelection, toWireLogging, toWireProvider, toWireUIPreferences } from './mappers';
+import {
+    AppBarVisibilityConfig,
+    AppBehaviorConfig,
+    InferenceBaseConfig,
+    LastSelectionConfig,
+    LoggingConfig,
+    ModelConfig,
+    ProviderConfig,
+    UIPreferencesConfig,
+} from './models';
 
 // Guarded wrappers: reject on argument-count mismatch instead of risking a
 // hung Promise (see bridgeGuard.ts for why this is necessary with Wails v2).
@@ -110,6 +123,10 @@ const UpdateLoggingConfigSafe = guardArity('SettingsHandler.UpdateLoggingConfig'
 const UpdateModelConfigSafe = guardArity('SettingsHandler.UpdateModelConfig', UpdateModelConfig);
 const UpdateProviderConfigSafe = guardArity('SettingsHandler.UpdateProviderConfig', UpdateProviderConfig);
 const UpdateUIPreferencesConfigSafe = guardArity('SettingsHandler.UpdateUIPreferencesConfig', UpdateUIPreferencesConfig);
+const GetAppBarVisibilityConfigSafe = guardArity('SettingsHandler.GetAppBarVisibilityConfig', GetAppBarVisibilityConfig);
+const UpdateAppBarVisibilityConfigSafe = guardArity('SettingsHandler.UpdateAppBarVisibilityConfig', UpdateAppBarVisibilityConfig);
+const GetLastSelectionConfigSafe = guardArity('SettingsHandler.GetLastSelectionConfig', GetLastSelectionConfig);
+const UpdateLastSelectionConfigSafe = guardArity('SettingsHandler.UpdateLastSelectionConfig', UpdateLastSelectionConfig);
 
 const CreateStackSafe = guardArity('StackHandler.CreateStack', CreateStack);
 const DeleteStackSafe = guardArity('StackHandler.DeleteStack', DeleteStack);
@@ -370,6 +387,26 @@ export class SettingsHandler implements ISettingsHandler {
     async updateLoggingConfig(config: LoggingConfig): Promise<apperr.LoggingResult> {
         this.logger.logInfo('updateLoggingConfig');
         return UpdateLoggingConfigSafe(toWireLogging(config));
+    }
+
+    async getAppBarVisibilityConfig(): Promise<apperr.AppBarVisibilityResult> {
+        this.logger.logInfo('getAppBarVisibilityConfig');
+        return GetAppBarVisibilityConfigSafe();
+    }
+
+    async updateAppBarVisibilityConfig(config: AppBarVisibilityConfig): Promise<apperr.AppBarVisibilityResult> {
+        this.logger.logInfo('updateAppBarVisibilityConfig');
+        return UpdateAppBarVisibilityConfigSafe(toWireAppBarVisibility(config));
+    }
+
+    async getLastSelectionConfig(): Promise<apperr.LastSelectionResult> {
+        this.logger.logInfo('getLastSelectionConfig');
+        return GetLastSelectionConfigSafe();
+    }
+
+    async updateLastSelectionConfig(config: LastSelectionConfig): Promise<apperr.LastSelectionResult> {
+        this.logger.logInfo('updateLastSelectionConfig');
+        return UpdateLastSelectionConfigSafe(toWireLastSelection(config));
     }
 }
 

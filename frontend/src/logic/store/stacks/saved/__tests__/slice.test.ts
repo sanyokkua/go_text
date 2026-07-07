@@ -18,9 +18,12 @@ jest.mock('../../../../adapter', () => ({
     tryUnwrap: jest.fn((res: { data?: unknown; error?: unknown }) => res),
     ActionHandlerAdapter: { processPromptChain: jest.fn(), cancelChain: jest.fn() },
     SettingsHandlerAdapter: {},
-    StackHandlerAdapter: {},
+    StackHandlerAdapter: { deleteStack: jest.fn() },
 }));
 
+import type { RootState } from '../../../index';
+import { armStack } from '../../../ui/slice';
+import { StackHandlerAdapter } from '../../../../adapter';
 import stacksSavedReducer from '../slice';
 import { createStack, deleteStack, duplicateStack, listStacks, updateStack } from '../thunks';
 import type { StacksSavedState } from '../types';
@@ -151,5 +154,38 @@ describe('stacks/saved slice reducer', () => {
         const state = stacksSavedReducer(existingState, action);
 
         expect(state.stacks).toEqual([stackA]);
+    });
+});
+
+describe('deleteStack thunk — clears armedStackId when the deleted stack was armed', () => {
+    const dispatch = jest.fn();
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+        (StackHandlerAdapter.deleteStack as jest.Mock).mockResolvedValue({ data: undefined });
+    });
+
+    it('dispatches armStack(null) when the deleted stack id matches the currently armed stack', async () => {
+        const getState = jest.fn().mockReturnValue({ ui: { armedStackId: 'stack-1' } } as unknown as RootState);
+
+        await deleteStack('stack-1')(dispatch, getState, undefined);
+
+        expect(dispatch).toHaveBeenCalledWith(armStack(null));
+    });
+
+    it('does not dispatch armStack(null) when a different stack is armed', async () => {
+        const getState = jest.fn().mockReturnValue({ ui: { armedStackId: 'stack-2' } } as unknown as RootState);
+
+        await deleteStack('stack-1')(dispatch, getState, undefined);
+
+        expect(dispatch).not.toHaveBeenCalledWith(armStack(null));
+    });
+
+    it('does not dispatch armStack(null) when no stack is armed', async () => {
+        const getState = jest.fn().mockReturnValue({ ui: { armedStackId: null } } as unknown as RootState);
+
+        await deleteStack('stack-1')(dispatch, getState, undefined);
+
+        expect(dispatch).not.toHaveBeenCalledWith(armStack(null));
     });
 });

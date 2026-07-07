@@ -189,6 +189,39 @@ export function UpdateLoggingConfig(_cfg: unknown): Promise<AnyResult> {
     return Promise.resolve(ok(_cfg ?? defaultLoggingConfig));
 }
 
+const defaultAppBarVisibility = {
+    providerModelSelectors: true,
+    languagePicker: true,
+    outputFormatToggle: true,
+    outputModeToggle: true,
+    layoutToggle: true,
+    commandPaletteButton: true,
+    historyButton: true,
+    infoButton: true,
+};
+
+export function GetAppBarVisibilityConfig(): Promise<AnyResult> {
+    const overrides = (window as Window & { __bridgeMockAppBarVisibility?: Partial<typeof defaultAppBarVisibility> }).__bridgeMockAppBarVisibility;
+    const cfg = overrides ? { ...defaultAppBarVisibility, ...overrides } : defaultAppBarVisibility;
+    return Promise.resolve(ok(cfg));
+}
+export function UpdateAppBarVisibilityConfig(cfg: unknown): Promise<AnyResult> {
+    (window as Window & { __lastAppBarVisibilityUpdate?: unknown }).__lastAppBarVisibilityUpdate = cfg;
+    return Promise.resolve(ok({ ...defaultAppBarVisibility, ...(cfg as object) }));
+}
+
+const defaultLastSelection = { kind: 'none', actionId: '', stackId: '' };
+
+export function GetLastSelectionConfig(): Promise<AnyResult> {
+    const overrides = (window as Window & { __bridgeMockLastSelection?: Partial<typeof defaultLastSelection> }).__bridgeMockLastSelection;
+    const cfg = overrides ? { ...defaultLastSelection, ...overrides } : defaultLastSelection;
+    return Promise.resolve(ok(cfg));
+}
+export function UpdateLastSelectionConfig(cfg: unknown): Promise<AnyResult> {
+    (window as Window & { __lastLastSelectionUpdate?: unknown }).__lastLastSelectionUpdate = cfg;
+    return Promise.resolve(ok({ ...defaultLastSelection, ...(cfg as object) }));
+}
+
 const mockProviderPresets = [
     {
         name: 'LM Studio',

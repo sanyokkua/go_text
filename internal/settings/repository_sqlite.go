@@ -408,6 +408,60 @@ func (r *SqliteSettingsRepository) UpdateUIPreferencesConfig(cfg *UIPreferencesC
 	return nil
 }
 
+func (r *SqliteSettingsRepository) GetAppBarVisibilityConfig() (*AppBarVisibilityConfig, error) {
+	return &AppBarVisibilityConfig{
+		ProviderModelSelectors: r.getBool("ui.appbar.providerModelSelectors", true),
+		LanguagePicker:         r.getBool("ui.appbar.languagePicker", true),
+		OutputFormatToggle:     r.getBool("ui.appbar.outputFormatToggle", true),
+		OutputModeToggle:       r.getBool("ui.appbar.outputModeToggle", true),
+		LayoutToggle:           r.getBool("ui.appbar.layoutToggle", true),
+		CommandPaletteButton:   r.getBool("ui.appbar.commandPaletteButton", true),
+		HistoryButton:          r.getBool("ui.appbar.historyButton", true),
+		InfoButton:             r.getBool("ui.appbar.infoButton", true),
+	}, nil
+}
+
+func (r *SqliteSettingsRepository) UpdateAppBarVisibilityConfig(cfg *AppBarVisibilityConfig) error {
+	rows := []store.UpsertSettingParams{
+		{Key: "ui.appbar.providerModelSelectors", Value: strconv.FormatBool(cfg.ProviderModelSelectors), Type: "bool"},
+		{Key: "ui.appbar.languagePicker", Value: strconv.FormatBool(cfg.LanguagePicker), Type: "bool"},
+		{Key: "ui.appbar.outputFormatToggle", Value: strconv.FormatBool(cfg.OutputFormatToggle), Type: "bool"},
+		{Key: "ui.appbar.outputModeToggle", Value: strconv.FormatBool(cfg.OutputModeToggle), Type: "bool"},
+		{Key: "ui.appbar.layoutToggle", Value: strconv.FormatBool(cfg.LayoutToggle), Type: "bool"},
+		{Key: "ui.appbar.commandPaletteButton", Value: strconv.FormatBool(cfg.CommandPaletteButton), Type: "bool"},
+		{Key: "ui.appbar.historyButton", Value: strconv.FormatBool(cfg.HistoryButton), Type: "bool"},
+		{Key: "ui.appbar.infoButton", Value: strconv.FormatBool(cfg.InfoButton), Type: "bool"},
+	}
+	for _, row := range rows {
+		if err := r.database.Queries.UpsertSetting(bg(), row); err != nil {
+			return apperr.Internal(fmt.Errorf("UpdateAppBarVisibilityConfig %q: %w", row.Key, err))
+		}
+	}
+	return nil
+}
+
+func (r *SqliteSettingsRepository) GetLastSelectionConfig() (*LastSelectionConfig, error) {
+	return &LastSelectionConfig{
+		Kind:     r.getString("ui.lastSelection.kind", "none"),
+		ActionID: r.getString("ui.lastSelection.actionId", ""),
+		StackID:  r.getString("ui.lastSelection.stackId", ""),
+	}, nil
+}
+
+func (r *SqliteSettingsRepository) UpdateLastSelectionConfig(cfg *LastSelectionConfig) error {
+	rows := []store.UpsertSettingParams{
+		{Key: "ui.lastSelection.kind", Value: cfg.Kind, Type: "string"},
+		{Key: "ui.lastSelection.actionId", Value: cfg.ActionID, Type: "string"},
+		{Key: "ui.lastSelection.stackId", Value: cfg.StackID, Type: "string"},
+	}
+	for _, row := range rows {
+		if err := r.database.Queries.UpsertSetting(bg(), row); err != nil {
+			return apperr.Internal(fmt.Errorf("UpdateLastSelectionConfig %q: %w", row.Key, err))
+		}
+	}
+	return nil
+}
+
 func (r *SqliteSettingsRepository) GetWindowSizeConfig() (*WindowSizeConfig, error) {
 	return &WindowSizeConfig{
 		Width:  r.getInt("window.width", 830),  // must match main.go MinimalWidth

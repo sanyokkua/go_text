@@ -547,6 +547,74 @@ func TestStackHandler_DuplicateStack_NewNameConflict(t *testing.T) {
 	}
 }
 
+// ─── DeleteStack + LastSelectionUpdater ─────────────────────────────────────
+
+// fakeLastSelectionUpdater is a spy/stub satisfying LastSelectionUpdater.
+type fakeLastSelectionUpdater struct {
+	err          error
+	calledWithID string
+	called       bool
+}
+
+func (f *fakeLastSelectionUpdater) ClearLastSelectionIfStack(stackID string) error {
+	f.called = true
+	f.calledWithID = stackID
+	return f.err
+}
+
+func TestStackHandler_DeleteStack_LastSelectionUpdater(t *testing.T) {
+	tests := []struct {
+		name             string
+		updater          *fakeLastSelectionUpdater // nil means "do not wire an updater"
+		wantUpdaterCall  bool
+		wantErrorEnvelop bool
+	}{
+		{
+			name:            "updater_succeeds_and_is_called_with_deleted_id",
+			updater:         &fakeLastSelectionUpdater{},
+			wantUpdaterCall: true,
+		},
+		{
+			name:            "updater_errors_but_delete_still_succeeds",
+			updater:         &fakeLastSelectionUpdater{err: errors.New("cleanup failed")},
+			wantUpdaterCall: true,
+		},
+		{
+			name:            "nil_updater_does_not_panic",
+			updater:         nil,
+			wantUpdaterCall: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			// Arrange
+			h := newTestHandler(&mockRepo{})
+			if tt.updater != nil {
+				h.SetLastSelectionUpdater(tt.updater)
+			}
+
+			// Act
+			res := h.DeleteStack("stack-1")
+
+			// Assert: cleanup failure must never surface as a delete error —
+			// best-effort cleanup is documented behavior in DeleteStack.
+			if res.Error != nil {
+				t.Fatalf("expected DeleteStack to succeed regardless of updater outcome, got %+v", res.Error)
+			}
+			if tt.updater != nil {
+				if tt.updater.called != tt.wantUpdaterCall {
+					t.Errorf("updater called = %v, want %v", tt.updater.called, tt.wantUpdaterCall)
+				}
+				if tt.wantUpdaterCall && tt.updater.calledWithID != "stack-1" {
+					t.Errorf("updater called with id %q, want %q", tt.updater.calledWithID, "stack-1")
+				}
+			}
+		})
+	}
+}
+
 // ─── Panic recovery ──────────────────────────────────────────────────────────
 
 func TestStackHandler_ListStacks_PanicRecovery(t *testing.T) {

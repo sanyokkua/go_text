@@ -2,7 +2,9 @@ import { createAsyncThunk } from '@reduxjs/toolkit';
 import { apperr } from '../../../../wailsjs/go/models';
 import {
     ActionHandlerAdapter,
+    fromWireAppBarVisibility,
     fromWireBehavior,
+    fromWireLastSelection,
     fromWireLogging,
     fromWireMetadata,
     fromWireProvider,
@@ -14,6 +16,7 @@ import {
     unwrap,
 } from '../../adapter';
 import {
+    AppBarVisibilityConfig,
     AppBehaviorConfig,
     AppSettingsMetadata,
     InferenceBaseConfig,
@@ -412,6 +415,101 @@ export const persistUIPreferences = createAsyncThunk<void, void, { state: RootSt
     },
 );
 
+export const getAppBarVisibility = createAsyncThunk<AppBarVisibilityConfig, void, { rejectValue: string }>(
+    'settings/getAppBarVisibility',
+    async (_, { rejectWithValue }) => {
+        try {
+            return fromWireAppBarVisibility(unwrap(await SettingsHandlerAdapter.getAppBarVisibilityConfig()));
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logError(`getAppBarVisibility failed: ${err.message}`);
+            return rejectWithValue(err.message);
+        }
+    },
+);
+
+export const persistAppBarVisibility = createAsyncThunk<void, void, { state: RootState; rejectValue: string }>(
+    'settings/persistAppBarVisibility',
+    async (_, { getState, rejectWithValue }) => {
+        try {
+            unwrap(await SettingsHandlerAdapter.updateAppBarVisibilityConfig(getState().ui.appBarVisibility));
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logError(`persistAppBarVisibility failed: ${err.message}`);
+            return rejectWithValue(err.message);
+        }
+    },
+);
+
+/** The single armed run-target resolved from the persisted last-selection config, or nulled out when stale. */
+export interface ArmedSelection {
+    armedActionId: string | null;
+    armedStackId: string | null;
+}
+
+export const persistLastSelection = createAsyncThunk<void, void, { state: RootState; rejectValue: string }>(
+    'settings/persistLastSelection',
+    async (_, { getState, rejectWithValue }) => {
+        try {
+            const { armedActionId, armedStackId } = getState().ui;
+            unwrap(
+                await SettingsHandlerAdapter.updateLastSelectionConfig({
+                    kind: armedStackId ? 'stack' : armedActionId ? 'action' : 'none',
+                    actionId: armedActionId ?? '',
+                    stackId: armedStackId ?? '',
+                }),
+            );
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logError(`persistLastSelection failed: ${err.message}`);
+            return rejectWithValue(err.message);
+        }
+    },
+);
+
+/**
+ * Restores the previously armed action/stack on startup. Resolves to the validated
+ * armed target — never dispatches armAction/armStack directly, since ui/slice.ts already
+ * depends on this module (getAppBarVisibility, getUIPreferences), and a reverse dependency
+ * on ui/slice's action creators here would create a circular module import. Instead,
+ * ui/slice.ts's extraReducers reacts to this thunk's fulfilled action, mirroring the
+ * existing getUIPreferences.fulfilled pattern.
+ *
+ * A stale reference (action/stack id no longer present in the catalog/saved stacks) is
+ * written back to the backend as `{ kind: 'none' }` so it doesn't keep resurfacing.
+ */
+export const restoreLastSelection = createAsyncThunk<ArmedSelection, void, { state: RootState; rejectValue: string }>(
+    'settings/restoreLastSelection',
+    async (_, { getState, rejectWithValue }) => {
+        try {
+            const selection = fromWireLastSelection(unwrap(await SettingsHandlerAdapter.getLastSelectionConfig()));
+            const state = getState();
+
+            if (selection.kind === 'stack') {
+                if (state.stacksSaved.stacks.some((s) => s.id === selection.stackId)) {
+                    return { armedActionId: null, armedStackId: selection.stackId };
+                }
+                unwrap(await SettingsHandlerAdapter.updateLastSelectionConfig({ kind: 'none', actionId: '', stackId: '' }));
+                return { armedActionId: null, armedStackId: null };
+            }
+
+            if (selection.kind === 'action') {
+                if (state.actions.catalog.some((a) => a.id === selection.actionId)) {
+                    return { armedActionId: selection.actionId, armedStackId: null };
+                }
+                unwrap(await SettingsHandlerAdapter.updateLastSelectionConfig({ kind: 'none', actionId: '', stackId: '' }));
+                return { armedActionId: null, armedStackId: null };
+            }
+
+            return { armedActionId: null, armedStackId: null };
+        } catch (error: unknown) {
+            const err = parseError(error);
+            logger.logError(`restoreLastSelection failed: ${err.message}`);
+            return rejectWithValue(err.message);
+        }
+    },
+);
+
 export const testProviderInference = createAsyncThunk<apperr.VerifyOutcome, ProviderConfig, { rejectValue: string }>(
     'settings/testProviderInference',
     async (providerConfig, { rejectWithValue }) => {
@@ -469,6 +567,7 @@ export const initializeSettingsState = createAsyncThunk<void, void, { rejectValu
                 dispatch(getInferenceBaseConfig()).unwrap(),
                 dispatch(getAppSettingsMetadata()).unwrap(),
                 dispatch(getUIPreferences()).unwrap(),
+                dispatch(getAppBarVisibility()).unwrap(),
             ]);
 
             // Must run after getSettings so state.allSettings is populated before

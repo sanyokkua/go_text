@@ -84,6 +84,19 @@ func (s *stubSettingsService) GetUIPreferencesConfig() (*settings.UIPreferencesC
 func (s *stubSettingsService) UpdateUIPreferencesConfig(cfg *settings.UIPreferencesConfig) (*settings.UIPreferencesConfig, error) {
 	return nil, nil
 }
+func (s *stubSettingsService) GetAppBarVisibilityConfig() (*settings.AppBarVisibilityConfig, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) UpdateAppBarVisibilityConfig(cfg *settings.AppBarVisibilityConfig) (*settings.AppBarVisibilityConfig, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) GetLastSelectionConfig() (*settings.LastSelectionConfig, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) UpdateLastSelectionConfig(cfg *settings.LastSelectionConfig) (*settings.LastSelectionConfig, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) ClearLastSelectionIfStack(_ string) error           { return nil }
 func (s *stubSettingsService) GetLoggingConfig() (*settings.LoggingConfig, error) { return nil, nil }
 func (s *stubSettingsService) UpdateLoggingConfig(cfg *settings.LoggingConfig) (*settings.LoggingConfig, error) {
 	return nil, nil

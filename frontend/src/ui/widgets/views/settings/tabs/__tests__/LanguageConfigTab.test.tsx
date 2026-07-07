@@ -80,6 +80,7 @@ function makeStore() {
                 editingStackId: null,
                 activeSettingsTab: 0,
                 theme: { mode: 'auto' as const, effective: 'light' as const },
+                appBarVisibility: { providerModelSelectors: true, languagePicker: true, outputFormatToggle: true, outputModeToggle: true, layoutToggle: true, commandPaletteButton: true, historyButton: true, infoButton: true },
             },
         },
     });

@@ -22,16 +22,30 @@ type FileUtilsServiceAPI interface {
 
 type FileUtilsService struct {
 	logger *logging.Logger
+	isDev  bool
 }
 
-func NewFileUtilsService(logger *logging.Logger) FileUtilsServiceAPI {
+// NewFileUtilsService constructs the file utils service. isDev selects an
+// isolated settings/logs/DB folder (AppNameDev) for `wails dev` builds so
+// dev-mode runs never touch a real user's production database or logs.
+func NewFileUtilsService(logger *logging.Logger, isDev bool) FileUtilsServiceAPI {
 	if logger == nil {
 		panic("logger cannot be nil")
 	}
 
 	return &FileUtilsService{
 		logger: logger,
+		isDev:  isDev,
 	}
+}
+
+// appDirName returns the app's config-folder directory name, switching to the
+// isolated dev folder name when running under `wails dev`.
+func (s *FileUtilsService) appDirName() string {
+	if s.isDev {
+		return AppNameDev
+	}
+	return AppName
 }
 
 // log returns a sub-logger stamped with the calling method's op and the
@@ -57,7 +71,7 @@ func (s *FileUtilsService) ensureAppSettingsFolderExists() (string, error) {
 		}
 	}
 
-	appConfigDir := filepath.Join(configDir, AppName)
+	appConfigDir := filepath.Join(configDir, s.appDirName())
 	lg.Trace().Str("path", appConfigDir).Msg("application config directory path")
 
 	err = os.MkdirAll(appConfigDir, 0700)
@@ -119,7 +133,7 @@ func (s *FileUtilsService) ResolveAppLogsFolderPath(customDir string) (string, e
 		}
 	}
 
-	logsPath := filepath.Join(configDir, AppName, LogsDirName)
+	logsPath := filepath.Join(configDir, s.appDirName(), LogsDirName)
 	lg.Trace().Str("path", logsPath).Msg("resolved logs folder path")
 	return logsPath, nil
 }

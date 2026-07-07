@@ -103,6 +103,19 @@ func (m *mockSettingsService) GetUIPreferencesConfig() (*settings.UIPreferencesC
 func (m *mockSettingsService) UpdateUIPreferencesConfig(cfg *settings.UIPreferencesConfig) (*settings.UIPreferencesConfig, error) {
 	return cfg, nil
 }
+func (m *mockSettingsService) GetAppBarVisibilityConfig() (*settings.AppBarVisibilityConfig, error) {
+	return nil, nil
+}
+func (m *mockSettingsService) UpdateAppBarVisibilityConfig(_ *settings.AppBarVisibilityConfig) (*settings.AppBarVisibilityConfig, error) {
+	return nil, nil
+}
+func (m *mockSettingsService) GetLastSelectionConfig() (*settings.LastSelectionConfig, error) {
+	return nil, nil
+}
+func (m *mockSettingsService) UpdateLastSelectionConfig(_ *settings.LastSelectionConfig) (*settings.LastSelectionConfig, error) {
+	return nil, nil
+}
+func (m *mockSettingsService) ClearLastSelectionIfStack(_ string) error { return nil }
 func (m *mockSettingsService) GetWindowSizeConfig() (*settings.WindowSizeConfig, error) {
 	return nil, nil
 }

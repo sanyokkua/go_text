@@ -14,6 +14,7 @@ import {
 import { setInputContent, setOutputContent } from '../../../../logic/store/editor';
 import { clearHistory, clearHistorySelection, deleteHistoryEntry, listHistory, selectHistoryEntry } from '../../../../logic/store/history';
 import { enqueueNotification } from '../../../../logic/store/notifications/slice';
+import { persistLastSelection } from '../../../../logic/store/settings/thunks';
 import { armAction } from '../../../../logic/store/ui';
 import { parseError } from '../../../../logic/utils/error_utils';
 import { AlertDialog } from '../../../primitives/AlertDialog';
@@ -61,6 +62,7 @@ const HistoryRail: React.FC = () => {
             const existsInCatalog = catalog.some((a) => a.id === actionId);
             if (existsInCatalog) {
                 dispatch(armAction(actionId));
+                void dispatch(persistLastSelection());
             } else {
                 dispatch(
                     enqueueNotification({

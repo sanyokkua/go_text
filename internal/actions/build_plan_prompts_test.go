@@ -293,6 +293,21 @@ func (m *minimalSettingsService) GetUIPreferencesConfig() (*settings.UIPreferenc
 func (m *minimalSettingsService) UpdateUIPreferencesConfig(_ *settings.UIPreferencesConfig) (*settings.UIPreferencesConfig, error) {
 	panic("not implemented in test")
 }
+func (m *minimalSettingsService) GetAppBarVisibilityConfig() (*settings.AppBarVisibilityConfig, error) {
+	panic("not implemented in test")
+}
+func (m *minimalSettingsService) UpdateAppBarVisibilityConfig(_ *settings.AppBarVisibilityConfig) (*settings.AppBarVisibilityConfig, error) {
+	panic("not implemented in test")
+}
+func (m *minimalSettingsService) GetLastSelectionConfig() (*settings.LastSelectionConfig, error) {
+	panic("not implemented in test")
+}
+func (m *minimalSettingsService) UpdateLastSelectionConfig(_ *settings.LastSelectionConfig) (*settings.LastSelectionConfig, error) {
+	panic("not implemented in test")
+}
+func (m *minimalSettingsService) ClearLastSelectionIfStack(_ string) error {
+	panic("not implemented in test")
+}
 func (m *minimalSettingsService) GetLoggingConfig() (*settings.LoggingConfig, error) {
 	panic("not implemented in test")
 }

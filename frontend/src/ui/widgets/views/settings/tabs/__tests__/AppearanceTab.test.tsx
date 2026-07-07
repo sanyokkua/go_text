@@ -7,6 +7,7 @@ jest.mock('../../../../../../logic/adapter', () => ({
     SettingsHandlerAdapter: {
         updateUIPreferencesConfig: jest.fn().mockResolvedValue({ data: { theme: 'dark' } }),
         getUIPreferencesConfig: jest.fn().mockResolvedValue({ data: { theme: 'auto' } }),
+        updateAppBarVisibilityConfig: jest.fn().mockResolvedValue({ data: {} }),
     },
 }));
 
@@ -17,6 +18,7 @@ import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
 
 import { SettingsHandlerAdapter } from '../../../../../../logic/adapter';
+import type { AppBarVisibilityConfig } from '../../../../../../logic/adapter/models';
 import editorReducer from '../../../../../../logic/store/editor/slice';
 import notificationsReducer from '../../../../../../logic/store/notifications/slice';
 import settingsReducer from '../../../../../../logic/store/settings/slice';
@@ -41,6 +43,7 @@ function makeStore(uiOverride = {}) {
                 editingStackId: null,
                 activeSettingsTab: 0,
                 theme: { mode: 'auto' as const, effective: 'light' as const },
+                appBarVisibility: { providerModelSelectors: true, languagePicker: true, outputFormatToggle: true, outputModeToggle: true, layoutToggle: true, commandPaletteButton: true, historyButton: true, infoButton: true },
                 ...uiOverride,
             },
         },
@@ -145,6 +148,77 @@ describe('AppearanceTab — UI persistence', () => {
 
         await waitFor(() => {
             expect(mockUpdateUIPreferencesConfig).toHaveBeenCalledWith(expect.objectContaining({ theme: 'light' }));
+        });
+    });
+});
+
+describe('AppearanceTab — App Bar elements', () => {
+    const ROWS: { key: keyof AppBarVisibilityConfig; label: RegExp }[] = [
+        { key: 'providerModelSelectors', label: /provider & model pickers/i },
+        { key: 'languagePicker', label: /^language picker$/i },
+        { key: 'outputFormatToggle', label: /output format toggle/i },
+        { key: 'outputModeToggle', label: /output view toggle/i },
+        { key: 'layoutToggle', label: /^layout toggle$/i },
+        { key: 'commandPaletteButton', label: /command palette button/i },
+        { key: 'historyButton', label: /^history button$/i },
+        { key: 'infoButton', label: /^info button$/i },
+    ];
+
+    let mockUpdateAppBarVisibilityConfig: jest.Mock;
+
+    beforeEach(() => {
+        mockUpdateAppBarVisibilityConfig = SettingsHandlerAdapter.updateAppBarVisibilityConfig as jest.Mock;
+        mockUpdateAppBarVisibilityConfig.mockClear();
+    });
+
+    it.each(ROWS)('renders a switch labeled for $key that is checked when appBarVisibility.$key is true', ({ label }) => {
+        render(
+            <Provider store={makeStore()}>
+                <AppearanceTab />
+            </Provider>,
+        );
+
+        expect(screen.getByRole('switch', { name: label })).toBeChecked();
+    });
+
+    it.each(ROWS)('renders the $key switch unchecked when appBarVisibility.$key is false', ({ key, label }) => {
+        render(
+            <Provider
+                store={makeStore({
+                    appBarVisibility: {
+                        providerModelSelectors: true,
+                        languagePicker: true,
+                        outputFormatToggle: true,
+                        outputModeToggle: true,
+                        layoutToggle: true,
+                        commandPaletteButton: true,
+                        historyButton: true,
+                        infoButton: true,
+                        [key]: false,
+                    },
+                })}
+            >
+                <AppearanceTab />
+            </Provider>,
+        );
+
+        expect(screen.getByRole('switch', { name: label })).not.toBeChecked();
+    });
+
+    it.each(ROWS)('clicking the $key switch dispatches toggleAppBarElement and persists it', async ({ key, label }) => {
+        const store = makeStore();
+
+        render(
+            <Provider store={store}>
+                <AppearanceTab />
+            </Provider>,
+        );
+
+        await userEvent.click(screen.getByRole('switch', { name: label }));
+
+        expect(store.getState().ui.appBarVisibility[key]).toBe(false);
+        await waitFor(() => {
+            expect(mockUpdateAppBarVisibilityConfig).toHaveBeenCalledWith(expect.objectContaining({ [key]: false }));
         });
     });
 });
