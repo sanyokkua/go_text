@@ -46,6 +46,9 @@ Module name: `go_text`.
 - macOS: Xcode Command Line Tools
 - Linux: `sudo apt-get install build-essential libgtk-3-dev libwebkit2gtk-4.1-dev`
 - Windows: C++ Build Tools + WebView2 Runtime
+- sqlc CLI (required by the pre-push git hook): `go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest`
+- govulncheck CLI (required by the pre-push git hook): `go install golang.org/x/vuln/cmd/govulncheck@latest`
+- golangci-lint (required by the pre-commit git hook): `go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest`
 
 > No SQLite system library needed — GoText uses `modernc.org/sqlite` (pure-Go, no CGO).
 
@@ -58,7 +61,7 @@ wails build                  # production build → build/bin/
 wails doctor                 # verify Wails installation
 wails generate module        # regenerate frontend/wailsjs/ after any Go signature change
 
-cd frontend && npm install   # install frontend deps
+cd frontend && npm install   # install frontend deps — also auto-installs git hooks (lefthook)
 cd frontend && npm run format       # prettier --write (auto-fix formatting)
 cd frontend && npm run test  # run Jest tests
 cd frontend && npm run test:watch   # Jest in watch mode
@@ -75,6 +78,10 @@ go test -run TestName ./internal/actions/   # run a specific test
 
 > **Wails reference:** When touching bindings, runtime events, menus, EnumBind, or platform
 > options, load the `wails-dev` skill for complete API documentation.
+
+> **Git hooks:** Lefthook auto-formats/lints staged files on commit and mirrors CI's `test` job
+> locally on push (see `lefthook.yml`, `scripts/hooks/`, and `docs/howto/verification.md` §"Local
+> Git Hooks"). Bypass with `git push --no-verify` if you truly need to.
 
 ## Architecture
 
