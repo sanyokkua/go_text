@@ -1,3 +1,5 @@
+import { AppBarVisibilityConfig } from '../../adapter/models';
+
 export type ThemeMode = 'auto' | 'light' | 'dark';
 export type ThemeEffective = 'light' | 'dark';
 
@@ -23,4 +25,5 @@ export interface UIState {
     buildMode: boolean;
     editingStackId: string | null;
     theme: ThemeSubState;
+    appBarVisibility: AppBarVisibilityConfig;
 }

@@ -25,11 +25,18 @@ jest.mock('../../adapter', () => ({
     fromWireUIPreferences: jest.fn((v: unknown) => v),
     // Passthrough — overridden per-test with mockReturnValue where the mapped shape matters (T87)
     fromWireProvider: jest.fn((v: unknown) => v),
+    // Passthrough — overridden per-test where the defaulting behavior itself is under test
+    fromWireAppBarVisibility: jest.fn((v: unknown) => v),
+    fromWireLastSelection: jest.fn((v: unknown) => v),
     SettingsHandlerAdapter: {
         getAppBehaviorConfig: jest.fn().mockResolvedValue({ data: { enableTaskLogging: false } }),
         updateAppBehaviorConfig: jest.fn().mockResolvedValue({ data: { enableTaskLogging: true } }),
         deleteProviderConfig: jest.fn().mockResolvedValue({ data: undefined }),
         getCurrentProviderConfig: jest.fn().mockResolvedValue({ data: undefined }),
+        getAppBarVisibilityConfig: jest.fn().mockResolvedValue({ data: {} }),
+        updateAppBarVisibilityConfig: jest.fn().mockResolvedValue({ data: {} }),
+        getLastSelectionConfig: jest.fn().mockResolvedValue({ data: { kind: 'none', actionId: '', stackId: '' } }),
+        updateLastSelectionConfig: jest.fn().mockResolvedValue({ data: { kind: 'none', actionId: '', stackId: '' } }),
         getModelConfig: jest
             .fn()
             .mockResolvedValue({
@@ -84,7 +91,10 @@ import { apperr } from '../../../../wailsjs/go/models';
 import { SelectItem } from '../../../ui/primitives/Select';
 import {
     ActionHandlerAdapter,
+    AppBarVisibilityConfig,
     AppBehaviorConfig,
+    fromWireAppBarVisibility,
+    fromWireLastSelection,
     fromWireProvider,
     fromWireUIPreferences,
     LoggingConfig,
@@ -98,12 +108,16 @@ import {
     createProviderConfig,
     deleteProviderConfig,
     discoverCurrentProviderModels,
+    getAppBarVisibility,
     getAppBehaviorConfig,
     getCurrentProviderConfig,
     getLoggingConfig,
     getSettings,
     getUIPreferences,
+    persistAppBarVisibility,
+    persistLastSelection,
     persistUIPreferences,
+    restoreLastSelection,
     setAsCurrentProviderConfig,
     updateAppBehaviorConfig,
     updateLoggingConfig,
@@ -934,5 +948,221 @@ describe('deleteProviderConfig thunk — resyncs currentProviderConfig (T87)', (
         // model, not the stale value left over from the deleted provider.
         const state = store.getState().settings;
         expect(state.allSettings?.modelConfig.name).toBe('model-b');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Part H: AppBar visibility — getAppBarVisibility and persistAppBarVisibility thunks
+// ---------------------------------------------------------------------------
+
+const allVisible: AppBarVisibilityConfig = {
+    providerModelSelectors: true,
+    languagePicker: true,
+    outputFormatToggle: true,
+    outputModeToggle: true,
+    layoutToggle: true,
+    commandPaletteButton: true,
+    historyButton: true,
+    infoButton: true,
+};
+
+describe('getAppBarVisibility thunk', () => {
+    const dispatch = jest.fn();
+    const getState = jest.fn();
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it('dispatches fulfilled with the mapped config on success', async () => {
+        (SettingsHandlerAdapter.getAppBarVisibilityConfig as jest.Mock).mockResolvedValue({ data: allVisible });
+        (fromWireAppBarVisibility as jest.Mock).mockReturnValue(allVisible);
+
+        const action = await getAppBarVisibility()(dispatch, getState, undefined);
+
+        expect(action.type).toBe('settings/getAppBarVisibility/fulfilled');
+        expect(action.payload).toEqual(allVisible);
+    });
+
+    it('dispatches rejected with parsed error message when the adapter rejects', async () => {
+        (SettingsHandlerAdapter.getAppBarVisibilityConfig as jest.Mock).mockRejectedValue(new Error('network error'));
+
+        const action = await getAppBarVisibility()(dispatch, getState, undefined);
+
+        expect(action.type).toBe('settings/getAppBarVisibility/rejected');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        expect((action as any).payload).toBe('network error');
+    });
+});
+
+describe('persistAppBarVisibility thunk', () => {
+    const dispatch = jest.fn();
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it('calls updateAppBarVisibilityConfig with the current ui.appBarVisibility slice', async () => {
+        (SettingsHandlerAdapter.updateAppBarVisibilityConfig as jest.Mock).mockResolvedValue({ data: undefined });
+        const hiddenHistory = { ...allVisible, historyButton: false };
+        const getState = jest.fn().mockReturnValue({ ui: { appBarVisibility: hiddenHistory } } as unknown as RootState);
+
+        const action = await persistAppBarVisibility()(dispatch, getState, undefined);
+
+        expect(action.type).toBe('settings/persistAppBarVisibility/fulfilled');
+        expect(SettingsHandlerAdapter.updateAppBarVisibilityConfig).toHaveBeenCalledWith(hiddenHistory);
+    });
+
+    it('dispatches rejected with parsed error message when the adapter rejects', async () => {
+        (SettingsHandlerAdapter.updateAppBarVisibilityConfig as jest.Mock).mockRejectedValue(new Error('save failed'));
+        const getState = jest.fn().mockReturnValue({ ui: { appBarVisibility: allVisible } } as unknown as RootState);
+
+        const action = await persistAppBarVisibility()(dispatch, getState, undefined);
+
+        expect(action.type).toBe('settings/persistAppBarVisibility/rejected');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        expect((action as any).payload).toBe('save failed');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Part I: Last-selection persistence — persistLastSelection and restoreLastSelection thunks
+// ---------------------------------------------------------------------------
+
+describe('persistLastSelection thunk', () => {
+    const dispatch = jest.fn();
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+        (SettingsHandlerAdapter.updateLastSelectionConfig as jest.Mock).mockResolvedValue({ data: undefined });
+    });
+
+    it('persists kind "action" with the armed action id when only an action is armed', async () => {
+        const getState = jest.fn().mockReturnValue({ ui: { armedActionId: 'x', armedStackId: null } } as unknown as RootState);
+
+        const action = await persistLastSelection()(dispatch, getState, undefined);
+
+        expect(action.type).toBe('settings/persistLastSelection/fulfilled');
+        expect(SettingsHandlerAdapter.updateLastSelectionConfig).toHaveBeenCalledWith({ kind: 'action', actionId: 'x', stackId: '' });
+    });
+
+    it('persists kind "stack" with the armed stack id when only a stack is armed', async () => {
+        const getState = jest.fn().mockReturnValue({ ui: { armedActionId: null, armedStackId: 'y' } } as unknown as RootState);
+
+        await persistLastSelection()(dispatch, getState, undefined);
+
+        expect(SettingsHandlerAdapter.updateLastSelectionConfig).toHaveBeenCalledWith({ kind: 'stack', actionId: '', stackId: 'y' });
+    });
+
+    it('persists kind "none" with empty ids when neither an action nor a stack is armed', async () => {
+        const getState = jest.fn().mockReturnValue({ ui: { armedActionId: null, armedStackId: null } } as unknown as RootState);
+
+        await persistLastSelection()(dispatch, getState, undefined);
+
+        expect(SettingsHandlerAdapter.updateLastSelectionConfig).toHaveBeenCalledWith({ kind: 'none', actionId: '', stackId: '' });
+    });
+
+    it('dispatches rejected with parsed error message when the adapter rejects', async () => {
+        (SettingsHandlerAdapter.updateLastSelectionConfig as jest.Mock).mockRejectedValue(new Error('persist failed'));
+        const getState = jest.fn().mockReturnValue({ ui: { armedActionId: 'x', armedStackId: null } } as unknown as RootState);
+
+        const action = await persistLastSelection()(dispatch, getState, undefined);
+
+        expect(action.type).toBe('settings/persistLastSelection/rejected');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        expect((action as any).payload).toBe('persist failed');
+    });
+});
+
+describe('restoreLastSelection thunk', () => {
+    const dispatch = jest.fn();
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it('resolves with the armed stack id when the persisted stack is present in saved stacks, and does not write back', async () => {
+        (SettingsHandlerAdapter.getLastSelectionConfig as jest.Mock).mockResolvedValue({
+            data: { kind: 'stack', actionId: '', stackId: 'existing-id' },
+        });
+        (fromWireLastSelection as jest.Mock).mockReturnValue({ kind: 'stack', actionId: '', stackId: 'existing-id' });
+        const getState = jest
+            .fn()
+            .mockReturnValue({ stacksSaved: { stacks: [{ id: 'existing-id' }] }, actions: { catalog: [] } } as unknown as RootState);
+
+        const action = await restoreLastSelection()(dispatch, getState, undefined);
+
+        expect(action.type).toBe('settings/restoreLastSelection/fulfilled');
+        expect(action.payload).toEqual({ armedActionId: null, armedStackId: 'existing-id' });
+        expect(SettingsHandlerAdapter.updateLastSelectionConfig).not.toHaveBeenCalled();
+    });
+
+    it('resolves with both nulls and writes back kind "none" when the persisted stack id is no longer present', async () => {
+        (SettingsHandlerAdapter.getLastSelectionConfig as jest.Mock).mockResolvedValue({
+            data: { kind: 'stack', actionId: '', stackId: 'deleted-stack-id' },
+        });
+        (fromWireLastSelection as jest.Mock).mockReturnValue({ kind: 'stack', actionId: '', stackId: 'deleted-stack-id' });
+        (SettingsHandlerAdapter.updateLastSelectionConfig as jest.Mock).mockResolvedValue({ data: undefined });
+        const getState = jest
+            .fn()
+            .mockReturnValue({ stacksSaved: { stacks: [{ id: 'some-other-stack' }] }, actions: { catalog: [] } } as unknown as RootState);
+
+        const action = await restoreLastSelection()(dispatch, getState, undefined);
+
+        expect(action.payload).toEqual({ armedActionId: null, armedStackId: null });
+        expect(SettingsHandlerAdapter.updateLastSelectionConfig).toHaveBeenCalledWith({ kind: 'none', actionId: '', stackId: '' });
+    });
+
+    it('resolves with the armed action id when the persisted action is present in the catalog, and does not write back', async () => {
+        (SettingsHandlerAdapter.getLastSelectionConfig as jest.Mock).mockResolvedValue({
+            data: { kind: 'action', actionId: 'existing-action', stackId: '' },
+        });
+        (fromWireLastSelection as jest.Mock).mockReturnValue({ kind: 'action', actionId: 'existing-action', stackId: '' });
+        const getState = jest
+            .fn()
+            .mockReturnValue({ stacksSaved: { stacks: [] }, actions: { catalog: [{ id: 'existing-action' }] } } as unknown as RootState);
+
+        const action = await restoreLastSelection()(dispatch, getState, undefined);
+
+        expect(action.payload).toEqual({ armedActionId: 'existing-action', armedStackId: null });
+        expect(SettingsHandlerAdapter.updateLastSelectionConfig).not.toHaveBeenCalled();
+    });
+
+    it('resolves with both nulls and writes back kind "none" when the persisted action id is no longer in the catalog', async () => {
+        (SettingsHandlerAdapter.getLastSelectionConfig as jest.Mock).mockResolvedValue({
+            data: { kind: 'action', actionId: 'deleted-action', stackId: '' },
+        });
+        (fromWireLastSelection as jest.Mock).mockReturnValue({ kind: 'action', actionId: 'deleted-action', stackId: '' });
+        (SettingsHandlerAdapter.updateLastSelectionConfig as jest.Mock).mockResolvedValue({ data: undefined });
+        const getState = jest
+            .fn()
+            .mockReturnValue({ stacksSaved: { stacks: [] }, actions: { catalog: [{ id: 'some-other-action' }] } } as unknown as RootState);
+
+        const action = await restoreLastSelection()(dispatch, getState, undefined);
+
+        expect(action.payload).toEqual({ armedActionId: null, armedStackId: null });
+        expect(SettingsHandlerAdapter.updateLastSelectionConfig).toHaveBeenCalledWith({ kind: 'none', actionId: '', stackId: '' });
+    });
+
+    it('resolves with both nulls and does not write back when nothing was persisted (kind "none")', async () => {
+        (SettingsHandlerAdapter.getLastSelectionConfig as jest.Mock).mockResolvedValue({ data: { kind: 'none', actionId: '', stackId: '' } });
+        (fromWireLastSelection as jest.Mock).mockReturnValue({ kind: 'none', actionId: '', stackId: '' });
+        const getState = jest.fn().mockReturnValue({ stacksSaved: { stacks: [] }, actions: { catalog: [] } } as unknown as RootState);
+
+        const action = await restoreLastSelection()(dispatch, getState, undefined);
+
+        expect(action.payload).toEqual({ armedActionId: null, armedStackId: null });
+        expect(SettingsHandlerAdapter.updateLastSelectionConfig).not.toHaveBeenCalled();
+    });
+
+    it('dispatches rejected with parsed error message when the adapter rejects', async () => {
+        (SettingsHandlerAdapter.getLastSelectionConfig as jest.Mock).mockRejectedValue(new Error('load failed'));
+        const getState = jest.fn().mockReturnValue({ stacksSaved: { stacks: [] }, actions: { catalog: [] } } as unknown as RootState);
+
+        const action = await restoreLastSelection()(dispatch, getState, undefined);
+
+        expect(action.type).toBe('settings/restoreLastSelection/rejected');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        expect((action as any).payload).toBe('load failed');
     });
 });

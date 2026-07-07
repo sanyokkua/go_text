@@ -35,6 +35,10 @@ type SettingsHandlerAPI interface {
 	UpdateAppBehaviorConfig(cfg apperr.AppBehaviorConfig) apperr.AppBehaviorResult
 	GetUIPreferencesConfig() apperr.UIPreferencesResult
 	UpdateUIPreferencesConfig(cfg apperr.UIPreferencesConfig) apperr.UIPreferencesResult
+	GetAppBarVisibilityConfig() apperr.AppBarVisibilityResult
+	UpdateAppBarVisibilityConfig(cfg apperr.AppBarVisibilityConfig) apperr.AppBarVisibilityResult
+	GetLastSelectionConfig() apperr.LastSelectionResult
+	UpdateLastSelectionConfig(cfg apperr.LastSelectionConfig) apperr.LastSelectionResult
 	GetLoggingConfig() apperr.LoggingResult
 	UpdateLoggingConfig(cfg apperr.LoggingConfig) apperr.LoggingResult
 	ProviderPresets() apperr.ProviderPresetsResult
@@ -112,6 +116,18 @@ func toWireUIPreferences(v UIPreferencesConfig) apperr.UIPreferencesConfig {
 }
 func fromWireUIPreferences(v apperr.UIPreferencesConfig) UIPreferencesConfig {
 	return UIPreferencesConfig(v)
+}
+func toWireAppBarVisibility(v AppBarVisibilityConfig) apperr.AppBarVisibilityConfig {
+	return apperr.AppBarVisibilityConfig(v)
+}
+func fromWireAppBarVisibility(v apperr.AppBarVisibilityConfig) AppBarVisibilityConfig {
+	return AppBarVisibilityConfig(v)
+}
+func toWireLastSelection(v LastSelectionConfig) apperr.LastSelectionConfig {
+	return apperr.LastSelectionConfig(v)
+}
+func fromWireLastSelection(v apperr.LastSelectionConfig) LastSelectionConfig {
+	return LastSelectionConfig(v)
 }
 func toWireLogging(v LoggingConfig) apperr.LoggingConfig   { return apperr.LoggingConfig(v) }
 func fromWireLogging(v apperr.LoggingConfig) LoggingConfig { return LoggingConfig(v) }
@@ -528,6 +544,76 @@ func (h *SettingsHandler) UpdateUIPreferencesConfig(cfg apperr.UIPreferencesConf
 	}
 	ui := toWireUIPreferences(*updated)
 	return apperr.UIPreferencesResult{Data: &ui}
+}
+
+func (h *SettingsHandler) GetAppBarVisibilityConfig() (res apperr.AppBarVisibilityResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(h.liveZlog(), ae)
+			res = apperr.AppBarVisibilityResult{Error: &wire}
+		}
+	}()
+	cfg, err := h.settingsService.GetAppBarVisibilityConfig()
+	if err != nil {
+		wire := apperr.ToWire(h.liveZlog(), err)
+		return apperr.AppBarVisibilityResult{Error: &wire}
+	}
+	v := toWireAppBarVisibility(*cfg)
+	return apperr.AppBarVisibilityResult{Data: &v}
+}
+
+func (h *SettingsHandler) UpdateAppBarVisibilityConfig(cfg apperr.AppBarVisibilityConfig) (res apperr.AppBarVisibilityResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(h.liveZlog(), ae)
+			res = apperr.AppBarVisibilityResult{Error: &wire}
+		}
+	}()
+	v := fromWireAppBarVisibility(cfg)
+	updated, err := h.settingsService.UpdateAppBarVisibilityConfig(&v)
+	if err != nil {
+		wire := apperr.ToWire(h.liveZlog(), err)
+		return apperr.AppBarVisibilityResult{Error: &wire}
+	}
+	out := toWireAppBarVisibility(*updated)
+	return apperr.AppBarVisibilityResult{Data: &out}
+}
+
+func (h *SettingsHandler) GetLastSelectionConfig() (res apperr.LastSelectionResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(h.liveZlog(), ae)
+			res = apperr.LastSelectionResult{Error: &wire}
+		}
+	}()
+	cfg, err := h.settingsService.GetLastSelectionConfig()
+	if err != nil {
+		wire := apperr.ToWire(h.liveZlog(), err)
+		return apperr.LastSelectionResult{Error: &wire}
+	}
+	v := toWireLastSelection(*cfg)
+	return apperr.LastSelectionResult{Data: &v}
+}
+
+func (h *SettingsHandler) UpdateLastSelectionConfig(cfg apperr.LastSelectionConfig) (res apperr.LastSelectionResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			ae := apperr.Internal(fmt.Errorf(panicFmt, r))
+			wire := apperr.ToWire(h.liveZlog(), ae)
+			res = apperr.LastSelectionResult{Error: &wire}
+		}
+	}()
+	v := fromWireLastSelection(cfg)
+	updated, err := h.settingsService.UpdateLastSelectionConfig(&v)
+	if err != nil {
+		wire := apperr.ToWire(h.liveZlog(), err)
+		return apperr.LastSelectionResult{Error: &wire}
+	}
+	out := toWireLastSelection(*updated)
+	return apperr.LastSelectionResult{Data: &out}
 }
 
 // ProviderPresets returns the one-click provider presets for the New-Provider

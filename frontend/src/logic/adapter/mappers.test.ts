@@ -1,14 +1,18 @@
 import { apperr } from '../../../wailsjs/go/models';
 import {
+    fromWireAppBarVisibility,
     fromWireBehavior,
+    fromWireLastSelection,
     fromWireMetadata,
     fromWireProvider,
     fromWireUIPreferences,
+    toWireAppBarVisibility,
     toWireBehavior,
+    toWireLastSelection,
     toWireProvider,
     toWireUIPreferences,
 } from './mappers';
-import { UIPreferencesConfig } from './models';
+import { AppBarVisibilityConfig, LastSelectionConfig, UIPreferencesConfig } from './models';
 
 const wireProvider: apperr.ProviderConfig = apperr.ProviderConfig.createFrom({
     id: 'p1',
@@ -293,5 +297,161 @@ describe('fromWireUIPreferences / toWireUIPreferences', () => {
             expect(wire.historyOpen).toBe(false);
             expect(wire.viewMode).toBe('preview');
         });
+    });
+});
+
+describe('fromWireAppBarVisibility / toWireAppBarVisibility', () => {
+    const allTrueWire = apperr.AppBarVisibilityConfig.createFrom({
+        providerModelSelectors: true,
+        languagePicker: true,
+        outputFormatToggle: true,
+        outputModeToggle: true,
+        layoutToggle: true,
+        commandPaletteButton: true,
+        historyButton: true,
+        infoButton: true,
+    });
+
+    it('passes through every field when all wire values are explicit booleans', () => {
+        const allFalseWire = apperr.AppBarVisibilityConfig.createFrom({
+            providerModelSelectors: false,
+            languagePicker: false,
+            outputFormatToggle: false,
+            outputModeToggle: false,
+            layoutToggle: false,
+            commandPaletteButton: false,
+            historyButton: false,
+            infoButton: false,
+        });
+
+        const cfg = fromWireAppBarVisibility(allFalseWire);
+
+        expect(cfg).toEqual({
+            providerModelSelectors: false,
+            languagePicker: false,
+            outputFormatToggle: false,
+            outputModeToggle: false,
+            layoutToggle: false,
+            commandPaletteButton: false,
+            historyButton: false,
+            infoButton: false,
+        });
+    });
+
+    it('defaults every field to true when the wire value is missing (undefined)', () => {
+        const emptyWire = apperr.AppBarVisibilityConfig.createFrom({});
+
+        const cfg = fromWireAppBarVisibility(emptyWire);
+
+        expect(cfg).toEqual({
+            providerModelSelectors: true,
+            languagePicker: true,
+            outputFormatToggle: true,
+            outputModeToggle: true,
+            layoutToggle: true,
+            commandPaletteButton: true,
+            historyButton: true,
+            infoButton: true,
+        });
+    });
+
+    it('defaults a single non-boolean field to true while leaving explicit booleans intact', () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const partiallyCorrupt = apperr.AppBarVisibilityConfig.createFrom({
+            providerModelSelectors: false,
+            languagePicker: 'not-a-boolean' as unknown as boolean,
+            outputFormatToggle: false,
+            outputModeToggle: false,
+            layoutToggle: false,
+            commandPaletteButton: false,
+            historyButton: false,
+            infoButton: false,
+        });
+
+        const cfg = fromWireAppBarVisibility(partiallyCorrupt);
+
+        expect(cfg.languagePicker).toBe(true);
+        expect(cfg.providerModelSelectors).toBe(false);
+    });
+
+    it('toWireAppBarVisibility round-trips through fromWireAppBarVisibility', () => {
+        const domain = fromWireAppBarVisibility(allTrueWire);
+        const wire = toWireAppBarVisibility(domain);
+
+        expect(wire.providerModelSelectors).toBe(true);
+        expect(wire.infoButton).toBe(true);
+    });
+
+    it('toWireAppBarVisibility preserves a mix of true/false values', () => {
+        const domain: AppBarVisibilityConfig = {
+            providerModelSelectors: true,
+            languagePicker: false,
+            outputFormatToggle: true,
+            outputModeToggle: false,
+            layoutToggle: true,
+            commandPaletteButton: false,
+            historyButton: true,
+            infoButton: false,
+        };
+
+        const wire = toWireAppBarVisibility(domain);
+
+        expect(wire.providerModelSelectors).toBe(true);
+        expect(wire.languagePicker).toBe(false);
+        expect(wire.outputModeToggle).toBe(false);
+        expect(wire.infoButton).toBe(false);
+    });
+});
+
+describe('fromWireLastSelection / toWireLastSelection', () => {
+    it('passes through kind "action" with its actionId', () => {
+        const wire = apperr.LastSelectionConfig.createFrom({ kind: 'action', actionId: 'action-1', stackId: '' });
+
+        const cfg = fromWireLastSelection(wire);
+
+        expect(cfg).toEqual({ kind: 'action', actionId: 'action-1', stackId: '' });
+    });
+
+    it('passes through kind "stack" with its stackId', () => {
+        const wire = apperr.LastSelectionConfig.createFrom({ kind: 'stack', actionId: '', stackId: 'stack-1' });
+
+        const cfg = fromWireLastSelection(wire);
+
+        expect(cfg).toEqual({ kind: 'stack', actionId: '', stackId: 'stack-1' });
+    });
+
+    it('passes through kind "none"', () => {
+        const wire = apperr.LastSelectionConfig.createFrom({ kind: 'none', actionId: '', stackId: '' });
+
+        const cfg = fromWireLastSelection(wire);
+
+        expect(cfg.kind).toBe('none');
+    });
+
+    it('defaults kind to "none" for an unrecognized wire value', () => {
+        const wire = apperr.LastSelectionConfig.createFrom({ kind: 'bogus-kind', actionId: 'stale-action', stackId: '' });
+
+        const cfg = fromWireLastSelection(wire);
+
+        expect(cfg.kind).toBe('none');
+    });
+
+    it('defaults actionId and stackId to empty string when missing from the wire payload', () => {
+        const wire = apperr.LastSelectionConfig.createFrom({ kind: 'none' });
+
+        const cfg = fromWireLastSelection(wire);
+
+        expect(cfg.actionId).toBe('');
+        expect(cfg.stackId).toBe('');
+    });
+
+    it('toWireLastSelection round-trips all three fields', () => {
+        const domain: LastSelectionConfig = { kind: 'stack', actionId: '', stackId: 'stack-42' };
+
+        const wire = toWireLastSelection(domain);
+
+        expect(wire.kind).toBe('stack');
+        expect(wire.stackId).toBe('stack-42');
+        expect(wire.actionId).toBe('');
     });
 });

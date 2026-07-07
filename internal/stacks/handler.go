@@ -25,13 +25,20 @@ type SuggestedStackRecipe struct {
 	Actions []string
 }
 
+// LastSelectionUpdater lets the handler clear a stale "last selected stack" pointer when the
+// stack it refers to is deleted. Implemented by *settings.SettingsService.
+type LastSelectionUpdater interface {
+	ClearLastSelectionIfStack(stackID string) error
+}
+
 type StackHandler struct {
-	appLogger    *logging.Logger
-	repo         StackRepositoryAPI
-	planner      *actions.Planner
-	catalogIDs   map[string]bool
-	catalogNames map[string]string
-	recipes      []SuggestedStackRecipe
+	appLogger     *logging.Logger
+	repo          StackRepositoryAPI
+	planner       *actions.Planner
+	catalogIDs    map[string]bool
+	catalogNames  map[string]string
+	recipes       []SuggestedStackRecipe
+	lastSelection LastSelectionUpdater
 }
 
 // NewStackHandler constructs a StackHandler.
@@ -64,6 +71,12 @@ func NewStackHandler(
 // Called from ApplicationContextHolder.Init.
 func (h *StackHandler) SetRepository(repo StackRepositoryAPI) {
 	h.repo = repo
+}
+
+// SetLastSelectionUpdater wires the settings service used to clear a stale last-selection
+// pointer on delete. Called from ApplicationContextHolder.Init.
+func (h *StackHandler) SetLastSelectionUpdater(u LastSelectionUpdater) {
+	h.lastSelection = u
 }
 
 // liveZlog returns a live snapshot of the app logger's current writer, or a
@@ -274,6 +287,12 @@ func (h *StackHandler) DeleteStack(id string) (res apperr.VoidResult) {
 		ae := apperr.Internal(err)
 		wire := apperr.ToWire(h.liveZlog(), ae)
 		return apperr.VoidResult{Error: &wire}
+	}
+	if h.lastSelection != nil {
+		if err := h.lastSelection.ClearLastSelectionIfStack(id); err != nil {
+			zl := h.liveZlog()
+			zl.Warn().Str("component", "stacks").Str("op", "DeleteStack").Str("stackId", id).Err(err).Msg("failed to clear stale last-selection pointer")
+		}
 	}
 	return apperr.VoidResult{}
 }

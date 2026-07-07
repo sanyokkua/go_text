@@ -225,6 +225,42 @@ class UIPreferencesConfig {
     }
 }
 
+// Mirrors the real generated class: field assignment is a direct passthrough
+// with no defaulting — defaulting missing/non-boolean wire values to `true`
+// is fromWireAppBarVisibility's job, not this wire type's.
+class AppBarVisibilityConfig {
+    constructor(source = {}) {
+        if (typeof source === 'string') source = JSON.parse(source);
+        this.providerModelSelectors = source['providerModelSelectors'];
+        this.languagePicker = source['languagePicker'];
+        this.outputFormatToggle = source['outputFormatToggle'];
+        this.outputModeToggle = source['outputModeToggle'];
+        this.layoutToggle = source['layoutToggle'];
+        this.commandPaletteButton = source['commandPaletteButton'];
+        this.historyButton = source['historyButton'];
+        this.infoButton = source['infoButton'];
+    }
+
+    static createFrom(source = {}) {
+        return new AppBarVisibilityConfig(source);
+    }
+}
+
+// Mirrors the real generated class: direct passthrough, no defaulting —
+// fromWireLastSelection defaults an unrecognized kind to 'none'.
+class LastSelectionConfig {
+    constructor(source = {}) {
+        if (typeof source === 'string') source = JSON.parse(source);
+        this.kind = source['kind'];
+        this.actionId = source['actionId'];
+        this.stackId = source['stackId'];
+    }
+
+    static createFrom(source = {}) {
+        return new LastSelectionConfig(source);
+    }
+}
+
 // eslint-disable-next-line no-undef
 module.exports = {
     apperr: {
@@ -242,5 +278,7 @@ module.exports = {
         ChainStep,
         ChainRequest,
         UIPreferencesConfig,
+        AppBarVisibilityConfig,
+        LastSelectionConfig,
     },
 };

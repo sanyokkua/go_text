@@ -388,6 +388,11 @@ Log files (WARNING level and above in production), stored alongside settings and
 - Linux: `~/.config/GoTextApp/logs/`
 - Windows: `%APPDATA%\GoTextApp\logs\`
 
+**`wails dev` uses a separate `GoTextApp-Dev` folder** (same three paths, with `GoTextApp` replaced
+by `GoTextApp-Dev`) for settings, the database, and logs — a dev session never reads or writes a
+production install's data. See `docs/architecture/05-build-and-configuration.md` §6 for how this is
+resolved.
+
 ### Frontend state
 
 Right-click the app window → **Inspect** to open DevTools. Install the
@@ -395,7 +400,8 @@ Right-click the app window → **Inspect** to open DevTools. Install the
 
 ### SQLite inspection
 
-The database file is at `[config folder]/gotext.db`. Open it with any SQLite browser
+The database file is at `[config folder]/gotext.db` (`[config folder]` is `GoTextApp-Dev` under
+`wails dev`, `GoTextApp` in a production build — see above). Open it with any SQLite browser
 (e.g. DB Browser for SQLite, TablePlus) for live inspection of providers, stacks, and history.
 
 ### Common issues

@@ -107,6 +107,16 @@ function makeStore(overrides: StoreOverrides = {}) {
                 editingStackId: null,
                 activeSettingsTab: 0,
                 theme: { mode: 'auto' as const, effective: 'light' as const },
+                appBarVisibility: {
+                    providerModelSelectors: true,
+                    languagePicker: true,
+                    outputFormatToggle: true,
+                    outputModeToggle: true,
+                    layoutToggle: true,
+                    commandPaletteButton: true,
+                    historyButton: true,
+                    infoButton: true,
+                },
             },
             run: {
                 status: (overrides.runStatus ?? 'idle') as 'idle' | 'running' | 'done' | 'partial' | 'error' | 'cancelled',

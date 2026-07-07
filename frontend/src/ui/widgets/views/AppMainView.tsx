@@ -15,7 +15,7 @@ import {
 import { loadActionCatalog } from '../../../logic/store/actions';
 import { enqueueNotification } from '../../../logic/store/notifications/slice';
 import { processPromptChain, runSingleAction } from '../../../logic/store/run';
-import { initializeSettingsState, selectAllSettings } from '../../../logic/store/settings';
+import { initializeSettingsState, restoreLastSelection, selectAllSettings } from '../../../logic/store/settings';
 import { addStep } from '../../../logic/store/stacks/builder/slice';
 import { listStacks } from '../../../logic/store/stacks/saved/thunks';
 import { enterBuildMode, navigateToMain, setActiveActionsTab, setPaletteOpen, togglePalette } from '../../../logic/store/ui/slice';
@@ -53,6 +53,10 @@ const AppMainView: React.FC = () => {
                 }
                 await dispatch(listStacks()).unwrap();
                 logger.logInfo('Saved stacks loaded');
+                // Non-critical: a failed restore must not block app startup, so it's fired
+                // without .unwrap() — same fire-and-forget approach settings/thunks.ts uses
+                // for fetchProviderPresets.
+                void dispatch(restoreLastSelection());
             } catch (error: unknown) {
                 const err = parseError(error);
                 logger.logError(`Failed to initialize app: ${err.message}`);

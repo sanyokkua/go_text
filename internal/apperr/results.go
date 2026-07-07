@@ -99,6 +99,23 @@ type UIPreferencesConfig struct {
 	ViewMode         string `json:"viewMode"`
 }
 
+type AppBarVisibilityConfig struct {
+	ProviderModelSelectors bool `json:"providerModelSelectors"`
+	LanguagePicker         bool `json:"languagePicker"`
+	OutputFormatToggle     bool `json:"outputFormatToggle"`
+	OutputModeToggle       bool `json:"outputModeToggle"`
+	LayoutToggle           bool `json:"layoutToggle"`
+	CommandPaletteButton   bool `json:"commandPaletteButton"`
+	HistoryButton          bool `json:"historyButton"`
+	InfoButton             bool `json:"infoButton"`
+}
+
+type LastSelectionConfig struct {
+	Kind     string `json:"kind"`
+	ActionID string `json:"actionId"`
+	StackID  string `json:"stackId"`
+}
+
 type LoggingConfig struct {
 	LogFileEnabled bool   `json:"logFileEnabled"`
 	LogLevel       string `json:"logLevel"`
@@ -347,6 +364,16 @@ type AppBehaviorResult struct {
 
 type UIPreferencesResult struct {
 	Data  *UIPreferencesConfig `json:"data,omitempty"`
+	Error *WireError           `json:"error,omitempty"`
+}
+
+type AppBarVisibilityResult struct {
+	Data  *AppBarVisibilityConfig `json:"data,omitempty"`
+	Error *WireError              `json:"error,omitempty"`
+}
+
+type LastSelectionResult struct {
+	Data  *LastSelectionConfig `json:"data,omitempty"`
 	Error *WireError           `json:"error,omitempty"`
 }
 

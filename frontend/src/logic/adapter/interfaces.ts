@@ -1,5 +1,14 @@
 import { apperr } from '../../../wailsjs/go/models';
-import { AppBehaviorConfig, InferenceBaseConfig, LoggingConfig, ModelConfig, ProviderConfig, UIPreferencesConfig } from './models';
+import {
+    AppBarVisibilityConfig,
+    AppBehaviorConfig,
+    InferenceBaseConfig,
+    LastSelectionConfig,
+    LoggingConfig,
+    ModelConfig,
+    ProviderConfig,
+    UIPreferencesConfig,
+} from './models';
 
 export interface ILoggerService {
     logPrint(message: string): void;
@@ -67,6 +76,10 @@ export interface ISettingsHandler {
     updateUIPreferencesConfig(config: UIPreferencesConfig): Promise<apperr.UIPreferencesResult>;
     getLoggingConfig(): Promise<apperr.LoggingResult>;
     updateLoggingConfig(config: LoggingConfig): Promise<apperr.LoggingResult>;
+    getAppBarVisibilityConfig(): Promise<apperr.AppBarVisibilityResult>;
+    updateAppBarVisibilityConfig(config: AppBarVisibilityConfig): Promise<apperr.AppBarVisibilityResult>;
+    getLastSelectionConfig(): Promise<apperr.LastSelectionResult>;
+    updateLastSelectionConfig(config: LastSelectionConfig): Promise<apperr.LastSelectionResult>;
 }
 
 export interface IClipboardService {

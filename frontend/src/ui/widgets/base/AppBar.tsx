@@ -3,6 +3,7 @@ import React from 'react';
 
 import { getLogger } from '../../../logic/adapter';
 import {
+    selectAppBarVisibility,
     selectAppBehaviorConfig,
     selectCurrentView,
     selectHistoryOpen,
@@ -37,6 +38,7 @@ const AppBar: React.FC = () => {
     const historyOpen = useAppSelector(selectHistoryOpen);
     const appBehavior = useAppSelector(selectAppBehaviorConfig);
     const inferenceBaseConfig = useAppSelector(selectInferenceBaseConfig);
+    const appBarVisibility = useAppSelector(selectAppBarVisibility);
 
     const isMain = view === 'main';
     const historyEnabled = appBehavior?.historyEnabled ?? true;
@@ -85,90 +87,98 @@ const AppBar: React.FC = () => {
                 </span>
                 <span className={styles.wordmark}>GoText</span>
 
-                {isMain && (
+                {isMain && appBarVisibility.providerModelSelectors && (
                     <>
                         <ProviderPicker />
                         <ModelPicker />
-                        <LanguagePicker />
                     </>
                 )}
+                {isMain && appBarVisibility.languagePicker && <LanguagePicker />}
             </div>
 
             <div className={styles.right}>
-                {isMain && (
-                    <>
-                        <Segmented
-                            value={formatValue}
-                            onValueChange={handleFormatChange}
-                            items={[
-                                { value: 'plain', label: 'Plain' },
-                                { value: 'md', label: 'MD' },
-                            ]}
+                {isMain && appBarVisibility.outputFormatToggle && (
+                    <Segmented
+                        value={formatValue}
+                        onValueChange={handleFormatChange}
+                        items={[
+                            { value: 'plain', label: 'Plain' },
+                            { value: 'md', label: 'MD' },
+                        ]}
+                        disabled={inferenceRunning}
+                    />
+                )}
+                {isMain && appBarVisibility.outputModeToggle && (
+                    <Segmented
+                        value={viewMode}
+                        onValueChange={(v) => {
+                            dispatch(setViewMode(v as typeof viewMode));
+                            void dispatch(persistUIPreferences());
+                        }}
+                        items={[
+                            { value: 'preview', label: 'Preview' },
+                            { value: 'source', label: 'Source' },
+                            { value: 'diff', label: 'Diff' },
+                        ]}
+                        disabled={inferenceRunning}
+                    />
+                )}
+                {isMain && appBarVisibility.layoutToggle && (
+                    <Segmented
+                        value={layout}
+                        onValueChange={(v) => {
+                            dispatch(setLayout(v as typeof layout));
+                            void dispatch(persistUIPreferences());
+                        }}
+                        items={[
+                            { value: 'side', label: '⊞ Side' },
+                            { value: 'stacked', label: '⊟ Stacked' },
+                        ]}
+                        disabled={inferenceRunning}
+                    />
+                )}
+                {isMain && appBarVisibility.commandPaletteButton && (
+                    <Tooltip content="Command palette (⌘K)" side="bottom">
+                        <IconButton
+                            aria-label="Open command palette"
                             disabled={inferenceRunning}
-                        />
-                        <Segmented
-                            value={viewMode}
-                            onValueChange={(v) => {
-                                dispatch(setViewMode(v as typeof viewMode));
-                                void dispatch(persistUIPreferences());
+                            onClick={() => {
+                                dispatch(togglePalette());
+                                logger.logInfo('Command palette toggled');
                             }}
-                            items={[
-                                { value: 'preview', label: 'Preview' },
-                                { value: 'source', label: 'Source' },
-                                { value: 'diff', label: 'Diff' },
-                            ]}
-                            disabled={inferenceRunning}
-                        />
-                        <Segmented
-                            value={layout}
-                            onValueChange={(v) => {
-                                dispatch(setLayout(v as typeof layout));
+                        >
+                            <span className={styles.cmdkLabel}>⌘K</span>
+                        </IconButton>
+                    </Tooltip>
+                )}
+                {isMain && appBarVisibility.historyButton && (
+                    <Tooltip content={historyEnabled ? 'Toggle history' : 'History is disabled in Settings'} side="bottom">
+                        <IconButton
+                            aria-label="Toggle history rail"
+                            on={historyOpen}
+                            disabled={!historyEnabled}
+                            onClick={() => {
+                                dispatch(setHistoryOpen(!historyOpen));
                                 void dispatch(persistUIPreferences());
+                                logger.logInfo('History toggled');
                             }}
-                            items={[
-                                { value: 'side', label: '⊞ Side' },
-                                { value: 'stacked', label: '⊟ Stacked' },
-                            ]}
-                            disabled={inferenceRunning}
-                        />
-                        <Tooltip content="Command palette (⌘K)" side="bottom">
-                            <IconButton
-                                aria-label="Open command palette"
-                                disabled={inferenceRunning}
-                                onClick={() => {
-                                    dispatch(togglePalette());
-                                    logger.logInfo('Command palette toggled');
-                                }}
-                            >
-                                <span className={styles.cmdkLabel}>⌘K</span>
-                            </IconButton>
-                        </Tooltip>
-                        <Tooltip content={historyEnabled ? 'Toggle history' : 'History is disabled in Settings'} side="bottom">
-                            <IconButton
-                                aria-label="Toggle history rail"
-                                on={historyOpen}
-                                disabled={!historyEnabled}
-                                onClick={() => {
-                                    dispatch(setHistoryOpen(!historyOpen));
-                                    void dispatch(persistUIPreferences());
-                                    logger.logInfo('History toggled');
-                                }}
-                            >
-                                <History size={16} />
-                            </IconButton>
-                        </Tooltip>
-                        <Tooltip content="About GoText" side="bottom">
-                            <IconButton
-                                aria-label="About and info"
-                                onClick={() => {
-                                    dispatch(setCurrentView('info'));
-                                    logger.logInfo('Navigated to info');
-                                }}
-                            >
-                                <Info size={16} />
-                            </IconButton>
-                        </Tooltip>
-                    </>
+                        >
+                            <History size={16} />
+                        </IconButton>
+                    </Tooltip>
+                )}
+                {isMain && appBarVisibility.infoButton && (
+                    <Tooltip content="About GoText" side="bottom">
+                        <IconButton
+                            aria-label="About and info"
+                            onClick={() => {
+                                dispatch(setCurrentView('info'));
+                                logger.logInfo('Navigated to info');
+                            }}
+                        >
+                            <Info size={16} />
+                        </IconButton>
+                    </Tooltip>
                 )}
                 <Tooltip content={isMain ? 'Settings' : 'Close'} side="bottom">
                     <IconButton

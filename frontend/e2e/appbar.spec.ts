@@ -228,6 +228,225 @@ test.describe('AppBar', () => {
     });
 });
 
+test.describe('AppBar element visibility', () => {
+    test('hiding providerModelSelectors removes the Provider and Model pickers', async ({ page }) => {
+        const jsErrors: string[] = [];
+        page.on('pageerror', (err) => jsErrors.push(err.message));
+        await page.addInitScript(() => {
+            (window as Window & { __bridgeMockAppBarVisibility?: Record<string, unknown> }).__bridgeMockAppBarVisibility = {
+                providerModelSelectors: false,
+            };
+        });
+        await loadMainView(page);
+
+        await expect(page.getByRole('combobox', { name: /provider/i })).toHaveCount(0);
+        await expect(page.getByRole('combobox', { name: /model/i })).toHaveCount(0);
+        await expect(page.getByRole('button', { name: /open settings/i })).toBeVisible({ timeout: 5000 });
+        await expect(page.getByText('GoText')).toBeVisible();
+
+        expect(jsErrors).toHaveLength(0);
+    });
+
+    test('hiding languagePicker removes the Languages button', async ({ page }) => {
+        const jsErrors: string[] = [];
+        page.on('pageerror', (err) => jsErrors.push(err.message));
+        await page.addInitScript(() => {
+            (window as Window & { __bridgeMockAppBarVisibility?: Record<string, unknown> }).__bridgeMockAppBarVisibility = { languagePicker: false };
+        });
+        await loadMainView(page);
+
+        await expect(page.getByRole('button', { name: 'Languages' })).toHaveCount(0);
+        await expect(page.getByRole('combobox', { name: /provider/i })).toBeVisible({ timeout: 5000 });
+
+        expect(jsErrors).toHaveLength(0);
+    });
+
+    test('hiding outputFormatToggle removes the Plain/MD segmented control', async ({ page }) => {
+        const jsErrors: string[] = [];
+        page.on('pageerror', (err) => jsErrors.push(err.message));
+        await page.addInitScript(() => {
+            (window as Window & { __bridgeMockAppBarVisibility?: Record<string, unknown> }).__bridgeMockAppBarVisibility = {
+                outputFormatToggle: false,
+            };
+        });
+        await loadMainView(page);
+
+        await expect(page.getByRole('radio', { name: 'Plain' })).toHaveCount(0);
+        await expect(page.getByRole('radio', { name: 'MD' })).toHaveCount(0);
+        await expect(page.getByRole('radio', { name: 'Preview' })).toBeVisible({ timeout: 5000 });
+
+        expect(jsErrors).toHaveLength(0);
+    });
+
+    test('hiding outputModeToggle removes the Preview/Source/Diff segmented control', async ({ page }) => {
+        const jsErrors: string[] = [];
+        page.on('pageerror', (err) => jsErrors.push(err.message));
+        await page.addInitScript(() => {
+            (window as Window & { __bridgeMockAppBarVisibility?: Record<string, unknown> }).__bridgeMockAppBarVisibility = {
+                outputModeToggle: false,
+            };
+        });
+        await loadMainView(page);
+
+        await expect(page.getByRole('radio', { name: 'Preview' })).toHaveCount(0);
+        await expect(page.getByRole('radio', { name: 'Source' })).toHaveCount(0);
+        await expect(page.getByRole('radio', { name: 'Diff' })).toHaveCount(0);
+        await expect(page.getByRole('radio', { name: 'Plain' })).toBeVisible({ timeout: 5000 });
+
+        expect(jsErrors).toHaveLength(0);
+    });
+
+    test('hiding layoutToggle removes the Side/Stacked segmented control', async ({ page }) => {
+        const jsErrors: string[] = [];
+        page.on('pageerror', (err) => jsErrors.push(err.message));
+        await page.addInitScript(() => {
+            (window as Window & { __bridgeMockAppBarVisibility?: Record<string, unknown> }).__bridgeMockAppBarVisibility = { layoutToggle: false };
+        });
+        await loadMainView(page);
+
+        await expect(page.getByRole('radio', { name: /side/i })).toHaveCount(0);
+        await expect(page.getByRole('radio', { name: /stacked/i })).toHaveCount(0);
+        await expect(page.getByRole('radio', { name: 'Plain' })).toBeVisible({ timeout: 5000 });
+
+        expect(jsErrors).toHaveLength(0);
+    });
+
+    test('hiding commandPaletteButton removes the ⌘K button', async ({ page }) => {
+        const jsErrors: string[] = [];
+        page.on('pageerror', (err) => jsErrors.push(err.message));
+        await page.addInitScript(() => {
+            (window as Window & { __bridgeMockAppBarVisibility?: Record<string, unknown> }).__bridgeMockAppBarVisibility = {
+                commandPaletteButton: false,
+            };
+        });
+        await loadMainView(page);
+
+        await expect(page.getByRole('button', { name: /open command palette/i })).toHaveCount(0);
+        await expect(page.getByRole('button', { name: /toggle history rail/i })).toBeVisible({ timeout: 5000 });
+
+        expect(jsErrors).toHaveLength(0);
+    });
+
+    test('hiding historyButton removes the history toggle button', async ({ page }) => {
+        const jsErrors: string[] = [];
+        page.on('pageerror', (err) => jsErrors.push(err.message));
+        await page.addInitScript(() => {
+            (window as Window & { __bridgeMockAppBarVisibility?: Record<string, unknown> }).__bridgeMockAppBarVisibility = { historyButton: false };
+        });
+        await loadMainView(page);
+
+        await expect(page.getByRole('button', { name: /toggle history rail/i })).toHaveCount(0);
+        await expect(page.getByRole('button', { name: /open command palette/i })).toBeVisible({ timeout: 5000 });
+
+        expect(jsErrors).toHaveLength(0);
+    });
+
+    test('hiding infoButton removes the About and info button', async ({ page }) => {
+        const jsErrors: string[] = [];
+        page.on('pageerror', (err) => jsErrors.push(err.message));
+        await page.addInitScript(() => {
+            (window as Window & { __bridgeMockAppBarVisibility?: Record<string, unknown> }).__bridgeMockAppBarVisibility = { infoButton: false };
+        });
+        await loadMainView(page);
+
+        await expect(page.getByRole('button', { name: /about and info/i })).toHaveCount(0);
+        await expect(page.getByRole('button', { name: /open settings/i })).toBeVisible({ timeout: 5000 });
+
+        expect(jsErrors).toHaveLength(0);
+    });
+
+    test('hiding all 8 AppBar elements leaves only sidebar toggle, Settings, and wordmark', async ({ page }) => {
+        const jsErrors: string[] = [];
+        page.on('pageerror', (err) => jsErrors.push(err.message));
+        await page.addInitScript(() => {
+            (window as Window & { __bridgeMockAppBarVisibility?: Record<string, unknown> }).__bridgeMockAppBarVisibility = {
+                providerModelSelectors: false,
+                languagePicker: false,
+                outputFormatToggle: false,
+                outputModeToggle: false,
+                layoutToggle: false,
+                commandPaletteButton: false,
+                historyButton: false,
+                infoButton: false,
+            };
+        });
+        await loadMainView(page);
+
+        await expect(page.getByRole('button', { name: /collapse sidebar/i })).toBeVisible({ timeout: 5000 });
+        await expect(page.getByRole('button', { name: /open settings/i })).toBeVisible();
+        await expect(page.getByText('GoText')).toBeVisible();
+
+        await expect(page.getByRole('combobox', { name: /provider/i })).toHaveCount(0);
+        await expect(page.getByRole('combobox', { name: /model/i })).toHaveCount(0);
+        await expect(page.getByRole('button', { name: 'Languages' })).toHaveCount(0);
+        await expect(page.getByRole('radio', { name: 'Plain' })).toHaveCount(0);
+        await expect(page.getByRole('radio', { name: 'Preview' })).toHaveCount(0);
+        await expect(page.getByRole('radio', { name: /stacked/i })).toHaveCount(0);
+        await expect(page.getByRole('button', { name: /open command palette/i })).toHaveCount(0);
+        await expect(page.getByRole('button', { name: /toggle history rail/i })).toHaveCount(0);
+        await expect(page.getByRole('button', { name: /about and info/i })).toHaveCount(0);
+
+        expect(jsErrors).toHaveLength(0);
+    });
+
+    test('toggling the History button switch in Settings hides it live and persists the change', async ({ page }) => {
+        const jsErrors: string[] = [];
+        page.on('pageerror', (err) => jsErrors.push(err.message));
+        await loadMainView(page);
+
+        await page.getByRole('button', { name: /open settings/i }).click();
+        await page.waitForSelector('[role="tablist"][aria-label="Navigation tabs"]', { timeout: 8000 });
+        await page.getByRole('tab', { name: /appearance/i }).click();
+
+        await page.getByRole('switch', { name: 'History button' }).click();
+        await page.waitForTimeout(300);
+
+        const lastUpdate = await page.evaluate(
+            () => (window as Window & { __lastAppBarVisibilityUpdate?: Record<string, unknown> }).__lastAppBarVisibilityUpdate,
+        );
+        expect(lastUpdate?.historyButton).toBe(false);
+
+        await page.getByRole('button', { name: /^close$/i }).click();
+        await expect(page.getByRole('button', { name: /toggle history rail/i })).toHaveCount(0);
+
+        expect(jsErrors).toHaveLength(0);
+    });
+
+    test('⌘K still opens the command palette when commandPaletteButton is hidden', async ({ page }) => {
+        const jsErrors: string[] = [];
+        page.on('pageerror', (err) => jsErrors.push(err.message));
+        await page.addInitScript(() => {
+            (window as Window & { __bridgeMockAppBarVisibility?: Record<string, unknown> }).__bridgeMockAppBarVisibility = {
+                commandPaletteButton: false,
+            };
+        });
+        await loadMainView(page);
+        await expect(page.getByRole('button', { name: /open command palette/i })).toHaveCount(0);
+
+        await page.keyboard.press('Control+k');
+
+        await expect(page.getByRole('dialog', { name: 'Command palette' })).toBeVisible({ timeout: 5000 });
+
+        expect(jsErrors).toHaveLength(0);
+    });
+
+    test('history panel content stays visible when historyButton is hidden but historyOpen is persisted true', async ({ page }) => {
+        const jsErrors: string[] = [];
+        page.on('pageerror', (err) => jsErrors.push(err.message));
+        await page.addInitScript(() => {
+            (window as Window & { __bridgeMockAppBarVisibility?: Record<string, unknown> }).__bridgeMockAppBarVisibility = { historyButton: false };
+            (window as Window & { __bridgeMockUIPrefs?: Record<string, unknown> }).__bridgeMockUIPrefs = { historyOpen: true };
+        });
+        await loadMainView(page);
+
+        await expect(page.getByRole('button', { name: /toggle history rail/i })).toHaveCount(0);
+        await expect(page.getByRole('complementary', { name: 'History' })).toBeVisible({ timeout: 5000 });
+        await expect(page.getByText('No runs yet.')).toBeVisible();
+
+        expect(jsErrors).toHaveLength(0);
+    });
+});
+
 test.describe('UI state persistence — load from bridge-mock', () => {
     // Each test injects window.__bridgeMockUIPrefs BEFORE page load so that
     // GetUIPreferencesConfig picks it up when the Redux thunk fires on startup.

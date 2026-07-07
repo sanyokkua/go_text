@@ -56,6 +56,28 @@ type UIPreferencesConfig struct {
 	ViewMode         string `json:"viewMode"`
 }
 
+// AppBarVisibilityConfig holds per-control visibility toggles for the app bar,
+// letting users hide controls they don't use. All default to true (visible)
+// so existing users see no behavior change on upgrade.
+type AppBarVisibilityConfig struct {
+	ProviderModelSelectors bool `json:"providerModelSelectors"`
+	LanguagePicker         bool `json:"languagePicker"`
+	OutputFormatToggle     bool `json:"outputFormatToggle"`
+	OutputModeToggle       bool `json:"outputModeToggle"`
+	LayoutToggle           bool `json:"layoutToggle"`
+	CommandPaletteButton   bool `json:"commandPaletteButton"`
+	HistoryButton          bool `json:"historyButton"`
+	InfoButton             bool `json:"infoButton"`
+}
+
+// LastSelectionConfig persists the last user-selected action or stack so the
+// editor can restore it on next launch. Kind is "action" | "stack" | "none".
+type LastSelectionConfig struct {
+	Kind     string `json:"kind"`
+	ActionID string `json:"actionId"`
+	StackID  string `json:"stackId"`
+}
+
 // WindowSizeConfig holds the persisted native window dimensions.
 type WindowSizeConfig struct {
 	Width  int `json:"width"`

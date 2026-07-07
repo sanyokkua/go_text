@@ -76,7 +76,7 @@ State is partitioned into focused slices, all registered in `frontend/src/logic/
 | `stacks/saved` | saved stacks list, CRUD status | "My Stacks" persistence |
 | `run` | `status: idle\|building\|running\|done\|error\|cancelled`, currentGroup, totalGroups, failedIndex, runId | Run lifecycle and progress from `chain:*` events |
 | `history` | entries (current page), selectedId, loading, hasMore, total | Action history rail |
-| `ui` | viewMode, layout (side/stacked), sidebar/historyRail collapse, theme | View and layout preferences |
+| `ui` | viewMode, layout (side/stacked), sidebar/historyRail collapse, theme, `appBarVisibility` (8 booleans), `armedActionId`/`armedStackId` | View and layout preferences, AppBar element visibility, and the currently-armed run target |
 | `notifications` | queued notifications (`title?`, `details?`, severity) | Toast / inline error surface |
 | `about` | open section, selected item, inspector open/loading, preview-input toggle | About window + Prompt Inspector state |
 
@@ -199,3 +199,31 @@ The adapter is the only file that imports from `wailsjs/`.
 
 The bridge mock lets the UI run deterministically in CI and enables rapid frontend iteration without
 starting the full Wails app.
+
+---
+
+## 9. AppBar customization and remembered selection
+
+**AppBar element visibility** — Settings → Appearance has a "App Bar elements" section with 8
+`Switch` toggles (`ui/widgets/views/settings/tabs/AppearanceTab.tsx`) controlling which AppBar
+controls render: Provider+Model selectors (combined), Language picker, Output format toggle, Output
+mode toggle, IO layout toggle, Command palette (⌘K) button, History button, Info button. The
+sidebar-collapse button, logo/wordmark, and Settings/Close button are never hideable — they're the
+only guaranteed way back into Settings. `AppBar.tsx` reads `selectAppBarVisibility` (`ui` slice) and
+wraps each control group in `appBarVisibility.<key> && (...)`. Hiding a button only hides the
+button — it does not disable the underlying feature: the ⌘K keyboard shortcut keeps working, and
+the History panel's open/closed state is left as-is. Persisted via `getAppBarVisibility`/
+`persistAppBarVisibility` thunks (`logic/store/settings/thunks.ts`) through the adapter's
+`AppBarVisibilityConfig` round trip (backend detail in `02-backend-architecture.md` §4.5); loaded on
+boot as part of `initializeSettingsState`.
+
+**Remembered last selection** — the last action or stack armed to run (`ui.armedActionId` /
+`armedStackId`) is persisted via `persistLastSelection` every time `armAction`/`armStack` is
+dispatched (`ActionsSidebar.tsx`, `HistoryRail.tsx`) and restored on the next launch by
+`restoreLastSelection`, dispatched from `AppMainView.tsx` after the bootstrap sequence
+(`initializeSettingsState` + `loadActionCatalog` + `listStacks`) resolves — the restored id is
+validated against the already-loaded catalog/stack list before arming, so a deleted stack or a
+removed action ID is never re-armed. `deleteStack` (`logic/store/stacks/saved/thunks.ts`) also
+clears `armedStackId` immediately in Redux if the deleted stack was the one currently armed, keeping
+in-session state consistent independent of the backend's own delete-time cleanup (backend detail in
+`02-backend-architecture.md` §4.5).

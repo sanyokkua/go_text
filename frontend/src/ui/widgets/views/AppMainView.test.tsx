@@ -18,6 +18,7 @@ import '@testing-library/jest-dom';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
+import type { AppBarVisibilityConfig } from '../../../logic/adapter/models';
 import aboutReducer from '../../../logic/store/about/slice';
 import actionsReducer from '../../../logic/store/actions/slice';
 import editorReducer from '../../../logic/store/editor/slice';
@@ -97,7 +98,8 @@ jest.mock('../../../logic/store/run/thunks', () => {
     return { ...actual, runSingleAction: jest.fn(() => ({ type: 'run/runSingleAction/pending', unwrap: () => Promise.resolve() })) };
 });
 
-function buildStore() {
+function buildStore(appBarVisibilityOverrides: Partial<AppBarVisibilityConfig> = {}) {
+    const defaultUiState = uiReducer(undefined, { type: '@@INIT' });
     return configureStore({
         reducer: {
             ui: uiReducer,
@@ -113,6 +115,7 @@ function buildStore() {
         },
         preloadedState: {
             actions: { catalog: [MOCK_SUMMARISE_ACTION], catalogStatus: 'success' as const, availableModels: [], modelsStatus: 'idle' as const },
+            ui: { ...defaultUiState, appBarVisibility: { ...defaultUiState.appBarVisibility, ...appBarVisibilityOverrides } },
         },
     });
 }
@@ -152,5 +155,21 @@ describe('AppMainView ⌘K palette', () => {
         await userEvent.keyboard('{Meta>}k{/Meta}');
 
         expect(screen.getByText('Summarise')).toBeInTheDocument();
+    });
+
+    // Product decision: hiding the ⌘K button in the AppBar (Settings → Appearance)
+    // only removes the visible button — it must not disable the keyboard shortcut
+    // itself. AppMainView's keydown listener is wired independently of AppBar and
+    // never reads appBarVisibility, so the shortcut keeps working regardless.
+    it('still opens the palette via ⌘K even when commandPaletteButton is hidden in appBarVisibility', async () => {
+        render(
+            <Provider store={buildStore({ commandPaletteButton: false })}>
+                <AppMainView />
+            </Provider>,
+        );
+
+        await userEvent.keyboard('{Meta>}k{/Meta}');
+
+        expect(screen.getByRole('dialog', { name: 'Command palette' })).toBeInTheDocument();
     });
 });

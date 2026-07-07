@@ -20,9 +20,10 @@ jest.mock('../../../adapter', () => ({
     SettingsHandlerAdapter: {},
 }));
 
+import type { AppBarVisibilityConfig } from '../../../adapter/models';
 import type { RootState } from '../../index';
 import { processPromptChain } from '../../run/thunks';
-import { getUIPreferences, testProviderInference } from '../../settings/thunks';
+import { getUIPreferences, restoreLastSelection, testProviderInference } from '../../settings/thunks';
 import { selectActiveActionsTab, selectArmedActionId, selectArmedStackId, selectArmedTarget, selectCurrentView } from '../selectors';
 import uiReducer, {
     armAction,
@@ -31,12 +32,14 @@ import uiReducer, {
     enterEditMode,
     exitBuildMode,
     setActiveActionsTab,
+    setAppBarVisibility,
     setCurrentView,
     setHistoryOpen,
     setLayout,
     setSidebarCollapsed,
     setThemeEffective,
     setThemeMode,
+    toggleAppBarElement,
     toggleHistory,
     toggleSidebar,
 } from '../slice';
@@ -56,6 +59,16 @@ const initialState: UIState = {
     editingStackId: null,
     activeSettingsTab: 0,
     theme: { mode: 'auto', effective: 'light' },
+    appBarVisibility: {
+        providerModelSelectors: true,
+        languagePicker: true,
+        outputFormatToggle: true,
+        outputModeToggle: true,
+        layoutToggle: true,
+        commandPaletteButton: true,
+        historyButton: true,
+        infoButton: true,
+    },
 };
 
 describe('ui slice reducer', () => {
@@ -290,6 +303,81 @@ describe('ui slice reducer', () => {
 
         expect(state.buildMode).toBe(false);
         expect(state.editingStackId).toBeNull();
+    });
+
+    describe('toggleAppBarElement', () => {
+        it('flips only the named key and leaves the other 7 untouched', () => {
+            const state = uiReducer(initialState, toggleAppBarElement('historyButton'));
+
+            expect(state.appBarVisibility.historyButton).toBe(false);
+            expect(state.appBarVisibility).toMatchObject({
+                providerModelSelectors: true,
+                languagePicker: true,
+                outputFormatToggle: true,
+                outputModeToggle: true,
+                layoutToggle: true,
+                commandPaletteButton: true,
+                infoButton: true,
+            });
+        });
+
+        it('flipping the same key twice returns it to its original value', () => {
+            let state = uiReducer(initialState, toggleAppBarElement('infoButton'));
+            state = uiReducer(state, toggleAppBarElement('infoButton'));
+
+            expect(state.appBarVisibility.infoButton).toBe(true);
+        });
+    });
+
+    describe('setAppBarVisibility', () => {
+        it('fully replaces the appBarVisibility sub-object', () => {
+            const replacement: AppBarVisibilityConfig = {
+                providerModelSelectors: false,
+                languagePicker: false,
+                outputFormatToggle: false,
+                outputModeToggle: false,
+                layoutToggle: false,
+                commandPaletteButton: false,
+                historyButton: false,
+                infoButton: false,
+            };
+
+            const state = uiReducer(initialState, setAppBarVisibility(replacement));
+
+            expect(state.appBarVisibility).toEqual(replacement);
+        });
+    });
+
+    describe('restoreLastSelection.fulfilled', () => {
+        it('arms the restored action and clears armedStackId', () => {
+            const armedStackState: UIState = { ...initialState, armedStackId: 'stale-stack' };
+            const action = { type: restoreLastSelection.fulfilled.type, payload: { armedActionId: 'action-1', armedStackId: null } };
+
+            const state = uiReducer(armedStackState, action);
+
+            expect(state.armedActionId).toBe('action-1');
+            expect(state.armedStackId).toBeNull();
+        });
+
+        it('arms the restored stack and clears armedActionId', () => {
+            const armedActionState: UIState = { ...initialState, armedActionId: 'stale-action' };
+            const action = { type: restoreLastSelection.fulfilled.type, payload: { armedActionId: null, armedStackId: 'stack-1' } };
+
+            const state = uiReducer(armedActionState, action);
+
+            expect(state.armedStackId).toBe('stack-1');
+            expect(state.armedActionId).toBeNull();
+        });
+
+        it('clears both armed ids when neither an action nor a stack was restored', () => {
+            const armedState: UIState = { ...initialState, armedActionId: 'stale-action', armedStackId: null };
+            const action = { type: restoreLastSelection.fulfilled.type, payload: { armedActionId: null, armedStackId: null } };
+
+            const state = uiReducer(armedState, action);
+
+            expect(state.armedActionId).toBeNull();
+            expect(state.armedStackId).toBeNull();
+        });
     });
 });
 

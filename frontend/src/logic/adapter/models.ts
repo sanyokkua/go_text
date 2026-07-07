@@ -140,6 +140,34 @@ export interface ProviderConfig {
 }
 
 /**
+ * AppBar element visibility toggles (Settings → Appearance).
+ *
+ * Every key defaults to `true` — hiding an element is an explicit user opt-out,
+ * so a missing/non-boolean wire value must resolve to visible (see fromWireAppBarVisibility).
+ */
+export interface AppBarVisibilityConfig {
+    providerModelSelectors: boolean;
+    languagePicker: boolean;
+    outputFormatToggle: boolean;
+    outputModeToggle: boolean;
+    layoutToggle: boolean;
+    commandPaletteButton: boolean;
+    historyButton: boolean;
+    infoButton: boolean;
+}
+
+/**
+ * The action or stack armed when the app last closed, restored on next launch.
+ *
+ * `kind` discriminates which of `actionId`/`stackId` is meaningful; the other is empty.
+ */
+export interface LastSelectionConfig {
+    kind: 'action' | 'stack' | 'none';
+    actionId: string;
+    stackId: string;
+}
+
+/**
  * Complete application settings object
  *
  * Root container for all application configuration.

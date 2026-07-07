@@ -38,11 +38,11 @@ work-in-progress indicator.
 | `internal/actions` | evolved | `runStep`, `Planner`, `Composer`, `ChainOrchestrator`, run registry (`runId → CancelFunc`), and the bound `ActionHandler` |
 | `internal/prompts` | evolved | Two-tier family system prompts + atomic directive fragments; `ActionMeta` catalog; `BuildPlanAndPrompts`; `PreviewPrompt` composition |
 | `internal/history` | added in v3 | Per-run action history: model, SQLite repository, service, bound handler |
-| `internal/settings` | evolved | Provider/model/inference/language/app-behavior config; SQLite-backed repository behind the preserved service interface |
-| `internal/stacks` | added in v3 | Saved stack CRUD; SQLite repository; bound handler |
+| `internal/settings` | evolved | Provider/model/inference/language/app-behavior config, plus small UI-preference config groups (`UIPreferencesConfig`, `AppBarVisibilityConfig`, `LastSelectionConfig`) — all backed by the same generic `settings` KV table (see §4.5). SQLite-backed repository behind the preserved service interface |
+| `internal/stacks` | added in v3 | Saved stack CRUD; SQLite repository; bound handler. `DeleteStack` also clears a stale persisted "last selected stack" pointer via the `LastSelectionUpdater` interface (§4.5) |
 | `internal/gate` | added in v3 | Single-flight `InferenceGate` — process-wide, single-slot; shared by chain runs and provider test-inference |
 | `internal/logging` | evolved | Configured zerolog instance + console/lumberjack file multi-writer; `WithOp`/`Timer` helpers; implements the Wails `logger.Logger` interface |
-| `internal/file` | preserved | OS-specific path resolution: config folder, DB file path, logs folder |
+| `internal/file` | preserved | OS-specific path resolution: config folder, DB file path, logs folder. Resolves under a separate `GoTextApp-Dev` folder when constructed with `isDev=true` (driven by `bootstrap.IsDevBuild`) — see `05-build-and-configuration.md` §6 |
 | `internal/tasklog` | preserved | Per-step daily JSONL diagnostic records, gated by `EnableTaskLogging`. Independent of user-facing history. |
 | `internal/verification` | added in v3 | Provider diagnostics (`TestConnection`, `TestModels`, `TestInference`) — never recorded to history |
 
@@ -166,6 +166,29 @@ TS enum in `models.ts` for typed error handling.
 - **Discovery** — per-kind model listing with tolerant parser; no persisted model cache (always live).
 - **Credentials** — configs carry only the env-var name (`apiKeyEnvVar`); the secret is read with
   `os.Getenv` at request time and never persisted or logged.
+
+### 4.5 Generic settings KV table — the backbone for small UI-preference config groups
+
+`internal/db/migrations/0001_init.sql` defines one generic key/value table,
+`settings(key TEXT PRIMARY KEY, value TEXT NOT NULL, type TEXT NOT NULL CHECK (type IN ('int','float','bool','string','json')))`,
+with sqlc queries `GetSetting`/`ListSettings`/`UpsertSetting`. `internal/settings/repository_sqlite.go`
+wraps it with typed helpers (`getBool`, `getInt`, `getFloat`, `getString`, `upsert`) so a new small
+config group needs **no schema migration** — only a new dotted key prefix and a
+Get/Update method pair on `SettingsRepositoryAPI`/`SettingsServiceAPI`/`SettingsHandler`, mirroring
+whichever existing group is closest (`UIPreferencesConfig`'s `ui.*` keys are the template). Three
+config groups follow this pattern today: `UIPreferencesConfig` (`ui.theme`, `ui.layout`, …),
+`AppBarVisibilityConfig` (`ui.appbar.*` — 8 booleans controlling which AppBar controls the frontend
+renders; see `03-frontend-architecture.md` §3/§9), and `LastSelectionConfig` (`ui.lastSelection.*` —
+the last-armed action or stack, restored on next launch; see `03-frontend-architecture.md` §9).
+
+`LastSelectionConfig` also demonstrates this codebase's small-interface cross-package wiring idiom
+(the same shape already used for `ActionHandler.SetStackLookup`): `internal/stacks/handler.go`
+declares a narrow `LastSelectionUpdater` interface (`ClearLastSelectionIfStack(stackID string) error`)
+that `*settings.SettingsService` implements; `ApplicationContextHolder.Init` wires
+`StackHandler.SetLastSelectionUpdater(a.SettingsService)`, and `StackHandler.DeleteStack` calls it
+best-effort after a successful delete — mirroring the existing `DeleteProvider` repoint-on-delete
+transaction in `internal/settings/repository_sqlite.go`, but as a best-effort post-delete call rather
+than an in-transaction repoint, since clearing an unrelated setting must never fail the delete itself.
 
 ---
 

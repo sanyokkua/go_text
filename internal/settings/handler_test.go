@@ -151,7 +151,7 @@ func TestSettingsHandler_FileLogging_HandlerVsAppLoggerRouting(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 
 	repo := newRepo(t)
-	realFileUtils := file.NewFileUtilsService(newTestLogger(t))
+	realFileUtils := file.NewFileUtilsService(newTestLogger(t), false)
 	svc := settings.NewSettingsService(newTestLogger(t), repo, realFileUtils)
 	handler := settings.NewSettingsHandler(svc, nil)
 	l, err := logging.New(logging.DefaultConfig(), false)
@@ -380,6 +380,276 @@ func TestSettingsHandler_UpdateUIPreferencesConfig(t *testing.T) {
 			}
 			if res.Data.Theme != tt.wantTheme {
 				t.Errorf("updated theme: want %q, got %q", tt.wantTheme, res.Data.Theme)
+			}
+		})
+	}
+}
+
+// ── AppBarVisibilityConfig ──────────────────────────────────────────────────
+
+func TestSettingsHandler_GetAppBarVisibilityConfig_ReturnsDefaults(t *testing.T) {
+	t.Parallel()
+	handler := newUIPreferencesHandler(t)
+
+	res := handler.GetAppBarVisibilityConfig()
+
+	if res.Error != nil {
+		t.Fatalf("unexpected error: %+v", res.Error)
+	}
+	if res.Data == nil {
+		t.Fatal("expected Data to be set")
+	}
+	want := apperr.AppBarVisibilityConfig{
+		ProviderModelSelectors: true,
+		LanguagePicker:         true,
+		OutputFormatToggle:     true,
+		OutputModeToggle:       true,
+		LayoutToggle:           true,
+		CommandPaletteButton:   true,
+		HistoryButton:          true,
+		InfoButton:             true,
+	}
+	if *res.Data != want {
+		t.Errorf("default AppBarVisibilityConfig: want %+v, got %+v", want, *res.Data)
+	}
+}
+
+func TestSettingsHandler_UpdateAppBarVisibilityConfig_PersistsAndRoundTrips(t *testing.T) {
+	t.Parallel()
+	handler := newUIPreferencesHandler(t)
+
+	cfg := apperr.AppBarVisibilityConfig{
+		ProviderModelSelectors: false,
+		LanguagePicker:         true,
+		OutputFormatToggle:     false,
+		OutputModeToggle:       true,
+		LayoutToggle:           false,
+		CommandPaletteButton:   true,
+		HistoryButton:          false,
+		InfoButton:             true,
+	}
+
+	// Act: update, then re-read via a fresh call to confirm persistence.
+	updateRes := handler.UpdateAppBarVisibilityConfig(cfg)
+	if updateRes.Error != nil {
+		t.Fatalf("unexpected error on update: %+v", updateRes.Error)
+	}
+	if updateRes.Data == nil {
+		t.Fatal("expected Data to be set on update")
+	}
+	if *updateRes.Data != cfg {
+		t.Errorf("update response: want %+v, got %+v", cfg, *updateRes.Data)
+	}
+
+	getRes := handler.GetAppBarVisibilityConfig()
+	if getRes.Error != nil {
+		t.Fatalf("unexpected error on get: %+v", getRes.Error)
+	}
+	if getRes.Data == nil {
+		t.Fatal("expected Data to be set on get")
+	}
+	if *getRes.Data != cfg {
+		t.Errorf("persisted AppBarVisibilityConfig: want %+v, got %+v", cfg, *getRes.Data)
+	}
+}
+
+// ── LastSelectionConfig ──────────────────────────────────────────────────────
+
+func TestSettingsHandler_GetLastSelectionConfig_ReturnsDefaultNone(t *testing.T) {
+	t.Parallel()
+	handler := newUIPreferencesHandler(t)
+
+	res := handler.GetLastSelectionConfig()
+
+	if res.Error != nil {
+		t.Fatalf("unexpected error: %+v", res.Error)
+	}
+	if res.Data == nil {
+		t.Fatal("expected Data to be set")
+	}
+	if res.Data.Kind != "none" {
+		t.Errorf("default Kind: want %q, got %q", "none", res.Data.Kind)
+	}
+	if res.Data.ActionID != "" || res.Data.StackID != "" {
+		t.Errorf("expected empty ActionID/StackID by default, got %+v", res.Data)
+	}
+}
+
+func TestSettingsHandler_UpdateLastSelectionConfig(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     apperr.LastSelectionConfig
+		wantErr bool
+	}{
+		{name: "valid_stack_selection", cfg: apperr.LastSelectionConfig{Kind: "stack", StackID: "stack-1"}, wantErr: false},
+		{name: "valid_action_selection", cfg: apperr.LastSelectionConfig{Kind: "action", ActionID: "action-1"}, wantErr: false},
+		{name: "valid_none", cfg: apperr.LastSelectionConfig{Kind: "none"}, wantErr: false},
+		{name: "invalid_kind", cfg: apperr.LastSelectionConfig{Kind: "bogus"}, wantErr: true},
+		{name: "empty_kind_is_invalid", cfg: apperr.LastSelectionConfig{Kind: ""}, wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			handler := newUIPreferencesHandler(t)
+
+			res := handler.UpdateLastSelectionConfig(tt.cfg)
+
+			if tt.wantErr {
+				if res.Error == nil {
+					t.Fatalf("expected error for kind %q, got none", tt.cfg.Kind)
+				}
+				if res.Error.Code != apperr.CodeValidation {
+					t.Errorf("expected CodeValidation, got %q", res.Error.Code)
+				}
+				return
+			}
+			if res.Error != nil {
+				t.Fatalf("unexpected error for kind %q: %+v", tt.cfg.Kind, res.Error)
+			}
+			if res.Data == nil {
+				t.Fatal("expected Data to be set on success")
+			}
+			if *res.Data != tt.cfg {
+				t.Errorf("update response: want %+v, got %+v", tt.cfg, *res.Data)
+			}
+
+			// Confirm persistence via a fresh read.
+			getRes := handler.GetLastSelectionConfig()
+			if getRes.Error != nil {
+				t.Fatalf("unexpected error on get: %+v", getRes.Error)
+			}
+			if *getRes.Data != tt.cfg {
+				t.Errorf("persisted LastSelectionConfig: want %+v, got %+v", tt.cfg, *getRes.Data)
+			}
+		})
+	}
+}
+
+// ── Panic recovery for the 4 new bound methods ──────────────────────────────
+
+// panicSettingsService implements settings.SettingsServiceAPI; the 4
+// AppBarVisibility/LastSelection methods panic unconditionally so handler
+// panic-recovery paths can be exercised, while every other method returns a
+// zero value since it is not touched by these tests.
+type panicSettingsService struct{}
+
+func (panicSettingsService) GetAppSettingsMetadata() (*settings.AppSettingsMetadata, error) {
+	return nil, nil
+}
+func (panicSettingsService) GetSettings() (*settings.Settings, error)            { return nil, nil }
+func (panicSettingsService) ResetSettingsToDefault() (*settings.Settings, error) { return nil, nil }
+func (panicSettingsService) GetAllProviderConfigs() ([]settings.ProviderConfig, error) {
+	return nil, nil
+}
+func (panicSettingsService) GetCurrentProviderConfig() (*settings.ProviderConfig, error) {
+	return nil, nil
+}
+func (panicSettingsService) GetProviderConfig(_ string) (*settings.ProviderConfig, error) {
+	return nil, nil
+}
+func (panicSettingsService) CreateProviderConfig(_ *settings.ProviderConfig) (*settings.ProviderConfig, error) {
+	return nil, nil
+}
+func (panicSettingsService) UpdateProviderConfig(_ *settings.ProviderConfig) (*settings.ProviderConfig, error) {
+	return nil, nil
+}
+func (panicSettingsService) DeleteProviderConfig(_ string) error { return nil }
+func (panicSettingsService) SetAsCurrentProviderConfig(_ string) (*settings.ProviderConfig, error) {
+	return nil, nil
+}
+func (panicSettingsService) GetInferenceBaseConfig() (*settings.InferenceBaseConfig, error) {
+	return nil, nil
+}
+func (panicSettingsService) UpdateInferenceBaseConfig(_ *settings.InferenceBaseConfig) (*settings.InferenceBaseConfig, error) {
+	return nil, nil
+}
+func (panicSettingsService) GetModelConfig() (*settings.ModelConfig, error) { return nil, nil }
+func (panicSettingsService) UpdateModelConfig(_ *settings.ModelConfig) (*settings.ModelConfig, error) {
+	return nil, nil
+}
+func (panicSettingsService) GetLanguageConfig() (*settings.LanguageConfig, error) { return nil, nil }
+func (panicSettingsService) SetDefaultInputLanguage(_ string) error               { return nil }
+func (panicSettingsService) SetDefaultOutputLanguage(_ string) error              { return nil }
+func (panicSettingsService) AddLanguage(_ string) ([]string, error)               { return nil, nil }
+func (panicSettingsService) RemoveLanguage(_ string) ([]string, error)            { return nil, nil }
+func (panicSettingsService) GetAppBehaviorConfig() (*settings.AppBehaviorConfig, error) {
+	return nil, nil
+}
+func (panicSettingsService) UpdateAppBehaviorConfig(_ *settings.AppBehaviorConfig) (*settings.AppBehaviorConfig, error) {
+	return nil, nil
+}
+func (panicSettingsService) GetUIPreferencesConfig() (*settings.UIPreferencesConfig, error) {
+	return nil, nil
+}
+func (panicSettingsService) UpdateUIPreferencesConfig(_ *settings.UIPreferencesConfig) (*settings.UIPreferencesConfig, error) {
+	return nil, nil
+}
+func (panicSettingsService) GetAppBarVisibilityConfig() (*settings.AppBarVisibilityConfig, error) {
+	panic("test panic in GetAppBarVisibilityConfig")
+}
+func (panicSettingsService) UpdateAppBarVisibilityConfig(_ *settings.AppBarVisibilityConfig) (*settings.AppBarVisibilityConfig, error) {
+	panic("test panic in UpdateAppBarVisibilityConfig")
+}
+func (panicSettingsService) GetLastSelectionConfig() (*settings.LastSelectionConfig, error) {
+	panic("test panic in GetLastSelectionConfig")
+}
+func (panicSettingsService) UpdateLastSelectionConfig(_ *settings.LastSelectionConfig) (*settings.LastSelectionConfig, error) {
+	panic("test panic in UpdateLastSelectionConfig")
+}
+func (panicSettingsService) ClearLastSelectionIfStack(_ string) error           { return nil }
+func (panicSettingsService) GetLoggingConfig() (*settings.LoggingConfig, error) { return nil, nil }
+func (panicSettingsService) UpdateLoggingConfig(_ *settings.LoggingConfig) (*settings.LoggingConfig, error) {
+	return nil, nil
+}
+func (panicSettingsService) GetWindowSizeConfig() (*settings.WindowSizeConfig, error) {
+	return nil, nil
+}
+func (panicSettingsService) SaveWindowSize(_, _ int) error { return nil }
+
+func TestSettingsHandler_AppBarAndLastSelection_PanicRecovery(t *testing.T) {
+	tests := []struct {
+		name string
+		call func(h *settings.SettingsHandler) *apperr.WireError
+	}{
+		{
+			name: "GetAppBarVisibilityConfig",
+			call: func(h *settings.SettingsHandler) *apperr.WireError {
+				return h.GetAppBarVisibilityConfig().Error
+			},
+		},
+		{
+			name: "UpdateAppBarVisibilityConfig",
+			call: func(h *settings.SettingsHandler) *apperr.WireError {
+				return h.UpdateAppBarVisibilityConfig(apperr.AppBarVisibilityConfig{}).Error
+			},
+		},
+		{
+			name: "GetLastSelectionConfig",
+			call: func(h *settings.SettingsHandler) *apperr.WireError {
+				return h.GetLastSelectionConfig().Error
+			},
+		},
+		{
+			name: "UpdateLastSelectionConfig",
+			call: func(h *settings.SettingsHandler) *apperr.WireError {
+				return h.UpdateLastSelectionConfig(apperr.LastSelectionConfig{Kind: "none"}).Error
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			handler := settings.NewSettingsHandler(panicSettingsService{}, nil)
+
+			werr := tt.call(handler)
+
+			if werr == nil {
+				t.Fatal("expected error after panic recovery")
+			}
+			if werr.Code != apperr.CodeInternal {
+				t.Errorf("expected code=internal, got %q", werr.Code)
 			}
 		})
 	}
