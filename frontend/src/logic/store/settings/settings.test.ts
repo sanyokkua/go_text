@@ -91,8 +91,8 @@ import { apperr } from '../../../../wailsjs/go/models';
 import { SelectItem } from '../../../ui/primitives/Select';
 import {
     ActionHandlerAdapter,
-    AppBehaviorConfig,
     AppBarVisibilityConfig,
+    AppBehaviorConfig,
     fromWireAppBarVisibility,
     fromWireLastSelection,
     fromWireProvider,
@@ -1088,10 +1088,7 @@ describe('restoreLastSelection thunk', () => {
         (fromWireLastSelection as jest.Mock).mockReturnValue({ kind: 'stack', actionId: '', stackId: 'existing-id' });
         const getState = jest
             .fn()
-            .mockReturnValue({
-                stacksSaved: { stacks: [{ id: 'existing-id' }] },
-                actions: { catalog: [] },
-            } as unknown as RootState);
+            .mockReturnValue({ stacksSaved: { stacks: [{ id: 'existing-id' }] }, actions: { catalog: [] } } as unknown as RootState);
 
         const action = await restoreLastSelection()(dispatch, getState, undefined);
 
@@ -1108,10 +1105,7 @@ describe('restoreLastSelection thunk', () => {
         (SettingsHandlerAdapter.updateLastSelectionConfig as jest.Mock).mockResolvedValue({ data: undefined });
         const getState = jest
             .fn()
-            .mockReturnValue({
-                stacksSaved: { stacks: [{ id: 'some-other-stack' }] },
-                actions: { catalog: [] },
-            } as unknown as RootState);
+            .mockReturnValue({ stacksSaved: { stacks: [{ id: 'some-other-stack' }] }, actions: { catalog: [] } } as unknown as RootState);
 
         const action = await restoreLastSelection()(dispatch, getState, undefined);
 
@@ -1126,10 +1120,7 @@ describe('restoreLastSelection thunk', () => {
         (fromWireLastSelection as jest.Mock).mockReturnValue({ kind: 'action', actionId: 'existing-action', stackId: '' });
         const getState = jest
             .fn()
-            .mockReturnValue({
-                stacksSaved: { stacks: [] },
-                actions: { catalog: [{ id: 'existing-action' }] },
-            } as unknown as RootState);
+            .mockReturnValue({ stacksSaved: { stacks: [] }, actions: { catalog: [{ id: 'existing-action' }] } } as unknown as RootState);
 
         const action = await restoreLastSelection()(dispatch, getState, undefined);
 
@@ -1145,10 +1136,7 @@ describe('restoreLastSelection thunk', () => {
         (SettingsHandlerAdapter.updateLastSelectionConfig as jest.Mock).mockResolvedValue({ data: undefined });
         const getState = jest
             .fn()
-            .mockReturnValue({
-                stacksSaved: { stacks: [] },
-                actions: { catalog: [{ id: 'some-other-action' }] },
-            } as unknown as RootState);
+            .mockReturnValue({ stacksSaved: { stacks: [] }, actions: { catalog: [{ id: 'some-other-action' }] } } as unknown as RootState);
 
         const action = await restoreLastSelection()(dispatch, getState, undefined);
 
@@ -1157,16 +1145,9 @@ describe('restoreLastSelection thunk', () => {
     });
 
     it('resolves with both nulls and does not write back when nothing was persisted (kind "none")', async () => {
-        (SettingsHandlerAdapter.getLastSelectionConfig as jest.Mock).mockResolvedValue({
-            data: { kind: 'none', actionId: '', stackId: '' },
-        });
+        (SettingsHandlerAdapter.getLastSelectionConfig as jest.Mock).mockResolvedValue({ data: { kind: 'none', actionId: '', stackId: '' } });
         (fromWireLastSelection as jest.Mock).mockReturnValue({ kind: 'none', actionId: '', stackId: '' });
-        const getState = jest
-            .fn()
-            .mockReturnValue({
-                stacksSaved: { stacks: [] },
-                actions: { catalog: [] },
-            } as unknown as RootState);
+        const getState = jest.fn().mockReturnValue({ stacksSaved: { stacks: [] }, actions: { catalog: [] } } as unknown as RootState);
 
         const action = await restoreLastSelection()(dispatch, getState, undefined);
 
@@ -1176,9 +1157,7 @@ describe('restoreLastSelection thunk', () => {
 
     it('dispatches rejected with parsed error message when the adapter rejects', async () => {
         (SettingsHandlerAdapter.getLastSelectionConfig as jest.Mock).mockRejectedValue(new Error('load failed'));
-        const getState = jest
-            .fn()
-            .mockReturnValue({ stacksSaved: { stacks: [] }, actions: { catalog: [] } } as unknown as RootState);
+        const getState = jest.fn().mockReturnValue({ stacksSaved: { stacks: [] }, actions: { catalog: [] } } as unknown as RootState);
 
         const action = await restoreLastSelection()(dispatch, getState, undefined);
 

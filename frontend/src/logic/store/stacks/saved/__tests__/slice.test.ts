@@ -21,9 +21,9 @@ jest.mock('../../../../adapter', () => ({
     StackHandlerAdapter: { deleteStack: jest.fn() },
 }));
 
+import { StackHandlerAdapter } from '../../../../adapter';
 import type { RootState } from '../../../index';
 import { armStack } from '../../../ui/slice';
-import { StackHandlerAdapter } from '../../../../adapter';
 import stacksSavedReducer from '../slice';
 import { createStack, deleteStack, duplicateStack, listStacks, updateStack } from '../thunks';
 import type { StacksSavedState } from '../types';
