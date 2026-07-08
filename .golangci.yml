@@ -1,0 +1,42 @@
+# First adoption of golangci-lint on this codebase. Deliberately a small,
+# low-noise linter set (`default: none` + explicit enable) rather than `all` or
+# `standard` with extras — an opinionated/stylistic superset would surface
+# hundreds of pre-existing findings on the first run. Pre-commit scopes findings
+# further via `--new-from-rev=HEAD` (see lefthook.yml), so only new/changed code
+# is actually blocked.
+version: "2"
+linters:
+  default: none
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - misspell
+    - staticcheck
+    - unconvert
+    - unused
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - errcheck
+        path: _test\.go
+    paths:
+      - internal/db/store
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofmt
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

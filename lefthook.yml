@@ -1,0 +1,48 @@
+# Local safety net only — does NOT replace or trigger CI (.github/workflows/main.yml
+# is untouched and only runs on tag-push/workflow_dispatch).
+#
+# Escape hatch: `git push --no-verify` / `LEFTHOOK=0 git push` bypass these hooks.
+# That's a git/Lefthook feature, not something we fight — see docs/howto/verification.md.
+
+pre-commit:
+  parallel: true
+  commands:
+    # `glob` does not support brace expansion ("*.{ts,tsx}") — it silently
+    # matches nothing rather than erroring. Use a YAML array of single-pattern
+    # globs instead (confirmed against lefthook v2.1.9).
+    go-fmt:
+      glob: "*.go"
+      run: gofmt -l -w {staged_files}
+      stage_fixed: true
+    go-vet:
+      glob: "*.go"
+      run: go vet ./...
+    go-lint:
+      glob: "*.go"
+      run: golangci-lint run --new-from-rev=HEAD --fix ./...
+      stage_fixed: true
+    fe-prettier:
+      root: "frontend/"
+      glob: ["*.ts", "*.tsx", "*.css", "*.scss"]
+      run: npx prettier --write {staged_files}
+      stage_fixed: true
+    fe-eslint:
+      root: "frontend/"
+      glob: ["*.ts", "*.tsx"]
+      run: npx eslint --fix {staged_files}
+      stage_fixed: true
+
+# parallel: false (default) — priority only takes effect without parallel execution.
+# Ordering is load-bearing: main.go embeds frontend/dist (go:embed all:frontend/dist),
+# so the frontend must build before any Go step compiles/tests/vets.
+pre-push:
+  commands:
+    01-bindings:
+      priority: 1
+      run: sh scripts/hooks/pre-push-bindings-drift.sh
+    02-frontend:
+      priority: 2
+      run: sh scripts/hooks/pre-push-frontend.sh
+    03-go:
+      priority: 3
+      run: sh scripts/hooks/pre-push-go.sh

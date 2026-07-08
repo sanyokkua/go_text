@@ -6,6 +6,7 @@
     "scripts": {
         "dev": "vite",
         "build": "tsc && vite build",
+        "postbuild": "node -e \"require('fs').writeFileSync('dist/.gitkeep','')\"",
         "preview": "vite preview",
         "test": "jest",
         "test:watch": "jest --watch",
@@ -16,7 +17,8 @@
         "verify": "bash scripts/check-no-mui.sh && npm run format:check && npm run lint && npx tsc --noEmit && npm test && npm run verify:ui",
         "format": "prettier --write \"src/**/*.{ts,tsx,css,scss}\" \"e2e/**/*.ts\"",
         "format:check": "prettier --check \"src/**/*.{ts,tsx,css,scss}\" \"e2e/**/*.ts\"",
-        "lint": "eslint ."
+        "lint": "eslint .",
+        "postinstall": "cd .. && lefthook install"
     },
     "dependencies": {
         "@reduxjs/toolkit": "^2.11.2",
@@ -61,6 +63,7 @@
         "jest-axe": "^9.0.0",
         "jest-environment-jsdom": "^30.4.1",
         "jiti": "^2.6.1",
+        "lefthook": "^2.1.9",
         "prettier": "^3.7.4",
         "prettier-plugin-organize-imports": "^4.3.0",
         "sass-embedded": "^1.97.0",

@@ -64,6 +64,32 @@ BASE_URL=http://localhost:34115 npm run verify:smoke
 
 ---
 
+## Local Git Hooks
+
+[Lefthook](https://lefthook.dev) runs a subset of this gate table automatically, so most of it never
+needs to be triggered by hand:
+
+- **pre-commit** (fast, staged files only): `gofmt`, `golangci-lint --new-from-rev=HEAD --fix`,
+  `go vet` for staged `.go` files; `prettier --write` and `eslint --fix` for staged frontend files.
+  Formatters run with `stage_fixed: true`, so files they rewrite are automatically re-staged — you
+  never end up with a commit that silently excludes the formatter's own changes.
+- **pre-push** (slow, whole branch): mirrors gates 1–9 above locally — Wails bindings regeneration,
+  `gofmt -l .` / `go vet` / `go test -race`, frontend build/format/lint/typecheck/`test:coverage`,
+  the `@mui`/`@emotion` guard, Playwright `verify:ui`/`verify:smoke`, `govulncheck`, `npm audit`,
+  `wails doctor`, and `sqlc diff`. See `lefthook.yml` and `scripts/hooks/` for the exact commands.
+
+Hooks install automatically the moment you run `cd frontend && npm install` (already a required
+onboarding step) — no separate setup command needed. Pre-push does assume `wails`, `sqlc`, and
+`govulncheck` are already on `PATH`; if one is missing, the hook fails with the exact one-time
+`go install` command rather than skipping the check silently (see Prerequisites in `CLAUDE.md`).
+
+**Escape hatch:** `git push --no-verify` or `LEFTHOOK=0 git push` bypass these hooks — a git/Lefthook
+capability, not a gap we try to close. `.github/workflows/main.yml`'s `test` job (this same gate
+table, run in CI) only triggers on a version-tag push or manual dispatch, not on every branch push or
+PR, so bypassing the local hook means these gates won't run again until the next release tag.
+
+---
+
 ## Bridge Mock
 
 The bridge mock (`frontend/src/dev/bridge-mock/`) provides TypeScript implementations of every Wails-bound handler method (see `main.go`'s `Bind` list for the current set). It is injected **only** in dev mode via a Vite plugin (`vite.config.ts`). It is never bundled into production builds.
