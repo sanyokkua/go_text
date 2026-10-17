@@ -1,0 +1,92 @@
+schema: spec-driven
+
+context: |
+  GoText: native desktop app (Wails v2) for AI text transformation. Go backend (`internal/`, DI root
+  `internal/application/application.go`, Handler -> Service -> Repository) + React 19 / TypeScript /
+  Redux Toolkit frontend (`frontend/src/`; components -> thunks -> `logic/adapter/` -> `wailsjs/`).
+  SQLite (modernc.org/sqlite, goose, sqlc). Local or cloud OpenAI-compatible LLM providers. Single
+  user, local-first, no telemetry. Credentials are env-var names, never secrets.
+
+  Authoritative sources - read, do not restate: `CLAUDE.md` + `docs/ai_agent_rules/*.md` (standards,
+  boundaries, agent routing); `docs/index.md` and `docs/architecture/` (how the system works);
+  `docs/howto/verification.md` (gates). `openspec/specs/` = behavior already specified; it starts empty
+  and grows only with what each change touches. Unspecified behavior is defined by the code.
+
+  Capabilities (use these names; add a new one only when none fits, and say why in the proposal).
+  Backend paths are under `internal/`, UI paths under `frontend/src/ui/widgets/`:
+  - `text-actions` - catalog of 90+ directives by category/family, prompt building and preview
+    (`prompts/`, plan/prompt building in `actions/`; UI `views/info/` catalog and prompt inspector)
+  - `chain-runs` - single action or multi-step chain: plan, compose, run, progress events, cancel,
+    single-flight inference (`actions/`, `gate/`; UI run bar and stack builder in `views/editor/`)
+  - `saved-stacks` - saved stacks CRUD and suggestions (`stacks/`; UI `views/stacks/`, save dialog)
+  - `run-history` - per-run history list/detail (`history/`; UI history rail in `views/editor/`)
+  - `llm-providers` - provider profiles, model discovery, connection/inference verification
+    (`llms/`, `verification/`; UI provider/model pickers and settings tabs)
+  - `settings` - inference, model, language, app behavior, UI preferences, last selection
+    (`settings/`; UI `views/settings/`)
+  - `editor` - input/output panes, markdown and diff rendering, copy/replace (`views/editor/`)
+  - `app-shell` - app bar, notifications, theme, About, menus, window (`base/`, `main.go`)
+  - `app-data` - DB location, migrations, seeding, dev isolation, single-instance lock, logs
+    (`db/`, `file/`, `logging/`, `tasklog/`)
+  Cross-cutting code (`apperr/` error envelope, `application/` DI, `bootstrap/`) belongs to the
+  capability whose behavior the change affects; a pure internal change sets `skip_specs`.
+
+  Principles: KISS, YAGNI, DRY, SOLID. Reuse or extend existing code before creating new code. Small
+  files and small structs/interfaces/components with one responsibility; no god functions or god types.
+  OpenSpec is a planning and execution discipline, not paperwork: minimal prose, no step without a
+  concrete risk it covers, never block work on wording.
+
+  Task gates: `go test -race ./...`, `gofmt -l .`, `go vet ./...`, `cd frontend && npm run verify`.
+  After a bound-signature change run `wails generate module`; after a query change run `sqlc generate`.
+  Full gate set = the CI `test` job in `.github/workflows/main.yml` (listed in `CLAUDE.md`).
+  Every task commit that touches runtime code, and every merge, follows a `wails dev` run that
+  exercises the changed behavior.
+
+  Git: each change has an integration branch (`feature/<change-name>` from `master`, or the branch the
+  user names). A task needing several commits uses `feature/<change-name>--<task>` from it and is
+  squash-merged back. Every merge is a squash merge. Never commit to or merge into `master` without the user.
+
+rules:
+  proposal:
+    - At most one page. State the problem, why it matters, the behavior that changes, and what is out of scope. No implementation plan.
+    - Name affected capabilities from the context list, each with one plain-words line. It is MODIFIED if `openspec/specs/<name>/` exists, otherwise NEW.
+    - "Set `skip_specs: true` in `.openspec.yaml` when there is no user-observable behavior (tooling, CI, refactor, docs). Never invent a requirement."
+    - If current behavior is undefined by specs and code, ask the user with a recommended default; do not invent it.
+    - Keep a change to about 10 tasks. Bigger work is split into several changes.
+  specs:
+    - Requirements use EARS - `The system SHALL ...`, `WHEN <trigger>, the system SHALL ...`, `WHILE <state>, ...`, `IF <condition>, THEN ...`, `WHERE <feature>, ...`. One testable obligation per requirement, plain words.
+    - Each requirement has at least one `#### Scenario:` (exactly four hashes) with concrete values, limits and defaults - the actual string, number or error code, not "invalid input".
+    - Observable behavior only - no types, functions, files or algorithms. No vague words ("properly", "fast") without a measurable meaning.
+    - One requirement per behavior; modify the existing one instead of adding an overlap. For a capability not yet in `openspec/specs/`, specify only the behavior this change adds or changes, not the whole capability.
+    - A new capability opens with `## Purpose` - one or two real sentences.
+  design:
+    - Write a design only for architecture, data model/migration, concurrency, Wails boundary or non-trivial UI-state decisions. Skip it for small changes.
+    - Name the existing code to reuse or extend (packages, files, functions, components, slices). A parallel implementation needs a stated reason.
+    - No new layer, interface, factory or abstraction without a current caller; no interface until a second implementation exists.
+    - Record only research that changes the decision; rejected alternatives in one line each.
+    - State how the change is verified, including the `wails dev` scenario for runtime or UI changes.
+  tasks:
+    - A task is one vertical slice of behavior (backend, binding, adapter, state, UI, tests, docs) completable in one fresh planning-mode session.
+    - Each task is self-contained - goal; requirement headings and design sections it implements; files to change or create; existing code to reuse; tests to write first; verification commands; the `wails dev` check (or "N/A - no runtime change"); done criteria. Readable without opening another file, with paths for detail.
+    - Order by real dependency; a task depends only on existing code or earlier tasks and leaves the app building and running.
+    - Mark a task that will need several commits as needing a task branch.
+    - No standalone tasks for running tests, lint, docs, status sync or review - they belong inside the task that needs them.
+    - Reference requirements by heading text, never bare IDs.
+
+operations:
+  apply:
+    guidance:
+      - Start each task by checking git state - on the change integration branch, or on the task's branch when it needs several commits.
+      - Plan the task in planning mode. Read its referenced artifacts and code, then search `internal/` and `frontend/src/` for reusable code - reuse, then extend, then extract; create last.
+      - Orchestrate with focused sub-agents (research, implementation per the `CLAUDE.md` agent routing, debugging, independent review by an agent that did not write the code). The main thread keeps intent, decisions and verified results.
+      - TDD - see the acceptance test fail, make the smallest change, refactor. Test observable behavior; prefer real code, temp files and real SQLite over mocks. Every bug fix gets a regression test.
+      - Never weaken, skip or delete a test or quality gate to make work pass. No placeholders, TODOs or dead code; new code is wired into the running app.
+      - Split a file or type when it gains a second responsibility, not by line count.
+      - Done means - gates green (quote the output tail), behavior exercised in `wails dev` when runtime code changed, affected docs updated, task checked in `tasks.md`, committed with a Conventional Commit, and a task branch squash-merged into the change branch and deleted.
+      - Stop and ask only for an ambiguous requirement (with a recommended default), a gate red twice for the same cause, or anything irreversible.
+  archive:
+    guidance:
+      - Archive only when every task is done and verified and the full gate set (CI `test` job) passes on the change branch.
+      - Fix material drift between artifacts and what was built; ignore wording-only differences.
+      - Update `docs/index.md`, `docs/architecture/`, `docs/guides/DEVELOPER_GUIDE.md`, `README.md` and `CLAUDE.md` where facts changed. Confirm merged `openspec/specs/` have no duplicate or conflicting requirements.
+      - Archive and commit on the change integration branch, then stop - the user decides whether to merge locally or open a PR.
