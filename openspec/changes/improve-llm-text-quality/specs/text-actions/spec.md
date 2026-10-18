@@ -9,11 +9,11 @@ patterns, on both frontier and small local models.
 ## ADDED Requirements
 
 ### Requirement: Proofreading runs as its own inference
-WHEN a chain contains a proofreading action (`rewrite.proofread.*`), the system SHALL run that action in its own inference with the proofreading system prompt. It SHALL NOT merge the action with other rewrite actions.
+WHEN a chain contains a proofreading action (`rewrite.proofread.*`), the system SHALL run that action in its own inference with the proofreading system prompt. It SHALL NOT merge the action with other rewrite actions. The user prompt of that inference SHALL end with "Return only the corrected text, keeping every sentence."
 
 #### Scenario: Proofread with humanize
 - **WHEN** the chain is `rewrite.proofread.enhanced` then `rewrite.intent.humanize`
-- **THEN** the plan has 2 inferences; the first uses the proofreading system prompt and contains only the proofread directive
+- **THEN** the plan has 2 inferences; the first uses the proofreading system prompt, contains only the proofread directive, and its user prompt ends with "Return only the corrected text, keeping every sentence."
 
 #### Scenario: Tone and style still merge
 - **WHEN** the chain is `rewrite.tone.friendly` then `rewrite.style.conversational`
@@ -53,7 +53,7 @@ The system SHALL NOT include the em dash character (U+2014) in any system prompt
 
 #### Scenario: Tone directive phrasing
 - **WHEN** the user views the `rewrite.tone.professional` directive
-- **THEN** it reads like "Adjust the tone to be professional: calm, competent and courteous, in plain workplace wording." and has no dash-enclosed triplet
+- **THEN** it contains "Adjust the tone to be professional: calm, competent and courteous" and no "—"
 
 ### Requirement: Humanize replaces machine wording only
 The `rewrite.intent.humanize` action SHALL keep its ID. Its directive SHALL ask only to replace machine-sounding wording (long dashes, stock phrases, new transition words, trailing ", highlighting…" clauses) with plain words. It SHALL require keeping every sentence, its order and meaning, greetings, politeness, hedges and all facts. It SHALL NOT ask to vary sentence length, prefer active voice or remove filler.
@@ -72,10 +72,3 @@ WHEN a translate action runs, the system prompt SHALL contain the actual input a
 #### Scenario: English to Ukrainian
 - **WHEN** `translate.text` runs with input language English and output language Ukrainian
 - **THEN** the system prompt contains "Ukrainian" and "English" and contains no "{{"
-
-### Requirement: Prompt changes pass the faithfulness eval
-WHEN prompt texts change, the developer eval on the committed case set with `gemma4:e4b` (temperature 0.2) SHALL meet these targets: greeting and sign-off retention 100%, politeness retention ≥ 98%, hedge retention ≥ 95%, sentence count kept ≥ 95%, line breaks kept ≥ 95%, protected tokens 100%, tells introduced in ≤ 2% of runs, unchanged output on ≥ 80% of clean inputs, and seeded-error recall ≥ 85%. If the recorded baseline already misses a target, the target is no regression from the baseline.
-
-#### Scenario: Release gate
-- **WHEN** a developer runs the eval for `rewrite.proofread.basic` on `gemma4:e4b` after a prompt change
-- **THEN** the report shows each metric with its target and baseline, and the change is accepted only if every target is met

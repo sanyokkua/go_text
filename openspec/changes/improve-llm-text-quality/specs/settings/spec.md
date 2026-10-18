@@ -8,7 +8,7 @@ which optional parameters GoText sends with each LLM request.
 ## ADDED Requirements
 
 ### Requirement: Reasoning mode setting
-The model settings SHALL include a reasoning mode with values `default`, `off` and `low`. It defaults to `default`, is saved across restarts, and is changed in Settings → Model.
+The model settings SHALL include a reasoning mode with values `default`, `off` and `low`. It defaults to `default`, is saved across restarts, and is changed in Settings → Model through a "Reasoning" select with options "Provider default" (`default`), "Off" (`off`) and "Low" (`low`).
 
 #### Scenario: Default after upgrade
 - **WHEN** an existing installation starts after this change
@@ -42,6 +42,10 @@ WHILE the reasoning mode is `low`, the system SHALL send `think: "low"` to Ollam
 #### Scenario: Ollama low
 - **WHEN** the reasoning mode is `low` and the provider is Ollama
 - **THEN** the request body contains `"think": "low"`
+
+#### Scenario: Ollama model without thinking
+- **WHEN** the reasoning mode is `low` and the Ollama model does not support thinking
+- **THEN** the step fails with `invalid_request` and the hint "Set Reasoning to Provider default in Settings → Model."
 
 #### Scenario: OpenAI-compatible low
 - **WHEN** the reasoning mode is `low` and the provider kind is `openai`

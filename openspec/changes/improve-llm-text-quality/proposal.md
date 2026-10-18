@@ -24,7 +24,8 @@ causes 2–4 again.
 **Honest request errors**
 - HTTP 400 and 422 become a new non-retryable `invalid_request` error. It carries the provider's
   own message, sanitized and capped, and a hint naming the setting to change.
-- Only 5xx stays a retryable "server error".
+- Only 5xx stays a retryable "server error"; 408 becomes `timeout`.
+- A failed chain step keeps the hint and the provider excerpt, so the toast can show them.
 
 **Inference test and request settings**
 - The Settings inference test sends a bare request first. If that succeeds, it checks the saved
@@ -62,14 +63,16 @@ causes 2–4 again.
 - The seed temperature for new installs becomes 0.2.
 
 **UI**
-- Error toasts and the Settings verification panel show the error's title and message, the hint,
-  and a collapsible "Provider said" excerpt.
+- Error toasts, for every error code, show the backend's title and message (the app's own text is
+  only a fallback), the hint, and a collapsible "Provider said" excerpt. The Settings verification
+  panel shows the diagnosis.
 - Model settings get a reasoning-mode select.
 
 **Evals**
-- A developer-only Go eval harness runs the app's real planner, composer and LLM service against
-  local and optional cloud models. It scores outputs with the same guards and gates prompt
-  changes against a recorded baseline.
+- A developer-only Go eval harness runs the app's real chain path against local and optional cloud
+  models and scores outputs with the same guards as the task log. Prompt changes must pass its
+  release gate on Ollama `gemma4:e4b-mlx` against a recorded baseline. The gate is a development
+  rule, not app behavior, so it lives in the design, not in the specs.
 
 **Scope note.** This is one change with about 12 task groups, above the project's 10-task
 guideline. The owner chose this deliberately to keep the diagnostics, the eval baseline and the
@@ -86,13 +89,13 @@ prompt rewrite in one plan.
 ### New Capabilities
 - `llm-providers`: request error classification and messages, the Settings inference test with
   parameter diagnosis, pinned-path warning, and completion request shape.
-- `chain-runs`: retry policy for request errors, detection of marker and truncated outputs, and
-  the inference cap.
+- `chain-runs`: retry policy for request errors, step failures that keep the provider diagnosis,
+  detection of marker and truncated outputs, and the inference cap.
 - `text-actions`: faithful proofreading, the shared house style for all families, narrowed
   humanize, and filled translate languages.
 - `settings`: reasoning mode and the seed temperature.
 - `app-data`: diagnostic task-log fields, including served model and guard flags.
-- `app-shell`: error notifications that show the provider's message and a hint.
+- `app-shell`: error notifications that show the backend's message, a hint and the provider excerpt.
 
 ### Modified Capabilities
 None. `openspec/specs/` is empty.
@@ -104,6 +107,7 @@ None. `openspec/specs/` is empty.
   - `internal/apperr/` (new code and constructor, `VerifyOutcome` fields);
   - `internal/verification/`;
   - `internal/actions/` (service, composer, planner, eval harness, testdata);
+  - `internal/stacks/` (starter-stack cap test);
   - new `internal/textguard/`;
   - `internal/prompts/v3/` (system.go, catalog.go);
   - `internal/settings/`, `internal/tasklog/`, and `internal/db/db.go` (seed);
@@ -112,11 +116,11 @@ None. `openspec/specs/` is empty.
   fields and the `ModelConfig` reasoning field. No DB migration; the new setting uses the
   existing KV table.
 - **Frontend:**
-  - `logic/store/notifications`;
+  - `logic/store/notifications`, `NotificationContainer` and a new `Collapsible` primitive;
   - `logic/store/settings/thunks.ts`;
   - `VerificationPanel`;
   - `ModelConfigTab`;
-  - the bridge mock.
+  - the bridge mock, the Jest `wailsModels` mock and `e2e/verify-ui.spec.ts`.
 - **Docs:**
   - `docs/howto/verification.md` (eval command);
   - `docs/architecture/` (errors, LLM layer);

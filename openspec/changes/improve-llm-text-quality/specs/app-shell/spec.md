@@ -9,14 +9,22 @@ where available.
 ## ADDED Requirements
 
 ### Requirement: Error notifications show the backend message
-WHEN an operation fails with a typed error, the error notification SHALL show the error's title and message as the backend sent them, instead of text rebuilt only from the error code.
+WHEN an operation fails with a typed error of any code, the error notification SHALL show the error's title and message as the backend sent them. Only when the backend title or message is empty SHALL the notification use the app's own text for that error code.
 
 #### Scenario: Rejected request toast
-- **WHEN** a chain run fails with code `invalid_request`, title "Request rejected", message "Provider B rejected the request (400): Unsupported value: 'temperature'"
+- **WHEN** the inference test fails with code `invalid_request`, title "Request rejected", message "Provider B rejected the request (400): Unsupported value: 'temperature'"
 - **THEN** the toast title is "Request rejected" and its body contains "Unsupported value: 'temperature'"
 
+#### Scenario: Failed chain step toast
+- **WHEN** a chain run fails with code `step_failed`, title "Step 1 failed", message "Step 1 (rewrite) failed: Provider B rejected the request (400): Unsupported value: 'temperature'. Earlier steps completed."
+- **THEN** the toast title is "Step 1 failed" and its body contains "Unsupported value: 'temperature'"
+
+#### Scenario: Empty backend text
+- **WHEN** an error with code `busy` arrives with an empty title and message
+- **THEN** the toast shows the app's own text for `busy`
+
 ### Requirement: Error notifications show the settings hint
-WHEN an error carries a hint, the notification SHALL show the hint as a separate line below the message.
+WHEN an error carries a `hint` in its details, the notification SHALL show the hint as a separate line below the message.
 
 #### Scenario: Temperature hint
 - **WHEN** the error details include hint "Turn off Temperature in Settings → Model."
@@ -27,10 +35,10 @@ WHEN an error carries a hint, the notification SHALL show the hint as a separate
 - **THEN** the toast shows no hint line
 
 ### Requirement: Error notifications offer the provider excerpt
-WHEN an error carries a sanitized provider excerpt, the notification SHALL offer a collapsed "Provider said" section that reveals the excerpt when expanded.
+WHEN an error carries a sanitized provider excerpt (`providerMessage` in its details), the notification SHALL offer a collapsed "Provider said" section that reveals the excerpt when expanded.
 
 #### Scenario: Expand excerpt
-- **WHEN** the user expands "Provider said" on a rejected-request toast
+- **WHEN** the user expands "Provider said" on a failed-step toast whose details carry `providerMessage`
 - **THEN** the sanitized provider excerpt (at most 300 characters) is shown
 
 ### Requirement: Verification panel shows diagnosis results

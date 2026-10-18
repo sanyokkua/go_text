@@ -9,7 +9,7 @@ input's content.
 ## ADDED Requirements
 
 ### Requirement: Task log records the served model and finish reason
-WHILE task logging is enabled, each step entry SHALL record the model name the provider reported as having answered (`servedModel`) and the provider's finish reason (`finishReason`), each empty when the provider did not report it. It SHALL keep recording the configured model in `model`.
+WHILE task logging is enabled, each task-log entry (one per inference) SHALL record the model name the provider reported as having answered (`servedModel`) and the provider's finish reason (`finishReason`), each empty when the provider did not report it. It SHALL keep recording the configured model in `model`.
 
 #### Scenario: Served model differs from the picked model
 - **WHEN** the picked model is `gpt-5` and the provider response has `"model":"claude-haiku-4-5"` and `"finish_reason":"stop"`
@@ -20,21 +20,21 @@ WHILE task logging is enabled, each step entry SHALL record the model name the p
 - **THEN** the entry has `servedModel` = ""
 
 ### Requirement: Task log records token usage
-WHILE task logging is enabled, each step entry SHALL record the prompt and completion token counts from the provider response, or 0 when the provider did not report them.
+WHILE task logging is enabled, each task-log entry (one per inference) SHALL record the prompt and completion token counts from the provider response, or 0 when the provider did not report them.
 
 #### Scenario: Usage present
 - **WHEN** the response usage is 412 prompt and 57 completion tokens
 - **THEN** the entry has `promptTokens` = 412 and `completionTokens` = 57
 
 ### Requirement: Task log records the request endpoint without secrets
-WHILE task logging is enabled, each step entry SHALL record the completion request's host as `requestHost` and its path as `requestPath`. It SHALL never record the query string, credentials or headers.
+WHILE task logging is enabled, each task-log entry (one per inference) SHALL record the completion request's host as `requestHost` and its path as `requestPath`. It SHALL never record the query string, credentials or headers.
 
 #### Scenario: Azure URL with API version
 - **WHEN** the request URL is `https://proxy.example/openai/deployments/gpt-5/chat/completions?api-version=2024-10-21`
 - **THEN** `requestHost` = `proxy.example` and `requestPath` = `/openai/deployments/gpt-5/chat/completions`
 
 ### Requirement: Task log records a prompt version
-WHILE task logging is enabled, each step entry SHALL record `promptVersion`: the first 12 lowercase hex characters of a SHA-256 over the step's system prompt and its directive texts. The input text SHALL NOT be part of this hash.
+WHILE task logging is enabled, each task-log entry (one per inference) SHALL record `promptVersion`: the first 12 lowercase hex characters of a SHA-256 over the inference's system prompt as sent (placeholders already filled) and its directive texts. The input text SHALL NOT be part of this hash, so the value changes only with the prompt texts or filled values such as translate languages.
 
 #### Scenario: Same prompt, different input
 - **WHEN** two runs use `rewrite.proofread.basic` with different input texts and unchanged prompts
@@ -45,7 +45,7 @@ WHILE task logging is enabled, each step entry SHALL record `promptVersion`: the
 - **THEN** the `promptVersion` values differ
 
 ### Requirement: Task log records output guard flags
-WHILE task logging is enabled, each step entry SHALL record `guardFlags`: the guard names that fired when comparing the step's output with its input. The names are `greeting_dropped`, `signoff_dropped`, `fewer_sentences`, `fewer_lines`, `politeness_lost`, `hedge_lost`, `protected_token_lost` and `tell_introduced`. Guard flags SHALL NOT fail or change the run.
+WHILE task logging is enabled, each task-log entry (one per inference) SHALL record `guardFlags`: the guard names that fired when comparing the inference's output with its input. Guards SHALL be computed only while task logging is enabled. The names are `greeting_dropped`, `signoff_dropped`, `fewer_sentences`, `fewer_lines`, `politeness_lost`, `hedge_lost`, `protected_token_lost` and `tell_introduced`. Guard flags SHALL NOT fail or change the run.
 
 #### Scenario: Greeting and please dropped
 - **WHEN** the input is "Hello. Please check the ticket <TICKET-1>." and the output is "Check the ticket <TICKET-1>."
