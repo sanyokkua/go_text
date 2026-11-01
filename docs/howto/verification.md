@@ -119,3 +119,46 @@ go test -coverprofile=coverage.out ./... && go tool cover -html=coverage.out
 # Frontend
 cd frontend && npm run test:coverage
 ```
+
+## Local SonarQube analysis
+
+From the repository root, install the frontend dependencies with `cd frontend && npm ci`
+and return to the root. The local workflow requires Go, Node/npm, an existing
+SonarQube server, Wails CLI to generate bindings, and SonarScanner CLI on `PATH` (verified with CLI
+8.3.0.16463). Set `SONAR_HOST_URL` to the server URL and `SONAR_TOKEN` to a
+token with analysis and project read access; keep the token outside the repository.
+Then run:
+
+```bash
+sh scripts/sonar-local.sh
+```
+
+The command generates Wails bindings, builds the frontend, runs Go race tests with cross-package coverage,
+and runs Jest with its existing coverage gates before uploading the analysis.
+The Go package patterns cover the application root and `internal` packages
+without picking up Go code shipped inside frontend dependencies.
+It replaces `coverage/go.out` and `frontend/coverage/lcov.info` on each run.
+Playwright and live external-service tests are not run. The scanner waits for
+server processing and the Quality Gate; a failed gate can still mean the
+analysis was successfully uploaded.
+
+View the `local:go-text` project in the SonarQube dashboard at
+`$SONAR_HOST_URL/dashboard?id=local%3Ago-text`. After processing, export the
+coverage measures and Quality Gate as JSON with:
+
+```bash
+mkdir -p .sonar-reports
+curl --fail --silent --show-error -H "Authorization: Bearer $SONAR_TOKEN" \
+  --get "$SONAR_HOST_URL/api/measures/component" \
+  --data-urlencode 'component=local:go-text' \
+  --data-urlencode 'metricKeys=coverage,line_coverage,lines_to_cover,uncovered_lines' \
+  > .sonar-reports/measures.json
+curl --fail --silent --show-error -H "Authorization: Bearer $SONAR_TOKEN" \
+  --get "$SONAR_HOST_URL/api/qualitygates/project_status" \
+  --data-urlencode 'projectKey=local:go-text' \
+  > .sonar-reports/quality-gate.json
+```
+
+See `$SONAR_HOST_URL/web_api` for other available exports. The separately
+installed `sonar-local report` helper can also export issues if it is compatible
+with the installed server and its script runs successfully.

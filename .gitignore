@@ -12,6 +12,9 @@ frontend/dist/*
 !frontend/dist/.gitkeep
 frontend/coverage/*
 frontend/coverage/
+/coverage/
+/.scannerwork/
+/.sonar-reports/
 frontend/tmp/*
 frontend/*.js
 frontend/*.d.ts
